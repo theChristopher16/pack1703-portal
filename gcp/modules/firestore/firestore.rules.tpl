@@ -1,0 +1,164 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.get('role', '') == 'admin';
+    }
+    
+    function isValidTimestamp(timestamp) {
+      return timestamp is timestamp && 
+             timestamp > timestamp.value(2024, 1, 1) &&
+             timestamp < timestamp.value(2030, 12, 31);
+    }
+    
+    function isValidString(str, maxLength) {
+      return str is string && 
+             str.size() > 0 && 
+             str.size() <= maxLength &&
+             !str.matches('.*<[^>]*>.*'); // No HTML tags
+    }
+    
+    function isValidEmail(email) {
+      return email is string && 
+             email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
+    }
+
+    // Seasons - Public read, admin write
+    match /seasons/{seasonId} {
+      allow read: if true;
+      allow write: if isAdmin() &&
+                      isValidString(resource.data.name, 100) &&
+                      isValidTimestamp(resource.data.startDate) &&
+                      isValidTimestamp(resource.data.endDate) &&
+                      resource.data.startDate < resource.data.endDate;
+    }
+
+    // Events - Public read (non-private), admin write
+    match /events/{eventId} {
+      allow read: if resource.data.visibility == 'public' || 
+                     resource.data.visibility == 'link-only' ||
+                     isAdmin();
+      
+      allow write: if isAdmin() &&
+                      isValidString(resource.data.title, 200) &&
+                      isValidString(resource.data.description, 2000) &&
+                      isValidTimestamp(resource.data.startDate) &&
+                      isValidTimestamp(resource.data.endDate) &&
+                      resource.data.startDate < resource.data.endDate &&
+                      resource.data.visibility in ['public', 'link-only', 'private'] &&
+                      resource.data.category in ['meeting', 'camping', 'service', 'social', 'training'] &&
+                      (resource.data.maxParticipants == null || resource.data.maxParticipants > 0);
+    }
+
+    // Locations - Public read, admin write
+    match /locations/{locationId} {
+      allow read: if true;
+      allow write: if isAdmin() &&
+                      isValidString(resource.data.name, 200) &&
+                      isValidString(resource.data.address, 300) &&
+                      resource.data.coordinates.latitude >= -90 &&
+                      resource.data.coordinates.latitude <= 90 &&
+                      resource.data.coordinates.longitude >= -180 &&
+                      resource.data.coordinates.longitude <= 180;
+    }
+
+    // Announcements - Public read, admin write
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if isAdmin() &&
+                      isValidString(resource.data.title, 200) &&
+                      isValidString(resource.data.content, 5000) &&
+                      isValidTimestamp(resource.data.createdAt) &&
+                      resource.data.pinned is bool;
+    }
+
+    // Lists (packing lists, etc.) - Public read, admin write
+    match /lists/{listId} {
+      allow read: if true;
+      allow write: if isAdmin() &&
+                      isValidString(resource.data.title, 200) &&
+                      resource.data.items is list &&
+                      resource.data.items.size() <= 100;
+    }
+
+    // RSVPs - Write-only for public, read for admin
+    match /rsvps/{rsvpId} {
+      allow read: if isAdmin();
+      allow create: if !isAuthenticated() && // No auth required for RSVP
+                       isValidString(resource.data.contactName, 100) &&
+                       isValidEmail(resource.data.contactEmail) &&
+                       isValidString(resource.data.eventId, 50) &&
+                       resource.data.attendees is list &&
+                       resource.data.attendees.size() > 0 &&
+                       resource.data.attendees.size() <= 20 &&
+                       isValidTimestamp(resource.data.submittedAt) &&
+                       resource.data.ipHash is string &&
+                       resource.data.ipHash.size() == 64; // SHA-256 hash
+      allow update: if false; // RSVPs are immutable after creation
+    }
+
+    // Volunteers - Write-only for public, read for admin
+    match /volunteers/{volunteerId} {
+      allow read: if isAdmin();
+      allow create: if !isAuthenticated() && // No auth required for volunteering
+                       isValidString(resource.data.name, 100) &&
+                       isValidEmail(resource.data.email) &&
+                       isValidString(resource.data.phone, 20) &&
+                       isValidString(resource.data.eventId, 50) &&
+                       isValidString(resource.data.role, 100) &&
+                       isValidTimestamp(resource.data.submittedAt) &&
+                       resource.data.ipHash is string &&
+                       resource.data.ipHash.size() == 64;
+      allow update: if false; // Volunteer signups are immutable
+    }
+
+    // Feedback - Write-only for public, read for admin
+    match /feedback/{feedbackId} {
+      allow read: if isAdmin();
+      allow create: if !isAuthenticated() && // No auth required for feedback
+                       isValidString(resource.data.message, 2000) &&
+                       resource.data.type in ['general', 'bug', 'feature', 'complaint'] &&
+                       isValidTimestamp(resource.data.submittedAt) &&
+                       resource.data.ipHash is string &&
+                       resource.data.ipHash.size() == 64;
+      allow update: if false; // Feedback is immutable
+    }
+
+    // Admin audit logs - Admin read-only
+    match /admin/audit/{auditId} {
+      allow read: if isAdmin();
+      allow write: if false; // Audit logs are created by Cloud Functions only
+    }
+
+    // Admin user management - Admin only
+    match /admin/users/{userId} {
+      allow read, write: if isAdmin();
+    }
+
+    // System configuration - Admin only
+    match /system/{configId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin() && 
+                      request.auth.token.get('role', '') == 'super-admin';
+    }
+
+%{ if environment == "dev" ~}
+    // Development-only: Allow broader access for testing
+    match /test/{document=**} {
+      allow read, write: if true;
+    }
+%{ endif ~}
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

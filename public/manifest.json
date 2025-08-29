@@ -1,0 +1,31 @@
+{
+  "short_name": "Pack 1703",
+  "name": "Pack 1703 Families Portal",
+  "description": "One-stop hub for Pack 1703 families - events, locations, announcements, and more",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#FFD166",
+  "background_color": "#F7FAFC",
+  "orientation": "portrait-primary",
+  "categories": ["education", "lifestyle", "social"],
+  "lang": "en-US",
+  "scope": "/",
+  "prefer_related_applications": false
+}

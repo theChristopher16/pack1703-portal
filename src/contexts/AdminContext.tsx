@@ -1,0 +1,653 @@
+import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import { adminService } from '../services/adminService';
+import { 
+  AdminUser, 
+  AdminRole, 
+  AdminPermission, 
+  AdminAction, 
+  AuditLog,
+  AdminDashboardStats,
+  EntityType,
+  AdminActionType
+} from '../types/admin';
+
+// Admin state interface
+interface AdminState {
+  currentUser: AdminUser | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  permissions: AdminPermission[];
+  role: AdminRole | null;
+  recentActions: AdminAction[];
+  auditLogs: AuditLog[];
+  dashboardStats: AdminDashboardStats | null;
+  systemHealth: any;
+  notifications: any[];
+  error: string | null;
+}
+
+// Admin action types
+type AdminStateActionType = 
+  | { type: 'SET_CURRENT_USER'; payload: AdminUser | null }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_PERMISSIONS'; payload: AdminPermission[] }
+  | { type: 'SET_ROLE'; payload: AdminRole | null }
+  | { type: 'ADD_RECENT_ACTION'; payload: AdminAction }
+  | { type: 'SET_AUDIT_LOGS'; payload: AuditLog[] }
+  | { type: 'SET_DASHBOARD_STATS'; payload: AdminDashboardStats | null }
+  | { type: 'SET_SYSTEM_HEALTH'; payload: any }
+  | { type: 'ADD_NOTIFICATION'; payload: any }
+  | { type: 'REMOVE_NOTIFICATION'; payload: string }
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'CLEAR_ERROR' }
+  | { type: 'LOGOUT' };
+
+// Initial state
+const initialState: AdminState = {
+  currentUser: null,
+  isAuthenticated: false,
+  isLoading: false,
+  permissions: [],
+  role: null,
+  recentActions: [],
+  auditLogs: [],
+  dashboardStats: null,
+  systemHealth: null,
+  notifications: [],
+  error: null,
+};
+
+// Admin reducer
+function adminReducer(state: AdminState, action: AdminStateActionType): AdminState {
+  switch (action.type) {
+    case 'SET_CURRENT_USER':
+      return {
+        ...state,
+        currentUser: action.payload,
+        isAuthenticated: !!action.payload,
+        permissions: action.payload?.permissions || [],
+        role: action.payload?.role || null,
+      };
+    
+    case 'SET_LOADING':
+      return {
+        ...state,
+        isLoading: action.payload,
+      };
+    
+    case 'SET_PERMISSIONS':
+      return {
+        ...state,
+        permissions: action.payload,
+      };
+    
+    case 'SET_ROLE':
+      return {
+        ...state,
+        role: action.payload,
+      };
+    
+    case 'ADD_RECENT_ACTION':
+      return {
+        ...state,
+        recentActions: [action.payload, ...state.recentActions.slice(0, 9)], // Keep last 10
+      };
+    
+    case 'SET_AUDIT_LOGS':
+      return {
+        ...state,
+        auditLogs: action.payload,
+      };
+    
+    case 'SET_DASHBOARD_STATS':
+      return {
+        ...state,
+        dashboardStats: action.payload,
+      };
+    
+    case 'SET_SYSTEM_HEALTH':
+      return {
+        ...state,
+        systemHealth: action.payload,
+      };
+    
+    case 'ADD_NOTIFICATION':
+      return {
+        ...state,
+        notifications: [...state.notifications, action.payload],
+      };
+    
+    case 'REMOVE_NOTIFICATION':
+      return {
+        ...state,
+        notifications: state.notifications.filter(n => n.id !== action.payload),
+      };
+    
+    case 'SET_ERROR':
+      return {
+        ...state,
+        error: action.payload,
+      };
+    
+    case 'CLEAR_ERROR':
+      return {
+        ...state,
+        error: null,
+      };
+    
+    case 'LOGOUT':
+      return {
+        ...initialState,
+      };
+    
+    default:
+      return state;
+  }
+}
+
+// Admin context interface
+interface AdminContextType {
+  state: AdminState;
+  dispatch: React.Dispatch<AdminStateActionType>;
+  
+  // Authentication
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  
+  // Permission checks
+  hasPermission: (permission: AdminPermission) => boolean;
+  hasAnyPermission: (permissions: AdminPermission[]) => boolean;
+  hasRole: (role: AdminRole) => boolean;
+  
+  // CRUD operations
+  createEntity: (entityType: EntityType, data: any) => Promise<{ success: boolean; id?: string; error?: string }>;
+  updateEntity: (entityType: EntityType, id: string, data: any) => Promise<{ success: boolean; error?: string }>;
+  deleteEntity: (entityType: EntityType, id: string, reason?: string) => Promise<{ success: boolean; error?: string }>;
+  
+  // Bulk operations
+  bulkOperation: (operation: AdminActionType, entityType: EntityType, entityIds: string[], options?: any) => Promise<{ success: boolean; operationId?: string; error?: string }>;
+  
+  // Data operations
+  exportData: (options: any) => Promise<{ success: boolean; downloadUrl?: string; error?: string }>;
+  importData: (options: any, file: File) => Promise<{ success: boolean; operationId?: string; error?: string }>;
+  
+  // System operations
+  refreshDashboardStats: () => Promise<void>;
+  refreshAuditLogs: () => Promise<void>;
+  refreshSystemHealth: () => Promise<void>;
+  
+  // Notifications
+  addNotification: (type: 'info' | 'warning' | 'error' | 'success', title: string, message: string) => void;
+  removeNotification: (id: string) => void;
+  
+  // Error handling
+  setError: (error: string) => void;
+  clearError: () => void;
+}
+
+// Create context
+const AdminContext = createContext<AdminContextType | undefined>(undefined);
+
+// Admin provider props
+interface AdminProviderProps {
+  children: ReactNode;
+}
+
+// Admin provider component
+export function AdminProvider({ children }: AdminProviderProps) {
+  const [state, dispatch] = useReducer(adminReducer, initialState);
+
+  // Initialize admin service with current user
+  useEffect(() => {
+    if (state.currentUser) {
+      adminService.setCurrentUser(state.currentUser);
+    }
+  }, [state.currentUser]);
+
+  // Check if user has specific permission
+  const hasPermission = (permission: AdminPermission): boolean => {
+    return state.permissions.includes(permission);
+  };
+
+  // Check if user has any of the specified permissions
+  const hasAnyPermission = (permissions: AdminPermission[]): boolean => {
+    return permissions.some(permission => state.permissions.includes(permission));
+  };
+
+  // Check if user has specific role
+  const hasRole = (role: AdminRole): boolean => {
+    return state.role === role;
+  };
+
+  // Login function
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
+
+      // This would typically call Firebase Auth
+      // For now, we'll simulate a successful login
+      const mockUser: AdminUser = {
+        uid: 'admin_123',
+        email,
+        displayName: 'Admin User',
+        photoURL: null,
+        isAdmin: true,
+        role: 'content-admin',
+        permissions: [
+          'seasons:create', 'seasons:read', 'seasons:update', 'seasons:delete',
+          'events:create', 'events:read', 'events:update', 'events:delete',
+          'locations:create', 'locations:read', 'locations:update', 'locations:delete',
+          'announcements:create', 'announcements:read', 'announcements:update', 'announcements:delete',
+        ],
+        lastLogin: new Date(),
+        isActive: true,
+      };
+
+      dispatch({ type: 'SET_CURRENT_USER', payload: mockUser });
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      return false;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  // Logout function
+  const logout = () => {
+    adminService.setCurrentUser(null);
+    dispatch({ type: 'LOGOUT' });
+  };
+
+  // Generic CRUD operations
+  const createEntity = async (entityType: EntityType, data: any): Promise<{ success: boolean; id?: string; error?: string }> => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
+
+      let result;
+      switch (entityType) {
+        case 'season':
+          result = await adminService.createSeason(data);
+          break;
+        case 'event':
+          result = await adminService.createEvent(data);
+          break;
+        case 'location':
+          result = await adminService.createLocation(data);
+          break;
+        case 'announcement':
+          result = await adminService.createAnnouncement(data);
+          break;
+        default:
+          throw new Error(`Unsupported entity type: ${entityType}`);
+      }
+
+      if (result.success) {
+        // Add to recent actions
+        const entityId = (result as any).seasonId || (result as any).eventId || (result as any).locationId || (result as any).announcementId || 'new';
+        dispatch({
+          type: 'ADD_RECENT_ACTION',
+          payload: {
+            id: `action_${Date.now()}`,
+            userId: state.currentUser?.uid || '',
+            userEmail: state.currentUser?.email || '',
+            action: 'create',
+            entityType,
+            entityId,
+            entityName: data.name || data.title || 'New Entity',
+            details: data,
+            timestamp: new Date(),
+            ipAddress: 'unknown',
+            userAgent: navigator.userAgent,
+            success: true,
+          }
+        });
+
+        // Refresh dashboard stats
+        await refreshDashboardStats();
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: result.error || 'Failed to create entity' });
+      }
+
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      return { success: false, error: errorMessage };
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  const updateEntity = async (entityType: EntityType, id: string, data: any): Promise<{ success: boolean; error?: string }> => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
+
+      let result;
+      switch (entityType) {
+        case 'season':
+          result = await adminService.updateSeason(id, data);
+          break;
+        case 'event':
+          result = await adminService.updateEvent(id, data);
+          break;
+        case 'location':
+          result = await adminService.updateLocation(id, data);
+          break;
+        case 'announcement':
+          result = await adminService.updateAnnouncement(id, data);
+          break;
+        default:
+          throw new Error(`Unsupported entity type: ${entityType}`);
+      }
+
+      if (result.success) {
+        // Add to recent actions
+        dispatch({
+          type: 'ADD_RECENT_ACTION',
+          payload: {
+            id: `action_${Date.now()}`,
+            userId: state.currentUser?.uid || '',
+            userEmail: state.currentUser?.email || '',
+            action: 'update',
+            entityType,
+            entityId: id,
+            entityName: data.name || data.title || 'Entity',
+            details: data,
+            timestamp: new Date(),
+            ipAddress: 'unknown',
+            userAgent: navigator.userAgent,
+            success: true,
+          }
+        });
+
+        // Refresh dashboard stats
+        await refreshDashboardStats();
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: result.error || 'Failed to update entity' });
+      }
+
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      return { success: false, error: errorMessage };
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  const deleteEntity = async (entityType: EntityType, id: string, reason?: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
+
+      let result;
+      switch (entityType) {
+        case 'season':
+          result = await adminService.deleteSeason(id, reason);
+          break;
+        case 'event':
+          result = await adminService.deleteEvent(id, reason);
+          break;
+        case 'location':
+          result = await adminService.deleteLocation(id, reason);
+          break;
+        case 'announcement':
+          result = await adminService.deleteAnnouncement(id, reason);
+          break;
+        default:
+          throw new Error(`Unsupported entity type: ${entityType}`);
+      }
+
+      if (result.success) {
+        // Add to recent actions
+        dispatch({
+          type: 'ADD_RECENT_ACTION',
+          payload: {
+            id: `action_${Date.now()}`,
+            userId: state.currentUser?.uid || '',
+            userEmail: state.currentUser?.email || '',
+            action: 'delete',
+            entityType,
+            entityId: id,
+            entityName: 'Deleted Entity',
+            details: { reason },
+            timestamp: new Date(),
+            ipAddress: 'unknown',
+            userAgent: navigator.userAgent,
+            success: true,
+          }
+        });
+
+        // Refresh dashboard stats
+        await refreshDashboardStats();
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: result.error || 'Failed to delete entity' });
+      }
+
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      return { success: false, error: errorMessage };
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  // Bulk operations
+  const bulkOperation = async (operation: AdminActionType, entityType: EntityType, entityIds: string[], options?: any): Promise<{ success: boolean; operationId?: string; error?: string }> => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
+
+      const result = await adminService.bulkOperation(operation, entityType, entityIds, options);
+
+      if (result.success) {
+        // Add to recent actions
+        dispatch({
+          type: 'ADD_RECENT_ACTION',
+          payload: {
+            id: `action_${Date.now()}`,
+            userId: state.currentUser?.uid || '',
+            userEmail: state.currentUser?.email || '',
+            action: operation,
+            entityType,
+            entityId: 'bulk',
+            entityName: `Bulk ${operation}`,
+            details: { entityIds, options },
+            timestamp: new Date(),
+            ipAddress: 'unknown',
+            userAgent: navigator.userAgent,
+            success: true,
+          }
+        });
+
+        // Refresh dashboard stats
+        await refreshDashboardStats();
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: result.error || 'Failed to perform bulk operation' });
+      }
+
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      return { success: false, error: errorMessage };
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  // Data operations
+  const exportData = async (options: any): Promise<{ success: boolean; downloadUrl?: string; error?: string }> => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
+
+      const result = await adminService.exportData(options);
+
+      if (!result.success) {
+        dispatch({ type: 'SET_ERROR', payload: result.error || 'Failed to export data' });
+      }
+
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      return { success: false, error: errorMessage };
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  const importData = async (options: any, file: File): Promise<{ success: boolean; operationId?: string; error?: string }> => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
+
+      const result = await adminService.importData(options, file);
+
+      if (result.success) {
+        // Add to recent actions
+        dispatch({
+          type: 'ADD_RECENT_ACTION',
+          payload: {
+            id: `action_${Date.now()}`,
+            userId: state.currentUser?.uid || '',
+            userEmail: state.currentUser?.email || '',
+            action: 'import',
+            entityType: options.entityType,
+            entityId: 'import',
+            entityName: 'Data Import',
+            details: { options, fileName: file.name },
+            timestamp: new Date(),
+            ipAddress: 'unknown',
+            userAgent: navigator.userAgent,
+            success: true,
+          }
+        });
+
+        // Refresh dashboard stats
+        await refreshDashboardStats();
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: result.error || 'Failed to import data' });
+      }
+
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      return { success: false, error: errorMessage };
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  // System operations
+  const refreshDashboardStats = async (): Promise<void> => {
+    try {
+      const stats = await adminService.getDashboardStats();
+      dispatch({ type: 'SET_DASHBOARD_STATS', payload: stats });
+    } catch (error) {
+      console.error('Failed to refresh dashboard stats:', error);
+    }
+  };
+
+  const refreshAuditLogs = async (): Promise<void> => {
+    try {
+      const logs = await adminService.getAuditLogs();
+      dispatch({ type: 'SET_AUDIT_LOGS', payload: logs });
+    } catch (error) {
+      console.error('Failed to refresh audit logs:', error);
+    }
+  };
+
+  const refreshSystemHealth = async (): Promise<void> => {
+    try {
+      const health = await adminService.getSystemHealth();
+      dispatch({ type: 'SET_SYSTEM_HEALTH', payload: health });
+    } catch (error) {
+      console.error('Failed to refresh system health:', error);
+    }
+  };
+
+  // Notifications
+  const addNotification = (type: 'info' | 'warning' | 'error' | 'success', title: string, message: string) => {
+    const notification = {
+      id: `notification_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type,
+      title,
+      message,
+      timestamp: new Date(),
+    };
+    dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
+
+    // Auto-remove info and success notifications after 5 seconds
+    if (type === 'info' || type === 'success') {
+      setTimeout(() => {
+        removeNotification(notification.id);
+      }, 5000);
+    }
+  };
+
+  const removeNotification = (id: string) => {
+    dispatch({ type: 'REMOVE_NOTIFICATION', payload: id });
+  };
+
+  // Error handling
+  const setError = (error: string) => {
+    dispatch({ type: 'SET_ERROR', payload: error });
+  };
+
+  const clearError = () => {
+    dispatch({ type: 'CLEAR_ERROR' });
+  };
+
+  // Context value
+  const contextValue: AdminContextType = {
+    state,
+    dispatch,
+    login,
+    logout,
+    hasPermission,
+    hasAnyPermission,
+    hasRole,
+    createEntity,
+    updateEntity,
+    deleteEntity,
+    bulkOperation,
+    exportData,
+    importData,
+    refreshDashboardStats,
+    refreshAuditLogs,
+    refreshSystemHealth,
+    addNotification,
+    removeNotification,
+    setError,
+    clearError,
+  };
+
+  return (
+    <AdminContext.Provider value={contextValue}>
+      {children}
+    </AdminContext.Provider>
+  );
+}
+
+// Custom hook to use admin context
+export function useAdmin() {
+  const context = useContext(AdminContext);
+  if (context === undefined) {
+    throw new Error('useAdmin must be used within an AdminProvider');
+  }
+  return context;
+}
+
+// Export the context for testing
+export { AdminContext };

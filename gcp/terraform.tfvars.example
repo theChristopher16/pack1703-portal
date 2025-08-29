@@ -1,0 +1,94 @@
+# Example Terraform Variables for GCP Infrastructure
+# Copy this file to terraform.tfvars and customize for your environment
+
+# Project Configuration
+project_id   = "pack1703-rsvp-prod"  # Replace with your GCP project ID
+project_name = "pack1703-rsvp"
+environment  = "prod"                 # dev, staging, or prod
+region       = "us-central1"
+
+# Domain Configuration
+domains = [
+  "sfpack1703.com",
+  "smithstation.io"
+]
+
+# Firestore Configuration
+firestore_location = "us-central"     # Multi-region for better performance
+
+# Cloud Functions Configuration
+function_runtime      = "nodejs20"
+function_memory       = "256Mi"       # 128Mi, 256Mi, 512Mi, 1Gi, 2Gi, 4Gi, 8Gi
+function_timeout      = 60            # seconds (1-540)
+function_min_instances = 1            # Keep warm for production
+function_max_instances = 100          # Auto-scale limit
+
+# Storage Configuration
+storage_class             = "STANDARD"    # STANDARD, NEARLINE, COLDLINE, ARCHIVE
+storage_lifecycle_age_days = 30          # Days before moving to cheaper storage
+storage_versioning_enabled = true        # Enable versioning for backups
+
+# Background Processing
+scheduler_timezone = "America/New_York"   # Timezone for scheduled jobs
+
+# Security Configuration
+app_check_enabled = true                  # Enable reCAPTCHA v3 in production
+
+# Monitoring Configuration
+notification_email  = "cubmaster@sfpack1703.com"
+cost_budget_amount  = 5.00               # USD per month
+
+# Secrets Configuration (sensitive data)
+secrets_config = {
+  "recaptcha-v3-site-key" = {
+    secret_data = "your-recaptcha-v3-site-key-here"
+    labels = {
+      type = "recaptcha"
+      env  = "prod"
+    }
+  }
+  "recaptcha-v3-secret-key" = {
+    secret_data = "your-recaptcha-v3-secret-key-here"
+    labels = {
+      type = "recaptcha"
+      env  = "prod"
+    }
+  }
+  "zoho-mail-config" = {
+    secret_data = jsonencode({
+      smtp_host     = "smtp.zoho.com"
+      smtp_port     = "587"
+      smtp_username = "cubmaster@sfpack1703.com"
+      smtp_password = "your-zoho-app-password"
+    })
+    labels = {
+      type = "email"
+      env  = "prod"
+    }
+  }
+}
+
+# Feature Flags
+enable_monitoring    = true
+enable_backup       = true
+enable_audit_logging = true
+
+# Additional Labels
+additional_labels = {
+  owner       = "pack1703"
+  cost_center = "scouting"
+  managed_by  = "opentofu"
+}
+
+# Environment-specific overrides
+use_environment_defaults = true
+
+# Development Environment Example
+# Uncomment and modify for dev environment:
+#
+# project_id   = "pack1703-rsvp-dev"
+# environment  = "dev"
+# function_min_instances = 0      # No warm instances for dev
+# function_max_instances = 10     # Lower limit for dev
+# cost_budget_amount     = 2.00   # Lower budget for dev
+# app_check_enabled      = false  # Disable App Check for dev testing

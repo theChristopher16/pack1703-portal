@@ -1,0 +1,41 @@
+/* App-specific styles using Tailwind utilities */
+.App {
+  @apply min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30;
+}
+
+/* Enhanced header styles */
+.header-enhanced {
+  @apply bg-white/90 backdrop-blur-md shadow-soft border-b border-gray-200/50;
+}
+
+/* Enhanced navigation styles */
+.nav-enhanced {
+  @apply transition-all duration-300 hover:scale-105 hover:shadow-glow;
+}
+
+/* Enhanced button styles */
+.btn-enhanced {
+  @apply transform transition-all duration-300 hover:-translate-y-1 hover:scale-105;
+}
+
+/* Enhanced card styles */
+.card-enhanced {
+  @apply transition-all duration-300 hover:-translate-y-2 hover:shadow-glow;
+}
+
+/* Solar-punk accent elements */
+.solar-accent {
+  @apply bg-gradient-to-r from-primary-400 to-secondary-500;
+}
+
+.tech-accent {
+  @apply bg-gradient-to-r from-accent-400 to-secondary-500;
+}
+
+.adventure-accent {
+  @apply bg-gradient-to-r from-primary-400 to-accent-500;
+}
+
+.earth-accent {
+  @apply bg-gradient-to-r from-gray-600 to-secondary-500;
+}

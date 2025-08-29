@@ -1,0 +1,147 @@
+// Service Worker for Pack 1703 Families Portal
+const CACHE_NAME = 'pack-1703-v1';
+const STATIC_CACHE = 'pack-1703-static-v1';
+const DYNAMIC_CACHE = 'pack-1703-dynamic-v1';
+
+// Files to cache immediately
+const STATIC_FILES = [
+  '/',
+  '/static/js/main.d0edb582.js',
+  '/static/css/main.1b1a1232.css',
+  '/manifest.json',
+  '/favicon.ico'
+];
+
+// Install event - cache static files
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(STATIC_CACHE)
+      .then((cache) => {
+        console.log('Opened cache');
+        return cache.addAll(STATIC_FILES);
+      })
+  );
+});
+
+// Activate event - clean up old caches
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
+            console.log('Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
+
+// Fetch event - serve from cache when offline
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
+    return;
+  }
+
+  // Handle different types of requests
+  if (request.destination === 'document') {
+    // HTML pages - try network first, fallback to cache
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Cache successful responses
+          if (response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(DYNAMIC_CACHE).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cache
+          return caches.match(request);
+        })
+    );
+  } else if (request.destination === 'image' || request.destination === 'style' || request.destination === 'script') {
+    // Static assets - cache first, fallback to network
+    event.respondWith(
+      caches.match(request)
+        .then((response) => {
+          if (response) {
+            return response;
+          }
+          return fetch(request).then((response) => {
+            if (response.status === 200) {
+              const responseClone = response.clone();
+              caches.open(DYNAMIC_CACHE).then((cache) => {
+                cache.put(request, responseClone);
+              });
+            }
+            return response;
+          });
+        })
+    );
+  } else if (request.url.includes('/api/') || request.url.includes('/functions/')) {
+    // API calls - network first, no caching
+    event.respondWith(
+      fetch(request)
+        .catch(() => {
+          // Return offline response for API calls
+          return new Response(
+            JSON.stringify({ error: 'Offline - Please check your connection' }),
+            { 
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
+        })
+    );
+  }
+});
+
+// Background sync for offline form submissions
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'background-sync') {
+    event.waitUntil(
+      // Process any queued offline submissions
+      processOfflineSubmissions()
+    );
+  }
+});
+
+// Process offline submissions when back online
+async function processOfflineSubmissions() {
+  try {
+    const offlineData = await getOfflineSubmissions();
+    for (const submission of offlineData) {
+      await submitToServer(submission);
+      await removeOfflineSubmission(submission.id);
+    }
+  } catch (error) {
+    console.error('Error processing offline submissions:', error);
+  }
+}
+
+// Helper functions for offline functionality
+async function getOfflineSubmissions() {
+  // This would typically use IndexedDB or localStorage
+  // For now, return empty array
+  return [];
+}
+
+async function submitToServer(submission) {
+  // Submit the offline submission to the server
+  // Implementation depends on your API structure
+}
+
+async function removeOfflineSubmission(id) {
+  // Remove the processed offline submission
+  // Implementation depends on your storage method
+}

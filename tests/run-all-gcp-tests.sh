@@ -1,0 +1,246 @@
+#!/bin/bash
+
+# Master GCP Migration Validation Test Runner
+# This script orchestrates and runs all GCP migration validation tests
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+NC='\033[0m' # No Color
+
+# Test results tracking
+TOTAL_TESTS=0
+PASSED_TESTS=0
+FAILED_TESTS=0
+SKIPPED_TESTS=0
+
+# Logging function
+log() {
+    echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"
+}
+
+success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
+
+error() {
+    echo -e "${RED}❌ $1${NC}"
+}
+
+warning() {
+    echo -e "${YELLOW}⚠️  $1${NC}"
+}
+
+info() {
+    echo -e "${PURPLE}ℹ️  $1${NC}"
+}
+
+# Header
+echo "=========================================="
+echo "GCP Migration Validation Test Suite"
+echo "=========================================="
+echo "This script will run comprehensive tests to validate your GCP migration"
+echo ""
+
+# Check prerequisites
+log "Checking prerequisites..."
+
+# Check if gcloud is available
+if ! command -v gcloud &> /dev/null; then
+    error "gcloud CLI not found. Please install Google Cloud SDK."
+    exit 1
+fi
+
+# Check if gcloud is authenticated
+if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q .; then
+    error "gcloud not authenticated. Please run 'gcloud auth login'"
+    exit 1
+fi
+
+# Check if curl is available
+if ! command -v curl &> /dev/null; then
+    error "curl not found. Please install curl."
+    exit 1
+fi
+
+# Check if bc is available for calculations
+if ! command -v bc &> /dev/null; then
+    warning "bc not found. Some calculations may fail. Please install bc."
+fi
+
+success "Prerequisites check completed"
+echo ""
+
+# Get current project
+PROJECT_ID=$(gcloud config get-value project 2>/dev/null || echo "")
+if [ -z "$PROJECT_ID" ]; then
+    error "No GCP project set. Please run 'gcloud config set project <PROJECT_ID>'"
+    exit 1
+fi
+
+log "Using GCP project: $PROJECT_ID"
+echo ""
+
+# Function to run a test phase
+run_test_phase() {
+    local phase_name="$1"
+    local script_path="$2"
+    local description="$3"
+    
+    echo "=========================================="
+    echo "Phase: $phase_name"
+    echo "=========================================="
+    echo "$description"
+    echo ""
+    
+    if [ -f "$script_path" ]; then
+        log "Running $script_path..."
+        
+        # Run the test script
+        if bash "$script_path"; then
+            success "$phase_name completed successfully"
+            ((PASSED_TESTS++))
+        else
+            error "$phase_name failed"
+            ((FAILED_TESTS++))
+        fi
+    else
+        error "Test script not found: $script_path"
+        ((FAILED_TESTS++))
+    fi
+    
+    ((TOTAL_TESTS++))
+    echo ""
+}
+
+# Function to generate test report
+generate_report() {
+    local report_file="gcp-migration-test-report-$(date +%Y%m%d-%H%M%S).md"
+    
+    echo "# GCP Migration Validation Test Report" > "$report_file"
+    echo "" >> "$report_file"
+    echo "**Generated:** $(date)" >> "$report_file"
+    echo "**Project:** $PROJECT_ID" >> "$report_file"
+    echo "" >> "$report_file"
+    
+    echo "## Test Summary" >> "$report_file"
+    echo "- **Total Tests:** $TOTAL_TESTS" >> "$report_file"
+    echo "- **Passed:** $PASSED_TESTS" >> "$report_file"
+    echo "- **Failed:** $FAILED_TESTS" >> "$report_file"
+    echo "- **Skipped:** $SKIPPED_TESTS" >> "$report_file"
+    echo "" >> "$report_file"
+    
+    if [ $FAILED_TESTS -eq 0 ]; then
+        echo "## Result: ✅ SUCCESS" >> "$report_file"
+        echo "All GCP migration validation tests passed!" >> "$report_file"
+    else
+        echo "## Result: ❌ FAILED" >> "$report_file"
+        echo "Some tests failed. Please review the issues above." >> "$report_file"
+    fi
+    
+    echo "" >> "$report_file"
+    echo "## Test Phases" >> "$report_file"
+    echo "1. **Infrastructure Validation** - Verified GCP resources deployment" >> "$report_file"
+    echo "2. **Cloud Functions Testing** - Validated API functionality" >> "$report_file"
+    echo "3. **React App Testing** - Confirmed application deployment" >> "$report_file"
+    echo "4. **Cost & Performance Analysis** - Analyzed efficiency and costs" >> "$report_file"
+    echo "" >> "$report_file"
+    
+    echo "## Next Steps" >> "$report_file"
+    if [ $FAILED_TESTS -eq 0 ]; then
+        echo "- Your GCP migration is successful!" >> "$report_file"
+        echo "- Monitor costs and performance over the next month" >> "$report_file"
+        echo "- Set up regular automated testing" >> "$report_file"
+    else
+        echo "- Review and fix failed tests" >> "$report_file"
+        echo "- Re-run the test suite after fixes" >> "$report_file"
+        echo "- Contact support if issues persist" >> "$report_file"
+    fi
+    
+    echo "" >> "$report_file"
+    echo "---" >> "$report_file"
+    echo "*Report generated by GCP Migration Validation Test Suite*" >> "$report_file"
+    
+    info "Test report generated: $report_file"
+}
+
+# Main test execution
+log "Starting GCP migration validation tests..."
+echo ""
+
+# Phase 1: Infrastructure Validation
+run_test_phase \
+    "Infrastructure Validation" \
+    "tests/gcp-infrastructure-tests.sh" \
+    "This phase validates that all GCP resources have been deployed successfully, including Firebase project, Firestore database, Cloud Storage buckets, Cloud Functions service accounts, monitoring, and billing configuration."
+
+# Phase 2: Cloud Functions Testing
+run_test_phase \
+    "Cloud Functions Testing" \
+    "tests/deploy-and-test-cloud-functions.sh" \
+    "This phase deploys Cloud Functions and tests their functionality, including API endpoints, data validation, error handling, and basic load testing."
+
+# Phase 3: React App Testing
+run_test_phase \
+    "React App Testing" \
+    "tests/deploy-and-test-react-app.sh" \
+    "This phase deploys the React app to Firebase Hosting and tests its functionality, including page loads, user workflows, performance, browser compatibility, and security."
+
+# Phase 4: Cost & Performance Analysis
+run_test_phase \
+    "Cost & Performance Analysis" \
+    "tests/cost-performance-analysis.sh" \
+    "This phase analyzes GCP costs, resource utilization, and compares performance with the previous VM-based infrastructure."
+
+# Generate final report
+echo "=========================================="
+echo "Test Suite Complete"
+echo "=========================================="
+echo ""
+
+# Summary
+echo "## Test Results Summary"
+echo "- **Total Tests:** $TOTAL_TESTS"
+echo -e "- **Passed:** ${GREEN}$PASSED_TESTS${NC}"
+echo -e "- **Failed:** ${RED}$FAILED_TESTS${NC}"
+echo -e "- **Skipped:** ${YELLOW}$SKIPPED_TESTS${NC}"
+echo ""
+
+# Final verdict
+if [ $FAILED_TESTS -eq 0 ]; then
+    echo -e "${GREEN}🎉 CONGRATULATIONS! All GCP migration validation tests passed!${NC}"
+    echo ""
+    echo "Your migration from VM-based infrastructure to GCP serverless architecture is successful."
+    echo "The system is now running on Google Cloud Platform with improved scalability and cost efficiency."
+    echo ""
+    echo "Next steps:"
+    echo "1. Monitor costs and performance over the next month"
+    echo "2. Set up regular automated testing"
+    echo "3. Consider implementing CI/CD pipelines"
+    echo "4. Document any custom configurations for your team"
+    
+    # Generate success report
+    generate_report
+    
+    exit 0
+else
+    echo -e "${RED}❌ Some tests failed. Please review the issues above.${NC}"
+    echo ""
+    echo "The GCP migration may not be complete or may have issues that need attention."
+    echo ""
+    echo "Next steps:"
+    echo "1. Review the failed test outputs above"
+    echo "2. Fix any configuration or deployment issues"
+    echo "3. Re-run the test suite after fixes"
+    echo "4. Contact support if issues persist"
+    
+    # Generate failure report
+    generate_report
+    
+    exit 1
+fi

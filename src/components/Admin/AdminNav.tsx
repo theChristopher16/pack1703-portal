@@ -30,14 +30,16 @@ const AdminNav: React.FC = () => {
   }
 
   return (
-    <div className="bg-white shadow-sm border-b border-gray-200 w-full">
+    <div className="bg-white shadow-lg border-b border-gray-200 w-full">
       {/* Main Navigation Bar */}
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Left side - Title and primary nav */}
           <div className="flex items-center space-x-4">
             <div className="flex-shrink-0">
-              <h1 className="text-lg font-semibold text-gray-900">Admin Panel</h1>
+              <h1 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Admin Panel
+              </h1>
             </div>
             
             {/* Primary navigation - most important items */}
@@ -46,10 +48,10 @@ const AdminNav: React.FC = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                     location.pathname === item.path
-                      ? 'bg-primary-100 text-primary-700 border border-primary-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm'
                   }`}
                 >
                   <span className="mr-2">{item.icon}</span>
@@ -60,7 +62,7 @@ const AdminNav: React.FC = () => {
               {/* More menu button for secondary items */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm rounded-md transition-all duration-200"
               >
                 <Menu className="w-4 h-4 mr-1" />
                 More
@@ -70,7 +72,7 @@ const AdminNav: React.FC = () => {
             {/* Mobile hamburger menu */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+              className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-colors"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -84,7 +86,7 @@ const AdminNav: React.FC = () => {
             </div>
             <button
               onClick={logout}
-              className="bg-red-500 text-white px-4 py-2 rounded-md text-sm hover:bg-red-600 transition-colors"
+              className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-md text-sm hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-sm hover:shadow-md"
             >
               Logout
             </button>
@@ -94,7 +96,7 @@ const AdminNav: React.FC = () => {
 
       {/* Dropdown menu for secondary items */}
       {mobileMenuOpen && (
-        <div className="border-t border-gray-200 bg-white">
+        <div className="border-t border-gray-200 bg-white shadow-lg">
           <div className="px-4 py-3">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {[...primaryNavItems, ...secondaryNavItems].map((item) => (
@@ -102,10 +104,10 @@ const AdminNav: React.FC = () => {
                   key={item.path}
                   to={item.path}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                     location.pathname === item.path
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
                   <span className="mr-2">{item.icon}</span>

@@ -96,13 +96,23 @@ else
     fail "Firebase project does not exist"
 fi
 
-# Test 5: Firebase Web Apps (skip for now)
+# Test 5: Firebase Web Apps
 log "Test 5: Firebase Web Apps"
-skip "Firebase web apps not deployed yet"
+WEB_APPS=$(firebase hosting:sites:list 2>/dev/null | grep -c "App ID" || echo "0")
+if [ "$WEB_APPS" -gt 0 ]; then
+    pass "Firebase web apps found: $WEB_APPS"
+else
+    skip "Firebase web apps not deployed yet"
+fi
 
-# Test 6: Firebase Hosting Sites (skip for now)
+# Test 6: Firebase Hosting Sites
 log "Test 6: Firebase Hosting Sites"
-skip "Firebase hosting sites not deployed yet"
+HOSTING_SITES=$(firebase hosting:sites:list 2>/dev/null | grep -c "web.app" || echo "0")
+if [ "$HOSTING_SITES" -gt 0 ]; then
+    pass "Firebase hosting sites found: $HOSTING_SITES"
+else
+    fail "No Firebase hosting sites found"
+fi
 
 # Test 7: Firestore Database
 log "Test 7: Firestore Database"

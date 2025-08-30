@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Pin, Calendar, Filter, Search, Plus, Clock, User, Tag, MessageSquare, TrendingUp, Star } from 'lucide-react';
+import { Bell, Pin, TrendingUp, Star, MessageSquare, Clock } from 'lucide-react';
 import { firestoreService } from '../services/firestore';
 import { AnnouncementCard, AnnouncementFeed } from '../components/Announcements';
 import { Announcement } from '../types/firestore';
@@ -34,8 +34,20 @@ const AnnouncementsPage: React.FC = () => {
   };
 
   const handlePinToggle = (announcementId: string, pinned: boolean) => {
-    // In a real app, this would update the database
+    // Update the local state immediately for responsive UI
+    setAnnouncements(prev => 
+      prev.map(announcement => 
+        announcement.id === announcementId 
+          ? { ...announcement, pinned } 
+          : announcement
+      )
+    );
+    
+    // TODO: In a real app, this would update the database
     console.log(`Toggling pin for announcement ${announcementId} to ${pinned}`);
+    
+    // If you want to persist to Firestore, you would call:
+    // firestoreService.updateAnnouncement(announcementId, { pinned });
   };
 
   const pinnedCount = announcements.filter(a => a.pinned).length;

@@ -2,12 +2,78 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // ============================================================================
-    // TESTING RULES - Allow all operations for testing
+    // PRODUCTION RULES - Secure access control
     // ============================================================================
     
-    // Allow all operations for testing purposes
+    // Allow authenticated users to read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow public read access to events and announcements
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Allow public read access to locations (no authentication required)
+    match /locations/{locationId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Allow public read access to seasons
+    match /seasons/{seasonId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Allow public read access to packing lists and resources
+    match /lists/{listId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Allow public read access to volunteer needs
+    match /volunteer-needs/{needId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Allow public read access to volunteer signups (but only show user's own)
+    match /volunteer-signups/{signupId} {
+      allow read: if true; // Will filter by user in the app
+      allow create: if true; // Allow anyone to sign up
+      allow update, delete: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Allow public read access to feedback submissions (but only show user's own)
+    match /feedback/{submissionId} {
+      allow read: if true; // Will filter by user in the app
+      allow create: if true; // Allow anyone to submit feedback
+      allow update, delete: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Allow public read access to RSVP submissions (but only show user's own)
+    match /rsvps/{rsvpId} {
+      allow read: if true; // Will filter by user in the app
+      allow create: if true; // Allow anyone to RSVP
+      allow update, delete: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Admin-only collections
+    match /admin/{document=**} {
+      allow read, write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Fallback: deny all other access
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

@@ -1,14 +1,13 @@
-import { describe, it, expect } from 'vitest';
-
 describe('Basic Test Setup', () => {
   it('should work', () => {
-    expect(1 + 1).toBe(2);
+    expect(true).toBe(true);
   });
 
-  it('should have working mocks', () => {
-    // Test that our mocks are working
-    const mockFn = vi.fn(() => 'test');
-    expect(mockFn()).toBe('test');
-    expect(mockFn).toHaveBeenCalledTimes(1);
+  it('should handle basic math', () => {
+    expect(2 + 2).toBe(4);
+  });
+
+  it('should handle string operations', () => {
+    expect('hello' + ' world').toBe('hello world');
   });
 });

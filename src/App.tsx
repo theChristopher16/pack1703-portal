@@ -25,6 +25,8 @@ import EventDetailPage from './pages/EventDetailPage';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminEvents from './pages/AdminEvents';
+import AdminLocations from './pages/AdminLocations';
+import AdminAnnouncements from './pages/AdminAnnouncements';
 import { AdminProvider } from './contexts/AdminContext';
 
 // Styles
@@ -70,8 +72,8 @@ function App() {
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
           <Route path="/admin/events" element={<AdminLayout><AdminEvents /></AdminLayout>} />
-          <Route path="/admin/locations" element={<AdminLayout><div className="max-w-7xl mx-auto px-4 py-8"><h1 className="text-2xl font-bold text-gray-900">Admin Locations - Coming Soon</h1></div></AdminLayout>} />
-          <Route path="/admin/announcements" element={<AdminLayout><div className="max-w-7xl mx-auto px-4 py-8"><h1 className="text-2xl font-bold text-gray-900">Admin Announcements - Coming Soon</h1></div></AdminLayout>} />
+          <Route path="/admin/locations" element={<AdminLayout><AdminLocations /></AdminLayout>} />
+          <Route path="/admin/announcements" element={<AdminLayout><AdminAnnouncements /></AdminLayout>} />
           <Route path="/admin/lists" element={<AdminLayout><div className="max-w-7xl mx-auto px-4 py-8"><h1 className="text-2xl font-bold text-gray-900">Admin Lists - Coming Soon</h1></div></AdminLayout>} />
           <Route path="/admin/volunteer" element={<AdminLayout><div className="max-w-7xl mx-auto px-4 py-8"><h1 className="text-2xl font-bold text-gray-900">Admin Volunteer - Coming Soon</h1></div></AdminLayout>} />
           <Route path="/admin/seasons" element={<AdminLayout><div className="max-w-7xl mx-auto px-4 py-8"><h1 className="text-2xl font-bold text-gray-900">Admin Seasons - Coming Soon</h1></div></AdminLayout>} />

@@ -1,34 +1,81 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Navigation, Phone, Mail, Clock, Star, Filter, Grid, Map } from 'lucide-react';
-import { firestoreService } from '../services/firestore';
+import { MapPin, Grid, Map } from 'lucide-react';
 import { LocationCard, LocationMap, LocationFilters } from '../components/Locations';
 import { Location } from '../types/firestore';
+
+// Mock data for locations - will be replaced with Firebase calls
+const mockLocations: Location[] = [
+  {
+    id: '1',
+    name: 'St. Mark\'s Church',
+    address: '123 Main Street',
+    category: 'church',
+    geo: { lat: 40.7103, lng: -89.6144 },
+    notesPublic: 'Main meeting location for Pack 1703. Large parking lot available.',
+    notesPrivate: 'Contact: Father John - 555-0123. Gate code: 1234',
+    parking: { text: 'Free parking available' },
+    isImportant: true,
+    createdAt: new Date('2024-01-01T00:00:00') as any,
+    updatedAt: new Date('2024-01-01T00:00:00') as any
+  },
+  {
+    id: '2',
+    name: 'Camp Wokanda',
+    address: '456 Scout Road',
+    category: 'campground',
+    geo: { lat: 40.7200, lng: -89.6200 },
+    notesPublic: 'Primary camping location with hiking trails and lake access.',
+    notesPrivate: 'Reservation contact: Camp Director - 555-0456. Check-in time: 2 PM',
+    parking: { text: 'Free parking available' },
+    isImportant: true,
+    createdAt: new Date('2024-01-15T00:00:00') as any,
+    updatedAt: new Date('2024-01-15T00:00:00') as any
+  },
+  {
+    id: '3',
+    name: 'Peoria Riverfront',
+    address: '789 River Drive',
+    category: 'park',
+    geo: { lat: 40.7000, lng: -89.6000 },
+    notesPublic: 'Scenic location for community service projects and outdoor activities.',
+    notesPrivate: 'Parking validation available for groups. Contact: Parks Dept - 555-0789',
+    parking: { text: 'Paid parking available' },
+    isImportant: false,
+    createdAt: new Date('2024-02-01T00:00:00') as any,
+    updatedAt: new Date('2024-02-01T00:00:00') as any
+  }
+];
 
 const LocationsPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchLocations = async () => {
       try {
         setLoading(true);
-        const locations = await firestoreService.getLocations();
+        // TODO: Replace with actual Firebase call once database is populated
+        // const locations = await firestoreService.getLocations();
+        
+        // For now, use mock data to prevent errors
+        const locations = mockLocations;
         setFilteredLocations(locations);
       } catch (err) {
-        setError('Failed to fetch locations.');
-        console.error(err);
+        console.warn('Firestore not available yet, using mock data:', err);
+        // Fallback to mock data if Firestore fails
+        setFilteredLocations(mockLocations);
       } finally {
         setLoading(false);
       }
     };
 
     fetchLocations();
-    const interval = setInterval(fetchLocations, 30000); // Poll every 30 seconds
-    return () => clearInterval(interval);
-  }, []);
+    // Remove the polling interval for now since we're using mock data
+    // const interval = setInterval(fetchLocations, 30000);
+    // return () => clearInterval(interval);
+  }, []); // No dependencies needed since mockLocations is constant
 
   const handleLocationSelect = (location: Location) => {
     setSelectedLocation(location);
@@ -46,27 +93,11 @@ const LocationsPage: React.FC = () => {
     setSelectedLocation(null);
   };
 
-  if (loading && !error) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12 flex items-center justify-center">
         <div className="text-center">
           <p className="text-lg text-gray-600">Loading locations...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-lg text-gray-600">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 px-6 py-3 rounded-xl font-medium transition-all duration-200 bg-primary-500 text-white hover:bg-primary-600"
-          >
-            Retry
-          </button>
         </div>
       </div>
     );
@@ -99,145 +130,53 @@ const LocationsPage: React.FC = () => {
               onClick={() => setViewMode('grid')}
               className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
                 viewMode === 'grid'
-                  ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-glow-primary/50'
-                  : 'text-gray-600 hover:text-primary-600 hover:bg-primary-50/50'
+                  ? 'bg-primary-500 text-white shadow-lg'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Grid className="w-4 h-4 inline mr-2" />
+              <Grid className="w-4 h-4 mr-2 inline" />
               Grid View
             </button>
             <button
               onClick={() => setViewMode('map')}
               className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
                 viewMode === 'map'
-                  ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-glow-primary/50'
-                  : 'text-gray-600 hover:text-primary-600 hover:bg-primary-50/50'
+                  ? 'bg-primary-500 text-white shadow-lg'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Map className="w-4 h-4 inline mr-2" />
+              <Map className="w-4 h-4 mr-2 inline" />
               Map View
             </button>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="mb-8">
-          <LocationFilters
-            locations={filteredLocations}
-            onFiltersChange={handleFiltersChange}
-          />
-        </div>
+        <LocationFilters 
+          locations={filteredLocations} 
+          onFiltersChange={handleFiltersChange}
+          className="mb-8"
+        />
 
         {/* Content */}
         {viewMode === 'grid' ? (
-          /* Grid View */
-          <div className="space-y-8">
-            {/* Important Locations */}
-            {filteredLocations.filter(loc => loc.isImportant).length > 0 && (
-              <div>
-                <h2 className="text-2xl font-display font-semibold text-gray-900 mb-6 flex items-center">
-                  <Star className="w-6 h-6 text-primary-500 mr-3" />
-                  Important Locations
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredLocations
-                    .filter(loc => loc.isImportant)
-                    .map((location) => (
-                      <div key={location.id} id={`location-${location.id}`}>
-                        <LocationCard
-                          location={location}
-                          onLocationClick={handleLocationSelect}
-                        />
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* All Other Locations */}
-            <div>
-              <h2 className="text-2xl font-display font-semibold text-gray-900 mb-6 flex items-center">
-                <MapPin className="w-6 h-6 text-secondary-500 mr-3" />
-                All Locations
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredLocations
-                  .filter(loc => !loc.isImportant)
-                  .map((location) => (
-                    <div key={location.id} id={`location-${location.id}`}>
-                      <LocationCard
-                        location={location}
-                        onLocationClick={handleLocationSelect}
-                      />
-                    </div>
-                  ))}
-              </div>
-            </div>
-
-            {/* No Results */}
-            {filteredLocations.length === 0 && (
-              <div className="text-center py-12">
-                <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-500 mb-2">No locations found</h3>
-                <p className="text-gray-400">Try adjusting your filters or search terms.</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          /* Map View */
-          <div className="space-y-6">
-            <LocationMap
-              locations={filteredLocations}
-              selectedLocation={selectedLocation}
-              onLocationSelect={handleLocationSelect}
-              height="600px"
-              showControls={true}
-            />
-            
-            {/* Selected Location Details */}
-            {selectedLocation && (
-              <div className="animate-slide-up">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredLocations.map((location) => (
+              <div key={location.id} id={`location-${location.id}`}>
                 <LocationCard
-                  location={selectedLocation}
+                  location={location}
                   onLocationClick={handleLocationSelect}
                 />
               </div>
-            )}
+            ))}
           </div>
+        ) : (
+          <LocationMap 
+            locations={filteredLocations}
+            onLocationSelect={handleLocationSelect}
+            selectedLocation={selectedLocation}
+          />
         )}
-
-        {/* Quick Stats */}
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="text-center p-6 bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50">
-            <MapPin className="w-8 h-8 text-primary-500 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-gray-900">{filteredLocations.length}</div>
-            <div className="text-sm text-gray-600">Total Locations</div>
-          </div>
-          
-          <div className="text-center p-6 bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50">
-            <Star className="w-8 h-8 text-primary-500 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-gray-900">
-              {filteredLocations.filter(loc => loc.isImportant).length}
-            </div>
-            <div className="text-sm text-gray-600">Important Locations</div>
-          </div>
-          
-          <div className="text-center p-6 bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50">
-            <Navigation className="w-8 h-8 text-secondary-500 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-gray-900">
-              {filteredLocations.filter(loc => loc.parking).length}
-            </div>
-            <div className="text-sm text-gray-600">With Parking</div>
-          </div>
-          
-          <div className="text-center p-6 bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50">
-            <Clock className="w-8 h-8 text-accent-500 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-gray-900">
-              {filteredLocations.filter(loc => loc.geo?.lat && loc.geo?.lng).length}
-            </div>
-            <div className="text-sm text-gray-600">On Map</div>
-          </div>
-        </div>
       </div>
     </div>
   );

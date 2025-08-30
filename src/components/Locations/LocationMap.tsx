@@ -1,75 +1,159 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { Icon, LatLngBounds } from 'leaflet';
-import { Navigation, ExternalLink } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { MapPin, Navigation, Phone, Mail, Clock, Star } from 'lucide-react';
 import { Location } from '../../types/firestore';
-import 'leaflet/dist/leaflet.css';
-
-// Fix for default markers in react-leaflet
-delete (Icon.Default.prototype as any)._getIconUrl;
-Icon.Default.mergeOptions({
-  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-  iconUrl: require('leaflet/dist/images/marker-icon.png'),
-  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
-});
 
 interface LocationMapProps {
   locations: Location[];
-  selectedLocation?: Location | null;
-  onLocationSelect?: (location: Location) => void;
+  onLocationSelect: (location: Location) => void;
+  selectedLocation: Location | null;
   height?: string;
   showControls?: boolean;
-  className?: string;
 }
-
-// Component to handle map bounds updates
-const MapBoundsUpdater: React.FC<{ locations: Location[] }> = ({ locations }) => {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (locations.length > 0) {
-      const validLocations = locations.filter(loc => loc.geo?.lat && loc.geo?.lng);
-      if (validLocations.length > 0) {
-        const bounds = new LatLngBounds([]);
-        validLocations.forEach(location => {
-          bounds.extend([location.geo!.lat, location.geo!.lng]);
-        });
-        
-        map.fitBounds(bounds, { padding: [20, 20] });
-      }
-    }
-  }, [locations, map]);
-  
-  return null;
-};
 
 const LocationMap: React.FC<LocationMapProps> = ({
   locations,
-  selectedLocation,
   onLocationSelect,
-  height = '400px',
-  showControls = true,
-  className = ''
+  selectedLocation,
+  height = '600px',
+  showControls = true
 }) => {
-  const mapRef = useRef<any>(null);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([39.8283, -98.5795]); // Center of USA
-  const [zoom, setZoom] = useState(4);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+  const leafletRef = useRef<any>(null); // Store Leaflet instance
 
-  // Set initial center based on locations
   useEffect(() => {
-    if (locations.length > 0) {
-      const validLocations = locations.filter(loc => loc.geo?.lat && loc.geo?.lng);
-      if (validLocations.length > 0) {
-        const firstLocation = validLocations[0];
-        setMapCenter([firstLocation.geo!.lat, firstLocation.geo!.lng]);
-        setZoom(12);
+    // Dynamically import Leaflet to avoid SSR issues
+    const initMap = async () => {
+      try {
+        const L = await import('leaflet');
+        leafletRef.current = L; // Store Leaflet instance
+        
+        // Import Leaflet CSS
+        if (!document.querySelector('link[href*="leaflet.css"]')) {
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+          link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+          link.crossOrigin = '';
+          document.head.appendChild(link);
+        }
+
+        if (!mapRef.current || mapInstanceRef.current) return;
+
+        // Initialize map
+        const map = L.map(mapRef.current).setView([40.7103, -89.6144], 11);
+        mapInstanceRef.current = map;
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Add markers for each location
+        const markers: any[] = [];
+        locations.forEach((location) => {
+          if (location.geo?.lat && location.geo?.lng) {
+            const marker = L.marker([location.geo.lat, location.geo.lng])
+              .addTo(map)
+              .bindPopup(createPopupContent(location))
+              .on('click', () => onLocationSelect(location));
+
+            markers.push(marker);
+          }
+        });
+        markersRef.current = markers;
+
+        // Fit map to show all markers
+        if (markers.length > 0) {
+          const group = new (L as any).featureGroup(markers);
+          map.fitBounds(group.getBounds().pad(0.1));
+        }
+
+      } catch (error) {
+        console.error('Failed to load map:', error);
+        // Fallback to static map display
+        showStaticMap();
+      }
+    };
+
+    initMap();
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, [locations, onLocationSelect]);
+
+  // Update selected location marker
+  useEffect(() => {
+    if (mapInstanceRef.current && selectedLocation && leafletRef.current) {
+      const L = leafletRef.current;
+      
+      // Remove previous selection styling
+      markersRef.current.forEach(marker => {
+        marker.setIcon(L.Icon.Default.prototype);
+      });
+
+      // Highlight selected location
+      const selectedMarker = markersRef.current.find(marker => {
+        const pos = marker.getLatLng();
+        return pos.lat === selectedLocation.geo?.lat && pos.lng === selectedLocation.geo?.lng;
+      });
+
+      if (selectedMarker) {
+        const customIcon = L.divIcon({
+          className: 'custom-marker selected',
+          html: '<div class="marker-pin selected"></div>',
+          iconSize: [30, 30],
+          iconAnchor: [15, 30]
+        });
+        selectedMarker.setIcon(customIcon);
+        
+        // Center map on selected location
+        mapInstanceRef.current.setView([selectedLocation.geo!.lat, selectedLocation.geo!.lng], 14);
       }
     }
-  }, [locations]);
+  }, [selectedLocation]);
 
-  const handleMarkerClick = (location: Location) => {
-    if (onLocationSelect) {
-      onLocationSelect(location);
+  const createPopupContent = (location: Location) => {
+    return `
+      <div class="location-popup">
+        <h3 class="font-semibold text-lg mb-2">${location.name}</h3>
+        <p class="text-gray-600 mb-2">${location.address}</p>
+        <div class="flex items-center space-x-2 text-sm text-gray-500">
+          <span class="inline-flex items-center px-2 py-1 bg-gray-100 rounded-full">
+            ${getCategoryIcon(location.category)}
+            ${location.category}
+          </span>
+          ${location.isImportant ? '<span class="text-yellow-500">⭐ Important</span>' : ''}
+        </div>
+      </div>
+    `;
+  };
+
+  const getCategoryIcon = (category?: string) => {
+    switch (category?.toLowerCase()) {
+      case 'park': return '🌳';
+      case 'school': return '🏫';
+      case 'church': return '⛪';
+      case 'campground': return '🏕️';
+      case 'community center': return '🏢';
+      default: return '📍';
+    }
+  };
+
+  const showStaticMap = () => {
+    if (mapRef.current) {
+      mapRef.current.innerHTML = `
+        <div class="bg-gray-100 rounded-lg p-8 text-center">
+          <MapPin class="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 class="text-lg font-semibold text-gray-600 mb-2">Map Loading...</h3>
+          <p class="text-gray-500">Interactive map will be available shortly</p>
+        </div>
+      `;
     }
   };
 
@@ -80,151 +164,116 @@ const LocationMap: React.FC<LocationMapProps> = ({
     }
   };
 
-  const getCategoryIcon = (category?: string) => {
-    switch (category?.toLowerCase()) {
-      case 'park':
-        return '🌳';
-      case 'school':
-        return '🏫';
-      case 'church':
-        return '⛪';
-      case 'community center':
-        return '🏢';
-      default:
-        return '📍';
-    }
-  };
-
   return (
-    <div className={`relative ${className}`} style={{ height }}>
+    <div className="space-y-6">
       {/* Map Container */}
-      <MapContainer
-        ref={mapRef}
-        center={mapCenter}
-        zoom={zoom}
-        style={{ height: '100%', width: '100%' }}
-        className="rounded-2xl overflow-hidden shadow-soft"
-      >
-        {/* OpenStreetMap Tiles */}
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
-        
-        {/* Update map bounds when locations change */}
-        <MapBoundsUpdater locations={locations} />
-        
-        {/* Location Markers */}
-        {locations.map((location) => {
-          if (!location.geo?.lat || !location.geo?.lng) return null;
-          
-          return (
-            <Marker
-              key={location.id}
-              position={[location.geo.lat, location.geo.lng]}
-              eventHandlers={{
-                click: () => handleMarkerClick(location),
-              }}
-            >
-              <Popup className="location-popup">
-                <div className="p-3 min-w-[200px]">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="text-lg">{getCategoryIcon(location.category)}</span>
-                    <h3 className="font-semibold text-gray-900">{location.name}</h3>
-                  </div>
-                  
-                  <p className="text-sm text-gray-600 mb-3">{location.address}</p>
-                  
-                  {location.notesPublic && (
-                    <p className="text-sm text-gray-600 mb-3 border-l-2 border-primary-300 pl-2">
-                      {location.notesPublic}
-                    </p>
-                  )}
-                  
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleDirections(location)}
-                      className="flex items-center space-x-1 px-2 py-1 bg-primary-500 text-white text-xs rounded-lg hover:bg-primary-600 transition-colors duration-200"
-                    >
-                      <Navigation className="w-3 h-3" />
-                      <span>Directions</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => handleMarkerClick(location)}
-                      className="flex items-center space-x-1 px-2 py-1 bg-secondary-500 text-white text-xs rounded-lg hover:bg-secondary-600 transition-colors duration-200"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      <span>Details</span>
-                    </button>
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
-      </MapContainer>
+      <div 
+        ref={mapRef} 
+        className="w-full rounded-2xl overflow-hidden shadow-soft border border-white/50"
+        style={{ height }}
+      />
 
-      {/* Map Controls Overlay */}
+      {/* Map Controls */}
       {showControls && (
-        <div className="absolute top-4 right-4 flex flex-col space-y-2">
-          {/* Zoom Controls */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-xl p-2 shadow-soft">
-            <button
-              onClick={() => mapRef.current?.zoomIn()}
-              className="w-8 h-8 bg-white hover:bg-gray-50 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors duration-200 shadow-sm"
-            >
-              +
-            </button>
-            <button
-              onClick={() => mapRef.current?.zoomOut()}
-              className="w-8 h-8 bg-white hover:bg-gray-50 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors duration-200 shadow-sm mt-1"
-            >
-              −
-            </button>
-          </div>
+        <div className="flex flex-wrap gap-4 justify-center">
+          <button
+            onClick={async () => {
+              if (mapInstanceRef.current && markersRef.current.length > 0) {
+                const L = await import('leaflet');
+                const group = new (L as any).featureGroup(markersRef.current);
+                mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
+              }
+            }}
+            className="flex items-center space-x-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200"
+          >
+            <MapPin className="w-4 h-4" />
+            <span>Show All Locations</span>
+          </button>
           
-          {/* Location Legend */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-xl p-3 shadow-soft">
-            <h4 className="text-xs font-semibold text-gray-900 mb-2">Locations</h4>
-            <div className="space-y-1">
-              <div className="flex items-center space-x-2 text-xs">
-                <span className="text-primary-500">📍</span>
-                <span className="text-gray-600">Important</span>
-              </div>
-              <div className="flex items-center space-x-2 text-xs">
-                <span className="text-secondary-500">🌳</span>
-                <span className="text-gray-600">Parks</span>
-              </div>
-              <div className="flex items-center space-x-2 text-xs">
-                <span className="text-accent-500">🏫</span>
-                <span className="text-gray-600">Schools</span>
-              </div>
-            </div>
-          </div>
+          <button
+            onClick={() => {
+              if (mapInstanceRef.current) {
+                mapInstanceRef.current.setView([40.7103, -89.6144], 11);
+              }
+            }}
+            className="flex items-center space-x-2 px-4 py-2 bg-secondary-500 text-white rounded-lg hover:bg-secondary-600 transition-colors duration-200"
+          >
+            <Navigation className="w-4 h-4" />
+            <span>Reset View</span>
+          </button>
         </div>
       )}
 
-      {/* Selected Location Info */}
+      {/* Selected Location Details */}
       {selectedLocation && (
-        <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-soft border border-white/50">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-1">{selectedLocation.name}</h3>
-              <p className="text-sm text-gray-600">{selectedLocation.address}</p>
-              {selectedLocation.driveTime && (
-                <p className="text-xs text-accent-600 mt-1">🚗 {selectedLocation.driveTime}</p>
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-soft animate-slide-up">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h3 className="text-xl font-display font-semibold text-gray-900 mb-2">
+                {selectedLocation.name}
+              </h3>
+              <p className="text-gray-600 mb-3">{selectedLocation.address}</p>
+              {selectedLocation.notesPublic && (
+                <p className="text-gray-700 mb-3">{selectedLocation.notesPublic}</p>
               )}
             </div>
             <button
+              onClick={() => onLocationSelect(selectedLocation)}
+              className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <div className="flex flex-wrap gap-3">
+            <button
               onClick={() => handleDirections(selectedLocation)}
-              className="ml-4 px-3 py-2 bg-gradient-to-r from-primary-500 to-secondary-500 text-white text-sm font-medium rounded-lg hover:from-primary-600 hover:to-secondary-600 transition-all duration-200 transform hover:scale-105"
+              className="flex items-center space-x-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200"
             >
               <Navigation className="w-4 h-4" />
+              <span>Directions</span>
             </button>
+            
+            {selectedLocation.isImportant && (
+              <div className="flex items-center space-x-2 px-3 py-2 bg-yellow-100 text-yellow-700 rounded-lg">
+                <Star className="w-4 h-4 fill-current" />
+                <span className="text-sm font-medium">Important Location</span>
+              </div>
+            )}
           </div>
         </div>
       )}
+
+      {/* Map Legend */}
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 border border-white/50 shadow-soft">
+        <h4 className="text-sm font-semibold text-gray-900 mb-3">Location Types</h4>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+          <div className="flex items-center space-x-2">
+            <span>🌳</span>
+            <span className="text-gray-600">Park</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span>⛪</span>
+            <span className="text-gray-600">Church</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span>🏕️</span>
+            <span className="text-gray-600">Campground</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span>🏫</span>
+            <span className="text-gray-600">School</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span>🏢</span>
+            <span className="text-gray-600">Community Center</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span>📍</span>
+            <span className="text-gray-600">Other</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

@@ -51,7 +51,7 @@ resource "google_firestore_index" "events_by_season_and_date" {
   }
 
   fields {
-    field_path = "startDate"
+    field_path = "start"
     order      = "ASCENDING"
   }
 
@@ -72,7 +72,7 @@ resource "google_firestore_index" "events_by_visibility_and_date" {
   }
 
   fields {
-    field_path = "startDate"
+    field_path = "start"
     order      = "ASCENDING"
   }
 
@@ -93,7 +93,7 @@ resource "google_firestore_index" "events_by_category_and_date" {
   }
 
   fields {
-    field_path = "startDate"
+    field_path = "start"
     order      = "ASCENDING"
   }
 

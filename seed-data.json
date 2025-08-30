@@ -1,0 +1,203 @@
+{
+  "seasons": [
+    {
+      "id": "season-2025-2026",
+      "name": "2025–2026",
+      "startDate": "2025-09-01T00:00:00.000Z",
+      "endDate": "2026-08-31T23:59:59.999Z",
+      "isActive": true
+    }
+  ],
+  "locations": [
+    {
+      "id": "location-camp-wokanda",
+      "name": "Camp Wokanda",
+      "address": "1234 Scout Road, Peoria, IL 61614",
+      "geo": {
+        "lat": 40.7103,
+        "lng": -89.6144
+      },
+      "notesPublic": "Beautiful wooded campground with hiking trails, fishing pond, and modern facilities.",
+      "notesPrivate": "Gate code: 1234, Contact: Camp Ranger (555) 123-4567",
+      "parking": {
+        "text": "Main parking lot near dining hall, overflow parking available",
+        "imageUrl": null
+      },
+      "category": "camping",
+      "isPublic": true
+    },
+    {
+      "id": "location-st-marks",
+      "name": "St. Mark's Church",
+      "address": "5678 Church Street, Peoria, IL 61614",
+      "geo": {
+        "lat": 40.7120,
+        "lng": -89.6160
+      },
+      "notesPublic": "Our regular meeting location with large hall and kitchen facilities.",
+      "notesPrivate": "Building access: Front door key in lockbox, Code: 5678",
+      "parking": {
+        "text": "Church parking lot, street parking available",
+        "imageUrl": null
+      },
+      "category": "meeting",
+      "isPublic": true
+    },
+    {
+      "id": "location-peoria-riverfront",
+      "name": "Peoria Riverfront",
+      "address": "100 Water Street, Peoria, IL 61602",
+      "geo": {
+        "lat": 40.6930,
+        "lng": -89.5890
+      },
+      "notesPublic": "Beautiful riverfront location perfect for community service projects.",
+      "notesPrivate": "Contact: Parks Department (555) 987-6543",
+      "parking": {
+        "text": "Metered parking available, free on weekends",
+        "imageUrl": null
+      },
+      "category": "service",
+      "isPublic": true
+    }
+  ],
+  "events": [
+    {
+      "id": "event-fall-campout-2025",
+      "seasonId": "season-2025-2026",
+      "title": "Pack 1703 Fall Campout",
+      "category": "camping",
+      "startDate": "2025-10-15T14:00:00.000Z",
+      "endDate": "2025-10-16T16:00:00.000Z",
+      "locationId": "location-camp-wokanda",
+      "description": "Join us for our annual fall campout! This is a great opportunity for families to bond, learn outdoor skills, and enjoy nature together.",
+      "packingList": ["tent-sleeping", "warm-clothing", "flashlight", "water-bottle"],
+      "attachments": [],
+      "rsvpEnabled": true,
+      "capacity": 50,
+      "visibility": "public",
+      "denTags": ["Lions", "Tigers", "Wolves", "Bears", "Webelos", "AOL"],
+      "updatedAt": "2025-08-27T00:00:00.000Z",
+      "createdAt": "2025-08-27T00:00:00.000Z"
+    },
+    {
+      "id": "event-wolves-den-meeting",
+      "seasonId": "season-2025-2026",
+      "title": "Den Meeting - Wolves",
+      "category": "den",
+      "startDate": "2025-10-20T18:00:00.000Z",
+      "endDate": "2025-10-20T19:30:00.000Z",
+      "locationId": "location-st-marks",
+      "description": "Regular den meeting for Wolf scouts. We'll work on advancement requirements and have some fun activities.",
+      "packingList": [],
+      "attachments": [],
+      "rsvpEnabled": true,
+      "capacity": 20,
+      "visibility": "public",
+      "denTags": ["Wolves"],
+      "updatedAt": "2025-08-27T00:00:00.000Z",
+      "createdAt": "2025-08-27T00:00:00.000Z"
+    },
+    {
+      "id": "event-community-service",
+      "seasonId": "season-2025-2026",
+      "title": "Community Service Project",
+      "category": "service",
+      "startDate": "2025-10-25T09:00:00.000Z",
+      "endDate": "2025-10-25T12:00:00.000Z",
+      "locationId": "location-peoria-riverfront",
+      "description": "Help clean up the riverfront and plant native flowers. Great opportunity to earn service hours and help our community.",
+      "packingList": ["work-gloves", "water-bottle", "sun-hat"],
+      "attachments": [],
+      "rsvpEnabled": true,
+      "capacity": 30,
+      "visibility": "public",
+      "denTags": ["Lions", "Tigers", "Wolves", "Bears", "Webelos", "AOL"],
+      "updatedAt": "2025-08-27T00:00:00.000Z",
+      "createdAt": "2025-08-27T00:00:00.000Z"
+    }
+  ],
+  "lists": [
+    {
+      "id": "tent-sleeping",
+      "title": "Tent & Sleeping Gear",
+      "items": [
+        { "label": "Tent", "optional": false },
+        { "label": "Sleeping bag", "optional": false },
+        { "label": "Sleeping pad", "optional": true },
+        { "label": "Pillow", "optional": true },
+        { "label": "Tent stakes", "optional": false }
+      ]
+    },
+    {
+      "id": "warm-clothing",
+      "title": "Warm Clothing",
+      "items": [
+        { "label": "Warm jacket", "optional": false },
+        { "label": "Long underwear", "optional": true },
+        { "label": "Warm socks", "optional": false },
+        { "label": "Winter hat", "optional": true },
+        { "label": "Gloves", "optional": true }
+      ]
+    },
+    {
+      "id": "flashlight",
+      "title": "Lighting",
+      "items": [
+        { "label": "Flashlight", "optional": false },
+        { "label": "Extra batteries", "optional": true },
+        { "label": "Headlamp", "optional": true }
+      ]
+    },
+    {
+      "id": "water-bottle",
+      "title": "Hydration",
+      "items": [
+        { "label": "Water bottle", "optional": false },
+        { "label": "Extra water", "optional": true }
+      ]
+    }
+  ],
+  "announcements": [
+    {
+      "id": "announcement-fall-campout",
+      "title": "Fall Campout Registration Open!",
+      "body": "Registration is now open for our annual fall campout at Camp Wokanda. This is a great opportunity for families to bond and learn outdoor skills together. Please RSVP by October 10th.",
+      "pinned": true,
+      "eventId": "event-fall-campout-2025",
+      "createdAt": "2025-08-27T00:00:00.000Z",
+      "updatedAt": "2025-08-27T00:00:00.000Z"
+    },
+    {
+      "id": "announcement-welcome-back",
+      "title": "Welcome Back to Scouting!",
+      "body": "Welcome back to another exciting year of scouting! We have many fun activities planned including camping trips, community service projects, and advancement opportunities.",
+      "pinned": false,
+      "createdAt": "2025-08-27T00:00:00.000Z",
+      "updatedAt": "2025-08-27T00:00:00.000Z"
+    }
+  ],
+  "volunteer-needs": [
+    {
+      "id": "volunteer-fall-campout",
+      "eventId": "event-fall-campout-2025",
+      "role": "Check-in Coordinator",
+      "needed": 2,
+      "claimed": 1
+    },
+    {
+      "id": "volunteer-fall-campout-2",
+      "eventId": "event-fall-campout-2025",
+      "role": "Food Coordinator",
+      "needed": 1,
+      "claimed": 0
+    },
+    {
+      "id": "volunteer-fall-campout-3",
+      "eventId": "event-fall-campout-2025",
+      "role": "Activity Leader",
+      "needed": 3,
+      "claimed": 2
+    }
+  ]
+}

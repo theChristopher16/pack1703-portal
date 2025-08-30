@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ============================================================================
+    // PUBLIC READ ACCESS (Read-only for public content)
+    // ============================================================================
+    
+    // Seasons - public read access
+    match /seasons/{seasonId} {
+      allow read: if true; // All seasons are public
+    }
+    
+    // Events - public read access for public events
+    match /events/{eventId} {
+      allow read: if 
+        resource.data.visibility == 'public' || 
+        resource.data.visibility == 'link-only';
+    }
+    
+    // Locations - public read access (excluding private notes)
+    match /locations/{locationId} {
+      allow read: if true; // All locations are public
+      // Note: Private notes will be filtered out in Cloud Functions
+    }
+    
+    // Announcements - public read access
+    match /announcements/{postId} {
+      allow read: if true; // All announcements are public
+    }
+    
+    // Packing Lists - public read access
+    match /lists/{listId} {
+      allow read: if true; // All packing lists are public
+    }
+    
+    // Event Statistics - public read access (aggregated data)
+    match /event-stats/{eventId} {
+      allow read: if true; // Event stats are public
+    }
+    
+    // Weather Data - public read access (cached data)
+    match /weather-data/{weatherId} {
+      allow read: if true; // Weather data is public
+    }
+    
+    // ============================================================================
+    // WRITE ACCESS (Cloud Functions only)
+    // ============================================================================
+    
+    // Submissions - write-only via Cloud Functions
+    match /submissions/{submissionId} {
+      allow read: if false; // No client reads
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    // Volunteer Needs - read public, write via Functions
+    match /volunteer-needs/{needId} {
+      allow read: if true; // Public read access
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    // ============================================================================
+    // ADMIN-ONLY COLLECTIONS (Hidden from client)
+    // ============================================================================
+    
+    // Private data - never accessible to clients
+    match /private/{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Admin logs - never accessible to clients
+    match /admin-logs/{document=**} {
+      allow read, write: if false;
+    }
+    
+    // ============================================================================
+    // SECURITY CONSTRAINTS
+    // ============================================================================
+    
+    // Ensure no client can write to core collections
+    match /{collection}/{document} {
+      // Default rule - deny all writes unless explicitly allowed above
+      allow write: if false;
+      
+      // Default rule - deny all reads unless explicitly allowed above
+      allow read: if false;
+    }
+  }
+}

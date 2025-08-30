@@ -1,4 +1,14 @@
-# Monitoring and alerting configuration for Pack 1703 RSVP System
+# Monitoring Module
+# Cloud Monitoring dashboards and alerts
+
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+  }
+}
 
 # Notification channel for email alerts
 resource "google_monitoring_notification_channel" "email" {
@@ -21,7 +31,7 @@ resource "google_monitoring_alert_policy" "high_error_rate" {
     display_name = "Cloud Function Error Rate"
     
     condition_threshold {
-      filter          = "resource.type=\"cloud_function\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\""
+      filter          = "resource.type=\"cloud_function\""
       comparison      = "COMPARISON_GT"
       threshold_value = 0.01  # 1% error rate
       duration        = "300s"
@@ -46,7 +56,7 @@ resource "google_monitoring_alert_policy" "high_latency" {
     display_name = "Cloud Function High Latency"
     
     condition_threshold {
-      filter          = "resource.type=\"cloud_function\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_time\""
+      filter          = "resource.type=\"cloud_function\""
       comparison      = "COMPARISON_GT"
       threshold_value = 1000  # 1 second
       duration        = "300s"

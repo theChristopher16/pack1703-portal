@@ -149,6 +149,14 @@ else
     skip "No Secret Manager secrets found (this is optional)"
 fi
 
+# Test 11: Cloud Functions
+log "Test 11: Cloud Functions"
+FUNCTIONS=$(gcloud functions list --project="$PROJECT_ID" --format="value(name)" 2>/dev/null || echo "")
+if [ -n "$FUNCTIONS" ]; then
+    pass "Cloud Functions found: $(echo "$FUNCTIONS" | wc -l | tr -d ' ')"
+else
+    fail "No Cloud Functions found"
+fi
 # Summary
 echo ""
 echo "=========================================="

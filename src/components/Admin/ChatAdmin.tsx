@@ -15,7 +15,7 @@ const ChatAdmin: React.FC = () => {
   const [expandedDens, setExpandedDens] = useState<Set<string>>(new Set());
   const [currentUser, setCurrentUser] = useState<ChatUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [systemStatus, setSystemStatus] = useState({
     totalUsers: 0,
     onlineUsers: 0,
@@ -144,7 +144,7 @@ const ChatAdmin: React.FC = () => {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex space-x-1 mb-8 bg-gray-100 rounded-lg p-1">
+      <div className="flex flex-wrap gap-1 mb-8 bg-gray-100 rounded-lg p-1">
         {[
           { id: 'overview', label: 'Overview', icon: '📊' },
           { id: 'messages', label: 'Messages', icon: '💬' },
@@ -156,14 +156,15 @@ const ChatAdmin: React.FC = () => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+            className={`flex items-center px-3 md:px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 whitespace-nowrap ${
               activeTab === tab.id
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            <span className="mr-2">{tab.icon}</span>
-            {tab.label}
+            <span className="mr-1 md:mr-2">{tab.icon}</span>
+            <span className="hidden sm:inline">{tab.label}</span>
+            <span className="sm:hidden">{tab.label.charAt(0)}</span>
           </button>
         ))}
       </div>
@@ -280,7 +281,7 @@ const ChatAdmin: React.FC = () => {
         )}
 
         {activeTab === 'messages' && (
-          <div className="flex flex-col md:flex-row h-96 relative">
+          <div className="flex flex-col md:flex-row h-96 md:h-96 relative">
             {/* Mobile Overlay */}
             {isSidebarOpen && (
               <div 
@@ -292,12 +293,16 @@ const ChatAdmin: React.FC = () => {
             <div className="md:hidden bg-white border-b border-gray-200 p-3">
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="flex items-center space-x-2 px-3 py-2 bg-gray-100 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors duration-200"
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                  isSidebarOpen 
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
-                <span>Channels</span>
+                <span>{isSidebarOpen ? 'Hide Channels' : 'Show Channels'}</span>
               </button>
             </div>
 

@@ -142,7 +142,8 @@ const safeFirestoreCall = async <T>(firestoreCall: () => Promise<T>, mockData: T
     return await firestoreCall();
   } catch (error) {
     console.warn('Firestore call failed, using mock data:', error);
-    return mockData;
+    // Throw the error so components can show error banners
+    throw new Error('Database connection failed');
   }
 };
 

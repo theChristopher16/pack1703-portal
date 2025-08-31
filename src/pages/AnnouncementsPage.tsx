@@ -106,7 +106,7 @@ const AnnouncementsPage: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error && announcements.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-12">

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AdminNav from '../Admin/AdminNav';
 import { useAdmin } from '../../contexts/AdminContext';
 
@@ -8,29 +9,18 @@ interface AdminLayoutProps {
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { state } = useAdmin();
+  const navigate = useNavigate();
 
-  // If not authenticated, show login prompt
+  // If not authenticated, redirect to login
+  useEffect(() => {
+    if (!state.isAuthenticated) {
+      navigate('/admin/login', { replace: true });
+    }
+  }, [state.isAuthenticated, navigate]);
+
+  // Don't render anything while redirecting
   if (!state.isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12">
-        <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-display font-bold text-gray-900 mb-2">
-              Admin Access Required
-            </h1>
-            <p className="text-gray-600">
-              Please log in to access the admin dashboard
-            </p>
-            <a 
-              href="/admin/login"
-              className="mt-4 inline-block bg-primary-500 text-white px-6 py-3 rounded-lg hover:bg-primary-600 transition-colors"
-            >
-              Go to Admin Login
-            </a>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

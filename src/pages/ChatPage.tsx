@@ -15,6 +15,9 @@ const ChatPage: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [messageListRef, setMessageListRef] = useState<HTMLDivElement | null>(null);
+  const [hasNewMessages, setHasNewMessages] = useState(false);
 
   // Den emoji mapping
   const denEmojis: Record<string, string> = {
@@ -50,6 +53,33 @@ const ChatPage: React.FC = () => {
     }
     setExpandedDens(newExpanded);
   };
+
+  // Scroll handling functions
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const element = e.currentTarget;
+    const isAtBottomNow = element.scrollHeight - element.scrollTop <= element.clientHeight + 10; // 10px threshold
+    setIsAtBottom(isAtBottomNow);
+  };
+
+  const scrollToBottom = () => {
+    if (messageListRef) {
+      messageListRef.scrollTo({
+        top: messageListRef.scrollHeight,
+        behavior: 'smooth'
+      });
+      setHasNewMessages(false);
+    }
+  };
+
+  // Auto-scroll when new messages arrive (only if user is at bottom)
+  useEffect(() => {
+    if (isAtBottom && messageListRef) {
+      scrollToBottom();
+      setHasNewMessages(false);
+    } else if (!isAtBottom) {
+      setHasNewMessages(true);
+    }
+  }, [messages, isAtBottom]);
 
   // Initialize chat (only once)
   useEffect(() => {
@@ -444,6 +474,11 @@ const ChatPage: React.FC = () => {
                           {currentChannel.denLevel}
                         </span>
                       )}
+                      {hasNewMessages && !isAtBottom && (
+                        <span className="ml-3 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full flex-shrink-0 animate-pulse">
+                          New messages
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center space-x-4 text-sm text-gray-500">
                       <span>{currentChannel?.messageCount || 0} messages</span>
@@ -455,7 +490,24 @@ const ChatPage: React.FC = () => {
             </div>
 
             {/* Message List */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div 
+              ref={setMessageListRef}
+              className="flex-1 overflow-y-auto p-6 relative"
+              onScroll={handleScroll}
+            >
+              {/* Scroll to Bottom Button */}
+              {!isAtBottom && (
+                <button
+                  onClick={scrollToBottom}
+                  className="absolute bottom-4 right-4 z-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg transition-all duration-200 transform hover:scale-110"
+                  title="Scroll to bottom"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </button>
+              )}
+              
               <div className="space-y-4">
                 {messages.map(message => (
                   <div

@@ -2,12 +2,17 @@ export interface TenorGif {
   id: string;
   title: string;
   media_formats: {
-    gif: {
+    gif?: {
       url: string;
       width: number;
       height: number;
     };
-    tinygif: {
+    tinygif?: {
+      url: string;
+      width: number;
+      height: number;
+    };
+    nanogif?: {
       url: string;
       width: number;
       height: number;
@@ -39,7 +44,7 @@ class TenorService {
   async getTrendingGifs(limit: number = 20): Promise<TenorGif[]> {
     try {
       const response = await fetch(
-        `${this.baseUrl}/trending_terms?key=${this.apiKey}&limit=${limit}`
+        `${this.baseUrl}/trending?key=${this.apiKey}&limit=${limit}&media_filter=gif`
       );
       
       if (!response.ok) {

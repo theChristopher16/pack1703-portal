@@ -172,7 +172,8 @@ const ChatPage: React.FC = () => {
   };
 
   const insertGif = (gif: TenorGif) => {
-    setNewMessage(prev => prev + ` ![${gif.title}](${gif.media_formats.gif.url})`);
+    const gifUrl = gif.media_formats.gif?.url || gif.media_formats.tinygif?.url || gif.media_formats.nanogif?.url || '';
+    setNewMessage(prev => prev + ` ![${gif.title}](${gifUrl})`);
     setShowGifPicker(false);
     setShowGifSearch(false);
     setGifSearchQuery('');
@@ -985,7 +986,7 @@ const ChatPage: React.FC = () => {
                             title={gif.title}
                           >
                             <img 
-                              src={gif.media_formats.tinygif.url} 
+                              src={gif.media_formats.tinygif?.url || gif.media_formats.gif?.url || gif.media_formats.nanogif?.url || ''} 
                               alt={gif.title} 
                               className="w-full h-full object-cover"
                             />

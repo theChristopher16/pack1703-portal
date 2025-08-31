@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import configService from './services/configService';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Components
 import Layout from './components/Layout/Layout';
@@ -75,9 +76,10 @@ function App() {
   }, []);
 
   return (
-    <AdminProvider>
-      <Router>
-        <Routes>
+    <ErrorBoundary>
+      <AdminProvider>
+        <Router>
+          <Routes>
           {/* Public Routes with Layout */}
           <Route path="/" element={<Layout><HomePage /></Layout>} />
           <Route path="/events" element={<Layout><EventsPage /></Layout>} />
@@ -111,6 +113,7 @@ function App() {
         </Routes>
       </Router>
     </AdminProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAdmin } from '../contexts/AdminContext';
+import DatabaseMonitor from '../components/Admin/DatabaseMonitor';
 
 const AdminDashboard: React.FC = () => {
   const { state } = useAdmin();
@@ -83,7 +84,7 @@ const AdminDashboard: React.FC = () => {
             <span className="w-2 h-8 bg-gradient-to-b from-primary-500 to-secondary-500 rounded-full mr-4"></span>
             System Status
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                 <span className="w-3 h-3 bg-green-500 rounded-full mr-3"></span>
@@ -132,6 +133,11 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+          
+          {/* Database Monitor */}
+          <div className="mt-8">
+            <DatabaseMonitor />
           </div>
         </div>
       </div>

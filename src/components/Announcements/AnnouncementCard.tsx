@@ -116,18 +116,16 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
           </div>
         </div>
         
-        {/* Pin Toggle Button */}
-        <button
-          onClick={handlePinToggle}
-          className={`ml-4 p-2 rounded-xl transition-all duration-200 ${
-            announcement.pinned
-              ? 'bg-primary-100 text-primary-600 hover:bg-primary-200'
-              : 'text-gray-400 hover:text-primary-500 hover:bg-primary-50'
-          }`}
-          title={announcement.pinned ? 'Unpin announcement' : 'Pin announcement'}
-        >
-          <Pin className={`w-4 h-4 ${announcement.pinned ? 'fill-current' : ''}`} />
-        </button>
+        {/* Pin Toggle Button - Only show when not pinned */}
+        {!announcement.pinned && (
+          <button
+            onClick={handlePinToggle}
+            className="ml-4 p-2 rounded-xl transition-all duration-200 text-gray-400 hover:text-primary-500 hover:bg-primary-50"
+            title="Pin announcement"
+          >
+            <Pin className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Content */}

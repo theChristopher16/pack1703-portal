@@ -208,234 +208,255 @@ const ResourcesPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Resources & Downloads</h1>
-        <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                      Access all the resources you need for scout activities, including packing lists, 
-          medical forms, policies, and helpful guides for families.
-        </p>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Search */}
-          <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
-              Search Resources
-            </label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                id="search"
-                placeholder="Search by title, description, or tags..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="w-20 h-20 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center mx-auto mb-6 shadow-glow">
+            <BookOpen className="w-10 h-10 text-white" />
           </div>
-
-          {/* Category Filter */}
-          <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
-            <select
-              id="category"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              {categories.map(category => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Tag Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Popular Tags
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {allTags.slice(0, 6).map(tag => (
-                <button
-                  key={tag}
-                  onClick={() => handleTagToggle(tag)}
-                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                    selectedTags.includes(tag)
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Active Tag Filters */}
-        {selectedTags.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700">Active filters:</span>
-              {selectedTags.map(tag => (
-                <button
-                  key={tag}
-                  onClick={() => handleTagToggle(tag)}
-                  className="inline-flex items-center px-3 py-1 text-sm font-medium bg-indigo-100 text-indigo-800 rounded-full hover:bg-indigo-200"
-                >
-                  {tag}
-                  <span className="ml-1 text-indigo-600">×</span>
-                </button>
-              ))}
-              <button
-                onClick={() => setSelectedTags([])}
-                className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-              >
-                Clear all
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Resources Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredResources.map((resource) => (
-          <div key={resource.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="p-6">
-              {/* Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center flex-1">
-                  {React.createElement(getCategoryIcon(resource.category), { 
-                    className: "h-5 w-5 text-indigo-600 mr-2" 
-                  })}
-                  <h3 className="text-lg font-semibold text-gray-900 flex-1">{resource.title}</h3>
-                </div>
-                {resource.fileType && (
-                  <div className="ml-2">
-                    {getFileTypeIcon(resource.fileType)}
-                  </div>
-                )}
-              </div>
-
-              {/* Description */}
-              <p className="text-sm text-gray-600 mb-4 line-clamp-3">{resource.description}</p>
-
-              {/* Category Badge */}
-              <div className="mb-4">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(resource.category)}`}>
-                  {categories.find(c => c.id === resource.category)?.name}
-                </span>
-              </div>
-
-              {/* Tags */}
-              <div className="flex flex-wrap gap-1 mb-4">
-                {resource.tags.map(tag => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded"
-                  >
-                    {/* Removed Tag icon as it's no longer imported */}
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
-              {/* Last Updated */}
-              <div className="text-xs text-gray-500 mb-4">
-                Last updated: {new Date(resource.lastUpdated).toLocaleDateString()}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex space-x-2">
-                {resource.url ? (
-                  <button
-                    onClick={() => handleDownload(resource)}
-                    className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </button>
-                ) : (
-                  <button
-                    disabled
-                    className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-400 bg-gray-100 cursor-not-allowed"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    View
-                  </button>
-                )}
-                
-                {resource.url && (
-                  <button
-                    onClick={() => window.open(resource.url, '_blank')}
-                    className="inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* No Results */}
-      {filteredResources.length === 0 && (
-        <div className="text-center py-12">
-          <FileText className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No resources found</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            {searchTerm || selectedCategory !== 'all' || selectedTags.length > 0
-              ? 'Try adjusting your search or filters.'
-              : 'No resources are currently available.'}
+          <h1 className="text-4xl md:text-5xl font-display font-bold text-gray-900 mb-6">
+            <span className="text-gradient">Resources</span> & Downloads
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            Access all the resources you need for scout activities, including packing lists, 
+            medical forms, policies, and helpful guides for families.
           </p>
         </div>
-      )}
 
-      {/* Quick Access Section */}
-      <div className="mt-12 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Quick Access</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="text-center">
-            <div className="bg-white rounded-full p-4 w-16 h-16 mx-auto mb-3 flex items-center justify-center shadow-md">
-              <Calendar className="h-8 w-8 text-indigo-600" />
+        {/* Search and Filters */}
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-soft border border-gray-200/50 p-8 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Search */}
+            <div>
+              <label htmlFor="search" className="block text-sm font-display font-semibold text-gray-900 mb-3">
+                Search Resources
+              </label>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  id="search"
+                  placeholder="Search by title, description, or tags..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-12 w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white/80 backdrop-blur-sm"
+                />
+              </div>
             </div>
-            <h3 className="font-semibold text-gray-900 mb-2">Event Calendar</h3>
-            <p className="text-sm text-gray-600">View upcoming pack events and activities</p>
+
+            {/* Category Filter */}
+            <div>
+              <label htmlFor="category" className="block text-sm font-display font-semibold text-gray-900 mb-3">
+                Category
+              </label>
+              <select
+                id="category"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white/80 backdrop-blur-sm"
+              >
+                {categories.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Tag Filter */}
+            <div>
+              <label className="block text-sm font-display font-semibold text-gray-900 mb-3">
+                Popular Tags
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {allTags.slice(0, 6).map(tag => (
+                  <button
+                    key={tag}
+                    onClick={() => handleTagToggle(tag)}
+                    className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
+                      selectedTags.includes(tag)
+                        ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-glow-primary'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-soft'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          
-          <div className="text-center">
-            <div className="bg-white rounded-full p-4 w-16 h-16 mx-auto mb-3 flex items-center justify-center shadow-md">
-              <MapPin className="h-8 w-8 text-green-600" />
+
+          {/* Active Tag Filters */}
+          {selectedTags.length > 0 && (
+            <div className="mt-6 pt-6 border-t border-gray-200/50">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-display font-semibold text-gray-900">Active filters:</span>
+                {selectedTags.map(tag => (
+                  <button
+                    key={tag}
+                    onClick={() => handleTagToggle(tag)}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium bg-gradient-to-r from-primary-100 to-secondary-100 text-primary-700 rounded-xl hover:from-primary-200 hover:to-secondary-200 transition-all duration-200"
+                  >
+                    {tag}
+                    <span className="ml-2 text-primary-600 font-bold">×</span>
+                  </button>
+                ))}
+                <button
+                  onClick={() => setSelectedTags([])}
+                  className="text-sm text-primary-600 hover:text-primary-700 font-display font-semibold transition-colors duration-200"
+                >
+                  Clear all
+                </button>
+              </div>
             </div>
-            <h3 className="font-semibold text-gray-900 mb-2">Locations</h3>
-            <p className="text-sm text-gray-600">Find meeting places and event venues</p>
+          )}
+        </div>
+
+        {/* Resources Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredResources.map((resource) => (
+            <div key={resource.id} className="group bg-white/90 backdrop-blur-md rounded-2xl shadow-soft border border-gray-200/50 overflow-hidden hover:shadow-glow-primary transition-all duration-300 transform hover:-translate-y-1">
+              <div className="p-8">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-6">
+                  <div className="flex items-center flex-1">
+                    <div className="w-12 h-12 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center mr-4 shadow-glow">
+                      {React.createElement(getCategoryIcon(resource.category), { 
+                        className: "h-6 w-6 text-white" 
+                      })}
+                    </div>
+                    <h3 className="text-xl font-display font-semibold text-gray-900 flex-1 group-hover:text-gradient transition-all duration-300">{resource.title}</h3>
+                  </div>
+                  {resource.fileType && (
+                    <div className="ml-3">
+                      {getFileTypeIcon(resource.fileType)}
+                    </div>
+                  )}
+                </div>
+
+                {/* Description */}
+                <p className="text-gray-600 mb-6 leading-relaxed">{resource.description}</p>
+
+                {/* Category Badge */}
+                <div className="mb-6">
+                  <span className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-medium ${getCategoryColor(resource.category)}`}>
+                    {categories.find(c => c.id === resource.category)?.name}
+                  </span>
+                </div>
+
+                {/* Tags */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {resource.tags.map(tag => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center px-3 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-lg"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Last Updated */}
+                <div className="text-sm text-gray-500 mb-6">
+                  Last updated: {new Date(resource.lastUpdated).toLocaleDateString()}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex space-x-3">
+                  {resource.url ? (
+                    <button
+                      onClick={() => handleDownload(resource)}
+                      className="flex-1 inline-flex items-center justify-center px-6 py-3 border border-transparent text-sm font-display font-semibold rounded-xl text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 focus:outline-none focus:ring-4 focus:ring-primary-300/50 transition-all duration-200 transform hover:scale-105 shadow-glow-primary"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </button>
+                  ) : (
+                    <button
+                      disabled
+                      className="flex-1 inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-sm font-display font-semibold rounded-xl text-gray-400 bg-gray-100 cursor-not-allowed"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      View
+                    </button>
+                  )}
+                  
+                  {resource.url && (
+                    <button
+                      onClick={() => window.open(resource.url, '_blank')}
+                      className="inline-flex items-center justify-center px-4 py-3 border-2 border-gray-200 text-sm font-display font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 hover:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-300/50 transition-all duration-200"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* No Results */}
+        {filteredResources.length === 0 && (
+          <div className="text-center py-16">
+            <div className="w-24 h-24 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-soft">
+              <FileText className="h-12 w-12 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-display font-semibold text-gray-900 mb-3">No resources found</h3>
+            <p className="text-gray-600 max-w-md mx-auto">
+              {searchTerm || selectedCategory !== 'all' || selectedTags.length > 0
+                ? 'Try adjusting your search or filters to find what you\'re looking for.'
+                : 'No resources are currently available. Check back soon!'}
+            </p>
           </div>
+        )}
+
+        {/* Quick Access Section */}
+        <div className="mt-16 bg-gradient-to-r from-primary-50 via-secondary-50 to-accent-50 rounded-3xl p-12 relative overflow-hidden">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-gradient-mesh opacity-10"></div>
           
-          <div className="text-center">
-            <div className="bg-white rounded-full p-4 w-16 h-16 mx-auto mb-3 flex items-center justify-center shadow-md">
-              <Users className="h-8 w-8 text-purple-600" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-2">Volunteer</h3>
-            <p className="text-sm text-gray-600">Sign up for volunteer opportunities</p>
-          </div>
+          {/* Floating Elements */}
+          <div className="absolute top-8 left-8 w-16 h-16 bg-white/20 rounded-full animate-float"></div>
+          <div className="absolute bottom-8 right-8 w-12 h-12 bg-white/20 rounded-full animate-float" style={{ animationDelay: '3s' }}></div>
           
-          <div className="text-center">
-            <div className="bg-white rounded-full p-4 w-16 h-16 mx-auto mb-3 flex items-center justify-center shadow-md">
-              <Shield className="h-8 w-8 text-red-600" />
+          <div className="relative z-10">
+            <h2 className="text-3xl font-display font-bold text-gray-900 mb-8 text-center">
+              Quick <span className="text-gradient">Access</span>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="text-center group">
+                <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 w-20 h-20 mx-auto mb-4 flex items-center justify-center shadow-soft group-hover:shadow-glow-primary transition-all duration-300 transform group-hover:scale-110">
+                  <Calendar className="h-10 w-10 text-primary-600" />
+                </div>
+                <h3 className="font-display font-semibold text-gray-900 mb-2">Event Calendar</h3>
+                <p className="text-sm text-gray-600">View upcoming pack events and activities</p>
+              </div>
+              
+              <div className="text-center group">
+                <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 w-20 h-20 mx-auto mb-4 flex items-center justify-center shadow-soft group-hover:shadow-glow-primary transition-all duration-300 transform group-hover:scale-110">
+                  <MapPin className="h-10 w-10 text-secondary-600" />
+                </div>
+                <h3 className="font-display font-semibold text-gray-900 mb-2">Locations</h3>
+                <p className="text-sm text-gray-600">Find meeting places and event venues</p>
+              </div>
+              
+              <div className="text-center group">
+                <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 w-20 h-20 mx-auto mb-4 flex items-center justify-center shadow-soft group-hover:shadow-glow-primary transition-all duration-300 transform group-hover:scale-110">
+                  <Users className="h-10 w-10 text-accent-600" />
+                </div>
+                <h3 className="font-display font-semibold text-gray-900 mb-2">Volunteer</h3>
+                <p className="text-sm text-gray-600">Sign up for volunteer opportunities</p>
+              </div>
+              
+              <div className="text-center group">
+                <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 w-20 h-20 mx-auto mb-4 flex items-center justify-center shadow-soft group-hover:shadow-glow-primary transition-all duration-300 transform group-hover:scale-110">
+                  <Shield className="h-10 w-10 text-red-600" />
+                </div>
+                <h3 className="font-display font-semibold text-gray-900 mb-2">Safety</h3>
+                <p className="text-sm text-gray-600">Safety guidelines and emergency info</p>
+              </div>
             </div>
-            <h3 className="font-semibold text-gray-900 mb-2">Safety</h3>
-            <p className="text-sm text-gray-600">Safety guidelines and emergency info</p>
           </div>
         </div>
       </div>

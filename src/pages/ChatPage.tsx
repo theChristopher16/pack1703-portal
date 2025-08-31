@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Send, Users, MessageCircle, Settings, User, Edit, MoreVertical, Search, Image, Smile, Type, Palette, Share2, Bold, Italic, Underline, Code, Quote, List, Link } from 'lucide-react';
+import { Send, Users, MessageCircle, Settings, User, Edit, MoreVertical, Search, Image, Smile, Type, Palette, Share2, Bold, Italic, Underline, Code, Quote, List, Link, Loader2 } from 'lucide-react';
 import chatService, { ChatUser, ChatMessage, ChatChannel } from '../services/chatService';
+import giphyService, { GiphyGif } from '../services/giphyService';
 
 const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -25,6 +26,11 @@ const ChatPage: React.FC = () => {
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [showGifPicker, setShowGifPicker] = useState(false);
+  const [gifs, setGifs] = useState<GiphyGif[]>([]);
+  const [gifSearchQuery, setGifSearchQuery] = useState('');
+  const [isLoadingGifs, setIsLoadingGifs] = useState(false);
+  const [gifSearchResults, setGifSearchResults] = useState<GiphyGif[]>([]);
+  const [showGifSearch, setShowGifSearch] = useState(false);
 
   // Den emoji mapping
   const denEmojis: Record<string, string> = {
@@ -97,10 +103,7 @@ const ChatPage: React.FC = () => {
     return formattedText;
   };
 
-  const insertGif = (gifUrl: string) => {
-    setNewMessage(prev => prev + ` ![GIF](${gifUrl})`);
-    setShowGifPicker(false);
-  };
+
 
   const shareMessage = (message: ChatMessage) => {
     const shareText = `${message.userName}: ${message.message}`;
@@ -116,13 +119,54 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  const popularGifs = [
-    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif', // Scout salute
-    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif', // Camping
-    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif', // Nature
-    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif', // Adventure
-    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif', // Friendship
-  ];
+  // Load trending GIFs when GIF picker is opened
+  useEffect(() => {
+    if (showGifPicker && gifs.length === 0) {
+      loadTrendingGifs();
+    }
+  }, [showGifPicker]);
+
+  const loadTrendingGifs = async () => {
+    setIsLoadingGifs(true);
+    try {
+      const trendingGifs = await giphyService.getTrendingGifs(20);
+      setGifs(trendingGifs);
+    } catch (error) {
+      console.error('Error loading trending GIFs:', error);
+    } finally {
+      setIsLoadingGifs(false);
+    }
+  };
+
+  const searchGifs = async (query: string) => {
+    if (!query.trim()) {
+      setGifSearchResults([]);
+      return;
+    }
+
+    setIsLoadingGifs(true);
+    try {
+      const results = await giphyService.searchGifs(query, 20);
+      setGifSearchResults(results);
+    } catch (error) {
+      console.error('Error searching GIFs:', error);
+    } finally {
+      setIsLoadingGifs(false);
+    }
+  };
+
+  const handleGifSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    searchGifs(gifSearchQuery);
+  };
+
+  const insertGif = (gif: GiphyGif) => {
+    setNewMessage(prev => prev + ` ![${gif.title}](${gif.images.fixed_height.url})`);
+    setShowGifPicker(false);
+    setShowGifSearch(false);
+    setGifSearchQuery('');
+    setGifSearchResults([]);
+  };
 
   // Helper functions for message grouping and date separators
   const formatMessageTime = (date: Date) => {
@@ -790,28 +834,87 @@ const ChatPage: React.FC = () => {
                 
                 {/* GIF Picker */}
                 {showGifPicker && (
-                  <div className="p-4 bg-white border border-gray-200 rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-semibold text-gray-900">Popular GIFs</h4>
-                      <button
-                        type="button"
-                        onClick={() => setShowGifPicker(false)}
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        ×
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-5 gap-2">
-                      {popularGifs.map((gif, index) => (
+                  <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-soft">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-sm font-semibold text-gray-900">GIFs</h4>
+                      <div className="flex items-center space-x-2">
                         <button
-                          key={index}
                           type="button"
-                          onClick={() => insertGif(gif)}
-                          className="w-full h-16 bg-gray-100 rounded-lg overflow-hidden hover:bg-gray-200 transition-colors duration-200"
+                          onClick={() => setShowGifSearch(!showGifSearch)}
+                          className="px-3 py-1 text-xs bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors duration-200"
                         >
-                          <img src={gif} alt="GIF" className="w-full h-full object-cover" />
+                          {showGifSearch ? 'Trending' : 'Search'}
                         </button>
-                      ))}
+                        <button
+                          type="button"
+                          onClick={() => setShowGifPicker(false)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* GIF Search */}
+                    {showGifSearch && (
+                      <form onSubmit={handleGifSearch} className="mb-4">
+                        <div className="flex space-x-2">
+                          <input
+                            type="text"
+                            value={gifSearchQuery}
+                            onChange={(e) => setGifSearchQuery(e.target.value)}
+                            placeholder="Search GIFs..."
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          />
+                          <button
+                            type="submit"
+                            disabled={isLoadingGifs}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors duration-200"
+                          >
+                            {isLoadingGifs ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+
+                    {/* API Status */}
+                    <div className="mb-3 p-2 bg-gray-50 rounded-lg">
+                      <p className="text-xs text-gray-600">
+                        {giphyService.getApiStatus().message}
+                      </p>
+                    </div>
+
+                    {/* GIF Grid */}
+                    <div className="grid grid-cols-5 gap-2">
+                      {isLoadingGifs ? (
+                        // Loading skeleton
+                        Array.from({ length: 10 }).map((_, index) => (
+                          <div
+                            key={index}
+                            className="w-full h-20 bg-gray-200 rounded-lg animate-pulse"
+                          />
+                        ))
+                      ) : (showGifSearch ? gifSearchResults : gifs).length > 0 ? (
+                        (showGifSearch ? gifSearchResults : gifs).map((gif) => (
+                          <button
+                            key={gif.id}
+                            type="button"
+                            onClick={() => insertGif(gif)}
+                            className="w-full h-20 bg-gray-100 rounded-lg overflow-hidden hover:shadow-glow transition-all duration-200"
+                            title={gif.title}
+                          >
+                            <img 
+                              src={gif.images.fixed_height_small.url} 
+                              alt={gif.title} 
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
+                        ))
+                      ) : (
+                        <div className="col-span-5 text-center py-8 text-gray-500">
+                          {showGifSearch ? 'No GIFs found. Try a different search term.' : 'Loading GIFs...'}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

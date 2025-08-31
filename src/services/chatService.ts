@@ -217,6 +217,9 @@ class ChatService {
   async initialize(): Promise<ChatUser> {
     this.currentUser = SessionManager.getOrCreateUser();
     
+    // Mark user as online
+    this.currentUser.isOnline = true;
+    
     // Create or update user in Firestore
     await this.createOrUpdateUserInFirestore(this.currentUser);
     
@@ -233,8 +236,9 @@ class ChatService {
   async initializeAsAdmin(): Promise<ChatUser> {
     this.currentUser = SessionManager.getOrCreateUser();
     
-    // Set admin status for users in the admin portal
+    // Set admin status and mark as online
     this.currentUser.isAdmin = true;
+    this.currentUser.isOnline = true;
     
     // Create or update user in Firestore
     await this.createOrUpdateUserInFirestore(this.currentUser);
@@ -410,9 +414,33 @@ class ChatService {
         } as ChatUser;
       });
     } catch (error) {
-      console.warn('Failed to fetch online users (index may be building):', error);
-      // Return empty array while index is building
-      return [];
+      console.warn('Failed to fetch online users (index may be building), trying fallback:', error);
+      
+      // Fallback: Get all users and filter client-side
+      try {
+        const usersRef = collection(db, 'chat-users');
+        const snapshot = await getDocs(usersRef);
+        
+        const now = new Date();
+        const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+        
+        return snapshot.docs
+          .map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              lastSeen: data.lastSeen?.toDate() || new Date()
+            } as ChatUser;
+          })
+          .filter(user => 
+            user.isOnline && 
+            user.lastSeen > fiveMinutesAgo
+          );
+      } catch (fallbackError) {
+        console.warn('Fallback query also failed:', fallbackError);
+        return [];
+      }
     }
   }
 

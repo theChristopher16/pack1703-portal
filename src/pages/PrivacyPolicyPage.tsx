@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Database, Lock, Eye, Clock, Users, Globe, Server, BarChart3, Download } from 'lucide-react';
+import { Shield, Database, Lock, Eye, Clock, Users, Globe, Server, BarChart3, Download, MessageCircle } from 'lucide-react';
 import { SecurityAuditService } from '../services/securityAuditService';
 
 const PrivacyPolicyPage: React.FC = () => {
@@ -164,6 +164,29 @@ const PrivacyPolicyPage: React.FC = () => {
                 <li><strong>Session ID:</strong> A unique identifier for your current browser session</li>
                 <li><strong>User ID:</strong> A randomly generated identifier for chat functionality</li>
               </ul>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-soft border border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-display font-semibold text-text mb-3 flex items-center">
+                <MessageCircle className="w-5 h-5 text-primary mr-2" />
+                Chat & Messaging Privacy
+              </h3>
+              <p className="text-gray-600 mb-3">
+                Our chat system is designed with privacy in mind, especially for anonymous users:
+              </p>
+              <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
+                <li><strong>Anonymous Messaging:</strong> If you post messages while anonymous or not signed in, we cannot trace them back to you individually</li>
+                <li><strong>Message Anonymity:</strong> Anonymous messages are indistinguishable from other anonymous messages - we cannot single out specific anonymous users</li>
+                <li><strong>Message Retention:</strong> All chat messages are automatically deleted at the end of each scouting year</li>
+                <li><strong>No Persistent Storage:</strong> Anonymous chat messages are not stored with any personal identifiers</li>
+                <li><strong>Real-time Only:</strong> Anonymous messages exist only during the active session</li>
+              </ul>
+              <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <p className="text-yellow-800 text-sm">
+                  <strong>Important:</strong> While anonymous messaging provides privacy, please remember to be respectful and follow community guidelines. 
+                  Inappropriate content may still be moderated by pack leadership.
+                </p>
+              </div>
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-soft border border-gray-200 dark:border-gray-700">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Send, Users, MessageCircle, Settings, User, Edit, MoreVertical, Search } from 'lucide-react';
+import { Send, Users, MessageCircle, Settings, User, Edit, MoreVertical, Search, Image, Smile, Type, Palette, Share2, Bold, Italic, Underline, Code, Quote, List, Link } from 'lucide-react';
 import chatService, { ChatUser, ChatMessage, ChatChannel } from '../services/chatService';
 
 const ChatPage: React.FC = () => {
@@ -18,6 +18,13 @@ const ChatPage: React.FC = () => {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [messageListRef, setMessageListRef] = useState<HTMLDivElement | null>(null);
   const [hasNewMessages, setHasNewMessages] = useState(false);
+  const [showRichInput, setShowRichInput] = useState(false);
+  const [selectedColor, setSelectedColor] = useState<string>('#000000');
+  const [selectedFont, setSelectedFont] = useState<string>('normal');
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
+  const [isUnderline, setIsUnderline] = useState(false);
+  const [showGifPicker, setShowGifPicker] = useState(false);
 
   // Den emoji mapping
   const denEmojis: Record<string, string> = {
@@ -80,6 +87,42 @@ const ChatPage: React.FC = () => {
       setHasNewMessages(true);
     }
   }, [messages, isAtBottom]);
+
+  // Rich chat helper functions
+  const applyFormatting = (text: string) => {
+    let formattedText = text;
+    if (isBold) formattedText = `**${formattedText}**`;
+    if (isItalic) formattedText = `*${formattedText}*`;
+    if (isUnderline) formattedText = `__${formattedText}__`;
+    return formattedText;
+  };
+
+  const insertGif = (gifUrl: string) => {
+    setNewMessage(prev => prev + ` ![GIF](${gifUrl})`);
+    setShowGifPicker(false);
+  };
+
+  const shareMessage = (message: ChatMessage) => {
+    const shareText = `${message.userName}: ${message.message}`;
+    if (navigator.share) {
+      navigator.share({
+        title: 'Scout Chat Message',
+        text: shareText,
+        url: window.location.href
+      });
+    } else {
+      navigator.clipboard.writeText(shareText);
+      // You could add a toast notification here
+    }
+  };
+
+  const popularGifs = [
+    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif', // Scout salute
+    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif', // Camping
+    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif', // Nature
+    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif', // Adventure
+    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif', // Friendship
+  ];
 
   // Initialize chat (only once)
   useEffect(() => {
@@ -196,9 +239,16 @@ const ChatPage: React.FC = () => {
 
     try {
       console.log('Sending message to channel:', selectedChannel);
-      await chatService.sendMessage(selectedChannel, newMessage);
+      const formattedMessage = applyFormatting(newMessage.trim());
+      await chatService.sendMessage(selectedChannel, formattedMessage);
       console.log('Message sent successfully');
       setNewMessage('');
+      // Reset formatting
+      setIsBold(false);
+      setIsItalic(false);
+      setIsUnderline(false);
+      setSelectedColor('#000000');
+      setSelectedFont('normal');
     } catch (error) {
       console.error('Failed to send message:', error);
       // Show user-friendly error
@@ -566,6 +616,17 @@ const ChatPage: React.FC = () => {
                           {message.message}
                         </p>
                       </div>
+                      
+                      {/* Message Actions */}
+                      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button
+                          onClick={() => shareMessage(message)}
+                          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                          title="Share message"
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -583,26 +644,134 @@ const ChatPage: React.FC = () => {
                 </div>
               )}
               
-              <form onSubmit={handleSendMessage} className="flex space-x-4">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder={currentUser 
-                    ? `Message #${channels.find(c => c.id === selectedChannel)?.name || 'general'}...`
-                    : 'Connecting to chat...'
-                  }
-                  disabled={!currentUser}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
-                <button
-                  type="submit"
-                  disabled={!newMessage.trim() || !currentUser}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center space-x-2"
-                >
-                  <Send className="w-4 h-4" />
-                  <span>Send</span>
-                </button>
+              <form onSubmit={handleSendMessage} className="space-y-3">
+                {/* Rich Input Toolbar */}
+                <div className="flex items-center space-x-2 p-3 bg-white border border-gray-200 rounded-lg">
+                  {/* Formatting Buttons */}
+                  <button
+                    type="button"
+                    onClick={() => setIsBold(!isBold)}
+                    className={`p-2 rounded-lg transition-colors duration-200 ${
+                      isBold ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                    title="Bold"
+                  >
+                    <Bold className="w-4 h-4" />
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setIsItalic(!isItalic)}
+                    className={`p-2 rounded-lg transition-colors duration-200 ${
+                      isItalic ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                    title="Italic"
+                  >
+                    <Italic className="w-4 h-4" />
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setIsUnderline(!isUnderline)}
+                    className={`p-2 rounded-lg transition-colors duration-200 ${
+                      isUnderline ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                    title="Underline"
+                  >
+                    <Underline className="w-4 h-4" />
+                  </button>
+                  
+                  <div className="w-px h-6 bg-gray-300"></div>
+                  
+                  {/* GIF Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowGifPicker(!showGifPicker)}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                    title="Insert GIF"
+                  >
+                    <Smile className="w-4 h-4" />
+                  </button>
+                  
+                  {/* Color Picker */}
+                  <input
+                    type="color"
+                    value={selectedColor}
+                    onChange={(e) => setSelectedColor(e.target.value)}
+                    className="w-8 h-8 border-0 rounded-lg cursor-pointer"
+                    title="Text color"
+                  />
+                  
+                  <div className="w-px h-6 bg-gray-300"></div>
+                  
+                  {/* Font Selector */}
+                  <select
+                    value={selectedFont}
+                    onChange={(e) => setSelectedFont(e.target.value)}
+                    className="text-sm border-0 bg-transparent text-gray-700 focus:outline-none focus:ring-0"
+                    title="Font style"
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="monospace">Code</option>
+                    <option value="serif">Serif</option>
+                  </select>
+                </div>
+                
+                {/* GIF Picker */}
+                {showGifPicker && (
+                  <div className="p-4 bg-white border border-gray-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold text-gray-900">Popular GIFs</h4>
+                      <button
+                        type="button"
+                        onClick={() => setShowGifPicker(false)}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-5 gap-2">
+                      {popularGifs.map((gif, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => insertGif(gif)}
+                          className="w-full h-16 bg-gray-100 rounded-lg overflow-hidden hover:bg-gray-200 transition-colors duration-200"
+                        >
+                          <img src={gif} alt="GIF" className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Message Input */}
+                <div className="flex space-x-4">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder={currentUser 
+                      ? `Message #${channels.find(c => c.id === selectedChannel)?.name || 'general'}...`
+                      : 'Connecting to chat...'
+                    }
+                    disabled={!currentUser}
+                    style={{
+                      color: selectedColor,
+                      fontFamily: selectedFont === 'monospace' ? 'monospace' : 
+                                 selectedFont === 'serif' ? 'serif' : 'inherit'
+                    }}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newMessage.trim() || !currentUser}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center space-x-2"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>Send</span>
+                  </button>
+                </div>
               </form>
               
               {/* Debug Info (remove in production) */}

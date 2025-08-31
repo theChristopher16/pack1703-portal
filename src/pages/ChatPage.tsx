@@ -208,6 +208,35 @@ const ChatPage: React.FC = () => {
 
   const commonReactions = ['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '🔥', '👏', '🙏'];
 
+  // Function to render message content with GIF support
+  const renderMessageContent = (messageText: string) => {
+    // Split the message into parts (text and images)
+    const parts = messageText.split(/(!\[.*?\]\(.*?\))/g);
+    
+    return parts.map((part, index) => {
+      // Check if this part is an image markdown
+      const imageMatch = part.match(/!\[(.*?)\]\((.*?)\)/);
+      if (imageMatch) {
+        const [, altText, imageUrl] = imageMatch;
+        return (
+          <img
+            key={index}
+            src={imageUrl}
+            alt={altText}
+            className="max-w-xs max-h-48 rounded-lg shadow-sm my-2"
+            onError={(e) => {
+              // Fallback if image fails to load
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
+          />
+        );
+      }
+      // Regular text
+      return <span key={index}>{part}</span>;
+    });
+  };
+
   // Helper functions for message grouping and date separators
   const formatMessageTime = (date: Date) => {
     const now = new Date();
@@ -762,12 +791,12 @@ const ChatPage: React.FC = () => {
                                 </span>
                               )}
                             </div>
-                            <p className={`text-sm ${
+                            <div className={`text-sm ${
                               message.isSystem ? 'text-yellow-700' : 
                               message.isAdmin ? 'text-blue-700' : 'text-gray-700'
                             }`}>
-                              {message.message}
-                            </p>
+                              {renderMessageContent(message.message)}
+                            </div>
                             
                             {/* Reactions */}
                             {message.reactions && message.reactions.length > 0 && (
@@ -1016,22 +1045,35 @@ const ChatPage: React.FC = () => {
                 
                 {/* Message Input */}
                 <div className="flex space-x-4">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder={currentUser 
-                      ? `Message #${channels.find(c => c.id === selectedChannel)?.name || 'general'}...`
-                      : 'Connecting to chat...'
-                    }
-                    disabled={!currentUser}
-                    style={{
-                      color: selectedColor,
-                      fontFamily: selectedFont === 'monospace' ? 'monospace' : 
-                                 selectedFont === 'serif' ? 'serif' : 'inherit'
-                    }}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  />
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder={currentUser 
+                        ? `Message #${channels.find(c => c.id === selectedChannel)?.name || 'general'}...`
+                        : 'Connecting to chat...'
+                      }
+                      disabled={!currentUser}
+                      style={{
+                        color: selectedColor,
+                        fontFamily: selectedFont === 'monospace' ? 'monospace' : 
+                                   selectedFont === 'serif' ? 'serif' : 'inherit'
+                      }}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    />
+                    
+                    {/* Message Preview */}
+                    {newMessage.includes('![') && (
+                      <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-2">Preview:</p>
+                        <div className="text-sm text-gray-700">
+                          {renderMessageContent(newMessage)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
                   <button
                     type="submit"
                     disabled={!newMessage.trim() || !currentUser}

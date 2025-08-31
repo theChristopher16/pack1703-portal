@@ -56,7 +56,7 @@ const HomePage: React.FC = () => {
     }
   ];
 
-  const features = [
+  const scoutingFeatures = [
     {
       emoji: '🏕️',
       title: 'Solar-Punk Spirit',
@@ -72,6 +72,16 @@ const HomePage: React.FC = () => {
       bgColor: 'bg-secondary-50'
     },
     {
+      emoji: '🤝',
+      title: 'Leader-Agnostic System',
+      description: 'Our smart system handles the heavy lifting of organization and coordination, making leadership transitions seamless and supporting busy families who can\'t attend every meeting.',
+      color: 'text-green-600',
+      bgColor: 'bg-green-50'
+    }
+  ];
+
+  const techFeatures = [
+    {
       emoji: '⚡',
       title: 'AI-Enhanced Development',
       description: 'Built with LLM assistance, ensuring no function or call is missed through systematic development with fine-grained testing and validation at every step.',
@@ -79,11 +89,18 @@ const HomePage: React.FC = () => {
       bgColor: 'bg-accent-50'
     },
     {
-      emoji: '🤝',
-      title: 'Leader-Agnostic System',
-      description: 'Our smart system handles the heavy lifting of organization and coordination, making leadership transitions seamless and supporting busy families who can\'t attend every meeting.',
-      color: 'text-green-600',
-      bgColor: 'bg-green-50'
+      emoji: '🔒',
+      title: 'Enterprise Security',
+      description: 'Robust data protection with comprehensive validation, secure authentication, and privacy-first design for family safety.',
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50'
+    },
+    {
+      emoji: '🚀',
+      title: 'Modern Architecture',
+      description: 'Built on Firebase with real-time updates, cloud functions, and responsive design for seamless cross-device experience.',
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50'
     }
   ];
 
@@ -215,33 +232,62 @@ const HomePage: React.FC = () => {
           )}
         </div>
 
-        {/* Features Section */}
+        {/* Scouting Features Section */}
         <div className="mb-20">
           <h2 className="text-4xl font-display font-bold text-gray-900 mb-12 text-center animate-fade-in">
             Why Choose <span className="text-gradient">Our Scout Pack</span>?
           </h2>
 
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-             {features.map((feature, index) => (
-               <div
-                 key={feature.title}
-                 className="text-center animate-fade-in"
-                 style={{ animationDelay: `${index * 200}ms` }}
-               >
-                 <div className="w-16 h-16 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center shadow-glow mx-auto mb-6">
-                   <span className="text-white" style={{ fontSize: '24px' }}>{feature.emoji}</span>
-                 </div>
-                 
-                 <h3 className="text-xl font-display font-semibold text-gray-900 mb-4">
-                   {feature.title}
-                 </h3>
-                 
-                 <p className="text-gray-600 leading-relaxed">
-                   {feature.description}
-                 </p>
-               </div>
-             ))}
-           </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {scoutingFeatures.map((feature, index) => (
+              <div
+                key={feature.title}
+                className="text-center animate-fade-in"
+                style={{ animationDelay: `${index * 200}ms` }}
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center shadow-glow mx-auto mb-6">
+                  <span className="text-white" style={{ fontSize: '24px' }}>{feature.emoji}</span>
+                </div>
+                
+                <h3 className="text-xl font-display font-semibold text-gray-900 mb-4">
+                  {feature.title}
+                </h3>
+                
+                <p className="text-gray-600 leading-relaxed">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Technology Features Section */}
+        <div className="mb-20">
+          <h2 className="text-4xl font-display font-bold text-gray-900 mb-12 text-center animate-fade-in">
+            Built with <span className="text-gradient">Modern Technology</span>
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {techFeatures.map((feature, index) => (
+              <div
+                key={feature.title}
+                className="text-center animate-fade-in"
+                style={{ animationDelay: `${index * 200}ms` }}
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-accent-400 to-purple-500 rounded-xl flex items-center justify-center shadow-glow mx-auto mb-6">
+                  <span className="text-white" style={{ fontSize: '24px' }}>{feature.emoji}</span>
+                </div>
+                
+                <h3 className="text-xl font-display font-semibold text-gray-900 mb-4">
+                  {feature.title}
+                </h3>
+                
+                <p className="text-gray-600 leading-relaxed">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* CTA Section with Enhanced Visual Appeal */}

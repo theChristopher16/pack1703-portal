@@ -5,6 +5,7 @@ import {
   getDoc, 
   addDoc, 
   updateDoc, 
+  deleteDoc,
   query, 
   where, 
   orderBy, 
@@ -28,6 +29,16 @@ export interface ChatUser {
   sessionId: string;
   userAgent: string;
   ipHash?: string;
+  // Admin management fields
+  isBanned?: boolean;
+  banReason?: string;
+  bannedBy?: string;
+  bannedAt?: Date;
+  isMuted?: boolean;
+  muteReason?: string;
+  muteUntil?: Date;
+  mutedBy?: string;
+  mutedAt?: Date;
 }
 
 export interface ChatMessage {
@@ -206,8 +217,11 @@ class ChatService {
   async initialize(): Promise<ChatUser> {
     this.currentUser = SessionManager.getOrCreateUser();
     
-    // Update user's online status in Firestore
-    await this.updateUserStatus(this.currentUser.id, true);
+    // Set admin status for users in the admin portal
+    this.currentUser.isAdmin = true;
+    
+    // Create or update user in Firestore
+    await this.createOrUpdateUserInFirestore(this.currentUser);
     
     // Set up periodic status updates
     setInterval(() => {
@@ -343,6 +357,44 @@ class ChatService {
     }
   }
 
+  async createOrUpdateUserInFirestore(user: ChatUser): Promise<void> {
+    try {
+      const userRef = doc(db, 'chat-users', user.id);
+      const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists()) {
+        // Update existing user
+        await updateDoc(userRef, {
+          name: user.name,
+          den: user.den,
+          isOnline: user.isOnline,
+          lastSeen: serverTimestamp(),
+          sessionId: user.sessionId,
+          userAgent: user.userAgent,
+          ipHash: user.ipHash,
+          isAdmin: user.isAdmin
+        });
+      } else {
+        // Create new user document
+        await updateDoc(userRef, {
+          id: user.id,
+          name: user.name,
+          den: user.den,
+          isOnline: user.isOnline,
+          lastSeen: serverTimestamp(),
+          isAdmin: user.isAdmin,
+          sessionId: user.sessionId,
+          userAgent: user.userAgent,
+          ipHash: user.ipHash,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to create/update user in Firestore:', error);
+    }
+  }
+
   async updateUserInFirestore(user: ChatUser): Promise<void> {
     try {
       const userRef = doc(db, 'chat-users', user.id);
@@ -353,7 +405,8 @@ class ChatService {
         lastSeen: serverTimestamp(),
         sessionId: user.sessionId,
         userAgent: user.userAgent,
-        ipHash: user.ipHash
+        ipHash: user.ipHash,
+        isAdmin: user.isAdmin
       });
     } catch (error) {
       console.warn('Failed to update user in Firestore:', error);
@@ -369,6 +422,217 @@ class ChatService {
       });
     } catch (error) {
       console.warn('Failed to update channel activity:', error);
+    }
+  }
+
+  // Admin Functions
+  async deleteMessage(messageId: string): Promise<void> {
+    if (!this.currentUser?.isAdmin) {
+      throw new Error('Only admins can delete messages');
+    }
+
+    try {
+      const messageRef = doc(db, 'chat-messages', messageId);
+      await deleteDoc(messageRef);
+      
+      // Add system message about deletion
+      const messageDoc = await getDoc(messageRef);
+      if (messageDoc.exists()) {
+        const messageData = messageDoc.data();
+        await this.sendSystemMessage(
+          messageData.channelId, 
+          `Message deleted by admin: "${messageData.message.substring(0, 50)}${messageData.message.length > 50 ? '...' : ''}"`
+        );
+      }
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+      throw error;
+    }
+  }
+
+  async sendSystemMessage(channelId: string, message: string): Promise<void> {
+    if (!this.currentUser?.isAdmin) {
+      throw new Error('Only admins can send system messages');
+    }
+
+    try {
+      const messagesRef = collection(db, 'chat-messages');
+      await addDoc(messagesRef, {
+        channelId,
+        userId: 'system',
+        userName: 'System',
+        message,
+        timestamp: serverTimestamp(),
+        isSystem: true,
+        isAdmin: false,
+        den: 'system'
+      });
+
+      await this.updateChannelActivity(channelId);
+    } catch (error) {
+      console.error('Failed to send system message:', error);
+      throw error;
+    }
+  }
+
+  async banUser(userId: string, reason: string): Promise<void> {
+    if (!this.currentUser?.isAdmin) {
+      throw new Error('Only admins can ban users');
+    }
+
+    try {
+      const userRef = doc(db, 'chat-users', userId);
+      await updateDoc(userRef, {
+        isBanned: true,
+        banReason: reason,
+        bannedBy: this.currentUser.id,
+        bannedAt: serverTimestamp()
+      });
+
+      // Send system message about the ban
+      await this.sendSystemMessage('general', `User has been banned: ${reason}`);
+    } catch (error) {
+      console.error('Failed to ban user:', error);
+      throw error;
+    }
+  }
+
+  async unbanUser(userId: string): Promise<void> {
+    if (!this.currentUser?.isAdmin) {
+      throw new Error('Only admins can unban users');
+    }
+
+    try {
+      const userRef = doc(db, 'chat-users', userId);
+      await updateDoc(userRef, {
+        isBanned: false,
+        banReason: null,
+        bannedBy: null,
+        bannedAt: null
+      });
+
+      await this.sendSystemMessage('general', 'User has been unbanned');
+    } catch (error) {
+      console.error('Failed to unban user:', error);
+      throw error;
+    }
+  }
+
+  async muteUser(userId: string, durationMinutes: number, reason: string): Promise<void> {
+    if (!this.currentUser?.isAdmin) {
+      throw new Error('Only admins can mute users');
+    }
+
+    try {
+      const userRef = doc(db, 'chat-users', userId);
+      const muteUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
+      
+      await updateDoc(userRef, {
+        isMuted: true,
+        muteReason: reason,
+        muteUntil: Timestamp.fromDate(muteUntil),
+        mutedBy: this.currentUser.id,
+        mutedAt: serverTimestamp()
+      });
+
+      await this.sendSystemMessage('general', `User has been muted for ${durationMinutes} minutes: ${reason}`);
+    } catch (error) {
+      console.error('Failed to mute user:', error);
+      throw error;
+    }
+  }
+
+  async unmuteUser(userId: string): Promise<void> {
+    if (!this.currentUser?.isAdmin) {
+      throw new Error('Only admins can unmute users');
+    }
+
+    try {
+      const userRef = doc(db, 'chat-users', userId);
+      await updateDoc(userRef, {
+        isMuted: false,
+        muteReason: null,
+        muteUntil: null,
+        mutedBy: null,
+        mutedAt: null
+      });
+
+      await this.sendSystemMessage('general', 'User has been unmuted');
+    } catch (error) {
+      console.error('Failed to unmute user:', error);
+      throw error;
+    }
+  }
+
+  async createChannel(name: string, description: string, denType?: string): Promise<string> {
+    if (!this.currentUser?.isAdmin) {
+      throw new Error('Only admins can create channels');
+    }
+
+    try {
+      const channelsRef = collection(db, 'chat-channels');
+      const docRef = await addDoc(channelsRef, {
+        name,
+        description,
+        isActive: true,
+        messageCount: 0,
+        lastActivity: serverTimestamp(),
+        denType: denType || 'pack',
+        isDenChannel: !!denType,
+        denLevel: denType,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdBy: this.currentUser.id
+      });
+
+      return docRef.id;
+    } catch (error) {
+      console.error('Failed to create channel:', error);
+      throw error;
+    }
+  }
+
+  async deleteChannel(channelId: string): Promise<void> {
+    if (!this.currentUser?.isAdmin) {
+      throw new Error('Only admins can delete channels');
+    }
+
+    try {
+      const channelRef = doc(db, 'chat-channels', channelId);
+      await updateDoc(channelRef, {
+        isActive: false,
+        deletedAt: serverTimestamp(),
+        deletedBy: this.currentUser.id
+      });
+
+      await this.sendSystemMessage('general', 'Channel has been deleted');
+    } catch (error) {
+      console.error('Failed to delete channel:', error);
+      throw error;
+    }
+  }
+
+  async getAllUsers(): Promise<ChatUser[]> {
+    if (!this.currentUser?.isAdmin) {
+      throw new Error('Only admins can view all users');
+    }
+
+    try {
+      const usersRef = collection(db, 'chat-users');
+      const q = query(usersRef, orderBy('lastSeen', 'desc'));
+      const snapshot = await getDocs(q);
+      
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          lastSeen: data.lastSeen?.toDate() || new Date()
+        } as ChatUser;
+      });
+    } catch (error) {
+      console.warn('Failed to fetch all users:', error);
+      return [];
     }
   }
 

@@ -98,6 +98,36 @@ const ChatAdmin: React.FC = () => {
     }
   };
 
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!currentUser?.isAdmin) return;
+
+    try {
+      await chatService.deleteMessage(messageId);
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+    }
+  };
+
+  const handleBanUser = async (userId: string, reason: string) => {
+    if (!currentUser?.isAdmin) return;
+
+    try {
+      await chatService.banUser(userId, reason);
+    } catch (error) {
+      console.error('Failed to ban user:', error);
+    }
+  };
+
+  const handleMuteUser = async (userId: string, durationMinutes: number, reason: string) => {
+    if (!currentUser?.isAdmin) return;
+
+    try {
+      await chatService.muteUser(userId, durationMinutes, reason);
+    } catch (error) {
+      console.error('Failed to mute user:', error);
+    }
+  };
+
   const formatTimestamp = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
@@ -469,7 +499,7 @@ const ChatAdmin: React.FC = () => {
                   {messages.map(message => (
                     <div
                       key={message.id}
-                      className={`p-3 rounded-lg ${
+                      className={`p-3 rounded-lg relative group ${
                         message.isSystem 
                           ? 'bg-yellow-100 border-l-4 border-yellow-400' 
                           : message.isAdmin 
@@ -477,6 +507,19 @@ const ChatAdmin: React.FC = () => {
                             : 'bg-white border-l-4 border-gray-200'
                       }`}
                     >
+                      {/* Admin Delete Button */}
+                      {currentUser?.isAdmin && !message.isSystem && (
+                        <button
+                          onClick={() => handleDeleteMessage(message.id)}
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 text-red-500 hover:text-red-700 hover:bg-red-100 rounded"
+                          title="Delete message"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
+                      
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center min-w-0">
                           <span className={`font-medium truncate ${
@@ -488,6 +531,11 @@ const ChatAdmin: React.FC = () => {
                           {message.isAdmin && (
                             <span className="ml-2 px-2 py-1 bg-blue-200 text-blue-800 text-xs rounded-full flex-shrink-0">
                               Admin
+                            </span>
+                          )}
+                          {message.isSystem && (
+                            <span className="ml-2 px-2 py-1 bg-yellow-200 text-yellow-800 text-xs rounded-full flex-shrink-0">
+                              System
                             </span>
                           )}
                         </div>

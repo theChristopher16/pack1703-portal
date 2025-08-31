@@ -38,6 +38,7 @@ import { AdminProvider } from './contexts/AdminContext';
 // Styles
 import './App.css';
 import './styles/accessibility.css';
+import './styles/components/cycling-scout-icon.css';
 
 function App() {
   useEffect(() => {

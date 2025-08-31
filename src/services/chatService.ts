@@ -351,11 +351,11 @@ class ChatService {
         message,
         timestamp: serverTimestamp(),
         isSystem: false,
-        isAdmin: this.currentUser.isAdmin,
-        den: this.currentUser.den,
+        isAdmin: Boolean(this.currentUser.isAdmin), // Ensure boolean value
+        den: this.currentUser.den || null, // Ensure null instead of undefined
         sessionId: this.currentUser.sessionId,
         userAgent: this.currentUser.userAgent,
-        ipHash: this.currentUser.ipHash
+        ipHash: this.currentUser.ipHash || null // Ensure null instead of undefined
       });
 
       // Update channel's last activity and message count

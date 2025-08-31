@@ -51,8 +51,6 @@ import './styles/accessibility.css';
 import './styles/components/cycling-scout-icon.css';
 
 function App() {
-  console.log('🚀 App component loaded - Debug mode active');
-  
   useEffect(() => {
     // Register service worker for PWA
     if ('serviceWorker' in navigator) {

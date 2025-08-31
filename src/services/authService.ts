@@ -205,29 +205,22 @@ class AuthService {
 
   // Initialize auth state listener
   private initializeAuthStateListener() {
-    console.log('AuthService: Initializing auth state listener');
     
     onAuthStateChanged(this.auth, async (firebaseUser: FirebaseUser | null) => {
-      console.log('AuthService: Firebase auth state changed:', firebaseUser ? 'User exists' : 'No user');
       
       if (firebaseUser) {
         try {
-          console.log('AuthService: Fetching user data from Firestore for:', firebaseUser.uid);
           const appUser = await this.getUserFromFirestore(firebaseUser.uid);
           this.currentUser = appUser;
-          console.log('AuthService: User data fetched successfully:', appUser);
           this.notifyAuthStateListeners(appUser);
         } catch (error) {
           console.error('AuthService: Error fetching user data:', error);
           // If user doesn't exist in Firestore, create them with default role
-          console.log('AuthService: Creating user from Firebase user');
           const appUser = await this.createUserFromFirebaseUser(firebaseUser);
           this.currentUser = appUser;
-          console.log('AuthService: User created successfully:', appUser);
           this.notifyAuthStateListeners(appUser);
         }
       } else {
-        console.log('AuthService: No Firebase user, clearing current user');
         this.currentUser = null;
         this.notifyAuthStateListeners(null);
       }

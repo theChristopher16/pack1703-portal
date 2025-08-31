@@ -299,6 +299,11 @@ class EmailMonitorService {
   private async analyzeEmailContent(email: EmailMessage): Promise<EmailProcessingResult> {
     const content = `${email.subject}\n${email.body}`.toLowerCase();
     
+    // Check for Wolf Watch emails first (high priority)
+    if (this.isWolfWatchEmail(email)) {
+      return await this.processWolfWatchEmail(email);
+    }
+    
     // Enhanced keyword detection for different content types
     const contentTypes = {
       event: {

@@ -222,10 +222,8 @@ export function AdminProvider({ children }: AdminProviderProps) {
 
   // Connect to authService for authentication state
   useEffect(() => {
-    console.log('AdminContext: Setting up auth state listener');
     
     const unsubscribe = authService.onAuthStateChanged((user) => {
-      console.log('AdminContext: Auth state changed:', user ? 'User logged in' : 'User logged out');
       
       if (user) {
         // Convert AppUser to AdminUser
@@ -240,10 +238,8 @@ export function AdminProvider({ children }: AdminProviderProps) {
           lastLogin: user.lastLoginAt || new Date(),
           isActive: user.isActive,
         };
-        console.log('AdminContext: Setting current user:', adminUser);
         dispatch({ type: 'SET_CURRENT_USER', payload: adminUser });
       } else {
-        console.log('AdminContext: Clearing current user');
         dispatch({ type: 'SET_CURRENT_USER', payload: null });
       }
       // Set loading to false after auth state is determined
@@ -251,7 +247,6 @@ export function AdminProvider({ children }: AdminProviderProps) {
     });
 
     return () => {
-      console.log('AdminContext: Cleaning up auth state listener');
       unsubscribe();
     };
   }, []);

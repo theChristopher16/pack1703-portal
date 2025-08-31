@@ -86,7 +86,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center space-x-1">
-              {navigation.slice(0, 5).map((item) => {
+              {navigation.slice(0, 4).map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
@@ -112,7 +112,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Medium Screen Navigation (shorter names) */}
             <nav className="hidden md:flex lg:hidden items-center space-x-1">
-              {navigation.slice(0, 4).map((item) => {
+              {navigation.slice(0, 3).map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
@@ -152,7 +152,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       return (
                         <button
                           key={item.name}
-                          onClick={() => handleNavigation(item.href)}
+                          onClick={() => {
+                            console.log('Dropdown navigation clicked:', item.href);
+                            handleNavigation(item.href);
+                          }}
                           className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
                             isActive(item.href)
                               ? 'text-primary-600 bg-primary-50'
@@ -168,7 +171,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     {/* Admin Link */}
                     <div className="border-t border-gray-200 mt-2 pt-2">
                       <button
-                        onClick={() => handleNavigation('/admin')}
+                        onClick={() => {
+                          console.log('Admin navigation clicked');
+                          handleNavigation('/admin');
+                        }}
                         className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
                           isActive('/admin')
                             ? 'text-blue-600 bg-blue-50'

@@ -3,6 +3,7 @@ import { useAdmin } from '../../contexts/AdminContext';
 import { EntityType, AdminActionType } from '../../types/admin';
 import ConfigManager from './ConfigManager';
 import AIChatInterface from './AIChatInterface';
+import ChannelManager from './ChannelManager';
 import { useToast } from '../../contexts/ToastContext';
 
 export const AdminDashboard: React.FC = () => {
@@ -31,7 +32,7 @@ export const AdminDashboard: React.FC = () => {
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [selectedEntityType, setSelectedEntityType] = useState<EntityType>('event');
   const [selectedAction, setSelectedAction] = useState<AdminActionType>('create');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'config' | 'ai-chat'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'config' | 'ai-chat' | 'channels'>('dashboard');
 
   useEffect(() => {
     if (state.isAuthenticated) {
@@ -228,6 +229,16 @@ export const AdminDashboard: React.FC = () => {
           >
             Nova
           </button>
+          <button
+            onClick={() => setActiveTab('channels')}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
+              activeTab === 'channels'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Channels
+          </button>
         </div>
 
         {/* Quick Actions */}
@@ -360,8 +371,10 @@ export const AdminDashboard: React.FC = () => {
           </div>
         ) : activeTab === 'config' ? (
           <ConfigManager />
-        ) : (
+        ) : activeTab === 'ai-chat' ? (
           <AIChatInterface />
+        ) : (
+          <ChannelManager />
         )}
       </div>
     </div>

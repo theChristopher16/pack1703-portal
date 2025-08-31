@@ -735,6 +735,28 @@ class ChatService {
     }
   }
 
+  async updateChannel(channelId: string, updates: Partial<ChatChannel>): Promise<void> {
+    if (!this.currentUser?.isAdmin) {
+      throw new Error('Only admins can update channels');
+    }
+
+    try {
+      const channelRef = doc(db, 'chat-channels', channelId);
+      await updateDoc(channelRef, {
+        ...updates,
+        updatedAt: serverTimestamp(),
+        updatedBy: this.currentUser.id
+      });
+
+      // Clear cache to force refresh
+      this.channelsCache = null;
+      this.channelsCacheTime = 0;
+    } catch (error) {
+      console.error('Failed to update channel:', error);
+      throw error;
+    }
+  }
+
   async deleteChannel(channelId: string): Promise<void> {
     if (!this.currentUser?.isAdmin) {
       throw new Error('Only admins can delete channels');

@@ -13,6 +13,7 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -31,6 +32,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Handle navigation with error recovery
   const handleNavigation = (href: string) => {
     console.log('Attempting navigation to:', href);
+    
+    // Close dropdown if open
+    setIsDropdownOpen(false);
     
     // Force navigation even if there are issues
     try {
@@ -138,55 +142,65 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* More Dropdown for Additional Navigation Items */}
             <div className="hidden md:flex items-center">
-              <div className="relative group">
-                <button className="flex items-center space-x-2 px-3 py-2 rounded-xl font-medium text-gray-600 hover:text-primary-600 hover:bg-primary-50/50 transition-all duration-300">
+              <div className="relative">
+                <button 
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  onBlur={() => setTimeout(() => setIsDropdownOpen(false), 150)}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-xl font-medium text-gray-600 hover:text-primary-600 hover:bg-primary-50/50 transition-all duration-300"
+                >
                   <span className="text-sm">More</span>
-                  <ChevronDown className="w-4 h-4 group-hover:rotate-180 transition-transform duration-200" />
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 
                 {/* Dropdown Menu */}
-                <div className="absolute top-full right-0 mt-2 w-48 bg-white/95 backdrop-blur-md rounded-2xl shadow-soft border border-white/50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50">
-                  <div className="py-2">
-                    {navigation.slice(4).map((item) => {
-                      const Icon = item.icon;
-                      return (
+                {isDropdownOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-48 bg-white/95 backdrop-blur-md rounded-2xl shadow-soft border border-white/50 z-50">
+                    <div className="py-2">
+                      {navigation.slice(4).map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <button
+                            key={item.name}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('Dropdown navigation clicked:', item.href);
+                              handleNavigation(item.href);
+                            }}
+                            className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                              isActive(item.href)
+                                ? 'text-primary-600 bg-primary-50'
+                                : 'text-gray-600 hover:text-primary-600 hover:bg-primary-50/50'
+                            }`}
+                          >
+                            <Icon className="w-4 h-4" />
+                            <span>{item.name}</span>
+                          </button>
+                        );
+                      })}
+                      
+                      {/* Admin Link */}
+                      <div className="border-t border-gray-200 mt-2 pt-2">
                         <button
-                          key={item.name}
-                          onClick={() => {
-                            console.log('Dropdown navigation clicked:', item.href);
-                            handleNavigation(item.href);
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Admin navigation clicked');
+                            handleNavigation('/admin');
                           }}
                           className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
-                            isActive(item.href)
-                              ? 'text-primary-600 bg-primary-50'
-                              : 'text-gray-600 hover:text-primary-600 hover:bg-primary-50/50'
+                            isActive('/admin')
+                              ? 'text-blue-600 bg-blue-50'
+                              : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50/50'
                           }`}
                         >
-                          <Icon className="w-4 h-4" />
-                          <span>{item.name}</span>
+                          <Settings className="w-4 h-4" />
+                          <span>Admin Portal</span>
                         </button>
-                      );
-                    })}
-                    
-                    {/* Admin Link */}
-                    <div className="border-t border-gray-200 mt-2 pt-2">
-                      <button
-                        onClick={() => {
-                          console.log('Admin navigation clicked');
-                          handleNavigation('/admin');
-                        }}
-                        className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
-                          isActive('/admin')
-                            ? 'text-blue-600 bg-blue-50'
-                            : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50/50'
-                        }`}
-                      >
-                        <Settings className="w-4 h-4" />
-                        <span>Admin Portal</span>
-                      </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 

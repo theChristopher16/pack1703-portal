@@ -85,14 +85,14 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
     >
       {/* Pinned Badge */}
       {announcement.pinned && (
-        <div className="absolute top-4 right-4 flex items-center space-x-1 px-2 py-1 bg-primary-100 text-primary-700 rounded-full text-xs font-medium">
+        <div className="absolute top-3 right-3 flex items-center space-x-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium shadow-sm z-10">
           <Pin className="w-3 h-3 fill-current" />
           <span>Pinned</span>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
+      <div className={`flex items-start justify-between mb-4 ${announcement.pinned ? 'pr-16' : ''}`}>
         <div className="flex-1">
           <h3 className={`text-xl font-display font-semibold text-gray-900 mb-2 group-hover:text-gradient transition-all duration-300 ${
             announcement.pinned ? 'text-primary-700' : ''

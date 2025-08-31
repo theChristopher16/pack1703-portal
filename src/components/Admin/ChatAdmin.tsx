@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Send, Users, MessageCircle, Settings, AlertTriangle, CheckCircle, User, Edit } from 'lucide-react';
+import { Send, Users, MessageCircle, Settings, AlertTriangle, CheckCircle, User, Edit, Image, Smile, Type, Palette, Share2, Bold, Italic, Underline, Code, Quote, List, Link, Trash2, Shield, Ban, VolumeX } from 'lucide-react';
 import chatService, { ChatUser, ChatMessage, ChatChannel, SessionManager } from '../../services/chatService';
 
 
@@ -16,6 +16,16 @@ const ChatAdmin: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<ChatUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [messageListRef, setMessageListRef] = useState<HTMLDivElement | null>(null);
+  const [hasNewMessages, setHasNewMessages] = useState(false);
+  const [showRichInput, setShowRichInput] = useState(false);
+  const [selectedColor, setSelectedColor] = useState<string>('#000000');
+  const [selectedFont, setSelectedFont] = useState<string>('normal');
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
+  const [isUnderline, setIsUnderline] = useState(false);
+  const [showGifPicker, setShowGifPicker] = useState(false);
   const [systemStatus, setSystemStatus] = useState({
     totalUsers: 0,
     onlineUsers: 0,
@@ -165,9 +175,16 @@ const ChatAdmin: React.FC = () => {
 
     try {
       console.log('Sending message to channel:', selectedChannel);
-      await chatService.sendMessage(selectedChannel, newMessage);
+      const formattedMessage = applyFormatting(newMessage.trim());
+      await chatService.sendMessage(selectedChannel, formattedMessage);
       console.log('Message sent successfully');
       setNewMessage('');
+      // Reset formatting
+      setIsBold(false);
+      setIsItalic(false);
+      setIsUnderline(false);
+      setSelectedColor('#000000');
+      setSelectedFont('normal');
     } catch (error) {
       console.error('Failed to send message:', error);
       // Show user-friendly error
@@ -203,6 +220,117 @@ const ChatAdmin: React.FC = () => {
     } catch (error) {
       console.error('Failed to mute user:', error);
     }
+  };
+
+  // Scroll handling functions
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const element = e.currentTarget;
+    const isAtBottomNow = element.scrollHeight - element.scrollTop <= element.clientHeight + 10;
+    setIsAtBottom(isAtBottomNow);
+  };
+
+  const scrollToBottom = () => {
+    if (messageListRef) {
+      messageListRef.scrollTo({
+        top: messageListRef.scrollHeight,
+        behavior: 'smooth'
+      });
+      setHasNewMessages(false);
+    }
+  };
+
+  // Auto-scroll when new messages arrive (only if user is at bottom)
+  useEffect(() => {
+    if (isAtBottom && messageListRef) {
+      scrollToBottom();
+      setHasNewMessages(false);
+    } else if (!isAtBottom) {
+      setHasNewMessages(true);
+    }
+  }, [messages, isAtBottom]);
+
+  // Rich chat helper functions
+  const applyFormatting = (text: string) => {
+    let formattedText = text;
+    if (isBold) formattedText = `**${formattedText}**`;
+    if (isItalic) formattedText = `*${formattedText}*`;
+    if (isUnderline) formattedText = `__${formattedText}__`;
+    return formattedText;
+  };
+
+  const insertGif = (gifUrl: string) => {
+    setNewMessage(prev => prev + ` ![GIF](${gifUrl})`);
+    setShowGifPicker(false);
+  };
+
+  const shareMessage = (message: ChatMessage) => {
+    const shareText = `${message.userName}: ${message.message}`;
+    if (navigator.share) {
+      navigator.share({
+        title: 'Scout Chat Message',
+        text: shareText,
+        url: window.location.href
+      });
+    } else {
+      navigator.clipboard.writeText(shareText);
+    }
+  };
+
+  const popularGifs = [
+    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif', // Scout salute
+    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif', // Camping
+    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif', // Nature
+    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif', // Adventure
+    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif', // Friendship
+  ];
+
+  // Helper functions for message grouping and date separators
+  const formatMessageTime = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+
+    if (minutes < 1) return 'now';
+    if (minutes < 60) return `${minutes}m`;
+    if (hours < 24) return `${hours}h`;
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatDateSeparator = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / 86400000);
+
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return date.toLocaleDateString([], { weekday: 'long' });
+    return date.toLocaleDateString([], { 
+      month: 'short', 
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    });
+  };
+
+  const shouldShowDateSeparator = (currentMessage: ChatMessage, previousMessage: ChatMessage | null) => {
+    if (!previousMessage) return true;
+    
+    const currentDate = new Date(currentMessage.timestamp);
+    const previousDate = new Date(previousMessage.timestamp);
+    
+    return currentDate.toDateString() !== previousDate.toDateString();
+  };
+
+  const shouldShowTimestamp = (currentMessage: ChatMessage, nextMessage: ChatMessage | null) => {
+    if (!nextMessage) return true;
+    
+    const currentDate = new Date(currentMessage.timestamp);
+    const nextDate = new Date(nextMessage.timestamp);
+    
+    const timeDiff = Math.abs(currentDate.getTime() - nextDate.getTime());
+    const fiveMinutes = 5 * 60 * 1000;
+    
+    return currentMessage.userName !== nextMessage.userName || timeDiff > fiveMinutes;
   };
 
   const formatTimestamp = (date: Date) => {
@@ -388,7 +516,7 @@ const ChatAdmin: React.FC = () => {
         )}
 
         {activeTab === 'messages' && (
-          <div className="flex flex-col md:flex-row h-96 md:h-96 relative">
+          <div className="flex flex-col md:flex-row h-96 md:h-96 relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden shadow-soft">
             {/* Mobile Overlay */}
             {isSidebarOpen && (
               <div 
@@ -402,7 +530,7 @@ const ChatAdmin: React.FC = () => {
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                   isSidebarOpen 
-                    ? 'bg-blue-100 text-blue-700' 
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-soft' 
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -413,60 +541,70 @@ const ChatAdmin: React.FC = () => {
               </button>
             </div>
 
-            {/* Discord-style Sidebar */}
-            <div className={`${isSidebarOpen ? 'block' : 'hidden'} md:block md:w-64 bg-gray-50 border-r border-gray-200 overflow-hidden flex flex-col absolute md:relative top-0 left-0 w-full md:w-64 h-full z-20`}>
+            {/* Modern Sidebar */}
+            <div className={`${isSidebarOpen ? 'block' : 'hidden'} md:block md:w-64 bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 overflow-hidden flex flex-col absolute md:relative top-0 left-0 w-full md:w-64 h-full z-20 backdrop-blur-sm`}>
               {/* User Profile Section */}
               {currentUser && (
-                <div className="p-4 border-b border-gray-200 flex-shrink-0">
+                <div className="p-4 border-b border-gray-200 flex-shrink-0 bg-gradient-to-r from-blue-500 to-purple-600">
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                      <User className="w-4 h-4 text-white" />
+                    <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                      <User className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-semibold text-white truncate">
                         {currentUser.name}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-blue-100">
                         {currentUser.den ? `${currentUser.den} Den` : 'Pack Member'}
                       </p>
-                      <p className="text-xs text-blue-500">
-                        Auto-assigned name
+                      <p className="text-xs text-blue-200">
+                        Admin Account
                       </p>
                     </div>
                     <button
                       onClick={() => setActiveTab('settings')}
-                      className="p-1 text-gray-400 hover:text-gray-600"
-                      title="Edit Den & Family Name"
+                      className="p-2 text-white hover:text-blue-200 hover:bg-white hover:bg-opacity-20 rounded-lg transition-all duration-200"
+                      title="Admin Settings"
                     >
-                      <Edit className="w-3 h-3" />
+                      <Settings className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
               )}
               
               <div className="p-4 overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 'calc(100vh - 300px)' }}>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Channels</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center">
+                  <MessageCircle className="w-4 h-4 mr-2 text-blue-600" />
+                  Channels
+                </h3>
                 
                 {/* Pack Channels Section */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Pack Channels</span>
-                    <span className="text-xs text-gray-400">{uniquePackChannels.length}</span>
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide bg-gray-100 px-2 py-1 rounded-full">Pack Channels</span>
+                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">{uniquePackChannels.length}</span>
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {uniquePackChannels.map(channel => (
                       <button
                         key={`pack-channel-${channel.id}`}
                         onClick={() => setSelectedChannel(channel.id)}
-                        className={`w-full text-left px-2 py-1 rounded text-sm transition-colors duration-200 ${
+                        className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-all duration-200 ${
                           selectedChannel === channel.id
-                            ? 'bg-blue-100 text-blue-700 font-medium'
-                            : 'text-gray-700 hover:bg-gray-100'
+                            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium shadow-soft'
+                            : 'text-gray-700 hover:bg-gray-100 hover:shadow-soft'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span>#{channel.name}</span>
-                          <span className="text-xs text-gray-500">{channel.messageCount}</span>
+                          <span className="flex items-center">
+                            <span className="mr-2">#</span>
+                            {channel.name}
+                          </span>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            selectedChannel === channel.id ? 'bg-white bg-opacity-20' : 'bg-gray-100'
+                          }`}>
+                            {channel.messageCount}
+                          </span>
                         </div>
                       </button>
                     ))}
@@ -474,20 +612,27 @@ const ChatAdmin: React.FC = () => {
                 </div>
 
                 {/* Den Channels Section */}
-                <div className="space-y-3">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide bg-gray-100 px-2 py-1 rounded-full">Den Channels</span>
+                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                      {uniqueDenChannels.filter(c => c.isDenChannel).length}
+                    </span>
+                  </div>
+                  
                   {[
-                    { id: 'lion', name: 'Lion Den', icon: '🦁', color: 'text-yellow-600' },
-                    { id: 'tiger', name: 'Tiger Den', icon: '🐯', color: 'text-orange-600' },
-                    { id: 'wolf', name: 'Wolf Den', icon: '🐺', color: 'text-blue-600' },
-                    { id: 'bear', name: 'Bear Den', icon: '🐻', color: 'text-brown-600' },
-                    { id: 'webelos', name: 'Webelos Den', icon: '🏕️', color: 'text-green-600' },
-                    { id: 'arrow-of-light', name: 'Arrow of Light', icon: '🏹', color: 'text-purple-600' }
+                    { id: 'lion', name: 'Lion Den', icon: '🦁', color: 'text-yellow-600', bgColor: 'bg-yellow-50' },
+                    { id: 'tiger', name: 'Tiger Den', icon: '🐯', color: 'text-orange-600', bgColor: 'bg-orange-50' },
+                    { id: 'wolf', name: 'Wolf Den', icon: '🐺', color: 'text-blue-600', bgColor: 'bg-blue-50' },
+                    { id: 'bear', name: 'Bear Den', icon: '🐻', color: 'text-brown-600', bgColor: 'bg-brown-50' },
+                    { id: 'webelos', name: 'Webelos Den', icon: '🏕️', color: 'text-green-600', bgColor: 'bg-green-50' },
+                    { id: 'arrow-of-light', name: 'Arrow of Light', icon: '🏹', color: 'text-purple-600', bgColor: 'bg-purple-50' }
                   ].map(den => {
                     const denChannels = uniqueDenChannels.filter(channel => channel.denType === den.id);
                     const isExpanded = expandedDens.has(den.id);
                     
                     return (
-                      <div key={`den-${den.id}`} className="space-y-1">
+                      <div key={`den-${den.id}`} className="space-y-2">
                         <button
                           onClick={() => {
                             const newExpanded = new Set(expandedDens);
@@ -498,40 +643,52 @@ const ChatAdmin: React.FC = () => {
                             }
                             setExpandedDens(newExpanded);
                           }}
-                          className="w-full text-left px-2 py-1 rounded text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors duration-200 flex items-center justify-between"
+                          className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-all duration-200 flex items-center justify-between ${
+                            denChannels.some(c => c.id === selectedChannel)
+                              ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium shadow-soft'
+                              : `${den.bgColor} text-gray-700 hover:shadow-soft`
+                          }`}
                         >
                           <div className="flex items-center">
-                            <span className="mr-2">{den.icon}</span>
+                            <span className="text-lg mr-2">{den.icon}</span>
                             <span>{den.name}</span>
                           </div>
-                          <div className="flex items-center">
-                            <span className="text-xs text-gray-500 mr-1">{denChannels.length}</span>
-                            <svg
-                              className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          <div className="flex items-center space-x-2">
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              denChannels.some(c => c.id === selectedChannel) 
+                                ? 'bg-white bg-opacity-20' 
+                                : 'bg-white bg-opacity-60'
+                            }`}>
+                              {denChannels.length}
+                            </span>
+                            <svg className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                           </div>
                         </button>
                         
                         {isExpanded && (
-                          <div className="ml-4 space-y-1">
+                          <div className="ml-6 space-y-2">
                             {denChannels.map(channel => (
                               <button
                                 key={`den-channel-${channel.id}`}
                                 onClick={() => setSelectedChannel(channel.id)}
-                                className={`w-full text-left px-2 py-1 rounded text-sm transition-colors duration-200 ${
+                                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                                   selectedChannel === channel.id
-                                    ? 'bg-blue-100 text-blue-700 font-medium'
-                                    : 'text-gray-600 hover:bg-gray-100'
+                                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium shadow-soft'
+                                    : 'text-gray-600 hover:bg-gray-100 hover:shadow-soft'
                                 }`}
                               >
                                 <div className="flex items-center justify-between">
-                                  <span>#{channel.name}</span>
-                                  <span className="text-xs text-gray-500">{channel.messageCount}</span>
+                                  <span className="flex items-center">
+                                    <span className="mr-2">#</span>
+                                    {channel.name}
+                                  </span>
+                                  <span className={`text-xs px-2 py-1 rounded-full ${
+                                    selectedChannel === channel.id ? 'bg-white bg-opacity-20' : 'bg-gray-100'
+                                  }`}>
+                                    {channel.messageCount}
+                                  </span>
                                 </div>
                               </button>
                             ))}
@@ -547,22 +704,28 @@ const ChatAdmin: React.FC = () => {
             {/* Chat Area */}
             <div className="flex-1 flex flex-col min-h-0">
               {/* Channel Header */}
-              <div className="bg-white border-b border-gray-200 px-4 py-3">
+              <div className="bg-gradient-to-r from-white to-gray-50 border-b border-gray-200 px-4 py-3">
                 {(() => {
                   const currentChannel = channels.find(c => c.id === selectedChannel);
                   return (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center min-w-0">
-                        <span className="text-lg font-semibold text-gray-900 truncate">
-                          #{currentChannel?.name || 'general'}
+                        <span className="text-lg font-semibold text-gray-900 truncate flex items-center">
+                          <span className="mr-2">#</span>
+                          {currentChannel?.name || 'general'}
                         </span>
                         {currentChannel?.isDenChannel && (
-                          <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full flex-shrink-0">
+                          <span className="ml-2 px-2 py-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs rounded-full flex-shrink-0 shadow-soft">
                             {currentChannel.denLevel}
                           </span>
                         )}
+                        {hasNewMessages && !isAtBottom && (
+                          <span className="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full flex-shrink-0 animate-pulse">
+                            New messages
+                          </span>
+                        )}
                       </div>
-                      <span className="text-sm text-gray-500 flex-shrink-0 ml-2">
+                      <span className="text-sm text-gray-500 flex-shrink-0 ml-2 bg-gray-100 px-2 py-1 rounded-full">
                         {currentChannel?.messageCount || 0} messages
                       </span>
                     </div>
@@ -571,83 +734,212 @@ const ChatAdmin: React.FC = () => {
               </div>
 
                           {/* Message List */}
-              <div className="flex-1 bg-gray-50 overflow-y-auto p-2 md:p-4">
+              <div 
+                ref={setMessageListRef}
+                className="flex-1 bg-gray-50 overflow-y-auto p-2 md:p-4 relative"
+                onScroll={handleScroll}
+              >
+                {/* Scroll to Bottom Button */}
+                {!isAtBottom && (
+                  <button
+                    onClick={scrollToBottom}
+                    className="absolute bottom-4 right-4 z-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg transition-all duration-200 transform hover:scale-110"
+                    title="Scroll to bottom"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                  </button>
+                )}
+                
                 <div className="space-y-3 md:space-y-4">
-                  {messages.map(message => (
-                    <div
-                      key={message.id}
-                      className={`p-3 rounded-lg relative group ${
-                        message.isSystem 
-                          ? 'bg-yellow-100 border-l-4 border-yellow-400' 
-                          : message.isAdmin 
-                            ? 'bg-blue-100 border-l-4 border-blue-400' 
-                            : 'bg-white border-l-4 border-gray-200'
-                      }`}
-                    >
-                      {/* Admin Delete Button */}
-                      {currentUser?.isAdmin && !message.isSystem && (
-                        <button
-                          onClick={() => handleDeleteMessage(message.id)}
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 text-red-500 hover:text-red-700 hover:bg-red-100 rounded"
-                          title="Delete message"
+                  {messages.map((message, index) => {
+                    const previousMessage = index > 0 ? messages[index - 1] : null;
+                    const nextMessage = index < messages.length - 1 ? messages[index + 1] : null;
+                    const showDateSeparator = shouldShowDateSeparator(message, previousMessage);
+                    const showTimestamp = shouldShowTimestamp(message, nextMessage);
+                    
+                    return (
+                      <React.Fragment key={message.id}>
+                        {/* Date Separator */}
+                        {showDateSeparator && (
+                          <div className="flex justify-center my-6">
+                            <div className="px-4 py-2 bg-gray-100 text-gray-600 text-sm font-medium rounded-full">
+                              {formatDateSeparator(new Date(message.timestamp))}
+                            </div>
+                          </div>
+                        )}
+                        
+                                                {/* Message */}
+                        <div
+                          className={`p-3 rounded-lg relative group ${
+                            message.isSystem 
+                              ? 'bg-yellow-100 border-l-4 border-yellow-400' 
+                              : message.isAdmin 
+                                ? 'bg-blue-100 border-l-4 border-blue-400' 
+                                : 'bg-white border-l-4 border-gray-200'
+                          }`}
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      )}
-                      
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center min-w-0">
-                          <span className={`font-medium truncate ${
-                            message.isSystem ? 'text-yellow-800' : 
-                            message.isAdmin ? 'text-blue-800' : 'text-gray-800'
+                          {/* Admin Controls */}
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex space-x-1">
+                            {currentUser?.isAdmin && !message.isSystem && (
+                              <>
+                                <button
+                                  onClick={() => handleDeleteMessage(message.id)}
+                                  className="p-1 text-red-500 hover:text-red-700 hover:bg-red-100 rounded"
+                                  title="Delete message"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => shareMessage(message)}
+                                  className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                                  title="Share message"
+                                >
+                                  <Share2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                          
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center min-w-0">
+                              <span className={`font-medium truncate ${
+                                message.isSystem ? 'text-yellow-800' : 
+                                message.isAdmin ? 'text-blue-800' : 'text-gray-800'
+                              }`}>
+                                {message.userName}
+                              </span>
+                              {message.isAdmin && (
+                                <span className="ml-2 px-2 py-1 bg-blue-200 text-blue-800 text-xs rounded-full flex-shrink-0">
+                                  Admin
+                                </span>
+                              )}
+                              {message.isSystem && (
+                                <span className="ml-2 px-2 py-1 bg-yellow-200 text-yellow-800 text-xs rounded-full flex-shrink-0">
+                                  System
+                                </span>
+                              )}
+                              {showTimestamp && (
+                                <span className="text-xs text-gray-500 ml-2">
+                                  {formatMessageTime(new Date(message.timestamp))}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <p className={`text-sm break-words ${
+                            message.isSystem ? 'text-yellow-700' : 
+                            message.isAdmin ? 'text-blue-700' : 'text-gray-700'
                           }`}>
-                            {message.userName}
-                          </span>
-                          {message.isAdmin && (
-                            <span className="ml-2 px-2 py-1 bg-blue-200 text-blue-800 text-xs rounded-full flex-shrink-0">
-                              Admin
-                            </span>
-                          )}
-                          {message.isSystem && (
-                            <span className="ml-2 px-2 py-1 bg-yellow-200 text-yellow-800 text-xs rounded-full flex-shrink-0">
-                              System
-                            </span>
-                          )}
+                            {message.message}
+                          </p>
                         </div>
-                        <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
-                          {formatTimestamp(message.timestamp)}
-                        </span>
-                      </div>
-                      <p className={`text-sm break-words ${
-                        message.isSystem ? 'text-yellow-700' : 
-                        message.isAdmin ? 'text-blue-700' : 'text-gray-700'
-                      }`}>
-                        {message.message}
-                      </p>
-                    </div>
-                  ))}
+                                             </React.Fragment>
+                     );
+                   })}
                 </div>
               </div>
 
               {/* Send Message */}
               <div className="bg-white border-t border-gray-200 p-2 md:p-4">
-                <form onSubmit={handleSendMessage} className="flex gap-2 md:gap-3">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder={`Message #${channels.find(c => c.id === selectedChannel)?.name || 'general'}...`}
-                    className="flex-1 px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm md:text-base"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 md:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center text-sm md:text-base"
-                  >
-                    <Send className="w-4 h-4 mr-1 md:mr-2" />
-                    <span className="hidden sm:inline">Send</span>
-                  </button>
+                <form onSubmit={handleSendMessage} className="space-y-3">
+                  {/* Rich Input Toolbar */}
+                  <div className="flex items-center space-x-2 p-3 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
+                    <button 
+                      onClick={() => setIsBold(!isBold)} 
+                      className={`p-2 rounded-lg transition-all duration-200 ${
+                        isBold ? 'bg-blue-100 text-blue-600 shadow-soft' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                      }`} 
+                      title="Bold"
+                    >
+                      <Bold className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => setIsItalic(!isItalic)} 
+                      className={`p-2 rounded-lg transition-all duration-200 ${
+                        isItalic ? 'bg-blue-100 text-blue-600 shadow-soft' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                      }`} 
+                      title="Italic"
+                    >
+                      <Italic className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => setIsUnderline(!isUnderline)} 
+                      className={`p-2 rounded-lg transition-all duration-200 ${
+                        isUnderline ? 'bg-blue-100 text-blue-600 shadow-soft' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                      }`} 
+                      title="Underline"
+                    >
+                      <Underline className="w-4 h-4" />
+                    </button>
+                    <div className="w-px h-6 bg-gray-300"></div>
+                    <button 
+                      onClick={() => setShowGifPicker(!showGifPicker)} 
+                      className="p-2 rounded-lg text-gray-600 hover:text-gray-800 hover:bg-gray-200 transition-all duration-200" 
+                      title="Insert GIF"
+                    >
+                      <Smile className="w-4 h-4" />
+                    </button>
+                    <input 
+                      type="color" 
+                      value={selectedColor} 
+                      onChange={(e) => setSelectedColor(e.target.value)} 
+                      className="w-8 h-8 rounded-lg border-2 border-gray-300 cursor-pointer" 
+                      title="Text color" 
+                    />
+                    <div className="w-px h-6 bg-gray-300"></div>
+                    <select 
+                      value={selectedFont} 
+                      onChange={(e) => setSelectedFont(e.target.value)} 
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                      title="Font style"
+                    >
+                      <option value="normal">Normal</option>
+                      <option value="monospace">Code</option>
+                      <option value="serif">Serif</option>
+                    </select>
+                  </div>
+                  
+                  {/* GIF Picker */}
+                  {showGifPicker && (
+                    <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-soft">
+                      <div className="grid grid-cols-5 gap-2">
+                        {popularGifs.map((gif, index) => (
+                          <button 
+                            key={index} 
+                            onClick={() => insertGif(gif)} 
+                            className="w-full h-20 rounded-lg overflow-hidden hover:shadow-glow transition-all duration-200"
+                          >
+                            <img src={gif} alt="GIF" className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Message Input */}
+                  <div className="flex space-x-4">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder={currentUser ? `Message #${channels.find(c => c.id === selectedChannel)?.name || 'general'}...` : 'Connecting to chat...'}
+                      disabled={!currentUser}
+                      style={{ 
+                        color: selectedColor, 
+                        fontFamily: selectedFont === 'monospace' ? 'monospace' : selectedFont === 'serif' ? 'serif' : 'inherit' 
+                      }}
+                      className="flex-1 px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm shadow-soft transition-all duration-200"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!newMessage.trim() || !currentUser}
+                      className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-soft hover:shadow-glow transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      <span>Send</span>
+                    </button>
+                  </div>
                 </form>
               </div>
             </div>

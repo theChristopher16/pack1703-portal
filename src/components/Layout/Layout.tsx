@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, MessageCircle, Sparkles, ChevronDown, BarChart3 } from 'lucide-react';
+import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, MessageCircle, Sparkles, ChevronDown, BarChart3, Settings } from 'lucide-react';
 import { LoadingSpinner } from '../Loading';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { usePackNameConfig, useContactConfigs } from '../../hooks/useConfig';
@@ -154,6 +154,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         </Link>
                       );
                     })}
+                    
+                    {/* Admin Link */}
+                    <div className="border-t border-gray-200 mt-2 pt-2">
+                      <Link
+                        to="/admin"
+                        className={`flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                          isActive('/admin')
+                            ? 'text-blue-600 bg-blue-50'
+                            : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50/50'
+                        }`}
+                      >
+                        <Settings className="w-4 h-4" />
+                        <span>Admin Portal</span>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -194,6 +209,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </Link>
                   );
                 })}
+                
+                {/* Admin Link */}
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <Link
+                    to="/admin"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center justify-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
+                      isActive('/admin')
+                        ? 'text-blue-600 bg-blue-50'
+                        : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50/50'
+                    }`}
+                  >
+                    <Settings className="w-5 h-5" />
+                    <span>Admin Portal</span>
+                  </Link>
+                </div>
               </nav>
             </div>
           )}

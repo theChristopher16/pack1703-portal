@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAdmin } from '../contexts/AdminContext';
+import { Home, LogIn } from 'lucide-react';
 
 const AdminLogin: React.FC = () => {
   const { login, state } = useAdmin();
@@ -27,6 +28,25 @@ const AdminLogin: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12">
       <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Navigation Buttons */}
+        <div className="flex justify-between items-center mb-8">
+          <Link
+            to="/"
+            className="flex items-center space-x-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-lg text-gray-700 hover:text-primary-600 hover:bg-white/90 transition-all duration-200 shadow-soft"
+          >
+            <Home className="w-4 h-4" />
+            <span className="text-sm font-medium">Home</span>
+          </Link>
+          
+          <Link
+            to="/admin"
+            className="flex items-center space-x-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-all duration-200 shadow-soft"
+          >
+            <LogIn className="w-4 h-4" />
+            <span className="text-sm font-medium">Admin Portal</span>
+          </Link>
+        </div>
+        
         <div className="text-center mb-8">
           <h1 className="text-3xl font-display font-bold mb-2">
             <span className="text-rainbow-animated">Admin Login</span>

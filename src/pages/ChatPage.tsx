@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Send, Users, MessageCircle, Settings, User, Edit, MoreVertical, Search, Image, Smile, Type, Palette, Share2, Bold, Italic, Underline, Code, Quote, List, Link, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, Users, MessageCircle, Settings, User, Edit, MoreVertical, Search, Image, Smile, Type, Palette, Share2, Bold, Italic, Underline, Code, Quote, List, Link, Loader2, Camera } from 'lucide-react';
 import chatService, { ChatUser, ChatMessage, ChatChannel, MessageReaction } from '../services/chatService';
 import tenorService, { TenorGif } from '../services/tenorService';
 import { useToast } from '../contexts/ToastContext';
@@ -33,6 +33,10 @@ const ChatPage: React.FC = () => {
   const [gifSearchResults, setGifSearchResults] = useState<TenorGif[]>([]);
   const [showGifSearch, setShowGifSearch] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
+  const [showFontPicker, setShowFontPicker] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { showSuccess, showError, showInfo } = useToast();
 
   // Den emoji mapping
@@ -208,10 +212,37 @@ const ChatPage: React.FC = () => {
 
   const commonReactions = ['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '🔥', '👏', '🙏'];
 
-  // Function to render message content with GIF support
+  // Function to handle file uploads
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const imageFiles = Array.from(files).filter(file => 
+      file.type.startsWith('image/')
+    );
+
+    if (imageFiles.length === 0) {
+      showError('Invalid file type', 'Please select image files only.');
+      return;
+    }
+
+    if (imageFiles.length > 5) {
+      showError('Too many files', 'You can upload up to 5 images at once.');
+      return;
+    }
+
+    setUploadedImages(prev => [...prev, ...imageFiles]);
+    showSuccess('Images added', `${imageFiles.length} image(s) ready to send!`);
+  };
+
+  const removeUploadedImage = (index: number) => {
+    setUploadedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Function to render message content with GIF and code support
   const renderMessageContent = (messageText: string) => {
-    // Split the message into parts (text and images)
-    const parts = messageText.split(/(!\[.*?\]\(.*?\))/g);
+    // Split the message into parts (text, images, and code blocks)
+    const parts = messageText.split(/(!\[.*?\]\(.*?\)|```[\s\S]*?```)/g);
     
     return parts.map((part, index) => {
       // Check if this part is an image markdown
@@ -232,9 +263,95 @@ const ChatPage: React.FC = () => {
           />
         );
       }
+      
+      // Check if this part is a code block
+      const codeMatch = part.match(/```([\s\S]*?)```/);
+      if (codeMatch) {
+        const codeContent = codeMatch[1];
+        return (
+          <pre key={index} className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto my-2 text-sm font-mono">
+            <code>{codeContent}</code>
+          </pre>
+        );
+      }
+      
       // Regular text
       return <span key={index}>{part}</span>;
     });
+  };
+
+  // Function to remove GIF from message
+  const removeGifFromMessage = (gifUrl: string) => {
+    const gifPattern = `!\\[.*?\\]\\(${gifUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`;
+    const regex = new RegExp(gifPattern, 'g');
+    setNewMessage(prev => prev.replace(regex, '').trim());
+  };
+
+  // Function to render uploaded images preview
+  const renderUploadedImagesPreview = () => {
+    if (uploadedImages.length === 0) return null;
+
+    return (
+      <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+        <p className="text-xs text-gray-500 mb-2">Uploaded Images:</p>
+        <div className="flex flex-wrap gap-2">
+          {uploadedImages.map((file, index) => (
+            <div key={index} className="relative">
+              <img
+                src={URL.createObjectURL(file)}
+                alt={`Uploaded ${index + 1}`}
+                className="w-16 h-16 object-cover rounded-lg border border-gray-300"
+              />
+              <button
+                onClick={() => removeUploadedImage(index)}
+                className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 transition-colors duration-200"
+                title="Remove image"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Function to render GIF preview with delete option
+  const renderGifPreview = () => {
+    if (!newMessage.includes('![')) return null;
+
+    const gifMatches = newMessage.match(/!\[(.*?)\]\((.*?)\)/g);
+    if (!gifMatches) return null;
+
+    return (
+      <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+        <p className="text-xs text-gray-500 mb-2">GIF Preview:</p>
+        <div className="space-y-2">
+          {gifMatches.map((match, index) => {
+            const imageMatch = match.match(/!\[(.*?)\]\((.*?)\)/);
+            if (!imageMatch) return null;
+            const [, altText, imageUrl] = imageMatch;
+            
+            return (
+              <div key={index} className="relative">
+                <img
+                  src={imageUrl}
+                  alt={altText}
+                  className="max-w-xs max-h-32 rounded-lg shadow-sm"
+                />
+                <button
+                  onClick={() => removeGifFromMessage(imageUrl)}
+                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 transition-colors duration-200"
+                  title="Remove GIF"
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   // Helper functions for message grouping and date separators
@@ -388,11 +505,12 @@ const ChatPage: React.FC = () => {
       newMessage: newMessage,
       currentUser: currentUser,
       selectedChannel: selectedChannel,
-      isConnected: isConnected
+      isConnected: isConnected,
+      uploadedImages: uploadedImages.length
     });
     
-    if (!newMessage.trim()) {
-      console.log('Message is empty or whitespace only');
+    if (!newMessage.trim() && uploadedImages.length === 0) {
+      console.log('Message is empty and no images uploaded');
       return;
     }
     
@@ -402,12 +520,27 @@ const ChatPage: React.FC = () => {
     }
 
     try {
+      setIsUploading(true);
       console.log('Sending message to channel:', selectedChannel);
-      const formattedMessage = applyFormatting(newMessage.trim());
+      
+      // Handle uploaded images
+      let messageWithImages = newMessage.trim();
+      if (uploadedImages.length > 0) {
+        // For now, we'll add image placeholders to the message
+        // In a real implementation, you'd upload to Firebase Storage and get URLs
+        const imageTexts = uploadedImages.map((file, index) => 
+          `![Uploaded Image ${index + 1}](${URL.createObjectURL(file)})`
+        );
+        messageWithImages = messageWithImages + (messageWithImages ? '\n' : '') + imageTexts.join('\n');
+      }
+      
+      const formattedMessage = applyFormatting(messageWithImages);
       await chatService.sendMessage(selectedChannel, formattedMessage);
       console.log('Message sent successfully');
+      
+      // Reset everything
       setNewMessage('');
-      // Reset formatting
+      setUploadedImages([]);
       setIsBold(false);
       setIsItalic(false);
       setIsUnderline(false);
@@ -417,6 +550,8 @@ const ChatPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to send message:', error);
       showError('Message failed to send', 'Please check your connection and try again.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -907,6 +1042,19 @@ const ChatPage: React.FC = () => {
                   >
                     <Underline className="w-4 h-4" />
                   </button>
+
+                  {/* Code Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const codeBlock = '```\n// Your code here\n```';
+                      setNewMessage(prev => prev + codeBlock);
+                    }}
+                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors duration-200 font-medium"
+                    title="Insert Code Block"
+                  >
+                    Code
+                  </button>
                   
                   <div className="w-px h-6 bg-gray-300"></div>
                   
@@ -914,11 +1062,29 @@ const ChatPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowGifPicker(!showGifPicker)}
-                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors duration-200 font-medium"
                     title="Insert GIF"
                   >
-                    <Smile className="w-4 h-4" />
+                    GIF
                   </button>
+
+                  {/* Photo Upload Button */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                    title="Upload Photo"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
                   
                   {/* Color Picker */}
                   <input
@@ -932,16 +1098,45 @@ const ChatPage: React.FC = () => {
                   <div className="w-px h-6 bg-gray-300"></div>
                   
                   {/* Font Selector */}
-                  <select
-                    value={selectedFont}
-                    onChange={(e) => setSelectedFont(e.target.value)}
-                    className="text-sm border-0 bg-transparent text-gray-700 focus:outline-none focus:ring-0"
+                  <button
+                    type="button"
+                    onClick={() => setShowFontPicker(!showFontPicker)}
+                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors duration-200 font-medium"
                     title="Font style"
                   >
-                    <option value="normal">Normal</option>
-                    <option value="monospace">Code</option>
-                    <option value="serif">Serif</option>
-                  </select>
+                    Fonts
+                  </button>
+                  
+                  {/* Font Picker Dropdown */}
+                  {showFontPicker && (
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-32">
+                      <div className="p-2 space-y-1">
+                        {[
+                          { value: 'normal', label: 'Normal', font: 'Inter' },
+                          { value: 'monospace', label: 'Code', font: 'Monaco' },
+                          { value: 'serif', label: 'Serif', font: 'Georgia' },
+                          { value: 'cursive', label: 'Cursive', font: 'Brush Script MT' },
+                          { value: 'fantasy', label: 'Fantasy', font: 'Papyrus' },
+                          { value: 'sans-serif', label: 'Sans Serif', font: 'Arial' },
+                          { value: 'system', label: 'System', font: 'System UI' }
+                        ].map(font => (
+                          <button
+                            key={font.value}
+                            onClick={() => {
+                              setSelectedFont(font.value);
+                              setShowFontPicker(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-100 transition-colors duration-200 ${
+                              selectedFont === font.value ? 'bg-blue-100 text-blue-700' : 'text-gray-700'
+                            }`}
+                            style={{ fontFamily: font.font }}
+                          >
+                            {font.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 {/* GIF Picker */}
@@ -1054,15 +1249,19 @@ const ChatPage: React.FC = () => {
                         : 'Connecting to chat...'
                       }
                       disabled={!currentUser}
-                      style={{
-                        color: selectedColor,
-                        fontFamily: selectedFont === 'monospace' ? 'monospace' : 
-                                   selectedFont === 'serif' ? 'serif' : 'inherit',
-                        resize: 'none',
-                        minHeight: '48px',
-                        maxHeight: '200px',
-                        overflowY: 'auto'
-                      }}
+                                          style={{
+                      color: selectedColor,
+                      fontFamily: selectedFont === 'monospace' ? 'Monaco, monospace' : 
+                                 selectedFont === 'serif' ? 'Georgia, serif' :
+                                 selectedFont === 'cursive' ? 'Brush Script MT, cursive' :
+                                 selectedFont === 'fantasy' ? 'Papyrus, fantasy' :
+                                 selectedFont === 'sans-serif' ? 'Arial, sans-serif' :
+                                 selectedFont === 'system' ? 'System UI, sans-serif' : 'Inter, sans-serif',
+                      resize: 'none',
+                      minHeight: '48px',
+                      maxHeight: '200px',
+                      overflowY: 'auto'
+                    }}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                       rows={1}
                       onInput={(e) => {
@@ -1073,7 +1272,7 @@ const ChatPage: React.FC = () => {
                     />
                     
                     {/* Message Preview */}
-                    {newMessage.includes('![') && (
+                    {(newMessage.includes('![') || newMessage.includes('```')) && (
                       <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <p className="text-xs text-gray-500 mb-2">Preview:</p>
                         <div className="text-sm text-gray-700">
@@ -1081,15 +1280,25 @@ const ChatPage: React.FC = () => {
                         </div>
                       </div>
                     )}
+
+                    {/* GIF Preview with Delete Buttons */}
+                    {renderGifPreview()}
+
+                    {/* Uploaded Images Preview */}
+                    {renderUploadedImagesPreview()}
                   </div>
                   
                   <button
                     type="submit"
-                    disabled={!newMessage.trim() || !currentUser}
+                    disabled={(!newMessage.trim() && uploadedImages.length === 0) || !currentUser || isUploading}
                     className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center space-x-2"
                   >
-                    <Send className="w-4 h-4" />
-                    <span>Send</span>
+                    {isUploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                    <span>{isUploading ? 'Sending...' : 'Send'}</span>
                   </button>
                 </div>
               </form>

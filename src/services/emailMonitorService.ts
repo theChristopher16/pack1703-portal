@@ -30,6 +30,57 @@ interface EmailProcessingResult {
   detectedTypes?: Array<{ type: string; confidence: number }>;
   hasAttachments?: boolean;
   contentType?: 'event' | 'announcement' | 'resource' | 'volunteer' | 'fundraising';
+  createdEntities?: CreatedEntities;
+}
+
+interface WolfWatchExtractedData {
+  events: WolfWatchEvent[];
+  announcements: WolfWatchAnnouncement[];
+  resources: WolfWatchResource[];
+  contacts: WolfWatchContact[];
+}
+
+interface WolfWatchEvent {
+  title: string;
+  date: Date | null;
+  location: string;
+  description: string;
+  sourceUrl: string;
+  confidence: number;
+}
+
+interface WolfWatchAnnouncement {
+  title: string;
+  content: string;
+  sourceUrl: string;
+  priority: 'high' | 'medium' | 'low';
+  confidence: number;
+}
+
+interface WolfWatchResource {
+  title: string;
+  url: string;
+  type: string;
+  description: string;
+}
+
+interface WolfWatchContact {
+  name: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+}
+
+interface WolfWatchContentAnalysis {
+  events: WolfWatchEvent[];
+  announcements: WolfWatchAnnouncement[];
+  resources: WolfWatchResource[];
+  contacts: WolfWatchContact[];
+}
+
+interface CreatedEntities {
+  events: any[];
+  announcements: any[];
 }
 
 interface EmailConfig {
@@ -395,7 +446,393 @@ class EmailMonitorService {
     }
   }
 
-  // Process event emails
+  // Check if email is a Wolf Watch email
+  private isWolfWatchEmail(email: EmailMessage): boolean {
+    const content = `${email.subject}\n${email.body}`.toLowerCase();
+    return content.includes('wolf watch') || 
+           content.includes('wolfwatch') || 
+           email.subject.toLowerCase().includes('wolf watch') ||
+           email.from.toLowerCase().includes('wolf watch');
+  }
+
+  // Process Wolf Watch emails - extract links and process content
+  private async processWolfWatchEmail(email: EmailMessage): Promise<EmailProcessingResult> {
+    try {
+      console.log('Processing Wolf Watch email:', email.subject);
+      
+      // Extract URLs from email content
+      const urls = this.extractUrlsFromEmail(email);
+      
+      if (urls.length === 0) {
+        return {
+          processed: false,
+          confidence: 0.5,
+          reason: 'Wolf Watch email detected but no URLs found',
+          detectedTypes: [{ type: 'wolf_watch', confidence: 0.5 }],
+          hasAttachments: email.attachments && email.attachments.length > 0
+        };
+      }
+
+      // Process each URL to extract relevant scout information
+      const extractedData = await this.processWolfWatchUrls(urls, email);
+      
+      if (extractedData.events.length === 0 && extractedData.announcements.length === 0) {
+        return {
+          processed: false,
+          confidence: 0.7,
+          reason: 'Wolf Watch content processed but no relevant scout information found',
+          detectedTypes: [{ type: 'wolf_watch', confidence: 0.7 }],
+          hasAttachments: email.attachments && email.attachments.length > 0,
+          extractedData
+        };
+      }
+
+      // Create events and announcements from extracted data
+      const createdEntities = await this.createEntitiesFromWolfWatchData(extractedData, email);
+      
+      return {
+        processed: true,
+        confidence: 0.9,
+        reason: `Successfully processed Wolf Watch email and created ${createdEntities.events.length} events and ${createdEntities.announcements.length} announcements`,
+        detectedTypes: [{ type: 'wolf_watch', confidence: 0.9 }],
+        hasAttachments: email.attachments && email.attachments.length > 0,
+        extractedData,
+        createdEntities
+      };
+      
+    } catch (error) {
+      console.error('Error processing Wolf Watch email:', error);
+      return {
+        processed: false,
+        confidence: 0.3,
+        reason: `Error processing Wolf Watch email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        detectedTypes: [{ type: 'wolf_watch', confidence: 0.3 }],
+        hasAttachments: email.attachments && email.attachments.length > 0
+      };
+    }
+  }
+
+  // Extract URLs from email content
+  private extractUrlsFromEmail(email: EmailMessage): string[] {
+    const content = `${email.subject}\n${email.body}`;
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const urls = content.match(urlRegex) || [];
+    return urls.filter(url => url.length > 10); // Filter out very short URLs
+  }
+
+  // Process Wolf Watch URLs to extract scout-relevant information
+  private async processWolfWatchUrls(urls: string[], originalEmail: EmailMessage): Promise<WolfWatchExtractedData> {
+    const extractedData: WolfWatchExtractedData = {
+      events: [],
+      announcements: [],
+      resources: [],
+      contacts: []
+    };
+
+    for (const url of urls) {
+      try {
+        console.log('Processing Wolf Watch URL:', url);
+        
+        // Fetch content from URL
+        const content = await this.fetchUrlContent(url);
+        
+        // Analyze content for scout-relevant information
+        const analysis = await this.analyzeWolfWatchContent(content, url);
+        
+        // Add extracted data
+        extractedData.events.push(...analysis.events);
+        extractedData.announcements.push(...analysis.announcements);
+        extractedData.resources.push(...analysis.resources);
+        extractedData.contacts.push(...analysis.contacts);
+        
+      } catch (error) {
+        console.error(`Error processing URL ${url}:`, error);
+      }
+    }
+
+    return extractedData;
+  }
+
+  // Fetch content from URL
+  private async fetchUrlContent(url: string): Promise<string> {
+    try {
+      // Use a server-side function to fetch URL content
+      const functions = getFunctions();
+      const fetchUrlContent = httpsCallable(functions, 'fetchUrlContent');
+      
+      const result = await fetchUrlContent({ url });
+      return result.data as string;
+    } catch (error) {
+      console.error('Error fetching URL content:', error);
+      throw new Error(`Failed to fetch content from ${url}`);
+    }
+  }
+
+  // Analyze Wolf Watch content for scout-relevant information
+  private async analyzeWolfWatchContent(content: string, sourceUrl: string): Promise<WolfWatchContentAnalysis> {
+    const analysis: WolfWatchContentAnalysis = {
+      events: [],
+      announcements: [],
+      resources: [],
+      contacts: []
+    };
+
+    // Look for event-related information
+    const eventPatterns = [
+      /(\w+\s+\d{1,2},?\s+\d{4})/g, // Dates
+      /(meeting|event|camp|outing|activity|gathering)/gi,
+      /(registration|deadline|sign.?up)/gi,
+      /(location|venue|address|place)/gi
+    ];
+
+    // Look for announcement patterns
+    const announcementPatterns = [
+      /(announcement|update|news|important|reminder)/gi,
+      /(scout|pack|troop|den|leader)/gi,
+      /(award|recognition|achievement)/gi
+    ];
+
+    // Extract events
+    const eventMatches = this.findPatternMatches(content, eventPatterns);
+    if (eventMatches.length > 0) {
+      analysis.events.push({
+        title: this.extractEventTitle(content),
+        date: this.extractDate(content),
+        location: this.extractLocation(content),
+        description: this.extractDescription(content),
+        sourceUrl,
+        confidence: 0.8
+      });
+    }
+
+    // Extract announcements
+    const announcementMatches = this.findPatternMatches(content, announcementPatterns);
+    if (announcementMatches.length > 0) {
+      analysis.announcements.push({
+        title: this.extractAnnouncementTitle(content),
+        content: this.extractAnnouncementContent(content),
+        sourceUrl,
+        priority: this.determinePriority(content),
+        confidence: 0.7
+      });
+    }
+
+    return analysis;
+  }
+
+  // Helper methods for content analysis
+  private findPatternMatches(content: string, patterns: RegExp[]): string[] {
+    const matches: string[] = [];
+    patterns.forEach(pattern => {
+      const found = content.match(pattern);
+      if (found) {
+        matches.push(...found);
+      }
+    });
+    return matches;
+  }
+
+  private extractEventTitle(content: string): string {
+    // Look for title patterns
+    const titlePatterns = [
+      /<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi,
+      /(?:event|meeting|activity)[:\s]+([^.\n]+)/gi,
+      /title[:\s]+([^.\n]+)/gi
+    ];
+
+    for (const pattern of titlePatterns) {
+      const match = content.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+
+    return 'Wolf Watch Event';
+  }
+
+  private extractDate(content: string): Date | null {
+    const datePatterns = [
+      /(\w+\s+\d{1,2},?\s+\d{4})/g,
+      /(\d{1,2}\/\d{1,2}\/\d{4})/g,
+      /(\d{4}-\d{2}-\d{2})/g
+    ];
+
+    for (const pattern of datePatterns) {
+      const match = content.match(pattern);
+      if (match && match[1]) {
+        const date = new Date(match[1]);
+        if (!isNaN(date.getTime())) {
+          return date;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  private extractLocation(content: string): string {
+    const locationPatterns = [
+      /(?:location|venue|address|place)[:\s]+([^.\n]+)/gi,
+      /(\d+\s+[^,]+(?:street|avenue|road|drive|lane|way|plaza|center|park))/gi
+    ];
+
+    for (const pattern of locationPatterns) {
+      const match = content.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+
+    return 'TBD';
+  }
+
+  private extractDescription(content: string): string {
+    // Extract first paragraph or meaningful text block
+    const paragraphs = content.split(/\n\s*\n/);
+    for (const paragraph of paragraphs) {
+      if (paragraph.length > 50 && paragraph.length < 500) {
+        return paragraph.trim();
+      }
+    }
+    return 'Event details from Wolf Watch';
+  }
+
+  private extractAnnouncementTitle(content: string): string {
+    const titlePatterns = [
+      /<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi,
+      /(?:announcement|update|news)[:\s]+([^.\n]+)/gi
+    ];
+
+    for (const pattern of titlePatterns) {
+      const match = content.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+
+    return 'Wolf Watch Announcement';
+  }
+
+  private extractAnnouncementContent(content: string): string {
+    // Extract relevant content
+    const contentPatterns = [
+      /(?:scout|pack|troop|den|leader)[^.]*(?:[.!?]|$)/gi,
+      /(?:important|reminder|update)[^.]*(?:[.!?]|$)/gi
+    ];
+
+    const relevantContent: string[] = [];
+    for (const pattern of contentPatterns) {
+      const matches = content.match(pattern);
+      if (matches) {
+        relevantContent.push(...matches);
+      }
+    }
+
+    return relevantContent.length > 0 
+      ? relevantContent.slice(0, 3).join(' ')
+      : 'Important information from Wolf Watch';
+  }
+
+  private determinePriority(content: string): 'high' | 'medium' | 'low' {
+    const highPriorityKeywords = ['urgent', 'important', 'deadline', 'registration'];
+    const mediumPriorityKeywords = ['reminder', 'update', 'news'];
+    
+    const contentLower = content.toLowerCase();
+    
+    if (highPriorityKeywords.some(keyword => contentLower.includes(keyword))) {
+      return 'high';
+    } else if (mediumPriorityKeywords.some(keyword => contentLower.includes(keyword))) {
+      return 'medium';
+    }
+    
+    return 'low';
+  }
+
+  // Create entities from Wolf Watch extracted data
+  private async createEntitiesFromWolfWatchData(extractedData: WolfWatchExtractedData, originalEmail: EmailMessage): Promise<CreatedEntities> {
+    const createdEntities: CreatedEntities = {
+      events: [],
+      announcements: []
+    };
+
+    try {
+      // Create events
+      for (const eventData of extractedData.events) {
+        if (eventData.confidence > 0.6) {
+          const event = await this.createEventFromWolfWatchData(eventData, originalEmail);
+          if (event) {
+            createdEntities.events.push(event);
+          }
+        }
+      }
+
+      // Create announcements
+      for (const announcementData of extractedData.announcements) {
+        if (announcementData.confidence > 0.5) {
+          const announcement = await this.createAnnouncementFromWolfWatchData(announcementData, originalEmail);
+          if (announcement) {
+            createdEntities.announcements.push(announcement);
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error('Error creating entities from Wolf Watch data:', error);
+    }
+
+    return createdEntities;
+  }
+
+  // Create event from Wolf Watch data
+  private async createEventFromWolfWatchData(eventData: WolfWatchEvent, originalEmail: EmailMessage): Promise<any> {
+    try {
+      const eventDoc = {
+        title: eventData.title,
+        description: eventData.description,
+        date: eventData.date,
+        location: eventData.location,
+        source: 'wolf_watch',
+        sourceUrl: eventData.sourceUrl,
+        createdFromEmail: true,
+        emailId: originalEmail.id,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+
+      const docRef = await addDoc(collection(this.db, 'events'), eventDoc);
+      console.log('Created event from Wolf Watch:', docRef.id);
+      
+      return { id: docRef.id, ...eventDoc };
+    } catch (error) {
+      console.error('Error creating event from Wolf Watch data:', error);
+      return null;
+    }
+  }
+
+  // Create announcement from Wolf Watch data
+  private async createAnnouncementFromWolfWatchData(announcementData: WolfWatchAnnouncement, originalEmail: EmailMessage): Promise<any> {
+    try {
+      const announcementDoc = {
+        title: announcementData.title,
+        content: announcementData.content,
+        priority: announcementData.priority,
+        source: 'wolf_watch',
+        sourceUrl: announcementData.sourceUrl,
+        createdFromEmail: true,
+        emailId: originalEmail.id,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+
+      const docRef = await addDoc(collection(this.db, 'announcements'), announcementDoc);
+      console.log('Created announcement from Wolf Watch:', docRef.id);
+      
+      return { id: docRef.id, ...announcementDoc };
+    } catch (error) {
+      console.error('Error creating announcement from Wolf Watch data:', error);
+      return null;
+    }
+  }
   private async processEventEmail(email: EmailMessage, confidence: number, hasAttachments: boolean): Promise<EmailProcessingResult> {
     const extractedData = await this.extractEventDataFromEmail(email);
     

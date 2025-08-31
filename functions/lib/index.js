@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.fetchNewEmails = exports.testEmailConnection = exports.helloWorld = exports.moderationDigest = exports.weatherProxy = exports.icsFeed = exports.claimVolunteerRole = exports.submitFeedback = exports.submitRSVP = void 0;
+exports.fetchUrlContent = exports.fetchNewEmails = exports.testEmailConnection = exports.helloWorld = exports.moderationDigest = exports.weatherProxy = exports.icsFeed = exports.claimVolunteerRole = exports.submitFeedback = exports.submitRSVP = void 0;
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const Imap = require('node-imap');
@@ -576,4 +576,91 @@ function parseEmail(rawEmail) {
         date: new Date()
     };
 }
+// Cloud function to safely fetch URL content for Wolf Watch emails
+exports.fetchUrlContent = functions.https.onCall(async (data, context) => {
+    try {
+        const { url } = data;
+        if (!url) {
+            throw new functions.https.HttpsError('invalid-argument', 'URL is required');
+        }
+        // Validate URL format
+        const urlPattern = /^https?:\/\/.+/i;
+        if (!urlPattern.test(url)) {
+            throw new functions.https.HttpsError('invalid-argument', 'Invalid URL format');
+        }
+        // Security checks
+        const blockedDomains = [
+            'localhost',
+            '127.0.0.1',
+            '192.168.',
+            '10.',
+            '172.16.',
+            '172.17.',
+            '172.18.',
+            '172.19.',
+            '172.20.',
+            '172.21.',
+            '172.22.',
+            '172.23.',
+            '172.24.',
+            '172.25.',
+            '172.26.',
+            '172.27.',
+            '172.28.',
+            '172.29.',
+            '172.30.',
+            '172.31.'
+        ];
+        const urlObj = new URL(url);
+        const hostname = urlObj.hostname.toLowerCase();
+        // Check for blocked domains
+        if (blockedDomains.some(domain => hostname.includes(domain))) {
+            throw new functions.https.HttpsError('permission-denied', 'Access to this domain is not allowed');
+        }
+        // Fetch content with timeout and size limits
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'User-Agent': 'Pack1703-EmailMonitor/1.0',
+                'Accept': 'text/html,text/plain,*/*',
+                'Accept-Language': 'en-US,en;q=0.9'
+            },
+            signal: AbortSignal.timeout(10000) // 10 second timeout
+        });
+        if (!response.ok) {
+            throw new functions.https.HttpsError('unavailable', `HTTP ${response.status}: ${response.statusText}`);
+        }
+        // Check content type
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('text/html') && !contentType.includes('text/plain')) {
+            throw new functions.https.HttpsError('invalid-argument', 'Unsupported content type');
+        }
+        // Read content with size limit
+        const text = await response.text();
+        if (text.length > 500000) { // 500KB limit
+            throw new functions.https.HttpsError('resource-exhausted', 'Content too large');
+        }
+        // Basic content sanitization
+        const sanitizedContent = text
+            .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove scripts
+            .replace(/<style[^>]*>.*?<\/style>/gi, '') // Remove styles
+            .replace(/<[^>]*>/g, ' ') // Remove HTML tags
+            .replace(/\s+/g, ' ') // Normalize whitespace
+            .trim();
+        return {
+            success: true,
+            content: sanitizedContent,
+            url: url,
+            contentType: contentType,
+            size: sanitizedContent.length
+        };
+    }
+    catch (error) {
+        console.error('Error fetching URL content:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to fetch URL content');
+    }
+});
 //# sourceMappingURL=index.js.map

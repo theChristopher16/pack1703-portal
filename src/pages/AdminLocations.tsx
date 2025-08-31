@@ -114,7 +114,7 @@ const AdminLocations: React.FC = () => {
     return matchesSearch && matchesCategory && matchesImportance;
   });
 
-  const getCategoryColor = (category: string) => {
+  const getCategoryColor = (category?: string) => {
     const colors = {
       church: 'bg-blue-100 text-blue-800',
       park: 'bg-green-100 text-green-800',
@@ -254,7 +254,7 @@ const AdminLocations: React.FC = () => {
 
                   <div className="flex gap-2">
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(location.category)}`}>
-                      {location.category.replace('-', ' ')}
+                      {location.category?.replace('-', ' ') || 'Unknown'}
                     </span>
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getImportanceColor(location.importance)}`}>
                       {location.importance}

@@ -42,7 +42,7 @@ const AdminAI: React.FC = () => {
     // Initialize with welcome message
     const welcomeMessage: ChatMessage = {
       id: 'welcome',
-      content: `🤖 **Hello! I'm Solyn, your AI Assistant!**\n\nI'm here to help you manage your Scout Pack portal. I can help with:\n\n**📊 System Monitoring**\n• System status and performance\n• Cost analysis and optimization\n• Infrastructure health\n\n**👥 User Analytics**\n• User activity and engagement\n• Growth metrics and trends\n• User behavior patterns\n\n**📝 Content Management**\n• Content overview and health\n• Recent activity and recommendations\n• Content optimization\n\n**🔒 Security & Permissions**\n• Security status and alerts\n• Permission analysis\n• Security recommendations\n\nJust ask me anything about your system!`,
+      content: `🤖 **Hello! I'm Solyn, your AI Assistant!**\n\nI'm here to help you manage your Scout Pack portal. I can help with:\n\n**📊 System Monitoring**\n• System status and performance\n• Cost analysis and optimization\n• Infrastructure health\n\n**👥 User Analytics**\n• User activity and engagement\n• Growth metrics and trends\n• User behavior patterns\n\n**📝 Content Management**\n• Content overview and health\n• Recent activity and recommendations\n• Content optimization\n• **Create events and announcements!**\n\n**🔒 Security & Permissions**\n• Security status and alerts\n• Permission analysis\n• Security recommendations\n\n**🎯 Quick Actions**\n• "Create an event called Pack Meeting on December 15th at 6:30 PM" - I'll help you set up events\n• "Create an announcement about the upcoming campout" - I'll help you create announcements\n• "Show me the current system status" - Get real-time system health\n• "What are our current costs?" - Review costs and optimizations\n\n**💡 Pro Tips:**\n• I can extract information from uploaded files and create content automatically\n• I monitor your email for "Wolf Watch" messages and process them automatically\n• I can help you manage users, permissions, and system configuration\n\nJust ask me anything about your system, or try creating an event to see how I can help!`,
       sender: 'ai',
       timestamp: new Date(),
       type: 'info'
@@ -144,6 +144,7 @@ const AdminAI: React.FC = () => {
   };
 
   const getQuickActions = () => [
+    { label: 'Create Event', icon: Calendar, query: 'Create an event called Pack Meeting on December 15th at 6:30 PM at the Community Center' },
     { label: 'System Status', icon: Activity, query: 'Show me the current system status and health' },
     { label: 'Cost Analysis', icon: DollarSign, query: 'What are our current costs and any optimization recommendations?' },
     { label: 'User Activity', icon: TrendingUp, query: 'How are users engaging with the platform?' },

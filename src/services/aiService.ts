@@ -99,6 +99,11 @@ class AIService {
   private async analyzeQuery(userQuery: string, context: AIContext): Promise<AIResponse> {
     const query = userQuery.toLowerCase();
     
+    // Event creation requests
+    if (query.includes('create event') || query.includes('create an event') || query.includes('add event')) {
+      return await this.handleEventCreation(userQuery, context);
+    }
+    
     // Content creation queries (with file attachments)
     if (context.attachments && context.attachments.length > 0) {
       return await this.handleContentCreation(userQuery, context);
@@ -160,7 +165,7 @@ class AIService {
     if (query.includes('solyn') || query.includes('your name')) {
       return {
         id: Date.now().toString(),
-        message: `🤖 **Hello! I'm Solyn, your AI Assistant!**\n\nI'm here to help you manage your Scout Pack portal. I have access to all your system services and can provide real-time insights about:\n\n• System performance and health\n• Cost analysis and optimization\n• User activity and engagement\n• Content management\n• Security status\n• Chat system monitoring\n• Configuration management\n• Analytics insights\n\nHow can I help you today?`,
+        message: `🤖 **Hello! I'm Solyn, your AI Assistant!**\n\nI'm here to help you manage your Scout Pack portal. I have access to all your system services and can provide real-time insights about:\n\n• System performance and health\n• Cost analysis and optimization\n• User activity and engagement\n• Content management\n• Security status\n• Chat system monitoring\n• Configuration management\n• Analytics insights\n\n**I can also help you create events, announcements, and other content!** Just ask me to create something and I'll guide you through the process.`,
         timestamp: new Date(),
         type: 'info'
       };
@@ -174,7 +179,7 @@ class AIService {
     // Default response - now more conversational
     return {
       id: Date.now().toString(),
-      message: `I see you're asking about "${userQuery}". Let me think about that...\n\nI can help you with quite a few things around here - system monitoring, cost analysis, user activity, content management, security, and more. What specifically would you like to know? I'm happy to dive deep into any of these areas or help you with something else entirely.`,
+      message: `I see you're asking about "${userQuery}". Let me think about that...\n\nI can help you with quite a few things around here - system monitoring, cost analysis, user activity, content management, security, and more. What specifically would you like to know? I'm happy to dive deep into any of these areas or help you with something else entirely.\n\n**Pro tip:** I can also create events and announcements for you! Just say "create an event" or "create an announcement" and I'll help you set that up.`,
       timestamp: new Date(),
       type: 'info'
     };
@@ -297,10 +302,322 @@ class AIService {
   private getHelpResponse(): AIResponse {
     return {
       id: Date.now().toString(),
-      message: `🤖 **Hello! I'm Solyn, your AI Assistant!**\n\nI can help you with:\n\n**📊 System Monitoring**\n• System status and health\n• Performance metrics\n• Infrastructure status\n\n**💰 Cost Analysis**\n• Monthly cost breakdown\n• Usage trends\n• Cost optimization\n\n**👥 User Analytics**\n• User activity and engagement\n• Growth metrics\n• User behavior patterns\n\n**📝 Content Management**\n• Content overview and health\n• Recent activity\n• Content recommendations\n\n**🔒 Security**\n• Security status and alerts\n• Permission analysis\n• Security recommendations\n\n**🔧 Advanced Features**\n• Real-time data from all system services\n• Configuration management\n• Chat system monitoring\n• Analytics insights\n• Security audits\n\nJust ask me about any of these topics!`,
+      message: `🤖 **Hello! I'm Solyn, your AI Assistant!**\n\nI can help you with:\n\n**📊 System Monitoring**\n• System status and health\n• Performance metrics\n• Infrastructure status\n\n**💰 Cost Analysis**\n• Monthly cost breakdown\n• Usage trends\n• Cost optimization\n\n**👥 User Analytics**\n• User activity and engagement\n• Growth metrics\n• User behavior patterns\n\n**📝 Content Management**\n• Content overview and health\n• Recent activity\n• Content recommendations\n• **Create events and announcements!**\n\n**🔒 Security**\n• Security status and alerts\n• Permission analysis\n• Security recommendations\n\n**🔧 Advanced Features**\n• Real-time data from all system services\n• Configuration management\n• Chat system monitoring\n• Analytics insights\n• Security audits\n\n**🎯 Quick Actions**\n• "Create an event" - I'll help you set up a new event\n• "Create an announcement" - I'll help you create an announcement\n• "Show system status" - Get current system health\n• "Cost analysis" - Review current costs and optimizations\n\nJust ask me about any of these topics!`,
       timestamp: new Date(),
       type: 'info'
     };
+  }
+
+  // Handle event creation requests
+  private async handleEventCreation(userQuery: string, context: AIContext): Promise<AIResponse> {
+    try {
+      // Extract event information from the query
+      const eventData = this.extractEventDataFromQuery(userQuery);
+      
+      if (!eventData.title || eventData.title === 'New Event') {
+        return {
+          id: Date.now().toString(),
+          message: `🎯 **Let's create an event!**\n\nI can help you create an event, but I need a bit more information. Please provide:\n\n**Required:**\n• Event title/name\n\n**Optional but helpful:**\n• Date and time\n• Location\n• Description\n\n**Example:** "Create an event called Pack Meeting on December 15th at 6:30 PM at the Community Center"\n\nWhat would you like to call your event?`,
+          timestamp: new Date(),
+          type: 'info'
+        };
+      }
+
+      // Validate the event data
+      const validationChecks = await this.validateEventData(eventData);
+      const hasErrors = validationChecks.some(check => check.status === 'failed');
+      
+      if (hasErrors) {
+        const errorMessages = validationChecks
+          .filter(check => check.status === 'failed')
+          .map(check => `• ${check.message}`)
+          .join('\n');
+        
+        return {
+          id: Date.now().toString(),
+          message: `⚠️ **Event Creation Issues**\n\nI found some problems with the event data:\n\n${errorMessages}\n\nPlease provide more details or correct the information and try again.`,
+          timestamp: new Date(),
+          type: 'warning'
+        };
+      }
+
+      // If we have good data, offer to create the event
+      const eventSummary = this.formatEventSummary(eventData);
+      
+      return {
+        id: Date.now().toString(),
+        message: `✅ **Event Ready to Create!**\n\nHere's what I'm about to create:\n\n${eventSummary}\n\n**Validation Results:**\n${validationChecks.map(check => `• ${check.message}`).join('\n')}\n\nDoes this look correct? I can create this event for you right now!`,
+        timestamp: new Date(),
+        type: 'success',
+        requiresConfirmation: true,
+        confirmationData: {
+          action: 'create_event',
+          entityType: 'event',
+          entityData: eventData,
+          validationChecks
+        }
+      };
+
+    } catch (error) {
+      console.error('Error handling event creation:', error);
+      return {
+        id: Date.now().toString(),
+        message: '❌ **Error Creating Event**\n\nI encountered an error while processing your event creation request. Please try again with more specific details.',
+        timestamp: new Date(),
+        type: 'error'
+      };
+    }
+  }
+
+  // Extract event data from user query
+  private extractEventDataFromQuery(userQuery: string): any {
+    const query = userQuery.toLowerCase();
+    
+    // Extract title
+    const titlePatterns = [
+      /(?:called|named|titled?)\s+([^,]+?)(?:\s+on|\s+at|\s+in|$)/i,
+      /(?:create|add)\s+(?:an?\s+)?event\s+(?:called|named|titled?)?\s*([^,]+?)(?:\s+on|\s+at|\s+in|$)/i,
+      /event\s+(?:called|named|titled?)?\s*([^,]+?)(?:\s+on|\s+at|\s+in|$)/i
+    ];
+    
+    let title = '';
+    for (const pattern of titlePatterns) {
+      const match = userQuery.match(pattern);
+      if (match && match[1]) {
+        title = match[1].trim();
+        break;
+      }
+    }
+
+    // Extract date
+    const datePatterns = [
+      /(?:on|for)\s+([^,]+?)(?:\s+at|\s+in|$)/i,
+      /(\w+\s+\d{1,2},?\s+\d{4})/i,
+      /(\d{1,2}\/\d{1,2}\/\d{4})/i,
+      /(\d{4}-\d{2}-\d{2})/i
+    ];
+    
+    let date = null;
+    for (const pattern of datePatterns) {
+      const match = userQuery.match(pattern);
+      if (match && match[1]) {
+        const parsedDate = new Date(match[1]);
+        if (!isNaN(parsedDate.getTime())) {
+          date = parsedDate;
+          break;
+        }
+      }
+    }
+
+    // Extract time
+    const timePatterns = [
+      /(?:at|starting\s+at)\s+(\d{1,2}:\d{2}\s*(?:am|pm)?)/i,
+      /(\d{1,2}:\d{2}\s*(?:am|pm))/i
+    ];
+    
+    let time = '';
+    for (const pattern of timePatterns) {
+      const match = userQuery.match(pattern);
+      if (match && match[1]) {
+        time = match[1];
+        break;
+      }
+    }
+
+    // Extract location
+    const locationPatterns = [
+      /(?:at|in|location|venue)\s+([^,]+?)(?:\s+on|\s+at|\s+in|$)/i,
+      /(\d+\s+[^,]+(?:street|avenue|road|drive|lane|way|plaza|center|park))/i
+    ];
+    
+    let location = '';
+    for (const pattern of locationPatterns) {
+      const match = userQuery.match(pattern);
+      if (match && match[1]) {
+        location = match[1].trim();
+        break;
+      }
+    }
+
+    // Extract description
+    const descriptionPatterns = [
+      /(?:description|about|details?)\s*[:\-]?\s*([^,]+?)(?:\s+on|\s+at|\s+in|$)/i
+    ];
+    
+    let description = '';
+    for (const pattern of descriptionPatterns) {
+      const match = userQuery.match(pattern);
+      if (match && match[1]) {
+        description = match[1].trim();
+        break;
+      }
+    }
+
+    return {
+      title: title || 'New Event',
+      date: date,
+      time: time,
+      location: location || 'TBD',
+      description: description || 'Event details to be determined'
+    };
+  }
+
+  // Validate event data
+  private async validateEventData(eventData: any): Promise<ValidationCheck[]> {
+    const checks: ValidationCheck[] = [];
+
+    // Check title
+    if (!eventData.title || eventData.title.trim().length < 3) {
+      checks.push({
+        type: 'content',
+        status: 'failed',
+        message: 'Event title is too short or missing'
+      });
+    } else {
+      checks.push({
+        type: 'content',
+        status: 'passed',
+        message: 'Event title looks good'
+      });
+    }
+
+    // Check date
+    if (!eventData.date) {
+      checks.push({
+        type: 'date',
+        status: 'warning',
+        message: 'No specific date provided - will need to be set later'
+      });
+    } else if (eventData.date < new Date()) {
+      checks.push({
+        type: 'date',
+        status: 'warning',
+        message: 'Event date is in the past'
+      });
+    } else {
+      checks.push({
+        type: 'date',
+        status: 'passed',
+        message: 'Event date is valid'
+      });
+    }
+
+    // Check location
+    if (!eventData.location || eventData.location === 'TBD') {
+      checks.push({
+        type: 'location',
+        status: 'warning',
+        message: 'Location needs to be determined'
+      });
+    } else {
+      checks.push({
+        type: 'location',
+        status: 'passed',
+        message: 'Location is specified'
+      });
+    }
+
+    // Check for duplicates
+    try {
+      const existingEvents = await this.checkForDuplicateEvents(eventData);
+      if (existingEvents.length > 0) {
+        checks.push({
+          type: 'duplicate',
+          status: 'warning',
+          message: `Found ${existingEvents.length} similar events - may be a duplicate`,
+          data: existingEvents
+        });
+      } else {
+        checks.push({
+          type: 'duplicate',
+          status: 'passed',
+          message: 'No duplicate events found'
+        });
+      }
+    } catch (error) {
+      checks.push({
+        type: 'duplicate',
+        status: 'info',
+        message: 'Could not check for duplicates'
+      });
+    }
+
+    return checks;
+  }
+
+  // Check for duplicate events
+  private async checkForDuplicateEvents(eventData: any): Promise<any[]> {
+    try {
+      const eventsRef = collection(this.db, 'events');
+      const q = query(
+        eventsRef,
+        where('title', '==', eventData.title),
+        orderBy('createdAt', 'desc'),
+        firestoreLimit(5)
+      );
+      
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error('Error checking for duplicate events:', error);
+      return [];
+    }
+  }
+
+  // Format event summary for display
+  private formatEventSummary(eventData: any): string {
+    const parts = [];
+    
+    if (eventData.title) {
+      parts.push(`**Title:** ${eventData.title}`);
+    }
+    
+    if (eventData.date) {
+      const dateStr = eventData.date.toLocaleDateString();
+      const timeStr = eventData.time ? ` at ${eventData.time}` : '';
+      parts.push(`**Date:** ${dateStr}${timeStr}`);
+    }
+    
+    if (eventData.location && eventData.location !== 'TBD') {
+      parts.push(`**Location:** ${eventData.location}`);
+    }
+    
+    if (eventData.description && eventData.description !== 'Event details to be determined') {
+      parts.push(`**Description:** ${eventData.description}`);
+    }
+    
+    return parts.join('\n');
+  }
+
+  // Method to handle confirmation and actually create the event
+  async confirmAndCreateEvent(confirmationData: any): Promise<AIResponse> {
+    try {
+      if (confirmationData.action !== 'create_event') {
+        throw new Error('Invalid action type');
+      }
+
+      // Log the confirmation for audit purposes
+      await this.logConfirmation(confirmationData);
+      
+      // Create the event in the database
+      const eventId = await this.createEventInDatabase(confirmationData.entityData);
+      
+      return {
+        id: Date.now().toString(),
+        message: `🎉 **Event Created Successfully!**\n\nYour event "${confirmationData.entityData.title}" has been created with ID: ${eventId}\n\n**Next Steps:**\n• Review the event in the admin panel\n• Add any additional details\n• Share with your pack members\n\nThe event is now live and ready for RSVPs!`,
+        timestamp: new Date(),
+        type: 'success',
+        data: { eventId, eventData: confirmationData.entityData }
+      };
+    } catch (error) {
+      console.error('Error creating event:', error);
+      return {
+        id: Date.now().toString(),
+        message: '❌ **Event Creation Failed**\n\nI encountered an error while creating the event. Please try again or contact support.',
+        timestamp: new Date(),
+        type: 'error'
+      };
+    }
   }
 
   // Real data fetching methods
@@ -1066,33 +1383,6 @@ class AIService {
     message += `I'll create this event with all the extracted and verified information. Please review the details above and confirm.`;
     
     return message;
-  }
-
-  // Method to handle confirmation and actually create the event
-  async confirmAndCreateEvent(confirmationData: any): Promise<AIResponse> {
-    try {
-      // Log the confirmation for audit purposes
-      await this.logConfirmation(confirmationData);
-      
-      // Create the event in the database
-      const eventId = await this.createEventInDatabase(confirmationData.entityData);
-      
-      return {
-        id: Date.now().toString(),
-        message: `🎉 **Event Created Successfully!**\n\nYour event "${confirmationData.entityData.title}" has been created with ID: ${eventId}\n\n**Next Steps:**\n• Review the event in the admin panel\n• Add any additional details\n• Share with your pack members\n\nThe event is now live and ready for RSVPs!`,
-        timestamp: new Date(),
-        type: 'success',
-        data: { eventId, eventData: confirmationData.entityData }
-      };
-    } catch (error) {
-      console.error('Error creating event:', error);
-      return {
-        id: Date.now().toString(),
-        message: '❌ **Event Creation Failed**\n\nI encountered an error while creating the event. Please try again or contact support.',
-        timestamp: new Date(),
-        type: 'error'
-      };
-    }
   }
 
   private async logConfirmation(confirmationData: any): Promise<void> {

@@ -109,14 +109,34 @@ const ChatAdmin: React.FC = () => {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !currentUser) return;
+    
+    // Debug logging
+    console.log('Admin send message attempt:', {
+      newMessage: newMessage,
+      currentUser: currentUser,
+      selectedChannel: selectedChannel,
+      isConnected: isConnected
+    });
+    
+    if (!newMessage.trim()) {
+      console.log('Message is empty or whitespace only');
+      return;
+    }
+    
+    if (!currentUser) {
+      console.log('No current user available');
+      return;
+    }
 
     try {
+      console.log('Sending message to channel:', selectedChannel);
       await chatService.sendMessage(selectedChannel, newMessage);
+      console.log('Message sent successfully');
       setNewMessage('');
     } catch (error) {
       console.error('Failed to send message:', error);
-      // You could show an error toast here
+      // Show user-friendly error
+      alert('Failed to send message. Please try again.');
     }
   };
 

@@ -19,21 +19,29 @@ const ChatPage: React.FC = () => {
   useEffect(() => {
     const initializeChat = async () => {
       try {
+        console.log('Initializing chat...');
         setIsLoading(true);
         
         // Initialize chat service and get current user
+        console.log('Initializing chat service...');
         const user = await chatService.initialize();
+        console.log('Current user initialized:', user);
         setCurrentUser(user);
         
         // Load channels
+        console.log('Loading channels...');
         const channelData = await chatService.getChannels();
+        console.log('Channels loaded:', channelData);
         setChannels(channelData);
         
         // Load online users
+        console.log('Loading online users...');
         const userData = await chatService.getOnlineUsers();
+        console.log('Online users loaded:', userData);
         setUsers(userData);
         
         setIsConnected(true);
+        console.log('Chat initialization complete');
         
         // Set up real-time subscriptions for users
         const unsubscribeUsers = chatService.subscribeToOnlineUsers(setUsers);
@@ -79,13 +87,34 @@ const ChatPage: React.FC = () => {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !currentUser) return;
+    
+    // Debug logging
+    console.log('Send message attempt:', {
+      newMessage: newMessage,
+      currentUser: currentUser,
+      selectedChannel: selectedChannel,
+      isConnected: isConnected
+    });
+    
+    if (!newMessage.trim()) {
+      console.log('Message is empty or whitespace only');
+      return;
+    }
+    
+    if (!currentUser) {
+      console.log('No current user available');
+      return;
+    }
 
     try {
+      console.log('Sending message to channel:', selectedChannel);
       await chatService.sendMessage(selectedChannel, newMessage);
+      console.log('Message sent successfully');
       setNewMessage('');
     } catch (error) {
       console.error('Failed to send message:', error);
+      // Show user-friendly error
+      alert('Failed to send message. Please try again.');
     }
   };
 
@@ -397,23 +426,45 @@ const ChatPage: React.FC = () => {
 
             {/* Send Message */}
             <div className="border-t border-gray-200 p-6 bg-gray-50">
+              {/* User Status Indicator */}
+              {!currentUser && (
+                <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    ⚠️ Connecting to chat... Please wait a moment before sending messages.
+                  </p>
+                </div>
+              )}
+              
               <form onSubmit={handleSendMessage} className="flex space-x-4">
                 <input
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder={`Message #${channels.find(c => c.id === selectedChannel)?.name || 'general'}...`}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  placeholder={currentUser 
+                    ? `Message #${channels.find(c => c.id === selectedChannel)?.name || 'general'}...`
+                    : 'Connecting to chat...'
+                  }
+                  disabled={!currentUser}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
                 <button
                   type="submit"
-                  disabled={!newMessage.trim()}
+                  disabled={!newMessage.trim() || !currentUser}
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center space-x-2"
                 >
                   <Send className="w-4 h-4" />
                   <span>Send</span>
                 </button>
               </form>
+              
+              {/* Debug Info (remove in production) */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mt-2 text-xs text-gray-500">
+                  Debug: User: {currentUser ? 'Connected' : 'Not connected'} | 
+                  Channel: {selectedChannel} | 
+                  Connected: {isConnected ? 'Yes' : 'No'}
+                </div>
+              )}
             </div>
           </div>
         </div>

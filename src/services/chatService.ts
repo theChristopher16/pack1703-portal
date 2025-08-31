@@ -269,7 +269,7 @@ class ChatService {
       const q = query(channelsRef, where('isActive', '==', true), orderBy('createdAt'));
       const snapshot = await getDocs(q);
       
-      return snapshot.docs.map(doc => {
+      const channels = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -279,9 +279,38 @@ class ChatService {
           lastActivity: data.lastActivity?.toDate() || new Date()
         } as ChatChannel;
       });
+      
+      // If no channels exist, create default channels
+      if (channels.length === 0) {
+        console.log('No channels found, creating default channels...');
+        await this.createDefaultChannels();
+        return this.getDefaultChannels();
+      }
+      
+      return channels;
     } catch (error) {
       console.warn('Failed to fetch channels, using defaults:', error);
       return this.getDefaultChannels();
+    }
+  }
+
+  async createDefaultChannels(): Promise<void> {
+    try {
+      const channelsRef = collection(db, 'chat-channels');
+      const defaultChannels = this.getDefaultChannels();
+      
+      for (const channel of defaultChannels) {
+        await addDoc(channelsRef, {
+          ...channel,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          lastActivity: serverTimestamp()
+        });
+      }
+      
+      console.log('Default channels created successfully');
+    } catch (error) {
+      console.error('Failed to create default channels:', error);
     }
   }
 

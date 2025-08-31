@@ -292,30 +292,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <footer className="bg-gradient-to-r from-primary-50 to-secondary-50 border-t border-gray-200/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Contact Info */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Contact Us</h3>
-              <div className="space-y-2 text-gray-300">
-                <p>Scout Pack</p>
+              <h3 className="text-lg font-display font-semibold text-gray-900 mb-4">Contact Us</h3>
+              <div className="space-y-2 text-gray-600">
+                <p className="font-medium">{packName}</p>
                 <p>Peoria, Illinois</p>
                 {primaryEmail && (
-                  <p>Email: <a href={`mailto:${primaryEmail}`} className="text-primary-400 hover:text-primary-300">{primaryEmail}</a></p>
+                  <p>Email: <a href={`mailto:${primaryEmail}`} className="text-primary-600 hover:text-primary-700 font-medium transition-colors duration-200">{primaryEmail}</a></p>
                 )}
               </div>
             </div>
 
             {/* Quick Links */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
+              <h3 className="text-lg font-display font-semibold text-gray-900 mb-4">Quick Links</h3>
               <div className="space-y-2">
                 {navigation.slice(0, 4).map((item) => (
                   <button
                     key={item.name}
                     onClick={() => handleNavigation(item.href)}
-                    className="block text-gray-300 hover:text-white transition-colors duration-200"
+                    className="block text-gray-600 hover:text-primary-600 font-medium transition-colors duration-200"
                   >
                     {item.name}
                   </button>
@@ -325,23 +325,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Resources */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Resources</h3>
+              <h3 className="text-lg font-display font-semibold text-gray-900 mb-4">Resources</h3>
               <div className="space-y-2">
                 <button
                   onClick={() => handleNavigation('/resources')}
-                  className="block text-gray-300 hover:text-white transition-colors duration-200"
+                  className="block text-gray-600 hover:text-primary-600 font-medium transition-colors duration-200"
                 >
                   Pack Resources
                 </button>
                 <button
                   onClick={() => handleNavigation('/feedback')}
-                  className="block text-gray-300 hover:text-white transition-colors duration-200"
+                  className="block text-gray-600 hover:text-primary-600 font-medium transition-colors duration-200"
                 >
                   Feedback
                 </button>
                 <button
                   onClick={() => handleNavigation('/privacy')}
-                  className="block text-gray-300 hover:text-white transition-colors duration-200"
+                  className="block text-gray-600 hover:text-primary-600 font-medium transition-colors duration-200"
                 >
                   Privacy Policy
                 </button>
@@ -349,8 +349,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
           </div>
 
-          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
-            <p>&copy; 2024 Scout Pack. All rights reserved.</p>
+          <div className="mt-8 pt-8 border-t border-gray-200 text-center text-gray-500">
+            <p>&copy; 2024 {packName}. All rights reserved.</p>
           </div>
         </div>
       </footer>

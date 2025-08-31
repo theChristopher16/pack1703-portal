@@ -34,7 +34,7 @@ const ChatAdmin: React.FC = () => {
         setIsLoading(true);
         
         // Initialize chat service and get current user
-        const user = await chatService.initialize();
+        const user = await chatService.initializeAsAdmin();
         setCurrentUser(user);
         
         // Load channels

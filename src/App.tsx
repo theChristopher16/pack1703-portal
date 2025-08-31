@@ -32,6 +32,7 @@ import AdminChat from './pages/AdminChat';
 import AdminLists from './pages/AdminLists';
 import AdminVolunteer from './pages/AdminVolunteer';
 import AdminSeasons from './pages/AdminSeasons';
+import ChatPage from './pages/ChatPage';
 import { AdminProvider } from './contexts/AdminContext';
 
 // Styles
@@ -78,6 +79,7 @@ function App() {
           <Route path="/announcements" element={<Layout><AnnouncementsPage /></Layout>} />
           <Route path="/resources" element={<Layout><ResourcesPage /></Layout>} />
           <Route path="/volunteer" element={<Layout><VolunteerPage /></Layout>} />
+          <Route path="/chat" element={<ChatPage />} />
           <Route path="/feedback" element={<Layout><FeedbackPage /></Layout>} />
           <Route path="/analytics" element={<Layout><AnalyticsDashboard /></Layout>} />
           <Route path="/analytics/test" element={<Layout><AnalyticsTest /></Layout>} />

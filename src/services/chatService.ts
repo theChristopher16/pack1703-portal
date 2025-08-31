@@ -217,6 +217,22 @@ class ChatService {
   async initialize(): Promise<ChatUser> {
     this.currentUser = SessionManager.getOrCreateUser();
     
+    // Create or update user in Firestore
+    await this.createOrUpdateUserInFirestore(this.currentUser);
+    
+    // Set up periodic status updates
+    setInterval(() => {
+      if (this.currentUser) {
+        this.updateUserStatus(this.currentUser.id, true);
+      }
+    }, 30000); // Update every 30 seconds
+
+    return this.currentUser;
+  }
+
+  async initializeAsAdmin(): Promise<ChatUser> {
+    this.currentUser = SessionManager.getOrCreateUser();
+    
     // Set admin status for users in the admin portal
     this.currentUser.isAdmin = true;
     

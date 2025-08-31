@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, Sparkles, ChevronDown, BarChart3 } from 'lucide-react';
+import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, MessageCircle, Sparkles, ChevronDown, BarChart3 } from 'lucide-react';
 import { LoadingSpinner } from '../Loading';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { usePackNameConfig, useContactConfigs } from '../../hooks/useConfig';
@@ -37,6 +37,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Events', href: '/events', icon: Calendar },
     { name: 'Locations', href: '/locations', icon: MapPin },
     { name: 'Announcements', href: '/announcements', icon: MessageSquare },
+    { name: 'Chat', href: '/chat', icon: MessageCircle },
     { name: 'Resources', href: '/resources', icon: FileText },
     { name: 'Volunteer', href: '/volunteer', icon: Users },
     { name: 'Feedback', href: '/feedback', icon: MessageSquare },

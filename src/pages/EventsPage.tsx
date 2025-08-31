@@ -40,11 +40,15 @@ const EventsPage: React.FC = () => {
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [usingFallbackData, setUsingFallbackData] = useState(false);
 
   // Load events from Firebase
   useEffect(() => {
     const loadEvents = async () => {
       setIsLoading(true);
+      setError(null);
+      setUsingFallbackData(false);
       
       try {
         // Load real events from Firebase
@@ -112,6 +116,8 @@ const EventsPage: React.FC = () => {
         
         setEvents(mockEvents);
         setFilteredEvents(mockEvents);
+        setUsingFallbackData(true);
+        setError('Unable to connect to database. Showing sample data.');
         
         // Track fallback to mock data
         console.log('Using mock data due to Firebase error');
@@ -307,6 +313,30 @@ const EventsPage: React.FC = () => {
             From den meetings to campouts, there's something for everyone!
           </p>
         </div>
+
+        {/* Error Banner */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  {usingFallbackData ? 'Database Connection Issue' : 'Error Loading Data'}
+                </h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>{error}</p>
+                  {usingFallbackData && (
+                    <p className="mt-1">The data shown below is sample data. Please check your connection and try refreshing the page.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* View Toggle and Actions */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 mb-8">

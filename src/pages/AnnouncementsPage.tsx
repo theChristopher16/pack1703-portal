@@ -10,16 +10,52 @@ const AnnouncementsPage: React.FC = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [usingFallbackData, setUsingFallbackData] = useState(false);
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
         setLoading(true);
+        setError(null);
+        setUsingFallbackData(false);
         const fetchedAnnouncements = await firestoreService.getAnnouncements();
         setAnnouncements(fetchedAnnouncements);
       } catch (err) {
-        setError('Failed to fetch announcements.');
-        console.error(err);
+        console.error('Failed to fetch announcements from Firebase:', err);
+        
+        // Fallback to mock data if Firebase fails
+        const mockAnnouncements: Announcement[] = [
+          {
+            id: 'announcement-001',
+            title: 'Welcome to Pack 1703!',
+            body: 'Welcome to another exciting year of Scouting! We have many adventures planned for this year, including camping trips, community service projects, and the Pinewood Derby.',
+            pinned: true,
+            createdAt: { toDate: () => new Date('2024-09-01') } as any,
+            updatedAt: { toDate: () => new Date('2024-09-01') } as any
+          },
+          {
+            id: 'announcement-002',
+            title: 'Fall Campout Registration Open',
+            body: 'Registration for our annual fall campout is now open! This will be a great opportunity for families to bond and learn outdoor skills together. Please RSVP by October 1st.',
+            pinned: false,
+            eventId: 'event-001',
+            createdAt: { toDate: () => new Date('2024-09-15') } as any,
+            updatedAt: { toDate: () => new Date('2024-09-15') } as any
+          },
+          {
+            id: 'announcement-003',
+            title: 'Uniform Update',
+            body: 'New uniforms are now available! Please check with your den leader for sizing information and ordering details.',
+            pinned: false,
+            createdAt: { toDate: () => new Date('2024-09-10') } as any,
+            updatedAt: { toDate: () => new Date('2024-09-10') } as any
+          }
+        ];
+        
+        setAnnouncements(mockAnnouncements);
+        setUsingFallbackData(true);
+        setError('Unable to connect to database. Showing sample data.');
+        console.log('Using mock announcements due to Firebase error');
       } finally {
         setLoading(false);
       }
@@ -100,6 +136,30 @@ const AnnouncementsPage: React.FC = () => {
             Never miss an important announcement or exciting opportunity!
           </p>
         </div>
+
+        {/* Error Banner */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  {usingFallbackData ? 'Database Connection Issue' : 'Error Loading Data'}
+                </h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>{error}</p>
+                  {usingFallbackData && (
+                    <p className="mt-1">The data shown below is sample data. Please check your connection and try refreshing the page.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

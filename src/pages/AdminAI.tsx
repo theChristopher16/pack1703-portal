@@ -23,10 +23,13 @@ const AdminAI: React.FC = () => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    // Set page title
+    document.title = 'Solyn - AI Assistant | Admin Panel';
+    
     // Initialize with welcome message
     const welcomeMessage: ChatMessage = {
       id: 'welcome',
-      content: `🤖 **Welcome to your AI Assistant!**\n\nI'm here to help you manage your Scout Pack portal. I can help with:\n\n**📊 System Monitoring**\n• System status and performance\n• Cost analysis and optimization\n• Infrastructure health\n\n**👥 User Analytics**\n• User activity and engagement\n• Growth metrics and trends\n• User behavior patterns\n\n**📝 Content Management**\n• Content overview and health\n• Recent activity and recommendations\n• Content optimization\n\n**🔒 Security & Permissions**\n• Security status and alerts\n• Permission analysis\n• Security recommendations\n\nJust ask me anything about your system!`,
+      content: `🤖 **Hello! I'm Solyn, your AI Assistant!**\n\nI'm here to help you manage your Scout Pack portal. I can help with:\n\n**📊 System Monitoring**\n• System status and performance\n• Cost analysis and optimization\n• Infrastructure health\n\n**👥 User Analytics**\n• User activity and engagement\n• Growth metrics and trends\n• User behavior patterns\n\n**📝 Content Management**\n• Content overview and health\n• Recent activity and recommendations\n• Content optimization\n\n**🔒 Security & Permissions**\n• Security status and alerts\n• Permission analysis\n• Security recommendations\n\nJust ask me anything about your system!`,
       sender: 'ai',
       timestamp: new Date(),
       type: 'info'
@@ -171,10 +174,10 @@ const AdminAI: React.FC = () => {
             </div>
           </div>
           <h1 className="text-4xl font-display font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            AI Assistant
+            Solyn
           </h1>
           <p className="text-gray-600 text-lg">
-            Your intelligent companion for managing the Scout Pack portal
+            Your intelligent AI companion for managing the Scout Pack portal
           </p>
         </div>
 
@@ -278,7 +281,7 @@ const AdminAI: React.FC = () => {
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                 <Sparkles className="w-5 h-5 mr-2 text-purple-500" />
-                Quick Actions
+                Ask Solyn
               </h3>
               <div className="space-y-2">
                 {getQuickActions().map((action, index) => {

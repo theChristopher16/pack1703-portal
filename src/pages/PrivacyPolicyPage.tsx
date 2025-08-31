@@ -21,7 +21,7 @@ const PrivacyPolicyPage: React.FC = () => {
         {/* Last Updated */}
         <div className="bg-primary/10 rounded-xl p-4 mb-8 text-center">
           <p className="text-text font-medium">
-            Last Updated: August 27, 2025
+            Last Updated: January 15, 2025
           </p>
         </div>
 
@@ -121,10 +121,12 @@ const PrivacyPolicyPage: React.FC = () => {
                 Information We Collect Automatically
               </h3>
               <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
-                <li><strong>IP Address Hash:</strong> We hash your IP address with a salt for rate limiting (we never store your actual IP)</li>
+                <li><strong>IP Address Hash:</strong> We create a unique hash based on your browser information and timestamp for security and rate limiting (we never store your actual IP address)</li>
                 <li><strong>User Agent:</strong> Basic browser/device information for security and debugging</li>
                 <li><strong>Timestamp:</strong> When you submit information</li>
                 <li><strong>Event ID:</strong> Which event you're responding to (if applicable)</li>
+                <li><strong>Session ID:</strong> A unique identifier for your current browser session</li>
+                <li><strong>User ID:</strong> A randomly generated identifier for chat functionality</li>
               </ul>
             </div>
 
@@ -135,7 +137,7 @@ const PrivacyPolicyPage: React.FC = () => {
               </h3>
               <p className="text-gray-600 mb-3">
                 To improve your experience and help pack leadership understand how families use the portal, 
-                we collect anonymous usage analytics:
+                we collect anonymous usage analytics through Firebase Analytics:
               </p>
               <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
                 <li><strong>Page Views:</strong> Which pages families visit most often</li>
@@ -144,6 +146,8 @@ const PrivacyPolicyPage: React.FC = () => {
                 <li><strong>Performance Metrics:</strong> Page load times and error rates to identify issues</li>
                 <li><strong>Navigation Patterns:</strong> How families move through the app</li>
                 <li><strong>Device Information:</strong> Browser type and device category (no personal identifiers)</li>
+                <li><strong>Form Interactions:</strong> How families interact with RSVP forms and other features</li>
+                <li><strong>Error Tracking:</strong> Anonymous error reports to improve app stability</li>
               </ul>
               <div className="mt-4 p-4 bg-secondary/10 rounded-lg">
                 <p className="text-gray-600 text-sm">
@@ -200,6 +204,28 @@ const PrivacyPolicyPage: React.FC = () => {
 
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-soft border border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-display font-semibold text-text mb-3">
+                Local Storage & Session Management
+              </h3>
+              <p className="text-gray-600 mb-3">
+                To provide a seamless experience, we use your browser's local storage for:
+              </p>
+              <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
+                <li><strong>Chat Username:</strong> Your chosen display name for chat functionality</li>
+                <li><strong>Session ID:</strong> A unique identifier for your current browser session</li>
+                <li><strong>User ID:</strong> A randomly generated identifier for chat features</li>
+                <li><strong>Den Selection:</strong> Your chosen den affiliation for chat organization</li>
+                <li><strong>Admin Status:</strong> Whether you have administrative access (if applicable)</li>
+              </ul>
+              <div className="mt-4 p-4 bg-accent/10 rounded-lg">
+                <p className="text-gray-600 text-sm">
+                  <strong>Important:</strong> This information is stored only on your device and is not shared with our servers 
+                  unless you actively use chat features. You can clear this data at any time by clearing your browser's local storage.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-soft border border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-display font-semibold text-text mb-3">
                 Access Controls
               </h3>
               <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
@@ -248,6 +274,14 @@ const PrivacyPolicyPage: React.FC = () => {
                   monitoring and abuse prevention.
                 </p>
               </div>
+              <div>
+                <h3 className="font-semibold text-text mb-2">Local Storage Data</h3>
+                <p className="text-gray-600">
+                  Chat usernames, session IDs, and user preferences stored in your browser's local storage 
+                  persist until you clear your browser data or manually remove them. This data is not stored 
+                  on our servers and is only used for your convenience.
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -288,6 +322,13 @@ const PrivacyPolicyPage: React.FC = () => {
                 <h3 className="font-semibold text-text mb-2">Analytics Opt-Out</h3>
                 <p className="text-gray-600">
                   You can opt out of anonymous analytics collection (though this helps us improve the app).
+                </p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-text mb-2">Clear Local Storage</h3>
+                <p className="text-gray-600">
+                  You can clear your chat username, session data, and other local storage information 
+                  at any time through your browser settings or by clearing browser data.
                 </p>
               </div>
             </div>

@@ -141,7 +141,7 @@ const safeFirestoreCall = async <T>(firestoreCall: () => Promise<T>, mockData: T
   try {
     // Add timeout to prevent hanging
     const timeoutPromise = new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new Error('Database timeout')), 5000)
+      setTimeout(() => reject(new Error('Database timeout')), 2000)
     );
     
     const result = await Promise.race([

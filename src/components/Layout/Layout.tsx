@@ -6,6 +6,7 @@ import { useAnalytics } from '../../hooks/useAnalytics';
 import { usePackNameConfig, useContactConfigs } from '../../hooks/useConfig';
 import OfflineBanner from './OfflineBanner';
 import PWAInstallPrompt from '../PWAInstallPrompt/PWAInstallPrompt';
+import CyclingScoutIcon from '../ui/CyclingScoutIcon';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -64,7 +65,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* Logo/Brand */}
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center shadow-glow">
-                <Sparkles className="w-6 h-6 text-white" />
+                <CyclingScoutIcon size={24} interval={2000} className="text-white" />
               </div>
               <div className="hidden sm:block">
                 <h1 className="text-xl font-display font-bold text-gradient">

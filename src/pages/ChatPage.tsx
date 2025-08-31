@@ -15,7 +15,7 @@ const ChatPage: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Initialize chat
+  // Initialize chat (only once)
   useEffect(() => {
     const initializeChat = async () => {
       try {
@@ -33,19 +33,13 @@ const ChatPage: React.FC = () => {
         const userData = await chatService.getOnlineUsers();
         setUsers(userData);
         
-        // Load messages for selected channel
-        const messageData = await chatService.getMessages(selectedChannel);
-        setMessages(messageData);
-        
         setIsConnected(true);
         
-        // Set up real-time subscriptions
-        const unsubscribeMessages = chatService.subscribeToMessages(selectedChannel, setMessages);
+        // Set up real-time subscriptions for users
         const unsubscribeUsers = chatService.subscribeToOnlineUsers(setUsers);
         
         // Cleanup function
         return () => {
-          unsubscribeMessages();
           unsubscribeUsers();
           chatService.cleanup();
         };
@@ -58,7 +52,30 @@ const ChatPage: React.FC = () => {
     };
 
     initializeChat();
-  }, [selectedChannel]);
+  }, []); // Empty dependency array - only run once
+
+  // Handle channel switching (separate effect)
+  useEffect(() => {
+    if (!isConnected) return; // Don't run until chat is initialized
+    
+    const loadChannelMessages = async () => {
+      try {
+        // Load messages for selected channel
+        const messageData = await chatService.getMessages(selectedChannel);
+        setMessages(messageData);
+        
+        // Set up real-time subscription for messages
+        const unsubscribeMessages = chatService.subscribeToMessages(selectedChannel, setMessages);
+        
+        // Return cleanup function
+        return unsubscribeMessages;
+      } catch (error) {
+        console.error('Failed to load channel messages:', error);
+      }
+    };
+
+    loadChannelMessages();
+  }, [selectedChannel, isConnected]); // Only run when channel changes or connection status changes
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();

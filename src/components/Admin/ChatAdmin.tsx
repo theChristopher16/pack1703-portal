@@ -27,7 +27,7 @@ const ChatAdmin: React.FC = () => {
     lastRestart: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
   });
 
-  // Mock data for demonstration
+  // Initialize chat (only once)
   useEffect(() => {
     const initializeChat = async () => {
       try {
@@ -45,14 +45,9 @@ const ChatAdmin: React.FC = () => {
         const userData = await chatService.getOnlineUsers();
         setUsers(userData);
         
-        // Load messages for selected channel
-        const messageData = await chatService.getMessages(selectedChannel);
-        setMessages(messageData);
-        
         setIsConnected(true);
         
-        // Set up real-time subscriptions
-        const unsubscribeMessages = chatService.subscribeToMessages(selectedChannel, setMessages);
+        // Set up real-time subscriptions for users
         const unsubscribeUsers = chatService.subscribeToOnlineUsers(setUsers);
         
         // Update system status
@@ -60,7 +55,6 @@ const ChatAdmin: React.FC = () => {
           ...prev,
           totalUsers: userData.length,
           onlineUsers: userData.filter(u => u.isOnline).length,
-          totalMessages: messageData.length,
           activeChannels: channelData.filter(c => c.isActive).length,
           totalDens: 6,
           activeDens: 6
@@ -68,7 +62,6 @@ const ChatAdmin: React.FC = () => {
         
         // Cleanup function
         return () => {
-          unsubscribeMessages();
           unsubscribeUsers();
           chatService.cleanup();
         };
@@ -81,7 +74,36 @@ const ChatAdmin: React.FC = () => {
     };
 
     initializeChat();
-  }, [selectedChannel]);
+  }, []); // Empty dependency array - only run once
+
+  // Handle channel switching (separate effect)
+  useEffect(() => {
+    if (!isConnected) return; // Don't run until chat is initialized
+    
+    const loadChannelMessages = async () => {
+      try {
+        // Load messages for selected channel
+        const messageData = await chatService.getMessages(selectedChannel);
+        setMessages(messageData);
+        
+        // Set up real-time subscription for messages
+        const unsubscribeMessages = chatService.subscribeToMessages(selectedChannel, setMessages);
+        
+        // Update system status with message count
+        setSystemStatus(prev => ({
+          ...prev,
+          totalMessages: messageData.length
+        }));
+        
+        // Return cleanup function
+        return unsubscribeMessages;
+      } catch (error) {
+        console.error('Failed to load channel messages:', error);
+      }
+    };
+
+    loadChannelMessages();
+  }, [selectedChannel, isConnected]); // Only run when channel changes or connection status changes
 
 
 

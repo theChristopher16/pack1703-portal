@@ -62,7 +62,7 @@ const AIChatInterface: React.FC = () => {
   };
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft h-[600px] flex flex-col">
+    <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft h-[700px] flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">

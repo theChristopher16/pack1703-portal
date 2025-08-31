@@ -110,6 +110,42 @@ const ChatPage: React.FC = () => {
     return formattedText;
   };
 
+  // Function to apply formatting to selected text
+  const applyTextFormatting = (format: string) => {
+    const textarea = document.querySelector('textarea[name="message"]') as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = newMessage.substring(start, end);
+    const beforeText = newMessage.substring(0, start);
+    const afterText = newMessage.substring(end);
+
+    let formattedText = '';
+    switch (format) {
+      case 'bold':
+        formattedText = `**${selectedText}**`;
+        break;
+      case 'italic':
+        formattedText = `*${selectedText}*`;
+        break;
+      case 'underline':
+        formattedText = `__${selectedText}__`;
+        break;
+      default:
+        return;
+    }
+
+    const newText = beforeText + formattedText + afterText;
+    setNewMessage(newText);
+    
+    // Set cursor position after formatting
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
+    }, 0);
+  };
+
 
 
   const shareMessage = (message: ChatMessage) => {
@@ -1012,10 +1048,8 @@ const ChatPage: React.FC = () => {
                   {/* Formatting Buttons */}
                   <button
                     type="button"
-                    onClick={() => setIsBold(!isBold)}
-                    className={`p-2 rounded-lg transition-colors duration-200 ${
-                      isBold ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                    }`}
+                    onClick={() => applyTextFormatting('bold')}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
                     title="Bold"
                   >
                     <Bold className="w-4 h-4" />
@@ -1023,10 +1057,8 @@ const ChatPage: React.FC = () => {
                   
                   <button
                     type="button"
-                    onClick={() => setIsItalic(!isItalic)}
-                    className={`p-2 rounded-lg transition-colors duration-200 ${
-                      isItalic ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                    }`}
+                    onClick={() => applyTextFormatting('italic')}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
                     title="Italic"
                   >
                     <Italic className="w-4 h-4" />
@@ -1034,10 +1066,8 @@ const ChatPage: React.FC = () => {
                   
                   <button
                     type="button"
-                    onClick={() => setIsUnderline(!isUnderline)}
-                    className={`p-2 rounded-lg transition-colors duration-200 ${
-                      isUnderline ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                    }`}
+                    onClick={() => applyTextFormatting('underline')}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
                     title="Underline"
                   >
                     <Underline className="w-4 h-4" />
@@ -1098,18 +1128,19 @@ const ChatPage: React.FC = () => {
                   <div className="w-px h-6 bg-gray-300"></div>
                   
                   {/* Font Selector */}
-                  <button
-                    type="button"
-                    onClick={() => setShowFontPicker(!showFontPicker)}
-                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors duration-200 font-medium"
-                    title="Font style"
-                  >
-                    Fonts
-                  </button>
-                  
-                  {/* Font Picker Dropdown */}
-                  {showFontPicker && (
-                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-32">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowFontPicker(!showFontPicker)}
+                      className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors duration-200 font-medium"
+                      title="Font style"
+                    >
+                      Fonts
+                    </button>
+                    
+                    {/* Font Picker Dropdown */}
+                    {showFontPicker && (
+                      <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-32">
                       <div className="p-2 space-y-1">
                         {[
                           { value: 'normal', label: 'Normal', font: 'Inter' },
@@ -1137,6 +1168,7 @@ const ChatPage: React.FC = () => {
                       </div>
                     </div>
                   )}
+                </div>
                 </div>
                 
                 {/* GIF Picker */}

@@ -55,16 +55,22 @@ function App() {
       });
     }
 
-    // Initialize default configurations
+    // Initialize default configurations (non-blocking)
     const initializeConfigs = async () => {
       try {
         await configService.initializeDefaultConfigs('system');
         console.log('Default configurations initialized');
-      } catch (error) {
-        console.warn('Failed to initialize default configurations:', error);
+      } catch (error: any) {
+        // Silently handle permission errors - this is expected in production
+        if (error?.code === 'permission-denied') {
+          console.log('Config initialization skipped - admin access required');
+        } else {
+          console.warn('Failed to initialize default configurations:', error);
+        }
       }
     };
 
+    // Run initialization in background without blocking app startup
     initializeConfigs();
   }, []);
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
-import { Send, Bot, User, Sparkles, Loader2, RefreshCw, Settings, MessageSquare, TrendingUp, Shield, DollarSign, Activity } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Loader2, RefreshCw, Settings, MessageSquare, TrendingUp, Shield, DollarSign, Activity, Upload, FileText, Calendar, MapPin } from 'lucide-react';
 import aiService, { AIResponse, AIContext } from '../services/aiService';
 import systemMonitorService from '../services/systemMonitorService';
 
@@ -11,6 +11,16 @@ interface ChatMessage {
   timestamp: Date;
   type: 'info' | 'warning' | 'error' | 'success';
   data?: any;
+  attachments?: FileAttachment[];
+}
+
+interface FileAttachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url?: string;
+  content?: string;
 }
 
 const AdminAI: React.FC = () => {
@@ -19,8 +29,11 @@ const AdminAI: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [systemMetrics, setSystemMetrics] = useState<any>(null);
+  const [attachments, setAttachments] = useState<FileAttachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Set page title
@@ -59,18 +72,20 @@ const AdminAI: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim() || isLoading) return;
+    if ((!inputValue.trim() && attachments.length === 0) || isLoading) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       content: inputValue,
       sender: 'user',
       timestamp: new Date(),
-      type: 'info'
+      type: 'info',
+      attachments: attachments.length > 0 ? [...attachments] : undefined
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
+    setAttachments([]);
     setIsLoading(true);
 
     try {
@@ -84,7 +99,8 @@ const AdminAI: React.FC = () => {
           announcements: systemMetrics?.totalAnnouncements || 0,
           messages: systemMetrics?.totalMessages || 0,
           users: systemMetrics?.totalUsers || 0
-        }
+        },
+        attachments: attachments.length > 0 ? attachments : undefined
       };
 
       const aiResponse = await aiService.processQuery(inputValue, context);
@@ -143,6 +159,109 @@ const AdminAI: React.FC = () => {
       const form = document.querySelector('form');
       form?.dispatchEvent(event);
     }, 100);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    const newAttachments: FileAttachment[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      try {
+        // Read file content
+        const content = await readFileContent(file);
+        
+        const attachment: FileAttachment = {
+          id: Date.now().toString() + i,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          content: content
+        };
+        
+        newAttachments.push(attachment);
+      } catch (error) {
+        console.error('Error reading file:', error);
+      }
+    }
+
+    setAttachments(prev => [...prev, ...newAttachments]);
+    setIsUploading(false);
+    
+    // Clear the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const readFileContent = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        resolve(content);
+      };
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(att => att.id !== id));
+  };
+
+  const handleConfirmation = async (messageId: string, confirmed: boolean) => {
+    if (!confirmed) {
+      // Add a cancellation message
+      const cancelMessage: ChatMessage = {
+        id: Date.now().toString(),
+        content: '❌ **Action Cancelled**\n\nI understand you want to cancel this action. No changes have been made to the system.',
+        sender: 'ai',
+        timestamp: new Date(),
+        type: 'info'
+      };
+      setMessages(prev => [...prev, cancelMessage]);
+      return;
+    }
+
+    // Find the message that requires confirmation
+    const messageIndex = messages.findIndex(msg => msg.id === messageId);
+    if (messageIndex === -1) return;
+
+    const message = messages[messageIndex];
+    if (!message.data?.confirmationData) return;
+
+    setIsLoading(true);
+
+    try {
+      const response = await aiService.confirmAndCreateEvent(message.data.confirmationData);
+      
+      const confirmationMessage: ChatMessage = {
+        id: response.id,
+        content: response.message,
+        sender: 'ai',
+        timestamp: response.timestamp,
+        type: response.type,
+        data: response.data
+      };
+
+      setMessages(prev => [...prev, confirmationMessage]);
+    } catch (error) {
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        content: '❌ **Confirmation Failed**\n\nI encountered an error while processing your confirmation. Please try again.',
+        sender: 'ai',
+        timestamp: new Date(),
+        type: 'error'
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const formatMessage = (content: string) => {
@@ -210,6 +329,27 @@ const AdminAI: React.FC = () => {
                             className="prose prose-sm max-w-none"
                             dangerouslySetInnerHTML={{ __html: formatMessage(message.content) }}
                           />
+                          
+                          {/* Confirmation Buttons */}
+                          {message.data?.confirmationData && (
+                            <div className="mt-4 flex space-x-3">
+                              <button
+                                onClick={() => handleConfirmation(message.id, true)}
+                                disabled={isLoading}
+                                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                              >
+                                ✅ Confirm & Create
+                              </button>
+                              <button
+                                onClick={() => handleConfirmation(message.id, false)}
+                                disabled={isLoading}
+                                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                              >
+                                ❌ Cancel
+                              </button>
+                            </div>
+                          )}
+                          
                           <div className={`text-xs mt-2 ${
                             message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
                           }`}>
@@ -247,6 +387,38 @@ const AdminAI: React.FC = () => {
 
               {/* Input Area */}
               <div className="border-t border-gray-200 p-4">
+                {/* File Attachments Display */}
+                {attachments.length > 0 && (
+                  <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-blue-800">Attachments ({attachments.length})</span>
+                      <button
+                        onClick={() => setAttachments([])}
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {attachments.map((attachment) => (
+                        <div key={attachment.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                          <div className="flex items-center space-x-2">
+                            <FileText className="w-4 h-4 text-blue-500" />
+                            <span className="text-sm text-gray-700">{attachment.name}</span>
+                            <span className="text-xs text-gray-500">({(attachment.size / 1024).toFixed(1)} KB)</span>
+                          </div>
+                          <button
+                            onClick={() => removeAttachment(attachment.id)}
+                            className="text-red-500 hover:text-red-700 text-sm"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="flex space-x-3">
                   <div className="flex-1 relative">
                     <textarea
@@ -257,15 +429,40 @@ const AdminAI: React.FC = () => {
                         autoResizeTextarea();
                       }}
                       onKeyPress={handleKeyPress}
-                      placeholder="Ask me anything about your system, costs, users, content, or security..."
+                      placeholder="Ask me anything about your system, costs, users, content, or security... Or upload a file to create content!"
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                       rows={1}
                       disabled={isLoading}
                     />
                   </div>
+                  
+                  {/* File Upload Button */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-200 border border-gray-300"
+                    title="Upload files"
+                  >
+                    {isUploading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Upload className="w-5 h-5" />
+                    )}
+                  </button>
+                  
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept=".txt,.pdf,.ics,.ical,.doc,.docx"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  
                   <button
                     type="submit"
-                    disabled={isLoading || !inputValue.trim()}
+                    disabled={isLoading || ((!inputValue.trim() && attachments.length === 0))}
                     className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
                   >
                     <Send className="w-5 h-5" />

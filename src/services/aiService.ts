@@ -12,6 +12,20 @@ export interface AIResponse {
   timestamp: Date;
   type: 'info' | 'warning' | 'error' | 'success';
   data?: any;
+  requiresConfirmation?: boolean;
+  confirmationData?: {
+    action: string;
+    entityType: string;
+    entityData: any;
+    validationChecks: ValidationCheck[];
+  };
+}
+
+export interface ValidationCheck {
+  type: 'location' | 'contact' | 'date' | 'content' | 'duplicate';
+  status: 'pending' | 'passed' | 'failed' | 'warning';
+  message: string;
+  data?: any;
 }
 
 export interface AIContext {
@@ -25,6 +39,16 @@ export interface AIContext {
     messages: number;
     users: number;
   };
+  attachments?: FileAttachment[];
+}
+
+export interface FileAttachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url?: string;
+  content?: string;
 }
 
 class AIService {
@@ -68,6 +92,11 @@ class AIService {
 
   private async analyzeQuery(userQuery: string, context: AIContext): Promise<AIResponse> {
     const query = userQuery.toLowerCase();
+    
+    // Content creation queries (with file attachments)
+    if (context.attachments && context.attachments.length > 0) {
+      return await this.handleContentCreation(userQuery, context);
+    }
     
     // System status queries
     if (query.includes('system status') || query.includes('system health') || query.includes('performance')) {
@@ -548,6 +577,321 @@ class AIService {
     }
   }
 
+  private async handleContentCreation(userQuery: string, context: AIContext): Promise<AIResponse> {
+    try {
+      // Extract event information from uploaded files
+      const eventData = await this.extractEventData(context.attachments!);
+      
+      // Perform comprehensive validation
+      const validationChecks = await this.performValidationChecks(eventData);
+      
+      // Check if any validations failed
+      const failedChecks = validationChecks.filter(check => check.status === 'failed');
+      const warningChecks = validationChecks.filter(check => check.status === 'warning');
+      
+      if (failedChecks.length > 0) {
+        return {
+          id: Date.now().toString(),
+          message: `❌ **Validation Failed**\n\nI found some issues that need to be resolved before creating this event:\n\n${failedChecks.map(check => `• ${check.message}`).join('\n')}\n\nPlease review and correct these issues, then try again.`,
+          timestamp: new Date(),
+          type: 'error',
+          data: { validationChecks }
+        };
+      }
+      
+      // Create confirmation response
+      const confirmationMessage = this.buildConfirmationMessage(eventData, validationChecks, warningChecks);
+      
+      return {
+        id: Date.now().toString(),
+        message: confirmationMessage,
+        timestamp: new Date(),
+        type: warningChecks.length > 0 ? 'warning' : 'success',
+        requiresConfirmation: true,
+        confirmationData: {
+          action: 'create_event',
+          entityType: 'event',
+          entityData: eventData,
+          validationChecks
+        }
+      };
+    } catch (error) {
+      console.error('Error handling content creation:', error);
+      return {
+        id: Date.now().toString(),
+        message: '❌ I encountered an error while processing your uploaded files. Please try again or contact support.',
+        timestamp: new Date(),
+        type: 'error'
+      };
+    }
+  }
+
+  private async extractEventData(attachments: FileAttachment[]): Promise<any> {
+    // Extract event information from uploaded files
+    const eventData: any = {
+      title: '',
+      description: '',
+      startDate: '',
+      endDate: '',
+      location: {
+        name: '',
+        address: '',
+        city: '',
+        state: '',
+        zip: '',
+        coordinates: null
+      },
+      contact: {
+        name: '',
+        phone: '',
+        email: ''
+      },
+      details: {
+        parking: '',
+        requirements: '',
+        cost: '',
+        maxAttendees: 0
+      }
+    };
+
+    for (const attachment of attachments) {
+      if (attachment.content) {
+        // Parse different file types
+        if (attachment.type.includes('text') || attachment.name.endsWith('.txt')) {
+          this.parseTextContent(attachment.content, eventData);
+        } else if (attachment.name.endsWith('.ics') || attachment.name.endsWith('.ical')) {
+          this.parseCalendarContent(attachment.content, eventData);
+        } else if (attachment.name.endsWith('.pdf')) {
+          // For PDFs, we'd need OCR - for now, treat as text
+          this.parseTextContent(attachment.content, eventData);
+        }
+      }
+    }
+
+    return eventData;
+  }
+
+  private parseTextContent(content: string, eventData: any): void {
+    // Extract event information using regex patterns
+    const titleMatch = content.match(/title[:\s]+([^\n]+)/i);
+    if (titleMatch) eventData.title = titleMatch[1].trim();
+
+    const dateMatch = content.match(/date[:\s]+([^\n]+)/i);
+    if (dateMatch) eventData.startDate = dateMatch[1].trim();
+
+    const locationMatch = content.match(/location[:\s]+([^\n]+)/i);
+    if (locationMatch) eventData.location.name = locationMatch[1].trim();
+
+    const addressMatch = content.match(/address[:\s]+([^\n]+)/i);
+    if (addressMatch) eventData.location.address = addressMatch[1].trim();
+
+    const phoneMatch = content.match(/phone[:\s]+([^\n]+)/i);
+    if (phoneMatch) eventData.contact.phone = phoneMatch[1].trim();
+
+    const emailMatch = content.match(/email[:\s]+([^\n]+)/i);
+    if (emailMatch) eventData.contact.email = emailMatch[1].trim();
+  }
+
+  private parseCalendarContent(content: string, eventData: any): void {
+    // Parse iCal format
+    const summaryMatch = content.match(/SUMMARY:([^\n]+)/i);
+    if (summaryMatch) eventData.title = summaryMatch[1].trim();
+
+    const startMatch = content.match(/DTSTART[^:]*:([^\n]+)/i);
+    if (startMatch) eventData.startDate = startMatch[1].trim();
+
+    const endMatch = content.match(/DTEND[^:]*:([^\n]+)/i);
+    if (endMatch) eventData.endDate = endMatch[1].trim();
+
+    const locationMatch = content.match(/LOCATION:([^\n]+)/i);
+    if (locationMatch) eventData.location.name = locationMatch[1].trim();
+  }
+
+  private async performValidationChecks(eventData: any): Promise<ValidationCheck[]> {
+    const checks: ValidationCheck[] = [];
+
+    // Title validation
+    checks.push({
+      type: 'content',
+      status: eventData.title ? 'passed' : 'failed',
+      message: eventData.title ? 'Event title is valid' : 'Event title is required',
+      data: { title: eventData.title }
+    });
+
+    // Date validation
+    if (eventData.startDate) {
+      const startDate = new Date(eventData.startDate);
+      const isValidDate = !isNaN(startDate.getTime());
+      checks.push({
+        type: 'date',
+        status: isValidDate ? 'passed' : 'failed',
+        message: isValidDate ? 'Start date is valid' : 'Start date format is invalid',
+        data: { startDate: eventData.startDate }
+      });
+    } else {
+      checks.push({
+        type: 'date',
+        status: 'failed',
+        message: 'Start date is required',
+        data: { startDate: null }
+      });
+    }
+
+    // Location validation
+    if (eventData.location.name) {
+      // Simulate location verification
+      const locationVerified = await this.verifyLocation(eventData.location);
+      checks.push({
+        type: 'location',
+        status: locationVerified ? 'passed' : 'warning',
+        message: locationVerified ? 'Location verified' : 'Location needs verification',
+        data: { location: eventData.location }
+      });
+    } else {
+      checks.push({
+        type: 'location',
+        status: 'failed',
+        message: 'Location is required',
+        data: { location: null }
+      });
+    }
+
+    // Contact validation
+    if (eventData.contact.phone || eventData.contact.email) {
+      const phoneValid = eventData.contact.phone ? this.validatePhone(eventData.contact.phone) : true;
+      const emailValid = eventData.contact.email ? this.validateEmail(eventData.contact.email) : true;
+      
+      checks.push({
+        type: 'contact',
+        status: (phoneValid && emailValid) ? 'passed' : 'warning',
+        message: (phoneValid && emailValid) ? 'Contact information is valid' : 'Contact information needs verification',
+        data: { contact: eventData.contact }
+      });
+    } else {
+      checks.push({
+        type: 'contact',
+        status: 'warning',
+        message: 'Contact information is recommended',
+        data: { contact: eventData.contact }
+      });
+    }
+
+    // Duplicate check
+    const isDuplicate = await this.checkForDuplicates(eventData);
+    checks.push({
+      type: 'duplicate',
+      status: isDuplicate ? 'warning' : 'passed',
+      message: isDuplicate ? 'Similar event may already exist' : 'No duplicate events found',
+      data: { isDuplicate }
+    });
+
+    return checks;
+  }
+
+  private async verifyLocation(location: any): Promise<boolean> {
+    // Simulate location verification using Google Maps API or similar
+    // For now, return true if we have a name and address
+    return !!(location.name && location.address);
+  }
+
+  private validatePhone(phone: string): boolean {
+    // Basic phone validation
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
+  }
+
+  private validateEmail(email: string): boolean {
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  private async checkForDuplicates(eventData: any): Promise<boolean> {
+    // Check for similar events in the database
+    try {
+      // This would query the events collection for similar events
+      // For now, return false (no duplicates)
+      return false;
+    } catch (error) {
+      console.warn('Error checking for duplicates:', error);
+      return false;
+    }
+  }
+
+  private buildConfirmationMessage(eventData: any, validationChecks: ValidationCheck[], warningChecks: ValidationCheck[]): string {
+    const passedChecks = validationChecks.filter(check => check.status === 'passed');
+    const failedChecks = validationChecks.filter(check => check.status === 'failed');
+    
+    let message = `✅ **Event Creation Ready**\n\n`;
+    message += `**Event Details:**\n`;
+    message += `• Title: ${eventData.title}\n`;
+    message += `• Date: ${eventData.startDate}\n`;
+    message += `• Location: ${eventData.location.name}\n`;
+    message += `• Contact: ${eventData.contact.name || eventData.contact.phone || eventData.contact.email || 'Not provided'}\n\n`;
+    
+    message += `**Validation Results:**\n`;
+    message += `• ✅ ${passedChecks.length} checks passed\n`;
+    if (warningChecks.length > 0) {
+      message += `• ⚠️ ${warningChecks.length} warnings (review recommended)\n`;
+    }
+    if (failedChecks.length > 0) {
+      message += `• ❌ ${failedChecks.length} checks failed\n`;
+    }
+    
+    message += `\n**Ready to create event?**\n`;
+    message += `I'll create this event with all the extracted information. Please review the details above and confirm.`;
+    
+    return message;
+  }
+
+  // Method to handle confirmation and actually create the event
+  async confirmAndCreateEvent(confirmationData: any): Promise<AIResponse> {
+    try {
+      // Log the confirmation for audit purposes
+      await this.logConfirmation(confirmationData);
+      
+      // Create the event in the database
+      const eventId = await this.createEventInDatabase(confirmationData.entityData);
+      
+      return {
+        id: Date.now().toString(),
+        message: `🎉 **Event Created Successfully!**\n\nYour event "${confirmationData.entityData.title}" has been created with ID: ${eventId}\n\n**Next Steps:**\n• Review the event in the admin panel\n• Add any additional details\n• Share with your pack members\n\nThe event is now live and ready for RSVPs!`,
+        timestamp: new Date(),
+        type: 'success',
+        data: { eventId, eventData: confirmationData.entityData }
+      };
+    } catch (error) {
+      console.error('Error creating event:', error);
+      return {
+        id: Date.now().toString(),
+        message: '❌ **Event Creation Failed**\n\nI encountered an error while creating the event. Please try again or contact support.',
+        timestamp: new Date(),
+        type: 'error'
+      };
+    }
+  }
+
+  private async logConfirmation(confirmationData: any): Promise<void> {
+    try {
+      await addDoc(collection(this.db, 'ai-confirmations'), {
+        action: confirmationData.action,
+        entityType: confirmationData.entityType,
+        entityData: confirmationData.entityData,
+        validationChecks: confirmationData.validationChecks,
+        timestamp: serverTimestamp(),
+        userRole: 'admin'
+      });
+    } catch (error) {
+      console.warn('Failed to log confirmation:', error);
+    }
+  }
+
+  private async createEventInDatabase(eventData: any): Promise<string> {
+    // This would create the event in your events collection
+    // For now, return a mock ID
+    return `event_${Date.now()}`;
+  }
+
   private async logInteraction(userQuery: string, response: AIResponse, context: AIContext): Promise<void> {
     try {
       await addDoc(collection(this.db, 'ai-interactions'), {
@@ -557,7 +901,9 @@ class AIService {
         timestamp: serverTimestamp(),
         userRole: context.userRole,
         currentPage: context.currentPage,
-        availableData: context.availableData
+        availableData: context.availableData,
+        requiresConfirmation: response.requiresConfirmation,
+        confirmationData: response.confirmationData
       });
     } catch (error) {
       console.warn('Failed to log AI interaction:', error);

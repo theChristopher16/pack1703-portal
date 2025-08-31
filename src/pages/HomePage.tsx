@@ -73,8 +73,8 @@ const HomePage: React.FC = () => {
     },
     {
       emoji: '⚡',
-      title: 'Tech-Forward',
-      description: 'Modern tools and real-time updates keep families connected and informed.',
+      title: 'AI-Enhanced Development',
+      description: 'Built with LLM assistance, featuring systematic development with fine-grained testing and validation at every step to ensure data security and system reliability.',
       color: 'text-accent-500',
       bgColor: 'bg-accent-50'
     },

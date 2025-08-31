@@ -5,6 +5,7 @@ import configService from './configService';
 import { adminService } from './adminService';
 import { analytics } from './analytics';
 import { SecurityAuditService } from './securityAuditService';
+import externalApiService from './externalApiService';
 
 export interface AIResponse {
   id: string;
@@ -23,7 +24,7 @@ export interface AIResponse {
 
 export interface ValidationCheck {
   type: 'location' | 'contact' | 'date' | 'content' | 'duplicate';
-  status: 'pending' | 'passed' | 'failed' | 'warning';
+  status: 'pending' | 'passed' | 'failed' | 'warning' | 'info';
   message: string;
   data?: any;
 }
@@ -739,13 +740,18 @@ class AIService {
 
     // Location validation
     if (eventData.location.name) {
-      // Simulate location verification
-      const locationVerified = await this.verifyLocation(eventData.location);
+      // Comprehensive location verification with external APIs
+      const locationData = await this.verifyLocation(eventData.location);
       checks.push({
         type: 'location',
-        status: locationVerified ? 'passed' : 'warning',
-        message: locationVerified ? 'Location verified' : 'Location needs verification',
-        data: { location: eventData.location }
+        status: locationData.verified ? 'passed' : 'warning',
+        message: locationData.verified ? 
+          `Location verified: ${locationData.formattedAddress || eventData.location.name}` : 
+          'Location needs verification',
+        data: { 
+          location: eventData.location,
+          verifiedData: locationData
+        }
       });
     } else {
       checks.push({
@@ -758,14 +764,19 @@ class AIService {
 
     // Contact validation
     if (eventData.contact.phone || eventData.contact.email) {
-      const phoneValid = eventData.contact.phone ? this.validatePhone(eventData.contact.phone) : true;
+      const phoneData = eventData.contact.phone ? await this.validatePhone(eventData.contact.phone) : { valid: true };
       const emailValid = eventData.contact.email ? this.validateEmail(eventData.contact.email) : true;
       
       checks.push({
         type: 'contact',
-        status: (phoneValid && emailValid) ? 'passed' : 'warning',
-        message: (phoneValid && emailValid) ? 'Contact information is valid' : 'Contact information needs verification',
-        data: { contact: eventData.contact }
+        status: (phoneData.valid && emailValid) ? 'passed' : 'warning',
+        message: (phoneData.valid && emailValid) ? 
+          `Contact verified: ${phoneData.formatted || eventData.contact.phone}` : 
+          'Contact information needs verification',
+        data: { 
+          contact: eventData.contact,
+          phoneData: phoneData
+        }
       });
     } else {
       checks.push({
@@ -785,19 +796,82 @@ class AIService {
       data: { isDuplicate }
     });
 
+    // Business hours validation (if we have a verified location)
+    if (eventData.location.placeId && eventData.startDate) {
+      const businessHours = await externalApiService.validateBusinessHours(eventData.location.name, new Date(eventData.startDate));
+      checks.push({
+        type: 'content',
+        status: businessHours.open ? 'passed' : 'warning',
+        message: businessHours.open ? 
+          `Business will be open during event time` : 
+          `Business may be closed during event time (${businessHours.hours || 'Hours unknown'})`,
+        data: { businessHours }
+      });
+    }
+
+    // Weather forecast (if we have coordinates and date)
+    if (eventData.location.coordinates && eventData.startDate) {
+      const weather = await externalApiService.getWeatherForecast(eventData.location.coordinates, new Date(eventData.startDate));
+      if (weather) {
+        checks.push({
+          type: 'content',
+          status: 'info',
+          message: `Weather forecast: ${weather.temperature}°F, ${weather.condition}, ${weather.precipitation}% chance of rain`,
+          data: { weather }
+        });
+      }
+    }
+
+    // Cost estimation
+    if (eventData.location.name) {
+      const costEstimate = await externalApiService.estimateVenueCost(eventData.location.name);
+      checks.push({
+        type: 'content',
+        status: 'info',
+        message: `Estimated venue cost: ${costEstimate.estimatedCost}`,
+        data: { costEstimate }
+      });
+    }
+
     return checks;
   }
 
-  private async verifyLocation(location: any): Promise<boolean> {
-    // Simulate location verification using Google Maps API or similar
-    // For now, return true if we have a name and address
-    return !!(location.name && location.address);
+  private async verifyLocation(location: any): Promise<any> {
+    try {
+      // Use external API service for comprehensive location verification
+      const locationData = await externalApiService.verifyLocation(location.name, location.address);
+      
+      if (locationData.verified) {
+        // Update location with verified data
+        location.coordinates = locationData.coordinates;
+        location.formattedAddress = locationData.formattedAddress;
+        location.placeId = locationData.placeId;
+        location.businessInfo = locationData.businessInfo;
+        location.parkingInfo = locationData.parkingInfo;
+      }
+      
+      return locationData;
+    } catch (error) {
+      console.error('Error verifying location:', error);
+      // Fallback to basic validation
+      return { verified: !!(location.name && location.address) };
+    }
   }
 
-  private validatePhone(phone: string): boolean {
-    // Basic phone validation
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
+  private async validatePhone(phone: string): Promise<any> {
+    try {
+      // Use external API service for comprehensive phone validation
+      const phoneData = await externalApiService.validatePhoneNumber(phone);
+      return phoneData;
+    } catch (error) {
+      console.error('Error validating phone:', error);
+      // Fallback to basic regex validation
+      const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+      return {
+        valid: phoneRegex.test(phone.replace(/[\s\-\(\)]/g, '')),
+        formatted: phone
+      };
+    }
   }
 
   private validateEmail(email: string): boolean {
@@ -821,13 +895,36 @@ class AIService {
   private buildConfirmationMessage(eventData: any, validationChecks: ValidationCheck[], warningChecks: ValidationCheck[]): string {
     const passedChecks = validationChecks.filter(check => check.status === 'passed');
     const failedChecks = validationChecks.filter(check => check.status === 'failed');
+    const infoChecks = validationChecks.filter(check => check.status === 'info');
     
     let message = `✅ **Event Creation Ready**\n\n`;
     message += `**Event Details:**\n`;
     message += `• Title: ${eventData.title}\n`;
     message += `• Date: ${eventData.startDate}\n`;
-    message += `• Location: ${eventData.location.name}\n`;
+    message += `• Location: ${eventData.location.formattedAddress || eventData.location.name}\n`;
     message += `• Contact: ${eventData.contact.name || eventData.contact.phone || eventData.contact.email || 'Not provided'}\n\n`;
+    
+    // Add rich information from external APIs
+    if (eventData.location.businessInfo) {
+      message += `**Location Information:**\n`;
+      message += `• Phone: ${eventData.location.businessInfo.phone || 'Not available'}\n`;
+      if (eventData.location.businessInfo.website) {
+        message += `• Website: ${eventData.location.businessInfo.website}\n`;
+      }
+      if (eventData.location.businessInfo.rating) {
+        message += `• Rating: ${eventData.location.businessInfo.rating}/5 (${eventData.location.businessInfo.reviews} reviews)\n`;
+      }
+      message += `\n`;
+    }
+    
+    if (eventData.location.parkingInfo) {
+      message += `**Parking Information:**\n`;
+      message += `• Available: ${eventData.location.parkingInfo.available ? 'Yes' : 'No'}\n`;
+      if (eventData.location.parkingInfo.type.length > 0) {
+        message += `• Types: ${eventData.location.parkingInfo.type.join(', ')}\n`;
+      }
+      message += `\n`;
+    }
     
     message += `**Validation Results:**\n`;
     message += `• ✅ ${passedChecks.length} checks passed\n`;
@@ -837,9 +934,26 @@ class AIService {
     if (failedChecks.length > 0) {
       message += `• ❌ ${failedChecks.length} checks failed\n`;
     }
+    if (infoChecks.length > 0) {
+      message += `• ℹ️ ${infoChecks.length} additional insights\n`;
+    }
+    
+    // Add weather and cost information
+    const weatherCheck = infoChecks.find(check => check.data?.weather);
+    const costCheck = infoChecks.find(check => check.data?.costEstimate);
+    
+    if (weatherCheck) {
+      message += `\n**Weather Forecast:**\n`;
+      message += `• ${weatherCheck.message}\n`;
+    }
+    
+    if (costCheck) {
+      message += `\n**Cost Estimate:**\n`;
+      message += `• ${costCheck.message}\n`;
+    }
     
     message += `\n**Ready to create event?**\n`;
-    message += `I'll create this event with all the extracted information. Please review the details above and confirm.`;
+    message += `I'll create this event with all the extracted and verified information. Please review the details above and confirm.`;
     
     return message;
   }

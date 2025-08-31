@@ -139,7 +139,17 @@ export const generateIPHash = async (): Promise<string> => {
 // Safe Firestore wrapper that falls back to mock data
 const safeFirestoreCall = async <T>(firestoreCall: () => Promise<T>, mockData: T): Promise<T> => {
   try {
-    return await firestoreCall();
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('Database timeout')), 5000)
+    );
+    
+    const result = await Promise.race([
+      firestoreCall(),
+      timeoutPromise
+    ]);
+    
+    return result;
   } catch (error) {
     console.warn('Firestore call failed, using mock data:', error);
     // Throw the error so components can show error banners

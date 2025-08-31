@@ -25,8 +25,8 @@ const ChatPage: React.FC = () => {
         setError(null);
         
         // Add timeout to prevent infinite loading
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Chat initialization timeout')), 10000)
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Chat initialization timeout')), 15000)
         );
         
         // Initialize chat service and get current user

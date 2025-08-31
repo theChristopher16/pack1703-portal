@@ -26,7 +26,7 @@ const ChatPage: React.FC = () => {
         
         // Add timeout to prevent infinite loading
         const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Chat initialization timeout')), 5000)
+          setTimeout(() => reject(new Error('Chat initialization timeout')), 10000)
         );
         
         // Initialize chat service and get current user
@@ -51,6 +51,7 @@ const ChatPage: React.FC = () => {
         setUsers(userData);
         
         setIsConnected(true);
+        setIsLoading(false); // Set loading to false on successful initialization
         console.log('Chat initialization complete');
         
         // Set up real-time subscriptions for users
@@ -71,6 +72,17 @@ const ChatPage: React.FC = () => {
     };
 
     initializeChat();
+    
+    // Fallback timeout to ensure loading state is cleared
+    const fallbackTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.log('Fallback: Clearing loading state after timeout');
+        setIsLoading(false);
+        setIsConnected(true);
+      }
+    }, 15000); // 15 second fallback
+    
+    return () => clearTimeout(fallbackTimeout);
   }, []); // Empty dependency array - only run once
 
   // Handle channel switching (separate effect)

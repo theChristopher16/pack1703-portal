@@ -95,7 +95,7 @@ const HomePage: React.FC = () => {
     {
       emoji: '🌟',
       title: 'Inclusive Community',
-      description: 'Every family is welcome regardless of experience level. We believe every child deserves the adventure of scouting.',
+      description: 'Every family is welcome regardless of experience level. We believe every child deserves the adventure of scouting. Open to girls and boys.',
       color: 'text-purple-600',
       bgColor: 'bg-purple-50'
     }

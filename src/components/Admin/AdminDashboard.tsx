@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../contexts/AdminContext';
 import { EntityType, AdminActionType } from '../../types/admin';
 import ConfigManager from './ConfigManager';
+import AIChatInterface from './AIChatInterface';
 import { useToast } from '../../contexts/ToastContext';
 
 export const AdminDashboard: React.FC = () => {
@@ -30,7 +31,7 @@ export const AdminDashboard: React.FC = () => {
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [selectedEntityType, setSelectedEntityType] = useState<EntityType>('event');
   const [selectedAction, setSelectedAction] = useState<AdminActionType>('create');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'config'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'config' | 'ai-chat'>('dashboard');
 
   useEffect(() => {
     if (state.isAuthenticated) {
@@ -217,6 +218,16 @@ export const AdminDashboard: React.FC = () => {
           >
             Configuration
           </button>
+          <button
+            onClick={() => setActiveTab('ai-chat')}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
+              activeTab === 'ai-chat'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Nova
+          </button>
         </div>
 
         {/* Quick Actions */}
@@ -347,8 +358,10 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'config' ? (
           <ConfigManager />
+        ) : (
+          <AIChatInterface />
         )}
       </div>
     </div>

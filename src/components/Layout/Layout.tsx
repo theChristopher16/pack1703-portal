@@ -36,14 +36,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     // Close dropdown if open
     setIsDropdownOpen(false);
     
-    // Force navigation even if there are issues
-    try {
-      navigate(href);
-    } catch (error) {
-      console.error('Navigation error, forcing redirect:', error);
-      // Fallback to window.location if React Router fails
-      window.location.href = href;
-    }
+    // Add a small delay to ensure dropdown closes before navigation
+    setTimeout(() => {
+      // Force navigation even if there are issues
+      try {
+        console.log('Executing navigation to:', href);
+        navigate(href);
+      } catch (error) {
+        console.error('Navigation error, forcing redirect:', error);
+        // Fallback to window.location if React Router fails
+        window.location.href = href;
+      }
+    }, 100);
   };
 
   // TODO: Future analytics-based ordering
@@ -165,7 +169,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                               e.preventDefault();
                               e.stopPropagation();
                               console.log('Dropdown navigation clicked:', item.href);
-                              handleNavigation(item.href);
+                              // Force immediate navigation
+                              setTimeout(() => {
+                                console.log('Forcing navigation to:', item.href);
+                                window.location.href = item.href;
+                              }, 50);
                             }}
                             className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
                               isActive(item.href)
@@ -186,7 +194,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             e.preventDefault();
                             e.stopPropagation();
                             console.log('Admin navigation clicked');
-                            handleNavigation('/admin');
+                            // Force immediate navigation
+                            setTimeout(() => {
+                              console.log('Forcing admin navigation');
+                              window.location.href = '/admin';
+                            }, 50);
                           }}
                           className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
                             isActive('/admin')

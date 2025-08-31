@@ -1,7 +1,22 @@
-import React from 'react';
-import { Shield, Database, Lock, Eye, Clock, Users, Globe, Server, BarChart3 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Shield, Database, Lock, Eye, Clock, Users, Globe, Server, BarChart3, Download } from 'lucide-react';
+import { SecurityAuditService } from '../services/securityAuditService';
 
 const PrivacyPolicyPage: React.FC = () => {
+  const [isDownloadingAudit, setIsDownloadingAudit] = useState(false);
+
+  const handleDownloadAudit = async () => {
+    try {
+      setIsDownloadingAudit(true);
+      await SecurityAuditService.downloadAuditReport();
+    } catch (error) {
+      console.error('Error downloading audit:', error);
+      alert('Failed to download audit report. Please try again.');
+    } finally {
+      setIsDownloadingAudit(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-surface py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -13,9 +28,30 @@ const PrivacyPolicyPage: React.FC = () => {
           <h1 className="text-4xl md:text-5xl font-display font-bold text-text mb-4">
             Privacy Policy
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-6">
             How we protect your family's privacy and handle data in the Pack 1703 Families Portal
           </p>
+          
+          {/* Security Audit Download Button */}
+          <div className="flex justify-center">
+            <button
+              onClick={handleDownloadAudit}
+              disabled={isDownloadingAudit}
+              className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl shadow-soft hover:shadow-glow-green transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDownloadingAudit ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Generating Audit...
+                </>
+              ) : (
+                <>
+                  <Download className="w-5 h-5 mr-2" />
+                  Download Security Audit
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Last Updated */}

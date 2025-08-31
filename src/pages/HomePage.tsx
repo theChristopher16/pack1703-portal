@@ -1,17 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, FileText, Users, ArrowRight, Zap, Mountain, Compass, MessageSquare } from 'lucide-react';
+import { Calendar, MapPin, FileText, Users, ArrowRight, Zap, Mountain, Compass, MessageSquare, Download, Shield } from 'lucide-react';
 import { LoadingSpinner, SkeletonLoader } from '../components/Loading';
+import { SecurityAuditService } from '../services/securityAuditService';
 
 const HomePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [contentLoaded, setContentLoaded] = useState(false);
+  const [isDownloadingAudit, setIsDownloadingAudit] = useState(false);
 
   useEffect(() => {
     // Remove artificial loading delays for better performance
     setIsLoading(false);
     setContentLoaded(true);
   }, []);
+
+  const handleDownloadAudit = async () => {
+    try {
+      setIsDownloadingAudit(true);
+      await SecurityAuditService.downloadAuditReport();
+    } catch (error) {
+      console.error('Error downloading audit:', error);
+      alert('Failed to download audit report. Please try again.');
+    } finally {
+      setIsDownloadingAudit(false);
+    }
+  };
 
   const quickActions = [
     {
@@ -98,7 +112,7 @@ const HomePage: React.FC = () => {
     {
       emoji: '🔒',
       title: 'Family Privacy',
-      description: 'Your family\'s information stays private and secure. We use the same security standards as major banks.',
+      description: 'Your family\'s information stays private and secure. We use the same security standards as major banks - you can even download your own audit!',
       color: 'text-green-600',
       bgColor: 'bg-green-50'
     },
@@ -304,9 +318,30 @@ const HomePage: React.FC = () => {
                   {feature.title}
                 </h3>
                 
-                <p className="text-gray-600 leading-relaxed">
+                <p className="text-gray-600 leading-relaxed mb-4">
                   {feature.description}
                 </p>
+
+                {/* Download Audit Button for Family Privacy */}
+                {feature.title === 'Family Privacy' && (
+                  <button
+                    onClick={handleDownloadAudit}
+                    disabled={isDownloadingAudit}
+                    className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-sm font-semibold rounded-xl shadow-soft hover:shadow-glow-green transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isDownloadingAudit ? (
+                      <>
+                        <LoadingSpinner size="sm" className="mr-2" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 mr-2" />
+                        Download Audit
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             ))}
           </div>

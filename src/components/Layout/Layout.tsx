@@ -184,12 +184,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                               e.stopPropagation();
                               console.log('Dropdown navigation clicked:', item.href);
                               console.log('Forcing navigation to:', item.href);
-                              // Close dropdown first
-                              setIsDropdownOpen(false);
-                              // Then navigate
-                              setTimeout(() => {
-                                window.location.href = item.href;
-                              }, 10);
+                              window.location.href = item.href;
                             }}
                             className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
                               isActive(item.href)
@@ -211,12 +206,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             e.stopPropagation();
                             console.log('Admin navigation clicked');
                             console.log('Forcing admin navigation');
-                            // Close dropdown first
-                            setIsDropdownOpen(false);
-                            // Then navigate
-                            setTimeout(() => {
-                              window.location.href = '/admin';
-                            }, 10);
+                            window.location.href = '/admin';
                           }}
                           className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
                             isActive('/admin')

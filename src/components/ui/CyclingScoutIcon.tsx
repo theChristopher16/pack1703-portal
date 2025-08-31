@@ -1,31 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import configService from '../../services/configService';
+import React, { useState, useEffect } from "react";
+import configService from "../../services/configService";
 
 interface CyclingScoutIconProps {
   className?: string;
   size?: number;
-  interval?: number; // Time between icon changes in milliseconds
+  interval?: number;
 }
 
 const CyclingScoutIcon: React.FC<CyclingScoutIconProps> = ({
-  className = '',
+  className = "",
   size = 16,
   interval = 3000
 }) => {
   const [currentIconIndex, setCurrentIconIndex] = useState(0);
-  const [icons, setIcons] = useState<string[]>(['🏕️', '🔥', '🌲', '🏆', '⭐', '🎖️']);
+  const [icons, setIcons] = useState<string[]>(["������", "������", "���", "���", "���", "���"]);
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
-    // Load icons from database configuration
     const loadIcons = async () => {
       try {
-        const dbIcons = await configService.getConfigValue('display.cycling_scout_icons');
+        const dbIcons = await configService.getConfigValue("display.cycling_scout_icons");
         if (dbIcons && Array.isArray(dbIcons) && dbIcons.length > 0) {
           setIcons(dbIcons);
         }
       } catch (error) {
-        console.warn('Failed to load cycling scout icons from database, using defaults:', error);
+        console.warn("Failed to load cycling scout icons from database, using defaults:", error);
       }
     };
 
@@ -38,11 +37,10 @@ const CyclingScoutIcon: React.FC<CyclingScoutIconProps> = ({
     const timer = setInterval(() => {
       setIsAnimating(true);
       
-      // Bounce animation effect
       setTimeout(() => {
         setCurrentIconIndex((prevIndex) => (prevIndex + 1) % icons.length);
         setIsAnimating(false);
-      }, 150); // Half of the bounce duration
+      }, 150);
     }, interval);
 
     return () => clearInterval(timer);
@@ -50,12 +48,12 @@ const CyclingScoutIcon: React.FC<CyclingScoutIconProps> = ({
 
   const iconStyle = {
     fontSize: `${size}px`,
-    display: 'inline-block',
+    display: "inline-block",
   };
 
   return (
     <span 
-      className={`cycling-scout-icon ${isAnimating ? 'animating' : ''} ${className}`}
+      className={`cycling-scout-icon ${isAnimating ? "animating" : ""} ${className}`}
       style={iconStyle}
       role="img"
       aria-label="Scout cycling icon"

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, MessageCircle, Sparkles, ChevronDown, BarChart3, Settings } from 'lucide-react';
-import { LoadingSpinner } from '../Loading';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { usePackNameConfig, useContactConfigs } from '../../hooks/useConfig';
 import OfflineBanner from './OfflineBanner';
@@ -14,7 +13,6 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isPageLoading, setIsPageLoading] = useState(false);
   const location = useLocation();
   
   // Initialize analytics
@@ -23,15 +21,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Load configuration values
   const { value: packName } = usePackNameConfig();
   const { primaryEmail, supportEmail, loading: contactLoading } = useContactConfigs();
-
-  useEffect(() => {
-    setIsPageLoading(true);
-    const timer = setTimeout(() => {
-      setIsPageLoading(false);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [location.pathname]);
 
   // TODO: Future analytics-based ordering
   // const getNavigationOrder = async () => {
@@ -232,27 +221,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </header>
 
-      {/* Main Content with Enhanced Loading */}
+      {/* Main Content */}
       <main className="flex-1">
-        {isPageLoading ? (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <LoadingSpinner
-                size="lg"
-                text="Loading..."
-                variant="primary"
-                className="mb-4"
-              />
-              <div className="flex items-center justify-center space-x-2 text-primary-500">
-                <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          children
-        )}
+        {children}
       </main>
 
       {/* Enhanced Footer with Solar-Punk Elements */}

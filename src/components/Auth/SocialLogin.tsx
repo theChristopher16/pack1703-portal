@@ -40,13 +40,13 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
   };
 
   const socialProviders = [
-    {
-      provider: SocialProvider.APPLE,
-      name: 'Apple',
-      label: 'Sign in with Apple',
-      className: 'bg-black text-white hover:bg-gray-800 border-black',
-      disabled: isLoading !== null && isLoading !== SocialProvider.APPLE
-    },
+             {
+           provider: SocialProvider.APPLE,
+           name: 'Apple',
+           label: 'Sign in with Apple',
+           className: 'bg-black text-white hover:bg-gray-900 border-black',
+           disabled: isLoading !== null && isLoading !== SocialProvider.APPLE
+         },
     {
       provider: SocialProvider.GOOGLE,
       name: 'Google',

@@ -1051,24 +1051,36 @@ const ChatAdmin: React.FC = () => {
 
                       {/* GIF Search */}
                       {showGifSearch && (
-                        <form onSubmit={handleGifSearch} className="mb-4">
+                        <div className="mb-4">
                           <div className="flex space-x-2">
                             <input
                               type="text"
                               value={gifSearchQuery}
                               onChange={(e) => setGifSearchQuery(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  searchGifs(gifSearchQuery);
+                                }
+                              }}
                               placeholder="Search GIFs..."
                               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                             />
                             <button
-                              type="submit"
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                searchGifs(gifSearchQuery);
+                              }}
                               disabled={isLoadingGifs}
                               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors duration-200"
                             >
                               {isLoadingGifs ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
                             </button>
                           </div>
-                        </form>
+                        </div>
                       )}
 
                       {/* API Status */}

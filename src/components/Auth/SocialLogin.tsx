@@ -40,39 +40,39 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
   };
 
   const socialProviders = [
-             {
-           provider: SocialProvider.APPLE,
-           name: 'Apple',
-           label: 'Sign in with Apple',
-           className: 'bg-black text-white hover:bg-gray-900 border-black',
-           disabled: isLoading !== null && isLoading !== SocialProvider.APPLE
-         },
+    {
+      provider: SocialProvider.APPLE,
+      name: 'Apple',
+      label: 'Sign in with Apple',
+      className: 'bg-gradient-to-r from-gray-900 to-black text-white hover:from-gray-800 hover:to-gray-900 border-gray-800 shadow-soft',
+      disabled: isLoading !== null && isLoading !== SocialProvider.APPLE
+    },
     {
       provider: SocialProvider.GOOGLE,
       name: 'Google',
       label: 'Sign in with Google',
-      className: 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300',
+      className: 'bg-gradient-to-r from-white to-gray-50 text-gray-700 hover:from-gray-50 hover:to-gray-100 border-gray-200 shadow-soft',
       disabled: isLoading !== null && isLoading !== SocialProvider.GOOGLE
     },
     {
       provider: SocialProvider.FACEBOOK,
       name: 'Facebook',
       label: 'Continue with Facebook',
-      className: 'bg-[#1877F2] text-white hover:bg-[#166FE5] border-[#1877F2]',
+      className: 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 border-blue-600 shadow-soft',
       disabled: isLoading !== null && isLoading !== SocialProvider.FACEBOOK
     },
     {
       provider: SocialProvider.GITHUB,
       name: 'GitHub',
       label: 'Sign in with GitHub',
-      className: 'bg-[#24292e] text-white hover:bg-[#1b1f23] border-[#24292e]',
+      className: 'bg-gradient-to-r from-gray-800 to-gray-900 text-white hover:from-gray-700 hover:to-gray-800 border-gray-800 shadow-soft',
       disabled: isLoading !== null && isLoading !== SocialProvider.GITHUB
     },
     {
       provider: SocialProvider.TWITTER,
       name: 'Twitter',
       label: 'Sign in with Twitter',
-      className: 'bg-[#1DA1F2] text-white hover:bg-[#1a91da] border-[#1DA1F2]',
+      className: 'bg-gradient-to-r from-blue-400 to-blue-500 text-white hover:from-blue-500 hover:to-blue-600 border-blue-400 shadow-soft',
       disabled: isLoading !== null && isLoading !== SocialProvider.TWITTER
     }
   ];
@@ -100,7 +100,7 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
               w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl font-medium
               border transition-all duration-200 transform hover:scale-[1.02]
               disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
-              shadow-sm hover:shadow-md ${buttonClassName}
+              backdrop-blur-sm shadow-soft hover:shadow-lg ${buttonClassName}
             `}
           >
               {isLoading === provider ? (

@@ -13,10 +13,22 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   // If not authenticated, redirect to login
   useEffect(() => {
-    if (!state.isAuthenticated) {
+    if (!state.isLoading && !state.isAuthenticated) {
       navigate('/admin/login', { replace: true });
     }
-  }, [state.isAuthenticated, navigate]);
+  }, [state.isAuthenticated, state.isLoading, navigate]);
+
+  // Show loading spinner while checking authentication
+  if (state.isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-gray-100/30 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Don't render anything while redirecting
   if (!state.isAuthenticated) {

@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 import { getAnalytics, isSupported } from 'firebase/analytics';
-import { getAuth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 const firebaseConfig = {
@@ -42,6 +42,11 @@ export const functions = getFunctions(app, 'us-central1');
 
 // Initialize Auth
 export const auth = getAuth(app);
+
+// Configure auth persistence to LOCAL (persists across browser sessions)
+setPersistence(auth, browserLocalPersistence).catch((error) => {
+  console.error('Error setting auth persistence:', error);
+});
 
 // Initialize Analytics conditionally (only if supported and in production)
 export const analytics = isSupported().then(yes => yes ? getAnalytics(app) : null);

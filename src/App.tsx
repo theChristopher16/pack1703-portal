@@ -38,9 +38,12 @@ import AdminVolunteer from './pages/AdminVolunteer';
 import AdminSeasons from './pages/AdminSeasons';
 import AdminFundraising from './pages/AdminFundraising';
 import AdminFinances from './pages/AdminFinances';
+import MultiTenantManagement from './pages/MultiTenantManagement';
+import AdminUsers from './pages/AdminUsers';
 import ChatPage from './pages/ChatPage';
 import JoinPage from './pages/JoinPage';
 import { AdminProvider } from './contexts/AdminContext';
+import { MultiTenantProvider } from './contexts/MultiTenantContext';
 
 // Styles
 import './App.css';
@@ -48,6 +51,8 @@ import './styles/accessibility.css';
 import './styles/components/cycling-scout-icon.css';
 
 function App() {
+  console.log('🚀 App component loaded - Debug mode active');
+  
   useEffect(() => {
     // Register service worker for PWA
     if ('serviceWorker' in navigator) {
@@ -85,7 +90,8 @@ function App() {
     <ErrorBoundary>
       <ToastProvider>
         <AdminProvider>
-          <Router>
+          <MultiTenantProvider>
+            <Router>
           <Routes>
           {/* Public Routes with Layout */}
           <Route path="/" element={<Layout><HomePage /></Layout>} />
@@ -118,13 +124,15 @@ function App() {
           <Route path="/admin/seasons" element={<AdminLayout><AdminSeasons /></AdminLayout>} />
           <Route path="/admin/fundraising" element={<AdminLayout><AdminFundraising /></AdminLayout>} />
           <Route path="/admin/finances" element={<AdminLayout><AdminFinances /></AdminLayout>} />
-          <Route path="/admin/users" element={<AdminLayout><div className="max-w-7xl mx-auto px-4 py-8"><h1 className="text-2xl font-bold text-gray-900">Admin Users - Coming Soon</h1></div></AdminLayout>} />
+          <Route path="/admin/multi-tenant" element={<AdminLayout><MultiTenantManagement /></AdminLayout>} />
+          <Route path="/admin/users" element={<AdminLayout><AdminUsers /></AdminLayout>} />
           <Route path="/admin/settings" element={<AdminLayout><div className="max-w-7xl mx-auto px-4 py-8"><h1 className="text-2xl font-bold text-gray-900">Admin Settings - Coming Soon</h1></div></AdminLayout>} />
           
           <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
-                  </Routes>
-        </Router>
-      </AdminProvider>
+                                    </Routes>
+                </Router>
+              </MultiTenantProvider>
+            </AdminProvider>
       </ToastProvider>
     </ErrorBoundary>
   );

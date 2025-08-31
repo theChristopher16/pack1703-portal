@@ -188,6 +188,7 @@ export interface AppUser {
     emergencyContact?: string;
     scoutRank?: string;
     den?: string;
+    nickname?: string;
   };
 }
 
@@ -204,20 +205,29 @@ class AuthService {
 
   // Initialize auth state listener
   private initializeAuthStateListener() {
+    console.log('AuthService: Initializing auth state listener');
+    
     onAuthStateChanged(this.auth, async (firebaseUser: FirebaseUser | null) => {
+      console.log('AuthService: Firebase auth state changed:', firebaseUser ? 'User exists' : 'No user');
+      
       if (firebaseUser) {
         try {
+          console.log('AuthService: Fetching user data from Firestore for:', firebaseUser.uid);
           const appUser = await this.getUserFromFirestore(firebaseUser.uid);
           this.currentUser = appUser;
+          console.log('AuthService: User data fetched successfully:', appUser);
           this.notifyAuthStateListeners(appUser);
         } catch (error) {
-          console.error('Error fetching user data:', error);
+          console.error('AuthService: Error fetching user data:', error);
           // If user doesn't exist in Firestore, create them with default role
+          console.log('AuthService: Creating user from Firebase user');
           const appUser = await this.createUserFromFirebaseUser(firebaseUser);
           this.currentUser = appUser;
+          console.log('AuthService: User created successfully:', appUser);
           this.notifyAuthStateListeners(appUser);
         }
       } else {
+        console.log('AuthService: No Firebase user, clearing current user');
         this.currentUser = null;
         this.notifyAuthStateListeners(null);
       }
@@ -556,6 +566,34 @@ class AuthService {
     return this.currentUser;
   }
 
+  // Check if user is authenticated (synchronous)
+  isAuthenticated(): boolean {
+    return this.currentUser !== null;
+  }
+
+  // Wait for auth state to be initialized
+  async waitForAuthState(): Promise<AppUser | null> {
+    return new Promise((resolve) => {
+      // If we already have a current user, return it immediately
+      if (this.currentUser !== null) {
+        resolve(this.currentUser);
+        return;
+      }
+
+      // If Firebase auth has no current user, return null immediately
+      if (this.auth.currentUser === null) {
+        resolve(null);
+        return;
+      }
+
+      // Otherwise, wait for the next auth state change
+      const unsubscribe = this.onAuthStateChanged((user) => {
+        unsubscribe();
+        resolve(user);
+      });
+    });
+  }
+
   // Check if user has permission
   hasPermission(permission: Permission): boolean {
     if (!this.currentUser || !this.currentUser.isActive) {
@@ -710,6 +748,37 @@ class AuthService {
     }
   }
 
+  // Get user by ID
+  async getUserById(uid: string): Promise<AppUser | null> {
+    try {
+      const docRef = doc(db, 'users', uid);
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        return {
+          uid: docSnap.id,
+          email: data.email,
+          displayName: data.displayName,
+          role: data.role,
+          photoURL: data.photoURL,
+          authProvider: data.authProvider,
+          permissions: data.permissions || [],
+          isActive: data.isActive ?? true,
+          createdAt: data.createdAt?.toDate(),
+          updatedAt: data.updatedAt?.toDate(),
+          lastLoginAt: data.lastLoginAt?.toDate(),
+          profile: data.profile || {}
+        };
+      }
+      
+      return null;
+    } catch (error: any) {
+      console.error('Error getting user by ID:', error);
+      return null;
+    }
+  }
+
   // Get all users (root/admin only)
   async getUsers(): Promise<AppUser[]> {
     try {
@@ -770,6 +839,37 @@ class AuthService {
       }
     } catch (error) {
       console.error('Error updating profile:', error);
+      throw error;
+    }
+  }
+
+  // Update other user's profile (admin only)
+  async updateUserProfile(userId: string, updates: Partial<AppUser>): Promise<void> {
+    try {
+      const currentUser = this.getCurrentUser();
+      if (!currentUser || !this.hasPermission(Permission.USER_MANAGEMENT)) {
+        throw new Error('Insufficient permissions');
+      }
+
+      const updateData: any = {
+        updatedAt: serverTimestamp()
+      };
+
+      if (updates.displayName !== undefined) {
+        updateData.displayName = updates.displayName;
+      }
+
+      if (updates.profile !== undefined) {
+        updateData.profile = updates.profile;
+      }
+
+      if (updates.isActive !== undefined) {
+        updateData.isActive = updates.isActive;
+      }
+
+      await updateDoc(doc(db, 'users', userId), updateData);
+    } catch (error) {
+      console.error('Error updating user profile:', error);
       throw error;
     }
   }

@@ -47,7 +47,7 @@ type AdminStateActionType =
 const initialState: AdminState = {
   currentUser: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true, // Start with loading true
   permissions: [],
   role: null,
   recentActions: [],
@@ -220,36 +220,54 @@ export function AdminProvider({ children }: AdminProviderProps) {
     return state.role === role;
   };
 
+  // Connect to authService for authentication state
+  useEffect(() => {
+    console.log('AdminContext: Setting up auth state listener');
+    
+    const unsubscribe = authService.onAuthStateChanged((user) => {
+      console.log('AdminContext: Auth state changed:', user ? 'User logged in' : 'User logged out');
+      
+      if (user) {
+        // Convert AppUser to AdminUser
+        const adminUser: AdminUser = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || null,
+          photoURL: user.photoURL || null,
+          isAdmin: user.role === 'root' || user.role === 'admin' || user.role === 'den_leader' || user.role === 'star_volunteer',
+          role: user.role as unknown as AdminRole,
+          permissions: user.permissions as unknown as AdminPermission[],
+          lastLogin: user.lastLoginAt || new Date(),
+          isActive: user.isActive,
+        };
+        console.log('AdminContext: Setting current user:', adminUser);
+        dispatch({ type: 'SET_CURRENT_USER', payload: adminUser });
+      } else {
+        console.log('AdminContext: Clearing current user');
+        dispatch({ type: 'SET_CURRENT_USER', payload: null });
+      }
+      // Set loading to false after auth state is determined
+      dispatch({ type: 'SET_LOADING', payload: false });
+    });
+
+    return () => {
+      console.log('AdminContext: Cleaning up auth state listener');
+      unsubscribe();
+    };
+  }, []);
+
   // Login function
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
 
-      // This would typically call Firebase Auth
-      // For now, we'll simulate a successful login
-      const mockUser: AdminUser = {
-        uid: 'admin_123',
-        email,
-        displayName: 'Admin User',
-        photoURL: null,
-        isAdmin: true,
-        role: 'content-admin',
-        permissions: [
-          'seasons:create', 'seasons:read', 'seasons:update', 'seasons:delete',
-          'events:create', 'events:read', 'events:update', 'events:delete',
-          'locations:create', 'locations:read', 'locations:update', 'locations:delete',
-          'announcements:create', 'announcements:read', 'announcements:update', 'announcements:delete',
-        ],
-        lastLogin: new Date(),
-        isActive: true,
-      };
-
-      dispatch({ type: 'SET_CURRENT_USER', payload: mockUser });
+      const user = await authService.signIn(email, password);
+      
+      // The authService.onAuthStateChanged will handle setting the user
       return true;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed';
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+    } catch (error: any) {
+      dispatch({ type: 'SET_ERROR', payload: error.message });
       return false;
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
@@ -257,9 +275,13 @@ export function AdminProvider({ children }: AdminProviderProps) {
   };
 
   // Logout function
-  const logout = () => {
-    adminService.setCurrentUser(null);
-    dispatch({ type: 'LOGOUT' });
+  const logout = async () => {
+    try {
+      await authService.signOut();
+      // The authService.onAuthStateChanged will handle clearing the user
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   // Generic CRUD operations

@@ -19,6 +19,7 @@ const AdminNav: React.FC = () => {
     { path: '/admin/fundraising', label: 'Fundraising', icon: '🎯' },
     { path: '/admin/finances', label: 'Finances', icon: '💰' },
     { path: '/admin/chat', label: 'Chat', icon: '💬' },
+    { path: '/admin/multi-tenant', label: 'Multi-Tenant', icon: '🏢' },
   ];
 
   const secondaryNavItems = [

@@ -31,6 +31,7 @@ import AdminEvents from './pages/AdminEvents';
 import AdminLocations from './pages/AdminLocations';
 import AdminAnnouncements from './pages/AdminAnnouncements';
 import AdminChat from './pages/AdminChat';
+import AdminAI from './pages/AdminAI';
 import AdminLists from './pages/AdminLists';
 import AdminVolunteer from './pages/AdminVolunteer';
 import AdminSeasons from './pages/AdminSeasons';
@@ -105,6 +106,7 @@ function App() {
           <Route path="/admin/locations" element={<AdminLayout><AdminLocations /></AdminLayout>} />
           <Route path="/admin/announcements" element={<AdminLayout><AdminAnnouncements /></AdminLayout>} />
           <Route path="/admin/chat" element={<AdminLayout><AdminChat /></AdminLayout>} />
+          <Route path="/admin/ai" element={<AdminLayout><AdminAI /></AdminLayout>} />
           <Route path="/admin/lists" element={<AdminLayout><AdminLists /></AdminLayout>} />
           <Route path="/admin/volunteer" element={<AdminLayout><AdminVolunteer /></AdminLayout>} />
           <Route path="/admin/seasons" element={<AdminLayout><AdminSeasons /></AdminLayout>} />

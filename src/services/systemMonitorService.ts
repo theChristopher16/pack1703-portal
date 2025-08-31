@@ -165,7 +165,8 @@ class SystemMonitorService {
 
   private async getUsersCount(db: any): Promise<number> {
     try {
-      const usersSnapshot = await getCountFromServer(collection(db, 'users'));
+      // Try to get users from chat-users collection instead
+      const usersSnapshot = await getCountFromServer(collection(db, 'chat-users'));
       return usersSnapshot.data().count;
     } catch (error) {
       console.warn('Could not fetch users count:', error);
@@ -189,7 +190,7 @@ class SystemMonitorService {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
       const messagesQuery = query(
-        collection(db, 'messages'),
+        collection(db, 'chat-messages'),
         where('timestamp', '>=', Timestamp.fromDate(thirtyDaysAgo)),
         orderBy('timestamp', 'desc')
       );
@@ -231,7 +232,7 @@ class SystemMonitorService {
         this.getCollectionCount(db, 'events'),
         this.getCollectionCount(db, 'locations'),
         this.getCollectionCount(db, 'announcements'),
-        this.getCollectionCount(db, 'messages')
+        this.getCollectionCount(db, 'chat-messages')
       ]);
 
       // Estimate reads/writes based on collection sizes

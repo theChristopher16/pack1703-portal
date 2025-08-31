@@ -74,7 +74,7 @@ const HomePage: React.FC = () => {
     {
       emoji: '⚡',
       title: 'AI-Enhanced Development',
-      description: 'Built with LLM assistance, featuring systematic development with fine-grained testing and validation at every step to ensure data security and system reliability.',
+      description: 'Built with LLM assistance, ensuring no function or call is missed through systematic development with fine-grained testing and validation at every step.',
       color: 'text-accent-500',
       bgColor: 'bg-accent-50'
     },

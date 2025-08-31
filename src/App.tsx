@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import configService from './services/configService';
 
 // Components
 import Layout from './components/Layout/Layout';
@@ -27,6 +28,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminEvents from './pages/AdminEvents';
 import AdminLocations from './pages/AdminLocations';
 import AdminAnnouncements from './pages/AdminAnnouncements';
+import AdminChat from './pages/AdminChat';
 import AdminLists from './pages/AdminLists';
 import AdminVolunteer from './pages/AdminVolunteer';
 import AdminSeasons from './pages/AdminSeasons';
@@ -50,6 +52,18 @@ function App() {
           });
       });
     }
+
+    // Initialize default configurations
+    const initializeConfigs = async () => {
+      try {
+        await configService.initializeDefaultConfigs('system');
+        console.log('Default configurations initialized');
+      } catch (error) {
+        console.warn('Failed to initialize default configurations:', error);
+      }
+    };
+
+    initializeConfigs();
   }, []);
 
   return (
@@ -77,6 +91,7 @@ function App() {
           <Route path="/admin/events" element={<AdminLayout><AdminEvents /></AdminLayout>} />
           <Route path="/admin/locations" element={<AdminLayout><AdminLocations /></AdminLayout>} />
           <Route path="/admin/announcements" element={<AdminLayout><AdminAnnouncements /></AdminLayout>} />
+          <Route path="/admin/chat" element={<AdminLayout><AdminChat /></AdminLayout>} />
           <Route path="/admin/lists" element={<AdminLayout><AdminLists /></AdminLayout>} />
           <Route path="/admin/volunteer" element={<AdminLayout><AdminVolunteer /></AdminLayout>} />
           <Route path="/admin/seasons" element={<AdminLayout><AdminSeasons /></AdminLayout>} />

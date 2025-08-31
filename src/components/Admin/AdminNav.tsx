@@ -15,6 +15,7 @@ const AdminNav: React.FC = () => {
     { path: '/admin/events', label: 'Events', icon: '📅' },
     { path: '/admin/locations', label: 'Locations', icon: '📍' },
     { path: '/admin/announcements', label: 'News', icon: '📢' },
+    { path: '/admin/chat', label: 'Chat', icon: '💬' },
   ];
 
   const secondaryNavItems = [

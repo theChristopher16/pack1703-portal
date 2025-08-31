@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, Sparkles, ChevronDown, BarChart3 } from 'lucide-react';
 import { LoadingSpinner } from '../Loading';
 import { useAnalytics } from '../../hooks/useAnalytics';
+import { usePackNameConfig, useContactConfigs } from '../../hooks/useConfig';
 import OfflineBanner from './OfflineBanner';
 import PWAInstallPrompt from '../PWAInstallPrompt/PWAInstallPrompt';
 
@@ -17,6 +18,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   
   // Initialize analytics
   useAnalytics();
+  
+  // Load configuration values
+  const { value: packName } = usePackNameConfig();
+  const { primaryEmail, supportEmail, loading: contactLoading } = useContactConfigs();
 
   useEffect(() => {
     setIsPageLoading(true);
@@ -53,7 +58,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
               <div className="hidden sm:block">
                 <h1 className="text-xl font-display font-bold text-gradient">
-                  Pack 1703
+                  {packName}
                 </h1>
                 <p className="text-xs text-gray-600">Families Portal</p>
               </div>
@@ -313,7 +318,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="border-t border-gray-700 mt-12 pt-8">
               <div className="flex flex-col md:flex-row justify-between items-center">
                 <p className="text-gray-400 text-sm text-center md:text-left">
-                  © 2025 Pack 1703. All rights reserved. Built with ❤️ and ☀️ for the future.
+                  © 2025 {packName}. All rights reserved. Built with ❤️ and ☀️ for the future.
                 </p>
                 <div className="flex items-center space-x-2 mt-4 md:mt-0">
                   <div className="w-2 h-2 bg-primary-400 rounded-full animate-pulse"></div>

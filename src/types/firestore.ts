@@ -219,6 +219,43 @@ export interface WeatherData {
 }
 
 // ============================================================================
+// CONFIGURATION MANAGEMENT
+// ============================================================================
+
+export interface Configuration {
+  id: string;
+  category: ConfigCategory;
+  key: string;
+  value: string | number | boolean | string[];
+  description: string;
+  isEditable: boolean;
+  validationRules?: ConfigValidationRules;
+  defaultValue?: string | number | boolean | string[];
+  updatedAt: Timestamp;
+  updatedBy: string;
+  createdAt: Timestamp;
+  createdBy: string;
+}
+
+export type ConfigCategory = 
+  | 'contact' 
+  | 'email' 
+  | 'system' 
+  | 'display' 
+  | 'security' 
+  | 'notifications'
+  | 'integrations';
+
+export interface ConfigValidationRules {
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string; // regex pattern
+  allowedValues?: string[];
+  type: 'string' | 'email' | 'url' | 'phone' | 'number' | 'boolean' | 'array';
+}
+
+// ============================================================================
 // UTILITY TYPES
 // ============================================================================
 

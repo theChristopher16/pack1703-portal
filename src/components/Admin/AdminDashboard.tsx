@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../contexts/AdminContext';
 import { EntityType, AdminActionType } from '../../types/admin';
+import ConfigManager from './ConfigManager';
 
 export const AdminDashboard: React.FC = () => {
   const {
@@ -27,6 +28,7 @@ export const AdminDashboard: React.FC = () => {
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [selectedEntityType, setSelectedEntityType] = useState<EntityType>('event');
   const [selectedAction, setSelectedAction] = useState<AdminActionType>('create');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'config'>('dashboard');
 
   useEffect(() => {
     if (state.isAuthenticated) {
@@ -189,6 +191,30 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
 
+        {/* Navigation Tabs */}
+        <div className="flex space-x-1 mb-8 bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
+              activeTab === 'dashboard'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Dashboard
+          </button>
+          <button
+            onClick={() => setActiveTab('config')}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
+              activeTab === 'config'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Configuration
+          </button>
+        </div>
+
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-soft">
@@ -277,45 +303,49 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Main Content Area */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft">
-          <h2 className="text-2xl font-display font-semibold text-gray-900 mb-6">
-            Admin System Status
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Firebase Connection</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Project ID:</span>
-                  <span className="text-gray-900">pack-1703-portal</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Status:</span>
-                  <span className="text-green-600">✓ Connected</span>
+        {activeTab === 'dashboard' ? (
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft">
+            <h2 className="text-2xl font-display font-semibold text-gray-900 mb-6">
+              Admin System Status
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Firebase Connection</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Project ID:</span>
+                    <span className="text-gray-900">pack-1703-portal</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Status:</span>
+                    <span className="text-green-600">✓ Connected</span>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Admin Features</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">CRUD Operations:</span>
-                  <span className="text-green-600">✓ Available</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Audit Logging:</span>
-                  <span className="text-green-600">✓ Active</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Role Management:</span>
-                  <span className="text-green-600">✓ Configured</span>
+              
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Admin Features</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">CRUD Operations:</span>
+                    <span className="text-green-600">✓ Available</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Audit Logging:</span>
+                    <span className="text-green-600">✓ Active</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Role Management:</span>
+                    <span className="text-green-600">✓ Configured</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <ConfigManager />
+        )}
       </div>
     </div>
   );

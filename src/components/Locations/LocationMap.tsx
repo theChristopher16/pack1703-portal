@@ -39,35 +39,54 @@ const LocationMap: React.FC<LocationMapProps> = ({
           document.head.appendChild(link);
         }
 
+        // Fix Leaflet icon paths
+        L.Icon.Default.imagePath = 'https://unpkg.com/leaflet@1.9.4/dist/images/';
+
         if (!mapRef.current || mapInstanceRef.current) return;
 
         // Initialize map
-        const map = L.map(mapRef.current).setView([40.7103, -89.6144], 11);
+        const map = L.map(mapRef.current, {
+          zoomControl: true,
+          attributionControl: true
+        }).setView([40.7103, -89.6144], 11);
         mapInstanceRef.current = map;
 
         // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors'
+          attribution: '© OpenStreetMap contributors',
+          maxZoom: 18
         }).addTo(map);
 
         // Add markers for each location
         const markers: any[] = [];
         locations.forEach((location) => {
           if (location.geo?.lat && location.geo?.lng) {
-            const marker = L.marker([location.geo.lat, location.geo.lng])
-              .addTo(map)
-              .bindPopup(createPopupContent(location))
-              .on('click', () => onLocationSelect(location));
+            try {
+              const marker = L.marker([location.geo.lat, location.geo.lng], {
+                icon: L.Icon.Default.prototype
+              })
+                .addTo(map)
+                .bindPopup(createPopupContent(location))
+                .on('click', () => onLocationSelect(location));
 
-            markers.push(marker);
+              markers.push(marker);
+            } catch (error) {
+              console.warn(`Failed to create marker for location ${location.name}:`, error);
+            }
           }
         });
         markersRef.current = markers;
 
         // Fit map to show all markers
         if (markers.length > 0) {
-          const group = new (L as any).featureGroup(markers);
-          map.fitBounds(group.getBounds().pad(0.1));
+          setTimeout(() => {
+            try {
+              const group = new (L as any).featureGroup(markers);
+              map.fitBounds(group.getBounds().pad(0.1));
+            } catch (error) {
+              console.warn('Failed to fit map bounds:', error);
+            }
+          }, 100);
         }
 
       } catch (error) {

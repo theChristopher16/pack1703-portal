@@ -379,6 +379,7 @@ const EventsPage: React.FC = () => {
         )}
 
         {/* Content */}
+        
         {viewMode === 'list' ? (
           /* List View */
           <div className="space-y-6">

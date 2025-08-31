@@ -159,6 +159,30 @@ const ChatPage: React.FC = () => {
     channel.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Ensure unique channels by ID to prevent duplicates
+  const uniqueChannels = React.useMemo(() => {
+    const seen = new Set();
+    return filteredChannels.filter(channel => {
+      if (seen.has(channel.id)) {
+        return false;
+      }
+      seen.add(channel.id);
+      return true;
+    });
+  }, [filteredChannels]);
+
+  // Debug: Check for duplicate channels
+  useEffect(() => {
+    if (channels.length > 0) {
+      const channelIds = channels.map(c => c.id);
+      const uniqueIds = new Set(channelIds);
+      if (channelIds.length !== uniqueIds.size) {
+        console.warn('Duplicate channels detected:', channels);
+      }
+      console.log('Channels loaded:', channels.length, 'unique:', uniqueIds.size);
+    }
+  }, [channels]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -223,10 +247,10 @@ const ChatPage: React.FC = () => {
         
         <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-16rem)]">
           {/* Sidebar */}
-          <div className={`${isSidebarOpen ? 'block' : 'hidden'} lg:block lg:w-80 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden`}>
+          <div className={`${isSidebarOpen ? 'block' : 'hidden'} lg:block lg:w-80 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col`}>
             {/* User Profile */}
             {currentUser && (
-              <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+              <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white flex-shrink-0">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
                     <User className="w-5 h-5" />
@@ -242,7 +266,7 @@ const ChatPage: React.FC = () => {
             )}
 
             {/* Search */}
-            <div className="p-4 border-b border-gray-200">
+            <div className="p-4 border-b border-gray-200 flex-shrink-0">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
@@ -256,15 +280,15 @@ const ChatPage: React.FC = () => {
             </div>
 
             {/* Channels */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto min-h-0" style={{ maxHeight: 'calc(100vh - 400px)' }}>
               <div className="p-4">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Channels</h3>
                 
-                {/* All Channels */}
-                <div className="space-y-1">
-                  {filteredChannels.map(channel => (
+                                  {/* All Channels */}
+                  <div className="space-y-1">
+                    {uniqueChannels.map(channel => (
                     <button
-                      key={channel.id}
+                      key={`channel-${channel.id}`}
                       onClick={() => setSelectedChannel(channel.id)}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                         selectedChannel === channel.id
@@ -284,6 +308,8 @@ const ChatPage: React.FC = () => {
                 {process.env.NODE_ENV === 'development' && (
                   <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
                     <p>Channels: {channels.length}</p>
+                    <p>Filtered Channels: {filteredChannels.length}</p>
+                    <p>Unique Channels: {uniqueChannels.length}</p>
                     <p>Users: {users.length}</p>
                     <p>Current User: {currentUser?.name || 'None'}</p>
                   </div>
@@ -292,7 +318,7 @@ const ChatPage: React.FC = () => {
             </div>
 
             {/* Online Users */}
-            <div className="p-4 border-t border-gray-200 bg-gray-50">
+            <div className="p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Online ({users.length})</h3>
               <div className="space-y-2">
                 {users.slice(0, 5).map(user => (

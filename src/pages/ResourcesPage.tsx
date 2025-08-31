@@ -213,7 +213,7 @@ const ResourcesPage: React.FC = () => {
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">Resources & Downloads</h1>
         <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-          Access all the resources you need for Pack 1703 activities, including packing lists, 
+                      Access all the resources you need for scout activities, including packing lists, 
           medical forms, policies, and helpful guides for families.
         </p>
       </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, FileText, Users, ArrowRight, Sparkles, Zap, Mountain, Compass, MessageSquare } from 'lucide-react';
+import { Calendar, MapPin, FileText, Users, ArrowRight, Zap, Mountain, Compass, MessageSquare } from 'lucide-react';
 import { LoadingSpinner, SkeletonLoader } from '../components/Loading';
 
 const HomePage: React.FC = () => {
@@ -58,21 +58,21 @@ const HomePage: React.FC = () => {
 
   const features = [
     {
-      icon: Sparkles,
+      emoji: '🏕️',
       title: 'Solar-Punk Spirit',
       description: 'Embracing sustainable technology and nature connection for the next generation of scouts.',
       color: 'text-primary-500',
       bgColor: 'bg-primary-50'
     },
     {
-      icon: Mountain,
+      emoji: '🏔️',
       title: 'Adventure Awaits',
       description: 'From mountain hikes to stargazing nights, every event is an opportunity for discovery.',
       color: 'text-secondary-500',
       bgColor: 'bg-secondary-50'
     },
     {
-      icon: Zap,
+      emoji: '⚡',
       title: 'Tech-Forward',
       description: 'Modern tools and real-time updates keep families connected and informed.',
       color: 'text-accent-500',
@@ -115,12 +115,12 @@ const HomePage: React.FC = () => {
           {/* Main Hero Content */}
           <div className="relative z-10">
             <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-100 to-secondary-100 text-primary-700 rounded-full text-sm font-medium mb-6 animate-fade-in">
-              <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
+              <span className="text-2xl mr-2">🏕️</span>
               Welcome to the Future of Scouting
             </div>
             
             <h1 className="text-5xl md:text-7xl font-display font-bold mb-6 animate-slide-up">
-              <span className="text-gradient">Pack 1703</span>
+              <span className="text-gradient">Scout</span>
               <br />
               <span className="text-gray-900">Families Portal</span>
             </h1>
@@ -208,46 +208,33 @@ const HomePage: React.FC = () => {
           )}
         </div>
 
-        {/* Features Section with Enhanced Design */}
+        {/* Features Section */}
         <div className="mb-20">
           <h2 className="text-4xl font-display font-bold text-gray-900 mb-12 text-center animate-fade-in">
-            Why Choose <span className="text-gradient">Pack 1703</span>?
+            Why Choose <span className="text-gradient">Our Scout Pack</span>?
           </h2>
 
-          {!contentLoaded ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="text-center">
-                  <SkeletonLoader type="text" lines={3} />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {features.map((feature, index) => {
-                const Icon = feature.icon;
-                return (
-                  <div 
-                    key={feature.title}
-                    className="text-center animate-slide-up group"
-                    style={{ animationDelay: `${index * 200}ms` }}
-                  >
-                    <div className={`w-20 h-20 ${feature.bgColor} rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-soft`}>
-                      <Icon className={`w-10 h-10 ${feature.color}`} />
-                    </div>
-                    
-                    <h3 className="text-xl font-display font-semibold text-gray-900 mb-4 group-hover:text-gradient transition-all duration-300">
-                      {feature.title}
-                    </h3>
-                    
-                    <p className="text-gray-600 leading-relaxed max-w-sm mx-auto">
-                      {feature.description}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+             {features.map((feature, index) => (
+               <div
+                 key={feature.title}
+                 className="text-center animate-fade-in"
+                 style={{ animationDelay: `${index * 200}ms` }}
+               >
+                 <div className="w-16 h-16 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center shadow-glow mx-auto mb-6">
+                   <span className="text-white" style={{ fontSize: '24px' }}>{feature.emoji}</span>
+                 </div>
+                 
+                 <h3 className="text-xl font-display font-semibold text-gray-900 mb-4">
+                   {feature.title}
+                 </h3>
+                 
+                 <p className="text-gray-600 leading-relaxed">
+                   {feature.description}
+                 </p>
+               </div>
+             ))}
+           </div>
         </div>
 
         {/* CTA Section with Enhanced Visual Appeal */}

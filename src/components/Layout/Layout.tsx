@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, MessageCircle, Sparkles, ChevronDown, BarChart3, Settings } from 'lucide-react';
+import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, MessageCircle, ChevronDown, BarChart3, Settings } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { usePackNameConfig, useContactConfigs } from '../../hooks/useConfig';
 import OfflineBanner from './OfflineBanner';
 import PWAInstallPrompt from '../PWAInstallPrompt/PWAInstallPrompt';
-import CyclingScoutIcon from '../ui/CyclingScoutIcon';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -82,7 +81,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* Logo/Brand */}
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center shadow-glow">
-                <CyclingScoutIcon size={24} interval={2000} className="text-white" />
+                <span className="text-white" style={{ fontSize: '24px' }}>🏕️</span>
               </div>
               <div className="hidden sm:block">
                 <h1 className="text-xl font-display font-bold text-gradient">
@@ -300,7 +299,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div>
               <h3 className="text-lg font-semibold mb-4">Contact Us</h3>
               <div className="space-y-2 text-gray-300">
-                <p>Pack 1703</p>
+                <p>Scout Pack</p>
                 <p>Peoria, Illinois</p>
                 {primaryEmail && (
                   <p>Email: <a href={`mailto:${primaryEmail}`} className="text-primary-400 hover:text-primary-300">{primaryEmail}</a></p>
@@ -351,7 +350,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
 
           <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
-            <p>&copy; 2024 Pack 1703. All rights reserved.</p>
+            <p>&copy; 2024 Scout Pack. All rights reserved.</p>
           </div>
         </div>
       </footer>

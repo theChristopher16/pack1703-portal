@@ -65,7 +65,7 @@ const PWAInstallPrompt: React.FC = () => {
         
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-gray-900">
-            Install Pack 1703 Portal
+                            Install Scout Portal
           </h3>
           <p className="text-sm text-gray-600 mt-1">
             Get quick access to events, locations, and announcements right from your home screen.

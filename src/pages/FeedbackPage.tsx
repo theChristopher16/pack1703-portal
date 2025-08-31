@@ -223,7 +223,7 @@ const FeedbackPage: React.FC = () => {
         <h1 className="text-4xl font-bold text-gray-900 mb-4">Feedback & Questions</h1>
         <p className="text-lg text-gray-600 max-w-3xl mx-auto">
           We value your input! Share suggestions, ask questions, report concerns, or let us know what we're doing well. 
-          Your feedback helps make Pack 1703 better for everyone.
+                      Your feedback helps make our Scout Pack better for everyone.
         </p>
       </div>
 

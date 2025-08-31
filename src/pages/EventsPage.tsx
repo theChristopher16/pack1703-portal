@@ -273,7 +273,7 @@ const EventsPage: React.FC = () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Pack 1703 Events Calendar',
+                      title: 'Scout Pack Events Calendar',
           text: 'Check out our upcoming events!',
           url: window.location.href
         });
@@ -309,7 +309,7 @@ const EventsPage: React.FC = () => {
             Pack Events & Activities
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Discover upcoming events, activities, and adventures for Pack 1703 families. 
+                          Discover upcoming events, activities, and adventures for scout families. 
             From den meetings to campouts, there's something for everyone!
           </p>
         </div>

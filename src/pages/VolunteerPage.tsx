@@ -256,7 +256,7 @@ const VolunteerPage: React.FC = () => {
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">Volunteer Opportunities</h1>
         <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-          Pack 1703 thrives because of our amazing volunteers! Find opportunities to help with events, 
+                        Our Scout Pack thrives because of our amazing volunteers! Find opportunities to help with events, 
           activities, and pack operations. Every contribution makes a difference.
         </p>
       </div>
@@ -464,7 +464,7 @@ const VolunteerPage: React.FC = () => {
       <div className="mt-12 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-8 text-center">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Ready to Make a Difference?</h2>
         <p className="text-lg text-gray-600 mb-6 max-w-2xl mx-auto">
-          Volunteering with Pack 1703 is a great way to get involved, meet other families, 
+                      Volunteering with our Scout Pack is a great way to get involved, meet other families, 
           and help create amazing experiences for our scouts. Every role is important!
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">

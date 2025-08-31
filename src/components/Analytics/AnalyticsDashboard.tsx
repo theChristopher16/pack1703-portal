@@ -117,7 +117,7 @@ const AnalyticsDashboard: React.FC = () => {
           </div>
           
           <h1 className="text-4xl md:text-6xl font-display font-bold mb-6 text-gray-900">
-            <span className="text-gradient">Pack 1703</span> Insights
+            <span className="text-gradient">Scout Pack</span> Insights
           </h1>
           
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">

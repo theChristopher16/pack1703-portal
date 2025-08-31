@@ -103,8 +103,43 @@ const ChatAdmin: React.FC = () => {
     };
 
     loadChannelMessages();
-  }, [selectedChannel, isConnected]); // Only run when channel changes or connection status changes
+  }, [selectedChannel, isConnected]);
 
+  // Debug: Check for duplicate channels
+  useEffect(() => {
+    if (channels.length > 0) {
+      const channelIds = channels.map(c => c.id);
+      const uniqueIds = new Set(channelIds);
+      if (channelIds.length !== uniqueIds.size) {
+        console.warn('Admin: Duplicate channels detected:', channels);
+      }
+      console.log('Admin: Channels loaded:', channels.length, 'unique:', uniqueIds.size);
+    }
+  }, [channels]);
+
+  // Ensure unique channels by ID to prevent duplicates
+  const uniquePackChannels = React.useMemo(() => {
+    const packChannels = channels.filter(channel => !channel.isDenChannel);
+    const seen = new Set();
+    return packChannels.filter(channel => {
+      if (seen.has(channel.id)) {
+        return false;
+      }
+      seen.add(channel.id);
+      return true;
+    });
+  }, [channels]);
+
+  const uniqueDenChannels = React.useMemo(() => {
+    const seen = new Set();
+    return channels.filter(channel => {
+      if (seen.has(channel.id)) {
+        return false;
+      }
+      seen.add(channel.id);
+      return true;
+    });
+  }, [channels]);
 
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -379,10 +414,10 @@ const ChatAdmin: React.FC = () => {
             </div>
 
             {/* Discord-style Sidebar */}
-            <div className={`${isSidebarOpen ? 'block' : 'hidden'} md:block md:w-64 bg-gray-50 border-r border-gray-200 overflow-y-auto flex-shrink-0 absolute md:relative top-0 left-0 w-full md:w-64 h-full z-20`}>
+            <div className={`${isSidebarOpen ? 'block' : 'hidden'} md:block md:w-64 bg-gray-50 border-r border-gray-200 overflow-hidden flex flex-col absolute md:relative top-0 left-0 w-full md:w-64 h-full z-20`}>
               {/* User Profile Section */}
               {currentUser && (
-                <div className="p-4 border-b border-gray-200">
+                <div className="p-4 border-b border-gray-200 flex-shrink-0">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                       <User className="w-4 h-4 text-white" />
@@ -409,19 +444,19 @@ const ChatAdmin: React.FC = () => {
                 </div>
               )}
               
-              <div className="p-4">
+              <div className="p-4 overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 'calc(100vh - 300px)' }}>
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Channels</h3>
                 
                 {/* Pack Channels Section */}
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Pack Channels</span>
-                    <span className="text-xs text-gray-400">3</span>
+                    <span className="text-xs text-gray-400">{uniquePackChannels.length}</span>
                   </div>
                   <div className="space-y-1">
-                    {channels.filter(channel => !channel.isDenChannel).map(channel => (
+                    {uniquePackChannels.map(channel => (
                       <button
-                        key={channel.id}
+                        key={`pack-channel-${channel.id}`}
                         onClick={() => setSelectedChannel(channel.id)}
                         className={`w-full text-left px-2 py-1 rounded text-sm transition-colors duration-200 ${
                           selectedChannel === channel.id
@@ -448,11 +483,11 @@ const ChatAdmin: React.FC = () => {
                     { id: 'webelos', name: 'Webelos Den', icon: '🏕️', color: 'text-green-600' },
                     { id: 'arrow-of-light', name: 'Arrow of Light', icon: '🏹', color: 'text-purple-600' }
                   ].map(den => {
-                    const denChannels = channels.filter(channel => channel.denType === den.id);
+                    const denChannels = uniqueDenChannels.filter(channel => channel.denType === den.id);
                     const isExpanded = expandedDens.has(den.id);
                     
                     return (
-                      <div key={den.id} className="space-y-1">
+                      <div key={`den-${den.id}`} className="space-y-1">
                         <button
                           onClick={() => {
                             const newExpanded = new Set(expandedDens);
@@ -486,7 +521,7 @@ const ChatAdmin: React.FC = () => {
                           <div className="ml-4 space-y-1">
                             {denChannels.map(channel => (
                               <button
-                                key={channel.id}
+                                key={`den-channel-${channel.id}`}
                                 onClick={() => setSelectedChannel(channel.id)}
                                 className={`w-full text-left px-2 py-1 rounded text-sm transition-colors duration-200 ${
                                   selectedChannel === channel.id

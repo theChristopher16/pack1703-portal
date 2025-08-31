@@ -214,6 +214,9 @@ class ChatService {
   private static instance: ChatService;
   private currentUser: ChatUser | null = null;
   private unsubscribeFunctions: (() => void)[] = [];
+  private channelsCache: ChatChannel[] | null = null;
+  private channelsCacheTime: number = 0;
+  private readonly CACHE_DURATION = 30000; // 30 seconds
 
   static getInstance(): ChatService {
     if (!ChatService.instance) {
@@ -276,6 +279,14 @@ class ChatService {
   }
 
   async getChannels(): Promise<ChatChannel[]> {
+    // Check cache first
+    const now = Date.now();
+    if (this.channelsCache && (now - this.channelsCacheTime) < this.CACHE_DURATION) {
+      console.log('ChatService.getChannels() - returning cached channels:', this.channelsCache.length);
+      return this.channelsCache;
+    }
+    
+    console.log('ChatService.getChannels() - fetching fresh channels');
     try {
       const channelsRef = collection(db, 'chat-channels');
       const q = query(channelsRef, where('isActive', '==', true), orderBy('createdAt'));
@@ -296,9 +307,16 @@ class ChatService {
       if (channels.length === 0) {
         console.log('No channels found, creating default channels...');
         await this.createDefaultChannels();
-        return this.getDefaultChannels();
+        const defaultChannels = this.getDefaultChannels();
+        this.channelsCache = defaultChannels;
+        this.channelsCacheTime = now;
+        return defaultChannels;
       }
       
+      // Cache the results
+      this.channelsCache = channels;
+      this.channelsCacheTime = now;
+      console.log('ChatService.getChannels() - cached channels:', channels.length);
       return channels;
     } catch (error) {
       console.warn('Failed to fetch channels (index may be building), using defaults:', error);
@@ -320,13 +338,19 @@ class ChatService {
         });
         
         if (channels.length > 0) {
+          this.channelsCache = channels;
+          this.channelsCacheTime = now;
           return channels;
         }
       } catch (fallbackError) {
         console.warn('Fallback query also failed:', fallbackError);
       }
       
-      return this.getDefaultChannels();
+      console.log('ChatService.getChannels() - returning default channels');
+      const defaultChannels = this.getDefaultChannels();
+      this.channelsCache = defaultChannels;
+      this.channelsCacheTime = now;
+      return defaultChannels;
     }
   }
 
@@ -692,6 +716,10 @@ class ChatService {
         createdBy: this.currentUser.id
       });
 
+      // Clear cache to force refresh
+      this.channelsCache = null;
+      this.channelsCacheTime = 0;
+
       return docRef.id;
     } catch (error) {
       console.error('Failed to create channel:', error);
@@ -711,6 +739,10 @@ class ChatService {
         deletedAt: serverTimestamp(),
         deletedBy: this.currentUser.id
       });
+
+      // Clear cache to force refresh
+      this.channelsCache = null;
+      this.channelsCacheTime = 0;
 
       await this.sendSystemMessage('general', 'Channel has been deleted');
     } catch (error) {

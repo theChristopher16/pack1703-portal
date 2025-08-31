@@ -124,6 +124,57 @@ const ChatPage: React.FC = () => {
     'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif', // Friendship
   ];
 
+  // Helper functions for message grouping and date separators
+  const formatMessageTime = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+
+    if (minutes < 1) return 'now';
+    if (minutes < 60) return `${minutes}m`;
+    if (hours < 24) return `${hours}h`;
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatDateSeparator = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / 86400000);
+
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return date.toLocaleDateString([], { weekday: 'long' });
+    return date.toLocaleDateString([], { 
+      month: 'short', 
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    });
+  };
+
+  const shouldShowDateSeparator = (currentMessage: ChatMessage, previousMessage: ChatMessage | null) => {
+    if (!previousMessage) return true;
+    
+    const currentDate = new Date(currentMessage.timestamp);
+    const previousDate = new Date(previousMessage.timestamp);
+    
+    // Show separator if different days
+    return currentDate.toDateString() !== previousDate.toDateString();
+  };
+
+  const shouldShowTimestamp = (currentMessage: ChatMessage, nextMessage: ChatMessage | null) => {
+    if (!nextMessage) return true;
+    
+    const currentDate = new Date(currentMessage.timestamp);
+    const nextDate = new Date(nextMessage.timestamp);
+    
+    // Show timestamp if different users or more than 5 minutes apart
+    const timeDiff = Math.abs(currentDate.getTime() - nextDate.getTime());
+    const fiveMinutes = 5 * 60 * 1000;
+    
+    return currentMessage.userName !== nextMessage.userName || timeDiff > fiveMinutes;
+  };
+
   // Initialize chat (only once)
   useEffect(() => {
     const initializeChat = async () => {
@@ -559,77 +610,97 @@ const ChatPage: React.FC = () => {
               )}
               
               <div className="space-y-4">
-                {messages.map(message => (
-                  <div
-                    key={message.id}
-                    className={`group ${
-                      message.isSystem 
-                        ? 'bg-yellow-50 border border-yellow-200 rounded-lg p-4' 
-                        : 'hover:bg-gray-50 rounded-lg p-4 transition-colors duration-200'
-                    }`}
-                  >
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                {messages.map((message, index) => {
+                  const previousMessage = index > 0 ? messages[index - 1] : null;
+                  const nextMessage = index < messages.length - 1 ? messages[index + 1] : null;
+                  const showDateSeparator = shouldShowDateSeparator(message, previousMessage);
+                  const showTimestamp = shouldShowTimestamp(message, nextMessage);
+                  
+                  return (
+                    <React.Fragment key={message.id}>
+                      {/* Date Separator */}
+                      {showDateSeparator && (
+                        <div className="flex justify-center my-6">
+                          <div className="px-4 py-2 bg-gray-100 text-gray-600 text-sm font-medium rounded-full">
+                            {formatDateSeparator(new Date(message.timestamp))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Message */}
+                      <div
+                        className={`group ${
                           message.isSystem 
-                            ? 'bg-yellow-200 text-yellow-800' 
-                            : message.isAdmin 
-                              ? 'bg-blue-200 text-blue-800' 
-                              : 'bg-gray-200 text-gray-800'
-                        }`}>
-                          {message.isSystem ? (
-                            <Settings className="w-4 h-4" />
-                          ) : (
-                            <span className="text-sm font-medium">
-                              {message.userName.charAt(0).toUpperCase()}
-                            </span>
-                          )}
+                            ? 'bg-yellow-50 border border-yellow-200 rounded-lg p-4' 
+                            : 'hover:bg-gray-50 rounded-lg p-4 transition-colors duration-200'
+                        }`}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className="flex-shrink-0">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              message.isSystem 
+                                ? 'bg-yellow-200 text-yellow-800' 
+                                : message.isAdmin 
+                                  ? 'bg-blue-200 text-blue-800' 
+                                  : 'bg-gray-200 text-gray-800'
+                            }`}>
+                              {message.isSystem ? (
+                                <Settings className="w-4 h-4" />
+                              ) : (
+                                <span className="text-sm font-medium">
+                                  {message.userName.charAt(0).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className={`font-medium text-sm ${
+                                message.isSystem ? 'text-yellow-800' : 
+                                message.isAdmin ? 'text-blue-800' : 'text-gray-900'
+                              }`}>
+                                {message.userName}
+                              </span>
+                              {message.isAdmin && (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                  Admin
+                                </span>
+                              )}
+                              {message.isSystem && (
+                                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                                  System
+                                </span>
+                              )}
+                              {showTimestamp && (
+                                <span className="text-xs text-gray-500">
+                                  {formatMessageTime(new Date(message.timestamp))}
+                                </span>
+                              )}
+                            </div>
+                            <p className={`text-sm ${
+                              message.isSystem ? 'text-yellow-700' : 
+                              message.isAdmin ? 'text-blue-700' : 'text-gray-700'
+                            }`}>
+                              {message.message}
+                            </p>
+                          </div>
+                          
+                          {/* Message Actions */}
+                          <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <button
+                              onClick={() => shareMessage(message)}
+                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                              title="Share message"
+                            >
+                              <Share2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className={`font-medium text-sm ${
-                            message.isSystem ? 'text-yellow-800' : 
-                            message.isAdmin ? 'text-blue-800' : 'text-gray-900'
-                          }`}>
-                            {message.userName}
-                          </span>
-                          {message.isAdmin && (
-                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                              Admin
-                            </span>
-                          )}
-                          {message.isSystem && (
-                            <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                              System
-                            </span>
-                          )}
-                          <span className="text-xs text-gray-500">
-                            {formatTimestamp(message.timestamp)}
-                          </span>
-                        </div>
-                        <p className={`text-sm ${
-                          message.isSystem ? 'text-yellow-700' : 
-                          message.isAdmin ? 'text-blue-700' : 'text-gray-700'
-                        }`}>
-                          {message.message}
-                        </p>
-                      </div>
-                      
-                      {/* Message Actions */}
-                      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <button
-                          onClick={() => shareMessage(message)}
-                          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                          title="Share message"
-                        >
-                          <Share2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    </React.Fragment>
+                  );
+                })}
               </div>
             </div>
 

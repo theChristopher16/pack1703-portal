@@ -101,6 +101,7 @@ class SessionManager {
       const userName = localStorage.getItem(this.USER_NAME_KEY);
       const userDen = localStorage.getItem(this.USER_DEN_KEY);
       const sessionId = localStorage.getItem(this.SESSION_ID_KEY);
+      const isAdmin = localStorage.getItem('user_is_admin') === 'true';
 
       if (userId && userName && sessionId) {
         return {
@@ -108,6 +109,7 @@ class SessionManager {
           name: userName,
           den: userDen as any,
           sessionId,
+          isAdmin: isAdmin,
           userAgent: navigator.userAgent,
           ipHash: this.generateIPHash()
         };
@@ -125,6 +127,7 @@ class SessionManager {
       if (user.name) localStorage.setItem(this.USER_NAME_KEY, user.name);
       if (user.den) localStorage.setItem(this.USER_DEN_KEY, user.den);
       if (user.sessionId) localStorage.setItem(this.SESSION_ID_KEY, user.sessionId);
+      if (user.isAdmin !== undefined) localStorage.setItem('user_is_admin', user.isAdmin.toString());
     } catch (error) {
       console.warn('Failed to save user to storage:', error);
     }
@@ -136,6 +139,7 @@ class SessionManager {
       localStorage.removeItem(this.USER_NAME_KEY);
       localStorage.removeItem(this.USER_DEN_KEY);
       localStorage.removeItem(this.SESSION_ID_KEY);
+      localStorage.removeItem('user_is_admin');
     } catch (error) {
       console.warn('Failed to clear user from storage:', error);
     }
@@ -509,7 +513,7 @@ class ChatService {
         sessionId: user.sessionId,
         userAgent: user.userAgent,
         ipHash: user.ipHash,
-        isAdmin: user.isAdmin
+        isAdmin: user.isAdmin || false
       });
     } catch (error) {
       console.warn('Failed to update user in Firestore:', error);

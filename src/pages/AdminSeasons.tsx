@@ -163,158 +163,153 @@ const AdminSeasons: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-gray-900 mb-2">
-          Season Management
-        </h1>
-        <p className="text-gray-600">
-          Manage camping seasons, events, and activities throughout the year
-        </p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-gray-100/30 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-display font-bold text-gray-900 mb-4">
+            Season Management
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl">
+            Manage camping seasons, events, and activities throughout the year
+          </p>
+        </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-6 shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-blue-100 text-sm font-medium">Total Seasons</p>
-              <p className="text-3xl font-bold">{seasons.length}</p>
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">Total Seasons</p>
+                <p className="text-3xl font-bold text-gray-900">{seasons.length}</p>
+              </div>
+              <div className="text-blue-600 text-4xl">🌱</div>
             </div>
-            <div className="text-blue-200 text-4xl">🌱</div>
+          </div>
+          
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">Active Season</p>
+                <p className="text-3xl font-bold text-gray-900">{seasons.filter(s => s.isActive).length}</p>
+              </div>
+              <div className="text-green-600 text-4xl">✅</div>
+            </div>
+          </div>
+          
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">Total Events</p>
+                <p className="text-3xl font-bold text-gray-900">{seasons.reduce((sum, s) => sum + s.eventCount, 0)}</p>
+              </div>
+              <div className="text-purple-600 text-4xl">📅</div>
+            </div>
+          </div>
+          
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">Total Members</p>
+                <p className="text-3xl font-bold text-gray-900">{seasons.reduce((sum, s) => sum + s.memberCount, 0)}</p>
+              </div>
+              <div className="text-orange-600 text-4xl">👥</div>
+            </div>
           </div>
         </div>
-        
-        <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-2xl p-6 shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-green-100 text-sm font-medium">Active Season</p>
-              <p className="text-3xl font-bold">{seasons.filter(s => s.isActive).length}</p>
-            </div>
-            <div className="text-green-200 text-4xl">✅</div>
-          </div>
-        </div>
-        
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl p-6 shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-100 text-sm font-medium">Total Events</p>
-              <p className="text-3xl font-bold">{seasons.reduce((sum, s) => sum + s.eventCount, 0)}</p>
-            </div>
-            <div className="text-purple-200 text-4xl">📅</div>
-          </div>
-        </div>
-        
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-2xl p-6 shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-orange-100 text-sm font-medium">Total Members</p>
-              <p className="text-3xl font-bold">{seasons.reduce((sum, s) => sum + s.memberCount, 0)}</p>
-            </div>
-            <div className="text-orange-200 text-4xl">👥</div>
-          </div>
-        </div>
-      </div>
 
-      {/* Actions */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex space-x-4">
+        {/* Create Button */}
+        <div className="mb-8">
           <button
             onClick={handleCreateSeason}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-sm"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 shadow-soft"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Season
+            <Plus className="h-4 w-4" />
+            Create New Season
           </button>
         </div>
-      </div>
 
-      {/* Seasons Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {seasons.map((season) => (
-          <div
-            key={season.id}
-            className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200"
-          >
-            {/* Season Header */}
-            <div className="flex items-start justify-between mb-4">
-              <div className={`w-4 h-4 rounded-full ${season.color} mr-3 mt-1`}></div>
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold text-gray-900 mb-1">{season.name}</h3>
-                <p className="text-sm text-gray-600">{season.description}</p>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleEditSeason(season)}
-                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleDeleteSeason(season.id)}
-                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Season Stats */}
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-1">
-                  <Calendar className="w-4 h-4 text-gray-400 mr-1" />
+        {/* Seasons Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {seasons.map((season) => (
+            <div key={season.id} className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft overflow-hidden hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+              <div className={`h-2 ${season.color}`}></div>
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-gray-900">{season.name}</h3>
+                  <span className={`inline-flex px-3 py-1 text-xs font-medium rounded-full border ${
+                    season.isActive 
+                      ? 'bg-green-100 text-green-800 border-green-200' 
+                      : 'bg-gray-100 text-gray-800 border-gray-200'
+                  }`}>
+                    {season.isActive ? 'Active' : 'Inactive'}
+                  </span>
                 </div>
-                <p className="text-2xl font-bold text-gray-900">{season.eventCount}</p>
-                <p className="text-xs text-gray-500">Events</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-1">
-                  <MapPin className="w-4 h-4 text-gray-400 mr-1" />
-                </div>
-                <p className="text-2xl font-bold text-gray-900">{season.locationCount}</p>
-                <p className="text-xs text-gray-500">Locations</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-1">
-                  <Users className="w-4 h-4 text-gray-400 mr-1" />
-                </div>
-                <p className="text-2xl font-bold text-gray-900">{season.memberCount}</p>
-                <p className="text-xs text-gray-500">Members</p>
-              </div>
-            </div>
 
-            {/* Date Range */}
-            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Start:</span>
-                <span className="font-medium text-gray-900">{new Date(season.startDate).toLocaleDateString()}</span>
-              </div>
-              <div className="flex justify-between text-sm mt-1">
-                <span className="text-gray-600">End:</span>
-                <span className="font-medium text-gray-900">{new Date(season.endDate).toLocaleDateString()}</span>
-              </div>
-            </div>
+                <p className="text-gray-600 text-sm mb-4 line-clamp-2">{season.description}</p>
 
-            {/* Status Toggle */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Active Season</span>
-              <button
-                onClick={() => toggleSeasonStatus(season.id)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                  season.isActive ? 'bg-blue-600' : 'bg-gray-200'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
-                    season.isActive ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
+                <div className="space-y-3 text-sm mb-4">
+                  <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
+                    <Calendar className="h-4 w-4 text-blue-600" />
+                    <span className="text-gray-700">{new Date(season.startDate).toLocaleDateString()} - {new Date(season.endDate).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg">
+                    <span className="text-green-600">📅</span>
+                    <span className="text-gray-700">{season.eventCount} events</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
+                    <MapPin className="h-4 w-4 text-purple-600" />
+                    <span className="text-gray-700">{season.locationCount} locations</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-orange-50 rounded-lg">
+                    <Users className="h-4 w-4 text-orange-600" />
+                    <span className="text-gray-700">{season.memberCount} members</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleEditSeason(season)}
+                    className="flex-1 bg-white/80 backdrop-blur-sm border border-blue-200 text-blue-700 hover:bg-blue-50 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-soft"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => toggleSeasonStatus(season.id)}
+                    className={`flex-1 px-3 py-2 text-xs rounded-lg font-medium transition-all duration-200 shadow-soft ${
+                      season.isActive
+                        ? 'bg-white/80 backdrop-blur-sm border border-red-200 text-red-700 hover:bg-red-50'
+                        : 'bg-white/80 backdrop-blur-sm border border-green-200 text-green-700 hover:bg-green-50'
+                    }`}
+                  >
+                    {season.isActive ? 'Deactivate' : 'Activate'}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteSeason(season.id)}
+                    className="flex-1 bg-white/80 backdrop-blur-sm border border-red-200 text-red-700 hover:bg-red-50 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-soft"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
             </div>
+          ))}
+        </div>
+
+        {/* Empty State */}
+        {seasons.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🌱</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No seasons yet</h3>
+            <p className="text-gray-600 mb-6">Create your first season to get started</p>
+            <button
+              onClick={handleCreateSeason}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-soft"
+            >
+              Create Your First Season
+            </button>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Create/Edit Modal */}

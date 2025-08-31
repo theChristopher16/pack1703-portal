@@ -36,7 +36,10 @@ import AdminPermissionsAudit from './pages/AdminPermissionsAudit';
 import AdminLists from './pages/AdminLists';
 import AdminVolunteer from './pages/AdminVolunteer';
 import AdminSeasons from './pages/AdminSeasons';
+import AdminFundraising from './pages/AdminFundraising';
+import AdminFinances from './pages/AdminFinances';
 import ChatPage from './pages/ChatPage';
+import JoinPage from './pages/JoinPage';
 import { AdminProvider } from './contexts/AdminContext';
 
 // Styles
@@ -99,6 +102,7 @@ function App() {
           <Route path="/forms-demo" element={<Layout><FormsDemoPage /></Layout>} />
           <Route path="/cloud-functions-test" element={<Layout><CloudFunctionsTestPage /></Layout>} />
           <Route path="/privacy" element={<Layout><PrivacyPolicyPage /></Layout>} />
+          <Route path="/join/:inviteId" element={<JoinPage />} />
           
           {/* Admin Routes with AdminLayout */}
           <Route path="/admin/login" element={<AdminLogin />} />
@@ -112,6 +116,8 @@ function App() {
          <Route path="/admin/lists" element={<AdminLayout><AdminLists /></AdminLayout>} />
           <Route path="/admin/volunteer" element={<AdminLayout><AdminVolunteer /></AdminLayout>} />
           <Route path="/admin/seasons" element={<AdminLayout><AdminSeasons /></AdminLayout>} />
+          <Route path="/admin/fundraising" element={<AdminLayout><AdminFundraising /></AdminLayout>} />
+          <Route path="/admin/finances" element={<AdminLayout><AdminFinances /></AdminLayout>} />
           <Route path="/admin/users" element={<AdminLayout><div className="max-w-7xl mx-auto px-4 py-8"><h1 className="text-2xl font-bold text-gray-900">Admin Users - Coming Soon</h1></div></AdminLayout>} />
           <Route path="/admin/settings" element={<AdminLayout><div className="max-w-7xl mx-auto px-4 py-8"><h1 className="text-2xl font-bold text-gray-900">Admin Settings - Coming Soon</h1></div></AdminLayout>} />
           

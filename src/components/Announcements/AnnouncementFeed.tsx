@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Pin, Filter, Clock, MessageSquare } from 'lucide-react';
+import { Pin, Filter, Clock, MessageSquare, Calendar } from 'lucide-react';
 import AnnouncementCard from './AnnouncementCard';
 import { Announcement } from '../../types/firestore';
 import CyclingScoutIcon from '../ui/CyclingScoutIcon';
@@ -99,90 +99,86 @@ const AnnouncementFeed: React.FC<AnnouncementFeedProps> = ({
       {/* Filters */}
       {showFilters && (
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-soft">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-display font-semibold text-gray-900">
-              Filter Announcements
-            </h3>
+          {/* Filter Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <Filter className="w-5 h-5 text-primary-600" />
+              <h3 className="text-lg font-semibold text-gray-800">Filters</h3>
+            </div>
             <button
               onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
-              className="flex items-center space-x-2 px-3 py-2 text-primary-600 hover:bg-primary-50 rounded-xl transition-colors duration-200"
+              className="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
             >
-              <Filter className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                {isFiltersExpanded ? 'Hide' : 'Show'} Filters
-              </span>
+              {isFiltersExpanded ? 'Hide' : 'Show'} Filters
             </button>
           </div>
 
           {/* Search Bar */}
-          <div className="relative mb-6">
-            <MessageSquare className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div className="mb-4">
             <input
               type="text"
-              placeholder="Search announcements by title or content..."
+              placeholder="Search announcements..."
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:border-primary-400 focus:ring-4 focus:ring-primary-100 transition-all duration-300"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white/80 backdrop-blur-sm transition-all duration-200"
             />
           </div>
 
-          {/* Expanded Filters */}
+          {/* Filter Options */}
           {isFiltersExpanded && (
-            <div className="space-y-4 animate-slide-down">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Pinned Only */}
-                <label className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={filters.showPinnedOnly}
-                    onChange={(e) => handleFilterChange('showPinnedOnly', e.target.checked)}
-                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
-                  />
-                  <div className="flex items-center space-x-2">
-                    <Pin className="w-4 h-4 text-primary-500" />
-                    <span className="text-sm font-medium text-gray-900">
-                      Pinned Only ({pinnedCount})
-                    </span>
-                  </div>
-                </label>
+            <div className="space-y-3">
+              {/* Pinned Only */}
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filters.showPinnedOnly}
+                  onChange={(e) => handleFilterChange('showPinnedOnly', e.target.checked)}
+                  className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
+                />
+                <div className="flex items-center space-x-2">
+                  <Pin className="w-4 h-4 text-primary-500" />
+                  <span className="text-sm font-medium text-gray-900">
+                    Pinned Only ({pinnedCount})
+                  </span>
+                </div>
+              </label>
 
-                {/* Event Related */}
-                <label className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={filters.showEventRelated}
-                    onChange={(e) => handleFilterChange('showEventRelated', e.target.checked)}
-                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
-                  />
-                  <div className="flex items-center space-x-2">
-                    <CyclingScoutIcon size={16} interval={3500} />
-                    <span className="text-sm font-medium text-gray-900">
-                      Event Related ({eventRelatedCount})
-                    </span>
-                  </div>
-                </label>
-              </div>
+              {/* Event Related */}
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filters.showEventRelated}
+                  onChange={(e) => handleFilterChange('showEventRelated', e.target.checked)}
+                  className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
+                />
+                <div className="flex items-center space-x-2">
+                  <Calendar className="w-4 h-4 text-primary-500" />
+                  <span className="text-sm font-medium text-gray-900">
+                    Event Related ({eventRelatedCount})
+                  </span>
+                </div>
+              </label>
             </div>
           )}
-
-          {/* Results Summary */}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-            <div className="text-sm text-gray-600">
-              Showing <span className="font-semibold text-gray-900">{filteredAndSortedAnnouncements.length}</span> of{' '}
-              <span className="font-semibold text-gray-900">{announcements.length}</span> announcements
-            </div>
-            
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all duration-200"
-              >
-                Clear Filters
-              </button>
-            )}
-          </div>
         </div>
       )}
+
+      {/* Results Summary */}
+      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+        <div className="text-sm text-gray-600">
+          Showing <span className="font-semibold text-gray-900">{filteredAndSortedAnnouncements.length}</span> of{' '}
+          <span className="font-semibold text-gray-900">{announcements.length}</span> announcements
+        </div>
+        
+        {hasActiveFilters && (
+          <button
+            onClick={clearFilters}
+            className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all duration-200"
+          >
+            Clear Filters
+          </button>
+        )}
+      </div>
 
       {/* Announcements List */}
       <div className="space-y-4">

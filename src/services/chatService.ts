@@ -429,9 +429,41 @@ class ChatService {
 
       // Update channel's last activity and message count
       await this.updateChannelActivity(channelId);
+
+      // Check for AI mentions and process them
+      await this.processAIMentions(message, channelId);
     } catch (error) {
       console.error('Failed to send message:', error);
       throw error;
+    }
+  }
+
+  // Process AI mentions in messages
+  private async processAIMentions(message: string, channelId: string): Promise<void> {
+    try {
+      // Import AI service dynamically to avoid circular dependencies
+      const aiService = (await import('./aiService')).default;
+      
+      // Check if message contains @mention of AI
+      const mentionPattern = /@(solyn|ai|assistant)/i;
+      if (mentionPattern.test(message)) {
+        // Process the mention asynchronously
+        setTimeout(async () => {
+          try {
+            await aiService.processChatMention(
+              message, 
+              channelId, 
+              this.currentUser?.id || '', 
+              this.currentUser?.name || '',
+              this.currentUser?.den
+            );
+          } catch (error) {
+            console.error('Error processing AI mention:', error);
+          }
+        }, 1000); // Small delay to ensure message is saved first
+      }
+    } catch (error) {
+      console.warn('Failed to process AI mentions:', error);
     }
   }
 

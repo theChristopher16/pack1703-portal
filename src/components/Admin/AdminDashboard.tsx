@@ -4,7 +4,9 @@ import { EntityType, AdminActionType } from '../../types/admin';
 import ConfigManager from './ConfigManager';
 import AIChatInterface from './AIChatInterface';
 import ChannelManager from './ChannelManager';
+import SystemMonitor from './SystemMonitor';
 import { useToast } from '../../contexts/ToastContext';
+import emailMonitorService from '../../services/emailMonitorService';
 
 export const AdminDashboard: React.FC = () => {
   const {
@@ -39,8 +41,27 @@ export const AdminDashboard: React.FC = () => {
       refreshDashboardStats();
       refreshAuditLogs();
       refreshSystemHealth();
+      
+      // Initialize email monitoring
+      initializeEmailMonitoring();
     }
   }, [state.isAuthenticated]);
+
+  const initializeEmailMonitoring = async () => {
+    try {
+      const success = await emailMonitorService.initialize();
+      if (success) {
+        showSuccess('Email Monitoring Started', 'AI can now read emails and create events automatically!');
+        console.log('Email monitoring initialized successfully');
+      } else {
+        showError('Email Monitoring Failed', 'Could not connect to email server. Check credentials.');
+        console.error('Email monitoring initialization failed');
+      }
+    } catch (error) {
+      showError('Email Monitoring Error', 'An error occurred while setting up email monitoring.');
+      console.error('Email monitoring error:', error);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,6 +231,16 @@ export const AdminDashboard: React.FC = () => {
             Dashboard
           </button>
           <button
+            onClick={() => setActiveTab('ai-chat')}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
+              activeTab === 'ai-chat'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Solyn
+          </button>
+          <button
             onClick={() => setActiveTab('config')}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
               activeTab === 'config'
@@ -218,16 +249,6 @@ export const AdminDashboard: React.FC = () => {
             }`}
           >
             Configuration
-          </button>
-          <button
-            onClick={() => setActiveTab('ai-chat')}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
-              activeTab === 'ai-chat'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Nova
           </button>
           <button
             onClick={() => setActiveTab('channels')}
@@ -330,45 +351,7 @@ export const AdminDashboard: React.FC = () => {
 
         {/* Main Content Area */}
         {activeTab === 'dashboard' ? (
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft">
-            <h2 className="text-2xl font-display font-semibold text-gray-900 mb-6">
-              Admin System Status
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Firebase Connection</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Project ID:</span>
-                    <span className="text-gray-900">pack-1703-portal</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Status:</span>
-                    <span className="text-green-600">✓ Connected</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Admin Features</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">CRUD Operations:</span>
-                    <span className="text-green-600">✓ Available</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Audit Logging:</span>
-                    <span className="text-green-600">✓ Active</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Role Management:</span>
-                    <span className="text-green-600">✓ Configured</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <SystemMonitor />
         ) : activeTab === 'config' ? (
           <ConfigManager />
         ) : activeTab === 'ai-chat' ? (

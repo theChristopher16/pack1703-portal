@@ -275,7 +275,7 @@ const ChatPage: React.FC = () => {
     setUploadedImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Function to render message content with GIF and code support
+  // Function to render message content with GIF, code, and @mention support
   const renderMessageContent = (messageText: string) => {
     // Split the message into parts (text, images, and code blocks)
     const parts = messageText.split(/(!\[.*?\]\(.*?\)|```[\s\S]*?```)/g);
@@ -301,7 +301,7 @@ const ChatPage: React.FC = () => {
       }
       
       // Check if this part is a code block
-      const codeMatch = part.match(/```([\s\S]*?)```/);
+      const codeMatch = part.match(/```([\s\S]*?```)/);
       if (codeMatch) {
         const codeContent = codeMatch[1];
         return (
@@ -311,8 +311,24 @@ const ChatPage: React.FC = () => {
         );
       }
       
-      // Regular text
-      return <span key={index}>{part}</span>;
+      // Regular text with @mention highlighting
+      return (
+        <span key={index}>
+          {part.split(/(@(?:solyn|ai|assistant))/gi).map((text, textIndex) => {
+            if (text.match(/@(solyn|ai|assistant)/i)) {
+              return (
+                <span 
+                  key={textIndex} 
+                  className="bg-blue-100 text-blue-800 px-1 py-0.5 rounded-md font-medium text-sm"
+                >
+                  {text}
+                </span>
+              );
+            }
+            return text;
+          })}
+        </span>
+      );
     });
   };
 
@@ -648,19 +664,10 @@ const ChatPage: React.FC = () => {
     }
   }, [channels]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading chat...</p>
-        </div>
-      </div>
-    );
-  }
+  // Removed loading animation for faster page transitions
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-[calc(100vh-4rem)]">
+    <div className="bg-gradient-to-br from-white via-gray-50/30 to-gray-100/30 min-h-[calc(100vh-4rem)]">
       {/* Page Header */}
       <div className="bg-white shadow-sm border-b border-gray-200 mb-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

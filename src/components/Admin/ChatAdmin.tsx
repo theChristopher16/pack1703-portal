@@ -439,7 +439,7 @@ const ChatAdmin: React.FC = () => {
     setUploadedImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Function to render message content with GIF and code support
+  // Function to render message content with GIF, code, and @mention support
   const renderMessageContent = (messageText: string) => {
     // Split the message into parts (text, images, and code blocks)
     const parts = messageText.split(/(!\[.*?\]\(.*?\)|```[\s\S]*?```)/g);
@@ -475,8 +475,24 @@ const ChatAdmin: React.FC = () => {
         );
       }
       
-      // Regular text
-      return <span key={index}>{part}</span>;
+      // Regular text with @mention highlighting
+      return (
+        <span key={index}>
+          {part.split(/(@(?:solyn|ai|assistant))/gi).map((text, textIndex) => {
+            if (text.match(/@(solyn|ai|assistant)/i)) {
+              return (
+                <span 
+                  key={textIndex} 
+                  className="bg-blue-100 text-blue-800 px-1 py-0.5 rounded-md font-medium text-sm"
+                >
+                  {text}
+                </span>
+              );
+            }
+            return text;
+          })}
+        </span>
+      );
     });
   };
 
@@ -1526,98 +1542,49 @@ const ChatAdmin: React.FC = () => {
 
         {activeTab === 'channels' && (
           <div className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Channel Management</h2>
+            <h2 className="text-2xl font-display font-bold text-gray-900 mb-6">Channel Management</h2>
             
-                        {/* Pack Channels */}
+            {/* Pack Channels */}
             <div className="mb-8">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Pack Channels</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <span className="text-blue-600 mr-2">📢</span>
+                Pack Channels
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {channels.filter(channel => !channel.isDenChannel).map(channel => (
-                  <div key={channel.id} className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-medium text-gray-900">#{channel.name}</h3>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      channel.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {channel.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                  
-                  <p className="text-sm text-gray-600 mb-3">{channel.description}</p>
-                  
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Messages:</span>
-                      <span className="text-gray-900">{channel.messageCount}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Last Activity:</span>
-                      <span className="text-gray-900">{formatLastSeen(channel.lastActivity)}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 flex gap-2">
-                    <button className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors duration-200">
-                      Edit
-                    </button>
-                    <button className={`px-3 py-1 text-xs rounded transition-colors duration-200 ${
-                      channel.isActive 
-                        ? 'bg-red-600 text-white hover:bg-red-700' 
-                        : 'bg-green-600 text-white hover:bg-green-700'
-                    }`}>
-                      {channel.isActive ? 'Deactivate' : 'Activate'}
-                    </button>
-                  </div>
-                </div>
-                ))}
-              </div>
-            </div>
-            
-            {/* Den Channels */}
-            <div className="mb-8">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Den Channels</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {channels.filter(channel => channel.isDenChannel).map(channel => (
-                  <div key={channel.id} className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex items-center">
-                        <h3 className="text-lg font-medium text-gray-900">#{channel.name}</h3>
-                        <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                          {channel.denLevel}
-                        </span>
-                      </div>
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                  <div key={channel.id} className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6 hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">#{channel.name}</h3>
+                      <span className={`inline-flex px-3 py-1 text-xs font-medium rounded-full border ${
                         channel.isActive 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'bg-green-100 text-green-800 border-green-200' 
+                          : 'bg-gray-100 text-gray-800 border-gray-200'
                       }`}>
                         {channel.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </div>
                     
-                    <p className="text-sm text-gray-600 mb-3">{channel.description}</p>
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">{channel.description}</p>
                     
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Messages:</span>
-                        <span className="text-gray-900">{channel.messageCount}</span>
+                    <div className="space-y-3 text-sm mb-4">
+                      <div className="flex justify-between items-center p-2 bg-blue-50 rounded-lg">
+                        <span className="text-blue-600">💬</span>
+                        <span className="text-gray-700 font-medium">{channel.messageCount} messages</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Last Activity:</span>
-                        <span className="text-gray-900">{formatLastSeen(channel.lastActivity)}</span>
+                      <div className="flex justify-between items-center p-2 bg-green-50 rounded-lg">
+                        <span className="text-green-600">⏰</span>
+                        <span className="text-gray-700 font-medium">{formatLastSeen(channel.lastActivity)}</span>
                       </div>
                     </div>
                     
-                    <div className="mt-4 flex gap-2">
-                      <button className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors duration-200">
+                    <div className="flex gap-3">
+                      <button className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-soft">
                         Edit
                       </button>
-                      <button className={`px-3 py-1 text-xs rounded transition-colors duration-200 ${
+                      <button className={`flex-1 px-3 py-2 text-xs rounded-lg font-medium transition-all duration-200 shadow-soft ${
                         channel.isActive 
-                          ? 'bg-red-600 text-white hover:bg-red-700' 
-                          : 'bg-green-600 text-white hover:bg-green-700'
+                          ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white' 
+                          : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white'
                       }`}>
                         {channel.isActive ? 'Deactivate' : 'Activate'}
                       </button>
@@ -1627,8 +1594,64 @@ const ChatAdmin: React.FC = () => {
               </div>
             </div>
             
-            <div className="mt-6">
-              <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
+            {/* Den Channels */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <span className="text-purple-600 mr-2">🏠</span>
+                Den Channels
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {channels.filter(channel => channel.isDenChannel).map(channel => (
+                  <div key={channel.id} className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6 hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center">
+                        <h3 className="text-lg font-semibold text-gray-900">#{channel.name}</h3>
+                        <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full border border-purple-200">
+                          {channel.denLevel}
+                        </span>
+                      </div>
+                      <span className={`inline-flex px-3 py-1 text-xs font-medium rounded-full border ${
+                        channel.isActive 
+                          ? 'bg-green-100 text-green-800 border-green-200' 
+                          : 'bg-gray-100 text-gray-800 border-gray-200'
+                      }`}>
+                        {channel.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">{channel.description}</p>
+                    
+                    <div className="space-y-3 text-sm mb-4">
+                      <div className="flex justify-between items-center p-2 bg-purple-50 rounded-lg">
+                        <span className="text-purple-600">💬</span>
+                        <span className="text-gray-700 font-medium">{channel.messageCount} messages</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-green-50 rounded-lg">
+                        <span className="text-green-600">⏰</span>
+                        <span className="text-gray-700 font-medium">{formatLastSeen(channel.lastActivity)}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <button className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-soft">
+                        Edit
+                      </button>
+                      <button className={`flex-1 px-3 py-2 text-xs rounded-lg font-medium transition-all duration-200 shadow-soft ${
+                        channel.isActive 
+                          ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white' 
+                          : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white'
+                      }`}>
+                        {channel.isActive ? 'Deactivate' : 'Activate'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="mt-8">
+              <button className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-soft flex items-center gap-2">
+                <span>➕</span>
                 Create New Channel
               </button>
             </div>

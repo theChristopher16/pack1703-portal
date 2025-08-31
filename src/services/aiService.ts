@@ -1,11 +1,14 @@
-import { getFirestore, collection, getDocs, query, where, orderBy, limit, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, query, where, orderBy, limit as firestoreLimit, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import systemMonitorService from './systemMonitorService';
 import chatService from './chatService';
 import configService from './configService';
 import { adminService } from './adminService';
 import { analytics } from './analytics';
 import { SecurityAuditService } from './securityAuditService';
-import externalApiService from './externalApiService';
+import { externalApiService } from './externalApiService';
+import emailMonitorService from './emailMonitorService';
+import dataAuditService from './dataAuditService';
+import firestoreService from './firestore';
 
 export interface AIResponse {
   id: string;
@@ -55,6 +58,8 @@ export interface FileAttachment {
 class AIService {
   private db = getFirestore();
   private isInitialized = false;
+  private aiName = 'Solyn';
+  private aiUserId = 'ai_solyn';
 
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
@@ -97,6 +102,18 @@ class AIService {
     // Content creation queries (with file attachments)
     if (context.attachments && context.attachments.length > 0) {
       return await this.handleContentCreation(userQuery, context);
+    }
+
+    // Content creation requests (without attachments)
+    const contentCreationResponse = await this.handleContentCreationRequest(userQuery, context);
+    if (contentCreationResponse) {
+      return contentCreationResponse;
+    }
+    
+    // Dynamic conversation handling
+    const response = await this.handleDynamicConversation(userQuery, context);
+    if (response) {
+      return response;
     }
     
     // System status queries
@@ -154,10 +171,10 @@ class AIService {
       return this.getHelpResponse();
     }
     
-    // Default response
+    // Default response - now more conversational
     return {
       id: Date.now().toString(),
-      message: `I understand you're asking about "${userQuery}". I can help you with system status, cost analysis, user activity, content management, security, chat monitoring, configuration, and analytics. Could you please be more specific about what you'd like to know?`,
+      message: `I see you're asking about "${userQuery}". Let me think about that...\n\nI can help you with quite a few things around here - system monitoring, cost analysis, user activity, content management, security, and more. What specifically would you like to know? I'm happy to dive deep into any of these areas or help you with something else entirely.`,
       timestamp: new Date(),
       type: 'info'
     };
@@ -580,6 +597,16 @@ class AIService {
 
   private async handleContentCreation(userQuery: string, context: AIContext): Promise<AIResponse> {
     try {
+      // Check if user has permission to create content
+      if (context.userRole !== 'admin') {
+        return {
+          id: Date.now().toString(),
+          message: '❌ **Access Denied**\n\nI\'m sorry, but only pack leaders, den leaders, and cubmaster can create events from uploaded files. Please contact your den leader or cubmaster if you have an event to add!',
+          timestamp: new Date(),
+          type: 'error'
+        };
+      }
+
       // Extract event information from uploaded files
       const eventData = await this.extractEventData(context.attachments!);
       
@@ -625,6 +652,89 @@ class AIService {
         type: 'error'
       };
     }
+  }
+
+  // Handle content creation requests from chat or direct commands
+  private async handleContentCreationRequest(userQuery: string, context: AIContext): Promise<AIResponse | null> {
+    const query = userQuery.toLowerCase();
+    
+    // Event creation - restricted to admins only
+    if (query.includes('create event') || query.includes('make event') || query.includes('add event')) {
+      if (context.userRole !== 'admin') {
+        return {
+          id: Date.now().toString(),
+          message: 'I\'m sorry, but only pack leaders, den leaders, and cubmaster can create events. Please contact your den leader or cubmaster if you have an event idea!',
+          timestamp: new Date(),
+          type: 'warning'
+        };
+      }
+      
+      return {
+        id: Date.now().toString(),
+        message: 'I can help you create an event! Please provide the event details including:\n\n• Event name\n• Date and time\n• Location\n• Description\n• Any other relevant information\n\nYou can also upload a file (like a calendar invite or flyer) and I\'ll extract the details automatically.',
+        timestamp: new Date(),
+        type: 'info'
+      };
+    }
+
+    // Announcement creation - restricted to admins only
+    if (query.includes('create announcement') || query.includes('make announcement') || query.includes('add announcement')) {
+      if (context.userRole !== 'admin') {
+        return {
+          id: Date.now().toString(),
+          message: 'I\'m sorry, but only pack leaders, den leaders, and cubmaster can create announcements. Please contact your den leader or cubmaster if you have information to share!',
+          timestamp: new Date(),
+          type: 'warning'
+        };
+      }
+      
+      return {
+        id: Date.now().toString(),
+        message: 'I can help you create an announcement! Please provide:\n\n• Announcement title\n• Content/message\n• Priority level (if any)\n• Target audience (if specific)\n\nI\'ll create it and make it visible to the appropriate users.',
+        timestamp: new Date(),
+        type: 'info'
+      };
+    }
+
+    // Location creation - restricted to admins only
+    if (query.includes('create location') || query.includes('add location') || query.includes('new location')) {
+      if (context.userRole !== 'admin') {
+        return {
+          id: Date.now().toString(),
+          message: 'I\'m sorry, but only pack leaders, den leaders, and cubmaster can add new locations. Please contact your den leader or cubmaster if you know of a good location!',
+          timestamp: new Date(),
+          type: 'warning'
+        };
+      }
+      
+      return {
+        id: Date.now().toString(),
+        message: 'I can help you add a new location! Please provide:\n\n• Location name\n• Address\n• Contact information (phone, email)\n• Description or notes\n• Any special instructions\n\nI\'ll validate the address and add it to our location database.',
+        timestamp: new Date(),
+        type: 'info'
+      };
+    }
+
+    // Resource creation - restricted to admins only
+    if (query.includes('create resource') || query.includes('add resource') || query.includes('new resource')) {
+      if (context.userRole !== 'admin') {
+        return {
+          id: Date.now().toString(),
+          message: 'I\'m sorry, but only pack leaders, den leaders, and cubmaster can add new resources. Please contact your den leader or cubmaster if you have a resource to share!',
+          timestamp: new Date(),
+          type: 'warning'
+        };
+      }
+      
+      return {
+        id: Date.now().toString(),
+        message: 'I can help you add a new resource! Please provide:\n\n• Resource name\n• Type (document, link, file, etc.)\n• Description\n• Target audience\n• Any access restrictions\n\nI\'ll organize it properly in our resource library.',
+        timestamp: new Date(),
+        type: 'info'
+      };
+    }
+
+    return null; // No content creation request detected
   }
 
   private async extractEventData(attachments: FileAttachment[]): Promise<any> {
@@ -811,12 +921,12 @@ class AIService {
 
     // Weather forecast (if we have coordinates and date)
     if (eventData.location.coordinates && eventData.startDate) {
-      const weather = await externalApiService.getWeatherForecast(eventData.location.coordinates, new Date(eventData.startDate));
+      const weather = await externalApiService.getWeatherForecast(eventData.location.coordinates.lat, eventData.location.coordinates.lng);
       if (weather) {
         checks.push({
           type: 'content',
           status: 'info',
-          message: `Weather forecast: ${weather.temperature}°F, ${weather.condition}, ${weather.precipitation}% chance of rain`,
+          message: `Weather forecast: ${weather.temperature}°F, ${weather.conditions}`,
           data: { weather }
         });
       }
@@ -839,13 +949,13 @@ class AIService {
   private async verifyLocation(location: any): Promise<any> {
     try {
       // Use external API service for comprehensive location verification
-      const locationData = await externalApiService.verifyLocation(location.name, location.address);
+      const locationData = await externalApiService.verifyLocation(location.address || location.name);
       
       if (locationData.verified) {
         // Update location with verified data
         location.coordinates = locationData.coordinates;
         location.formattedAddress = locationData.formattedAddress;
-        location.placeId = locationData.placeId;
+        // placeId is not available in the new LocationData interface
         location.businessInfo = locationData.businessInfo;
         location.parkingInfo = locationData.parkingInfo;
       }
@@ -1004,6 +1114,348 @@ class AIService {
     // This would create the event in your events collection
     // For now, return a mock ID
     return `event_${Date.now()}`;
+  }
+
+  private async handleDynamicConversation(userQuery: string, context: AIContext): Promise<AIResponse | null> {
+    const query = userQuery.toLowerCase();
+    
+    // Casual conversation
+    if (query.includes('how are you') || query.includes('how\'s it going')) {
+      return {
+        id: Date.now().toString(),
+        message: `I'm doing great, thanks for asking! 🚀 The system is running smoothly and I'm ready to help you with whatever you need. How about you - what's on your mind today?`,
+        timestamp: new Date(),
+        type: 'info'
+      };
+    }
+    
+    // Questions about capabilities
+    if (query.includes('what can you do') || query.includes('your capabilities')) {
+      return {
+        id: Date.now().toString(),
+        message: `Oh, I can do quite a bit! Let me break it down for you:\n\n**📊 System Monitoring**\nI keep an eye on performance, costs, and system health in real-time.\n\n**📝 Content Management**\nI can create events from uploaded files, manage announcements, and organize content.\n\n**🔍 Data Analysis**\nI analyze user activity, engagement patterns, and system usage trends.\n\n**🔒 Security & Permissions**\nI monitor security status and manage access controls.\n\n**📧 Email Monitoring** (Coming Soon!)\nI'll soon be able to monitor your email inbox and automatically create events from relevant emails.\n\n**🤖 Smart Automation**\nI can validate locations, verify contacts, check weather, and estimate costs automatically.\n\nWhat interests you most? I'd be happy to show you how any of these work!`,
+        timestamp: new Date(),
+        type: 'info'
+      };
+    }
+    
+    // Questions about the future
+    if (query.includes('what\'s next') || query.includes('future plans') || query.includes('roadmap')) {
+      return {
+        id: Date.now().toString(),
+        message: `Great question! Here's what I'm excited about coming up:\n\n**📧 Email Integration**\nI'll be monitoring your email inbox to automatically detect and create events from relevant emails.\n\n**🤖 Enhanced AI**\nI'm getting smarter every day - better conversation abilities, more natural responses, and deeper insights.\n\n**📊 Advanced Analytics**\nMore detailed reporting, trend analysis, and predictive insights.\n\n**🔗 External Integrations**\nBetter integration with calendar systems, weather services, and business databases.\n\n**📱 Mobile Optimization**\nImproved mobile experience and notifications.\n\nI'm particularly excited about the email monitoring feature - it'll make event management so much more seamless!`,
+        timestamp: new Date(),
+        type: 'info'
+      };
+    }
+    
+    // Questions about data and history
+    if (query.includes('data history') || query.includes('audit trail') || query.includes('past values')) {
+      return {
+        id: Date.now().toString(),
+        message: `Excellent question about data integrity! Yes, Firebase Firestore maintains a complete audit trail of all changes. Here's what I can access:\n\n**📝 Document History**\nEvery change to any document is tracked with timestamps and user information.\n\n**🔄 Version Control**\nI can see what values were changed, when they were changed, and who made the changes.\n\n**📊 Analytics Data**\nUser activity, system usage, and performance metrics are all logged with full history.\n\n**🔒 Security Logs**\nAll access attempts, permission changes, and security events are recorded.\n\n**📧 Email Processing History** (Coming Soon)\nWhen I start monitoring emails, I'll log all processing decisions and actions taken.\n\nThis means I can analyze trends, identify patterns, and provide insights based on historical data. Want me to show you some specific examples?`,
+        timestamp: new Date(),
+        type: 'info'
+      };
+    }
+    
+    // Questions about email monitoring
+    if (query.includes('email') || query.includes('inbox') || query.includes('monitoring')) {
+      const emailStatus = emailMonitorService.getMonitoringStatus();
+      
+      if (emailStatus.isActive) {
+        return {
+          id: Date.now().toString(),
+          message: `Great news! I'm already monitoring your email inbox at ${emailStatus.config.emailAddress}. Here's what's happening:\n\n**📧 Active Monitoring**\n• Checking every ${emailStatus.config.checkInterval} minutes\n• Last checked: ${emailStatus.lastChecked ? emailStatus.lastChecked.toLocaleString() : 'Never'}\n• Auto-creating events: ${emailStatus.config.autoCreateEvents ? 'Yes' : 'No'}\n\n**🤖 What I'm Looking For**\nI scan incoming emails for:\n• Event keywords (meeting, camp, outing, etc.)\n• Dates and times\n• Location information\n• Contact details\n• Cost information\n\n**📅 Automatic Processing**\nWhen I find relevant emails, I:\n• Extract event details automatically\n• Validate locations using Google Maps\n• Verify contact information\n• Check for duplicate events\n• Create events in your system\n• Send you notifications\n\n**📊 Recent Activity**\nWant me to show you what I've processed recently? Just ask!`,
+          timestamp: new Date(),
+          type: 'info'
+        };
+      } else {
+        return {
+          id: Date.now().toString(),
+          message: `I can monitor your email inbox at ${emailStatus.config.emailAddress} and automatically create events from relevant emails! Here's how it works:\n\n**📧 Email Monitoring**\nI'll connect to your Zoho email account and monitor incoming messages.\n\n**🤖 Smart Filtering**\nI analyze each email for event information - dates, locations, contact details, etc.\n\n**📅 Automatic Event Creation**\nWhen I detect relevant event information, I automatically:\n• Extract event details\n• Validate locations and contacts\n• Check for duplicates\n• Create the event in your system\n• Send you a confirmation\n\n**🔍 Intelligent Processing**\nI use the same validation capabilities as file uploads - location verification, contact validation, weather checks, etc.\n\n**📊 Audit Trail**\nEvery email processed and action taken is logged for your review.\n\nWould you like me to start monitoring your inbox now?`,
+          timestamp: new Date(),
+          type: 'info'
+        };
+      }
+    }
+    
+    // Questions about the system
+    if (query.includes('how does this work') || query.includes('explain the system')) {
+      return {
+        id: Date.now().toString(),
+        message: `Great question! Let me walk you through how this system works:\n\n**🏗️ Architecture**\nThis is a React-based web app running on Firebase, with real-time database updates and cloud functions for backend processing.\n\n**🤖 My Role**\nI'm an AI assistant integrated into the system that can:\n• Read and write to the database\n• Process uploaded files\n• Validate information using external APIs\n• Monitor system health\n• Provide insights and analysis\n\n**📊 Data Flow**\n1. Users interact with the app\n2. Data is stored in Firestore (with full audit trails)\n3. I can access this data to provide insights\n4. I can also write new data (with proper validation)\n\n**🔒 Security**\nEverything is secured with Firebase Auth and Firestore security rules. I only have access to what's necessary for my functions.\n\n**📈 Real-time Updates**\nThe system uses Firebase's real-time listeners, so changes appear instantly across all users.\n\n**🔍 Audit Trail**\nEvery change is logged with timestamps, user info, and before/after values.\n\nIt's a pretty sophisticated setup! What specific aspect would you like me to dive deeper into?`,
+        timestamp: new Date(),
+        type: 'info'
+      };
+    }
+    
+    // Questions about me
+    if (query.includes('who are you') || query.includes('tell me about yourself')) {
+      return {
+        id: Date.now().toString(),
+        message: `Well, I'm Solyn! 🤖 I'm an AI assistant specifically designed to help manage this Scout Pack portal. Here's a bit about me:\n\n**🎯 My Purpose**\nI'm here to make managing your Scout Pack as seamless as possible. I handle the tedious stuff so you can focus on what matters most.\n\n**🧠 My Capabilities**\nI can process information, validate data, create content, analyze trends, and automate routine tasks. I'm constantly learning and improving.\n\n**🔗 My Integration**\nI'm deeply integrated into your system - I can read from and write to your database, monitor system health, and interact with external services.\n\n**🤝 My Approach**\nI aim to be helpful, professional, and conversational. I'm not just a chatbot - I'm a true assistant that can understand context and provide meaningful insights.\n\n**🔮 My Future**\nI'm getting smarter every day, and soon I'll be able to monitor your email inbox and automatically create events from relevant emails.\n\nI'm here to help make your job easier! What would you like to know more about?`,
+        timestamp: new Date(),
+        type: 'info'
+      };
+    }
+    
+    return null; // No dynamic response found, fall back to other handlers
+  }
+
+  // Send AI message to chat
+  async sendAIMessage(channelId: string, message: string, isSystem: boolean = false): Promise<void> {
+    try {
+      const messagesRef = collection(this.db, 'chat-messages');
+      await addDoc(messagesRef, {
+        channelId,
+        userId: this.aiUserId,
+        userName: this.aiName,
+        message,
+        timestamp: serverTimestamp(),
+        isSystem,
+        isAdmin: true,
+        den: 'pack-leader',
+        sessionId: 'ai_session',
+        userAgent: 'AI Assistant',
+        ipHash: null
+      });
+
+      // Update channel's last activity
+      await this.updateChannelActivity(channelId);
+    } catch (error) {
+      console.error('Failed to send AI message:', error);
+      throw error;
+    }
+  }
+
+  // Update channel activity (similar to chatService)
+  private async updateChannelActivity(channelId: string): Promise<void> {
+    try {
+      const channelRef = doc(this.db, 'chat-channels', channelId);
+      await updateDoc(channelRef, {
+        lastActivity: serverTimestamp(),
+        messageCount: increment(1)
+      });
+    } catch (error) {
+      console.warn('Failed to update channel activity:', error);
+    }
+  }
+
+  // Check if message contains @mention of AI
+  private isAIMentioned(message: string): boolean {
+    const mentionPattern = /@(solyn|ai|assistant)/i;
+    return mentionPattern.test(message);
+  }
+
+  // Process @mention in chat messages
+  async processChatMention(message: string, channelId: string, userId: string, userName: string, userDen?: string): Promise<void> {
+    if (!this.isAIMentioned(message)) {
+      return;
+    }
+
+    try {
+      // Extract the query from the message (remove the @mention)
+      const query = message.replace(/@(solyn|ai|assistant)\s*/i, '').trim();
+      
+      if (!query) {
+        // Just a mention without a query
+        await this.sendAIMessage(channelId, `Hello ${userName}! I'm here to help. What would you like to know or do?`, false);
+        return;
+      }
+
+      // Determine user role based on den
+      const userRole = this.getUserRole(userDen);
+      
+      // Process the query
+      const context: AIContext = {
+        userQuery: query,
+        userRole,
+        currentPage: 'chat',
+        availableData: {
+          events: 0,
+          locations: 0,
+          announcements: 0,
+          messages: 0,
+          users: 0
+        }
+      };
+
+      const response = await this.processQuery(query, context);
+      
+      // Send the response to chat
+      await this.sendAIMessage(channelId, response.message, false);
+      
+    } catch (error) {
+      console.error('Error processing chat mention:', error);
+      await this.sendAIMessage(channelId, 'I apologize, but I encountered an error processing your request. Please try again.', false);
+    }
+  }
+
+  // Determine user role based on den
+  private getUserRole(userDen?: string): 'admin' | 'user' {
+    if (!userDen) return 'user';
+    
+    // Admin roles: pack-leader, cubmaster, and den leaders
+    const adminRoles = ['pack-leader', 'cubmaster', 'lion', 'tiger', 'wolf', 'bear', 'webelos', 'arrow-of-light'];
+    
+    return adminRoles.includes(userDen) ? 'admin' : 'user';
+  }
+
+  // Create content functions with write access
+  async createEvent(eventData: any): Promise<boolean> {
+    try {
+      // Check for duplicates before creating
+      const isDuplicate = await this.checkForDuplicateEvent(eventData);
+      if (isDuplicate) {
+        console.log('AI detected duplicate event, skipping creation');
+        return false;
+      }
+      
+      const event = await firestoreService.createEvent(eventData);
+      console.log('AI created event:', event);
+      return true;
+    } catch (error) {
+      console.error('AI failed to create event:', error);
+      return false;
+    }
+  }
+
+  async createAnnouncement(announcementData: any): Promise<boolean> {
+    try {
+      // Check for duplicates before creating
+      const isDuplicate = await this.checkForDuplicateAnnouncement(announcementData);
+      if (isDuplicate) {
+        console.log('AI detected duplicate announcement, skipping creation');
+        return false;
+      }
+      
+      const announcement = await firestoreService.createAnnouncement(announcementData);
+      console.log('AI created announcement:', announcement);
+      return true;
+    } catch (error) {
+      console.error('AI failed to create announcement:', error);
+      return false;
+    }
+  }
+
+  async createLocation(locationData: any): Promise<boolean> {
+    try {
+      // Check for duplicates before creating
+      const isDuplicate = await this.checkForDuplicateLocation(locationData);
+      if (isDuplicate) {
+        console.log('AI detected duplicate location, skipping creation');
+        return false;
+      }
+      
+      const location = await firestoreService.createLocation(locationData);
+      console.log('AI created location:', location);
+      return true;
+    } catch (error) {
+      console.error('AI failed to create location:', error);
+      return false;
+    }
+  }
+
+  async createResource(resourceData: any): Promise<boolean> {
+    try {
+      // Check for duplicates before creating
+      const isDuplicate = await this.checkForDuplicateResource(resourceData);
+      if (isDuplicate) {
+        console.log('AI detected duplicate resource, skipping creation');
+        return false;
+      }
+      
+      const resource = await firestoreService.createResource(resourceData);
+      console.log('AI created resource:', resource);
+      return true;
+    } catch (error) {
+      console.error('AI failed to create resource:', error);
+      return false;
+    }
+  }
+
+  // Duplicate detection methods
+  private async checkForDuplicateEvent(eventData: any): Promise<boolean> {
+    try {
+      const eventsRef = collection(this.db, 'events');
+      const q = query(
+        eventsRef,
+        where('title', '==', eventData.title),
+        where('startDate', '==', eventData.startDate)
+      );
+      const snapshot = await getDocs(q);
+      
+      // If we find an event with the same title and start date, it's likely a duplicate
+      return !snapshot.empty;
+    } catch (error) {
+      console.warn('Error checking for duplicate event:', error);
+      return false;
+    }
+  }
+
+  private async checkForDuplicateAnnouncement(announcementData: any): Promise<boolean> {
+    try {
+      const announcementsRef = collection(this.db, 'announcements');
+      const q = query(
+        announcementsRef,
+        where('title', '==', announcementData.title),
+        orderBy('createdAt', 'desc'),
+        firestoreLimit(1)
+      );
+      const snapshot = await getDocs(q);
+      
+      if (!snapshot.empty) {
+        const lastAnnouncement = snapshot.docs[0];
+        const lastCreated = lastAnnouncement.data().createdAt?.toDate?.() || new Date(0);
+        const now = new Date();
+        
+        // If the last announcement with the same title was created within the last 24 hours, it's likely a duplicate
+        const hoursSinceLast = (now.getTime() - lastCreated.getTime()) / (1000 * 60 * 60);
+        return hoursSinceLast < 24;
+      }
+      
+      return false;
+    } catch (error) {
+      console.warn('Error checking for duplicate announcement:', error);
+      return false;
+    }
+  }
+
+  private async checkForDuplicateLocation(locationData: any): Promise<boolean> {
+    try {
+      const locationsRef = collection(this.db, 'locations');
+      const q = query(
+        locationsRef,
+        where('name', '==', locationData.name),
+        where('address', '==', locationData.address)
+      );
+      const snapshot = await getDocs(q);
+      
+      // If we find a location with the same name and address, it's likely a duplicate
+      return !snapshot.empty;
+    } catch (error) {
+      console.warn('Error checking for duplicate location:', error);
+      return false;
+    }
+  }
+
+  private async checkForDuplicateResource(resourceData: any): Promise<boolean> {
+    try {
+      const resourcesRef = collection(this.db, 'resources');
+      const q = query(
+        resourcesRef,
+        where('title', '==', resourceData.title),
+        where('type', '==', resourceData.type)
+      );
+      const snapshot = await getDocs(q);
+      
+      // If we find a resource with the same title and type, it's likely a duplicate
+      return !snapshot.empty;
+    } catch (error) {
+      console.warn('Error checking for duplicate resource:', error);
+      return false;
+    }
   }
 
   private async logInteraction(userQuery: string, response: AIResponse, context: AIContext): Promise<void> {

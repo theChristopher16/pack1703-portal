@@ -1,98 +1,177 @@
 // API Keys Configuration
-// In production, these should be stored in environment variables or Firebase config
-// For now, we'll use placeholder keys that will trigger fallback behavior
-
 export const API_KEYS = {
-  // Google Maps API - for location verification, geocoding, and place details
-  GOOGLE_MAPS: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'YOUR_GOOGLE_MAPS_API_KEY',
+  // Google Maps API - Real key provided by user
+  GOOGLE_MAPS: 'AIzaSyC1nkEYq0YP89BwS_An_sMc3Kn4FJY2Nos',
   
-  // Phone validation API - for phone number verification
-  PHONE_VALIDATION: process.env.REACT_APP_PHONE_API_KEY || 'YOUR_PHONE_API_KEY',
+  // Phone Validation API (NumLookupAPI)
+  PHONE_VALIDATION: process.env.REACT_APP_PHONE_VALIDATION_API_KEY || 'demo_key',
   
-  // Yelp API - for business information and reviews
-  YELP: process.env.REACT_APP_YELP_API_KEY || 'YOUR_YELP_API_KEY',
+  // OpenWeather API - Real key provided by user
+  OPENWEATHER: 'a769d61ef03910861ff1734bb254f87c',
   
-  // OpenWeather API - for weather forecasts
-  WEATHER: process.env.REACT_APP_WEATHER_API_KEY || 'YOUR_WEATHER_API_KEY',
-  
-  // Tenor API - for GIFs (already implemented)
-  TENOR: process.env.REACT_APP_TENOR_API_KEY || 'AIzaSyCbPAw3QOuuzRJjUx1_jC0wgJPtVLYxLqY'
+  // Replace Yelp with Google Places API (much more cost-effective)
+  // Google Places is included with Google Maps API and provides business information
+  GOOGLE_PLACES: 'AIzaSyC1nkEYq0YP89BwS_An_sMc3Kn4FJY2Nos', // Same as Google Maps
 };
 
-// API Configuration
+// API Configuration Settings
 export const API_CONFIG = {
-  // Rate limiting
-  RATE_LIMITS: {
-    GOOGLE_MAPS: 100, // requests per minute
-    PHONE_VALIDATION: 50,
-    YELP: 30,
-    WEATHER: 60
+  GOOGLE_MAPS: {
+    baseUrl: 'https://maps.googleapis.com/maps/api',
+    geocodingEndpoint: '/geocode/json',
+    placesEndpoint: '/place/details/json',
+    placesSearchEndpoint: '/place/nearbysearch/json',
+    maxRequestsPerDay: 2500, // Free tier limit
+    costPerRequest: 0.005, // $5 per 1000 requests
   },
-  
-  // Timeout settings
-  TIMEOUTS: {
-    GOOGLE_MAPS: 5000, // 5 seconds
-    PHONE_VALIDATION: 3000,
-    YELP: 5000,
-    WEATHER: 3000
+  PHONE_VALIDATION: {
+    baseUrl: 'https://api.numlookupapi.com/v1',
+    endpoint: '/validate',
+    maxRequestsPerDay: 100, // Free tier limit
+    costPerRequest: 0.01, // $0.01 per request
   },
-  
-  // Retry settings
-  RETRIES: {
-    MAX_ATTEMPTS: 3,
-    DELAY: 1000 // 1 second between retries
-  }
+  OPENWEATHER: {
+    baseUrl: 'https://api.openweathermap.org/data/2.5',
+    currentEndpoint: '/weather',
+    forecastEndpoint: '/forecast',
+    maxRequestsPerDay: 1000, // Free tier limit
+    costPerRequest: 0.001, // $1 per 1000 requests
+  },
+  GOOGLE_PLACES: {
+    baseUrl: 'https://maps.googleapis.com/maps/api',
+    detailsEndpoint: '/place/details/json',
+    nearbySearchEndpoint: '/place/nearbysearch/json',
+    textSearchEndpoint: '/place/textsearch/json',
+    maxRequestsPerDay: 2500, // Free tier limit
+    costPerRequest: 0.017, // $17 per 1000 requests
+  },
 };
 
-// Feature flags for enabling/disabling specific APIs
+// Feature Flags - Control which features are enabled
 export const FEATURE_FLAGS = {
-  ENABLE_GOOGLE_MAPS: true,
-  ENABLE_PHONE_VALIDATION: true,
-  ENABLE_YELP: true,
-  ENABLE_WEATHER: true,
-  ENABLE_COST_ESTIMATION: true,
-  ENABLE_PARKING_INFO: true
+  LOCATION_VERIFICATION: true,
+  PHONE_VALIDATION: false, // Disabled until API key is provided
+  WEATHER_INTEGRATION: true, // Enabled with real API key
+  BUSINESS_INFO_ENRICHMENT: true, // Using Google Places instead of Yelp
+  PARKING_INFO: true, // Using Google Places
+  COST_MONITORING: true,
+  FALLBACK_MODE: true, // Enable fallback when APIs fail
 };
 
-// Fallback behavior when APIs are not available
+// Fallback Behavior Configuration
 export const FALLBACK_BEHAVIOR = {
-  LOCATION_VERIFICATION: 'basic', // 'basic' | 'skip'
-  PHONE_VALIDATION: 'regex', // 'regex' | 'skip'
-  BUSINESS_INFO: 'skip', // 'skip' | 'basic'
-  WEATHER_FORECAST: 'skip', // 'skip' | 'basic'
-  COST_ESTIMATION: 'basic' // 'basic' | 'skip'
+  LOCATION_VERIFICATION: {
+    onFailure: 'skip', // Skip verification if API fails
+    fallbackData: {
+      verified: false,
+      confidence: 'low',
+      source: 'manual_entry',
+    },
+  },
+  PHONE_VALIDATION: {
+    onFailure: 'skip',
+    fallbackData: {
+      valid: true, // Assume valid if we can't verify
+      confidence: 'low',
+      source: 'assumption',
+    },
+  },
+  WEATHER_INTEGRATION: {
+    onFailure: 'skip',
+    fallbackData: {
+      temperature: null,
+      conditions: 'unknown',
+      source: 'manual_entry',
+    },
+  },
+  BUSINESS_INFO: {
+    onFailure: 'skip',
+    fallbackData: {
+      businessInfo: null,
+      parkingInfo: null,
+      source: 'manual_entry',
+    },
+  },
 };
 
-// API Status monitoring
+// API Status Tracking
 export const API_STATUS = {
-  GOOGLE_MAPS: 'unknown',
-  PHONE_VALIDATION: 'unknown',
-  YELP: 'unknown',
-  WEATHER: 'unknown'
+  GOOGLE_MAPS: {
+    status: 'active',
+    lastCheck: new Date(),
+    requestsToday: 0,
+    errorsToday: 0,
+  },
+  PHONE_VALIDATION: {
+    status: 'inactive', // No API key provided
+    lastCheck: new Date(),
+    requestsToday: 0,
+    errorsToday: 0,
+  },
+  OPENWEATHER: {
+    status: 'inactive', // No API key provided
+    lastCheck: new Date(),
+    requestsToday: 0,
+    errorsToday: 0,
+  },
+  GOOGLE_PLACES: {
+    status: 'active',
+    lastCheck: new Date(),
+    requestsToday: 0,
+    errorsToday: 0,
+  },
 };
 
-// Helper function to check if an API key is valid
+// Helper Functions
 export const isValidApiKey = (key: string): boolean => {
-  return Boolean(key && key !== 'YOUR_GOOGLE_MAPS_API_KEY' && key !== 'YOUR_PHONE_API_KEY' && 
-         key !== 'YOUR_YELP_API_KEY' && key !== 'YOUR_WEATHER_API_KEY');
+  return Boolean(key && key !== 'demo_key' && key.length > 10);
 };
 
-// Helper function to get API status
-export const getApiStatus = (apiName: keyof typeof API_STATUS): string => {
-  return API_STATUS[apiName];
+export const getApiStatus = (service: keyof typeof API_STATUS) => {
+  return API_STATUS[service];
 };
 
-// Helper function to set API status
-export const setApiStatus = (apiName: keyof typeof API_STATUS, status: string): void => {
-  API_STATUS[apiName] = status;
+export const setApiStatus = (service: keyof typeof API_STATUS, status: Partial<typeof API_STATUS[typeof service]>) => {
+  Object.assign(API_STATUS[service], status);
 };
 
-// Helper function to check if a feature is enabled
-export const isFeatureEnabled = (featureName: keyof typeof FEATURE_FLAGS): boolean => {
-  return FEATURE_FLAGS[featureName];
+export const isFeatureEnabled = (feature: keyof typeof FEATURE_FLAGS): boolean => {
+  return FEATURE_FLAGS[feature];
 };
 
-// Helper function to get fallback behavior
-export const getFallbackBehavior = (behaviorName: keyof typeof FALLBACK_BEHAVIOR): string => {
-  return FALLBACK_BEHAVIOR[behaviorName];
+export const getFallbackBehavior = (service: keyof typeof FALLBACK_BEHAVIOR) => {
+  return FALLBACK_BEHAVIOR[service];
+};
+
+// Cost Estimation Functions
+export const estimateApiCosts = () => {
+  const costs = {
+    googleMaps: API_STATUS.GOOGLE_MAPS.requestsToday * API_CONFIG.GOOGLE_MAPS.costPerRequest,
+    phoneValidation: API_STATUS.PHONE_VALIDATION.requestsToday * API_CONFIG.PHONE_VALIDATION.costPerRequest,
+    openWeather: API_STATUS.OPENWEATHER.requestsToday * API_CONFIG.OPENWEATHER.costPerRequest,
+    googlePlaces: API_STATUS.GOOGLE_PLACES.requestsToday * API_CONFIG.GOOGLE_PLACES.costPerRequest,
+  };
+  
+  return {
+    daily: Object.values(costs).reduce((sum, cost) => sum + cost, 0),
+    monthly: Object.values(costs).reduce((sum, cost) => sum + cost, 0) * 30,
+    breakdown: costs,
+  };
+};
+
+// API Key Validation
+export const validateApiKeys = () => {
+  const validation = {
+    googleMaps: isValidApiKey(API_KEYS.GOOGLE_MAPS),
+    phoneValidation: isValidApiKey(API_KEYS.PHONE_VALIDATION),
+    openWeather: isValidApiKey(API_KEYS.OPENWEATHER),
+    googlePlaces: isValidApiKey(API_KEYS.GOOGLE_PLACES),
+  };
+  
+  return {
+    allValid: Object.values(validation).every(Boolean),
+    validKeys: Object.keys(validation).filter(key => validation[key as keyof typeof validation]),
+    invalidKeys: Object.keys(validation).filter(key => !validation[key as keyof typeof validation]),
+    validation,
+  };
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { MapPin, Edit, Trash2, Plus, Search, Filter, Map } from 'lucide-react';
+import { firestoreService } from '../services/firestore';
 
 interface Location {
   id: string;
@@ -34,63 +35,22 @@ const AdminLocations: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterImportance, setFilterImportance] = useState('all');
 
-  // Mock data for now - will be replaced with Firebase calls
+  // Fetch locations from database
   useEffect(() => {
-    const mockLocations: Location[] = [
-      {
-        id: '1',
-        name: 'St. Mark\'s Church',
-        address: '123 Main Street',
-        city: 'Peoria',
-        state: 'IL',
-        zipCode: '61614',
-        coordinates: { lat: 40.7103, lng: -89.6144 },
-        category: 'church',
-        importance: 'high',
-        parking: 'free',
-        notes: 'Main meeting location for Pack 1703. Large parking lot available.',
-        privateNotes: 'Contact: Father John - 555-0123. Gate code: 1234',
-        isActive: true,
-        createdAt: '2024-01-01T00:00:00',
-        updatedAt: '2024-01-01T00:00:00'
-      },
-      {
-        id: '2',
-        name: 'Camp Wokanda',
-        address: '456 Scout Road',
-        city: 'Peoria',
-        state: 'IL',
-        zipCode: '61615',
-        coordinates: { lat: 40.7200, lng: -89.6200 },
-        category: 'campground',
-        importance: 'high',
-        parking: 'free',
-        notes: 'Primary camping location with hiking trails and lake access.',
-        privateNotes: 'Reservation contact: Camp Director - 555-0456. Check-in time: 2 PM',
-        isActive: true,
-        createdAt: '2024-01-15T00:00:00',
-        updatedAt: '2024-01-15T00:00:00'
-      },
-      {
-        id: '3',
-        name: 'Peoria Riverfront',
-        address: '789 River Drive',
-        city: 'Peoria',
-        state: 'IL',
-        zipCode: '61602',
-        coordinates: { lat: 40.7000, lng: -89.6000 },
-        category: 'park',
-        importance: 'medium',
-        parking: 'paid',
-        notes: 'Scenic location for community service projects and outdoor activities.',
-        privateNotes: 'Parking validation available for groups. Contact: Parks Dept - 555-0789',
-        isActive: true,
-        createdAt: '2024-02-01T00:00:00',
-        updatedAt: '2024-02-01T00:00:00'
+    const fetchLocations = async () => {
+      try {
+        setLoading(true);
+        const locationsData = await firestoreService.getLocations();
+        setLocations(locationsData);
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+        setLocations([]);
+      } finally {
+        setLoading(false);
       }
-    ];
-    setLocations(mockLocations);
-    setLoading(false);
+    };
+    
+    fetchLocations();
   }, []);
 
   const handleCreateLocation = () => {
@@ -191,159 +151,156 @@ const AdminLocations: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Location Management</h1>
-          <p className="text-gray-600 mt-2">Manage pack locations, venues, and meeting places</p>
-        </div>
-        <button
-          onClick={handleCreateLocation}
-          className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Location
-        </button>
-      </div>
-
-      {/* Filters and Search */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-              Search
-            </label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                id="search"
-                placeholder="Search locations..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-              Category
-            </label>
-            <select
-              id="category"
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="all">All Categories</option>
-              <option value="church">Church</option>
-              <option value="park">Park</option>
-              <option value="campground">Campground</option>
-              <option value="community-center">Community Center</option>
-              <option value="school">School</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="importance" className="block text-sm font-medium text-gray-700 mb-1">
-              Importance
-            </label>
-            <select
-              id="importance"
-              value={filterImportance}
-              onChange={(e) => setFilterImportance(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="all">All Importance Levels</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Locations Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredLocations.map((location) => (
-          <div key={location.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center">
-                  <MapPin className="h-5 w-5 text-indigo-600 mr-2" />
-                  <h3 className="text-lg font-semibold text-gray-900">{location.name}</h3>
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleEditLocation(location)}
-                    className="text-gray-400 hover:text-indigo-600 transition-colors"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteLocation(location.id)}
-                    className="text-gray-400 hover:text-red-600 transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-gray-600">{location.address}</p>
-                  <p className="text-sm text-gray-600">{location.city}, {location.state} {location.zipCode}</p>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(location.category)}`}>
-                    {location.category.replace('-', ' ')}
-                  </span>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getImportanceColor(location.importance)}`}>
-                    {location.importance}
-                  </span>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                    {location.parking} parking
-                  </span>
-                </div>
-
-                {location.notes && (
-                  <p className="text-sm text-gray-700">{location.notes}</p>
-                )}
-
-                {location.coordinates && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Map className="h-4 w-4 mr-1" />
-                    {location.coordinates.lat.toFixed(4)}, {location.coordinates.lng.toFixed(4)}
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>Created: {new Date(location.createdAt).toLocaleDateString()}</span>
-                  <span>Updated: {new Date(location.updatedAt).toLocaleDateString()}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {filteredLocations.length === 0 && (
-        <div className="text-center py-12">
-          <MapPin className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No locations found</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            {searchTerm || filterCategory !== 'all' || filterImportance !== 'all' 
-              ? 'Try adjusting your search or filters.'
-              : 'Get started by creating your first location.'}
+    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-gray-100/30 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-display font-bold text-gray-900 mb-4">
+            Location Management
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl">
+            Manage pack locations, venues, and meeting places
           </p>
         </div>
-      )}
+
+        {/* Controls */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6 mb-8">
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              {/* Search */}
+              <div className="relative flex-1 max-w-md">
+                <input
+                  type="text"
+                  placeholder="Search locations..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
+                />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </div>
+              </div>
+
+              {/* Category Filter */}
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
+              >
+                <option value="all">All Categories</option>
+                <option value="church">Church</option>
+                <option value="park">Park</option>
+                <option value="campground">Campground</option>
+                <option value="community-center">Community Center</option>
+                <option value="school">School</option>
+                <option value="other">Other</option>
+              </select>
+
+              {/* Importance Filter */}
+              <select
+                value={filterImportance}
+                onChange={(e) => setFilterImportance(e.target.value)}
+                className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
+              >
+                <option value="all">All Importance Levels</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+
+            {/* Create Button */}
+            <button
+              onClick={handleCreateLocation}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 shadow-soft"
+            >
+              <Plus className="h-4 w-4" />
+              Add Location
+            </button>
+          </div>
+        </div>
+
+        {/* Locations Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredLocations.map((location) => (
+            <div key={location.id} className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft overflow-hidden hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center">
+                    <MapPin className="h-5 w-5 text-blue-600 mr-2" />
+                    <h3 className="text-lg font-semibold text-gray-900">{location.name}</h3>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleEditLocation(location)}
+                      className="text-gray-400 hover:text-blue-600 transition-colors"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteLocation(location.id)}
+                      className="text-gray-400 hover:text-red-600 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-gray-700 font-medium">{location.address}</p>
+                    <p className="text-sm text-gray-600">{location.city}, {location.state} {location.zipCode}</p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(location.category)}`}>
+                      {location.category.replace('-', ' ')}
+                    </span>
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getImportanceColor(location.importance)}`}>
+                      {location.importance}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg">
+                      <span className="text-green-600">🚗</span>
+                      <span className="text-gray-700 capitalize">{location.parking} parking</span>
+                    </div>
+                    <div className="p-2 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-700 line-clamp-2">{location.notes}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Empty State */}
+        {filteredLocations.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📍</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {searchTerm || filterCategory !== 'all' || filterImportance !== 'all' 
+                ? 'No locations match your filters' 
+                : 'No locations yet'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {searchTerm || filterCategory !== 'all' || filterImportance !== 'all'
+                ? 'Try adjusting your search or filters'
+                : 'Add your first location to get started'}
+            </p>
+            {!searchTerm && filterCategory === 'all' && filterImportance === 'all' && (
+              <button
+                onClick={handleCreateLocation}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-soft"
+              >
+                Add Your First Location
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Location Modal */}
       {isModalOpen && (

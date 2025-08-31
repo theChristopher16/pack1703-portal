@@ -22,102 +22,7 @@ export const claimVolunteerRole = httpsCallable(functions, 'claimVolunteerRole')
 export const generateICSFeed = httpsCallable(functions, 'generateICSFeed');
 export const getWeatherData = httpsCallable(functions, 'getWeatherData');
 
-// Mock data for fallback when Firestore is not available
-const mockData = {
-  events: [
-    {
-      id: 'event-001',
-      title: 'Pack 1703 Fall Campout',
-      startDate: '2024-10-15T14:00:00',
-      startTime: '14:00',
-      endTime: '16:00',
-      locationName: 'Camp Wokanda',
-      address: '1234 Scout Road, Peoria, IL 61614',
-      coordinates: { lat: 40.7103, lng: -89.6144 },
-      category: 'camping',
-      denTags: ['all'],
-      maxCapacity: 50,
-      currentRSVPs: 25,
-      description: 'Annual fall camping trip with activities, hiking, and campfire.',
-      packingList: ['Tent', 'Sleeping bag', 'Warm clothes', 'Flashlight'],
-      fees: 15,
-      contactEmail: 'pack1703@gmail.com',
-      isOvernight: true,
-      requiresPermission: true,
-      attachments: []
-    },
-    {
-      id: 'event-002',
-      title: 'Pinewood Derby',
-      startDate: '2024-02-10T10:00:00',
-      startTime: '10:00',
-      endTime: '16:00',
-      locationName: 'St. Mark\'s Church',
-      address: '123 Main Street, Peoria, IL 61614',
-      coordinates: { lat: 40.7103, lng: -89.6144 },
-      category: 'pack-wide',
-      denTags: ['all'],
-      maxCapacity: 100,
-      currentRSVPs: 78,
-      description: 'Annual pinewood derby race for all scouts.',
-      packingList: ['Pinewood derby car', 'Snacks', 'Water'],
-      fees: 5,
-      contactEmail: 'pack1703@gmail.com',
-      isOvernight: false,
-      requiresPermission: false,
-      attachments: []
-    }
-  ],
-  locations: [
-    {
-      id: '1',
-      name: 'St. Mark\'s Church',
-      address: '123 Main Street',
-      city: 'Peoria',
-      state: 'IL',
-      zipCode: '61614',
-      coordinates: { lat: 40.7103, lng: -89.6144 },
-      category: 'church',
-      importance: 'high',
-      parking: 'free',
-      notes: 'Main meeting location for Pack 1703. Large parking lot available.',
-      privateNotes: 'Contact: Father John - 555-0123. Gate code: 1234',
-      isActive: true,
-      createdAt: '2024-01-01T00:00:00',
-      updatedAt: '2024-01-01T00:00:00'
-    },
-    {
-      id: '2',
-      name: 'Camp Wokanda',
-      address: '456 Scout Road',
-      city: 'Peoria',
-      state: 'IL',
-      zipCode: '61615',
-      coordinates: { lat: 40.7200, lng: -89.6200 },
-      category: 'campground',
-      importance: 'high',
-      parking: 'free',
-      notes: 'Primary camping location with hiking trails and lake access.',
-      privateNotes: 'Reservation contact: Camp Director - 555-0456. Check-in time: 2 PM',
-      isActive: true,
-      createdAt: '2024-01-15T00:00:00',
-      updatedAt: '2024-01-15T00:00:00'
-    }
-  ],
-  announcements: [
-    {
-      id: '1',
-      title: 'Fall Campout Registration Open!',
-      body: 'Registration for our annual Fall Campout is now open! This year we\'ll be heading to Camp Wokanda for a weekend of fun, adventure, and scouting activities.',
-      pinned: true,
-      category: 'event',
-      priority: 'high',
-      isActive: true,
-      createdAt: '2024-01-01T00:00:00',
-      updatedAt: '2024-01-01T00:00:00'
-    }
-  ]
-};
+
 
 // Helper function to generate IP hash for rate limiting
 export const generateIPHash = async (): Promise<string> => {
@@ -136,8 +41,8 @@ export const generateIPHash = async (): Promise<string> => {
   }
 };
 
-// Safe Firestore wrapper that falls back to mock data
-const safeFirestoreCall = async <T>(firestoreCall: () => Promise<T>, mockData: T): Promise<T> => {
+// Safe Firestore wrapper that throws errors instead of using mock data
+const safeFirestoreCall = async <T>(firestoreCall: () => Promise<T>): Promise<T> => {
   try {
     // Add timeout to prevent hanging
     const timeoutPromise = new Promise<never>((_, reject) => 
@@ -151,9 +56,8 @@ const safeFirestoreCall = async <T>(firestoreCall: () => Promise<T>, mockData: T
     
     return result;
   } catch (error) {
-    console.warn('Firestore call failed, using mock data:', error);
-    // Return mock data instead of throwing error
-    return mockData;
+    console.error('Firestore call failed:', error);
+    throw error;
   }
 };
 
@@ -166,7 +70,7 @@ export const firestoreService = {
       const q = query(eventsRef, orderBy('startDate'), where('visibility', '==', 'public'));
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    }, mockData.events);
+    });
   },
 
   async getEvent(eventId: string): Promise<any> {
@@ -177,7 +81,7 @@ export const firestoreService = {
         return { id: eventDoc.id, ...eventDoc.data() };
       }
       throw new Error('Event not found');
-    }, mockData.events.find(e => e.id === eventId) || null);
+    });
   },
 
   // Locations
@@ -187,7 +91,7 @@ export const firestoreService = {
       const q = query(locationsRef, orderBy('name'));
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    }, mockData.locations);
+    });
   },
 
   async getLocation(locationId: string): Promise<any> {
@@ -198,7 +102,7 @@ export const firestoreService = {
         return { id: locationDoc.id, ...locationDoc.data() };
       }
       throw new Error('Location not found');
-    }, mockData.locations.find(l => l.id === locationId) || null);
+    });
   },
 
   // Announcements
@@ -208,7 +112,7 @@ export const firestoreService = {
       const q = query(announcementsRef, orderBy('createdAt', 'desc'), limit(50));
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    }, mockData.announcements);
+    });
   },
 
   // Seasons
@@ -218,15 +122,7 @@ export const firestoreService = {
       const q = query(seasonsRef, where('isActive', '==', true));
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    }, [
-      {
-        id: 'season-2025',
-        name: '2025–2026',
-        startDate: '2025-09-01T00:00:00',
-        endDate: '2026-08-31T00:00:00',
-        isActive: true
-      } as any
-    ]);
+    });
   },
 
   // Lists (packing lists, etc.)
@@ -235,20 +131,7 @@ export const firestoreService = {
       const listsRef = collection(db, 'lists');
       const snapshot = await getDocs(listsRef);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    }, [
-      {
-        id: 'list-001',
-        name: 'Tent & Sleeping Gear',
-        category: 'camping',
-        items: ['Tent', 'Sleeping bag', 'Sleeping pad', 'Pillow', 'Ground cloth']
-      } as any,
-      {
-        id: 'list-002',
-        name: 'Warm Clothing',
-        category: 'clothing',
-        items: ['Warm jacket', 'Thermal underwear', 'Wool socks', 'Hat', 'Gloves']
-      } as any
-    ]);
+    });
   },
 
   // Volunteer needs
@@ -258,70 +141,104 @@ export const firestoreService = {
       const q = query(needsRef, where('isActive', '==', true));
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    }, [
-      {
-        id: 'need-001',
-        eventId: 'event-001',
-        eventTitle: 'Pack 1703 Fall Campout',
-        role: 'Check-in Coordinator',
-        description: 'Help families check in upon arrival.',
-        needed: 2,
-        claimed: 1,
-        category: 'setup',
-        priority: 'high',
-        isActive: true
-      } as any
-    ]);
+    });
   },
 
   // RSVP submissions
   async submitRSVP(rsvpData: any): Promise<any> {
-    try {
-      const rsvpRef = collection(db, 'rsvps');
-      const docRef = await addDoc(rsvpRef, {
-        ...rsvpData,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
-      });
-      return { id: docRef.id, ...rsvpData };
-    } catch (error) {
-      console.error('Failed to submit RSVP to Firestore:', error);
-      // Return mock success for now
-      return { id: 'mock-rsvp-' + Date.now(), ...rsvpData, success: true };
-    }
+    const rsvpRef = collection(db, 'rsvps');
+    const docRef = await addDoc(rsvpRef, {
+      ...rsvpData,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now()
+    });
+    return { id: docRef.id, ...rsvpData };
   },
 
   // Feedback submissions
   async submitFeedback(feedbackData: any): Promise<any> {
-    try {
-      const feedbackRef = collection(db, 'feedback');
-      const docRef = await addDoc(feedbackRef, {
-        ...feedbackData,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
-      });
-      return { id: docRef.id, ...feedbackData };
-    } catch (error) {
-      console.error('Failed to submit feedback to Firestore:', error);
-      // Return mock success for now
-      return { id: 'mock-feedback-' + Date.now(), ...feedbackData, success: true };
-    }
+    const feedbackRef = collection(db, 'feedback');
+    const docRef = await addDoc(feedbackRef, {
+      ...feedbackData,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now()
+    });
+    return { id: docRef.id, ...feedbackData };
   },
 
   // Volunteer signups
   async claimVolunteerRole(claimData: any): Promise<any> {
+    const signupRef = collection(db, 'volunteer-signups');
+    const docRef = await addDoc(signupRef, {
+      ...claimData,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now()
+    });
+    return { id: docRef.id, ...claimData };
+  },
+
+  // AI Content Creation Methods
+  async createEvent(eventData: any): Promise<any> {
     try {
-      const signupRef = collection(db, 'volunteer-signups');
-      const docRef = await addDoc(signupRef, {
-        ...claimData,
+      const eventsRef = collection(db, 'events');
+      const docRef = await addDoc(eventsRef, {
+        ...eventData,
         createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
+        createdBy: 'ai_solyn'
       });
-      return { id: docRef.id, ...claimData };
+      return { id: docRef.id, ...eventData };
     } catch (error) {
-      console.error('Failed to claim volunteer role in Firestore:', error);
-      // Return mock success for now
-      return { id: 'mock-signup-' + Date.now(), ...claimData, success: true };
+      console.error('Failed to create event in Firestore:', error);
+      throw error;
+    }
+  },
+
+  async createAnnouncement(announcementData: any): Promise<any> {
+    try {
+      const announcementsRef = collection(db, 'announcements');
+      const docRef = await addDoc(announcementsRef, {
+        ...announcementData,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+        createdBy: 'ai_solyn'
+      });
+      return { id: docRef.id, ...announcementData };
+    } catch (error) {
+      console.error('Failed to create announcement in Firestore:', error);
+      throw error;
+    }
+  },
+
+  async createLocation(locationData: any): Promise<any> {
+    try {
+      const locationsRef = collection(db, 'locations');
+      const docRef = await addDoc(locationsRef, {
+        ...locationData,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+        createdBy: 'ai_solyn'
+      });
+      return { id: docRef.id, ...locationData };
+    } catch (error) {
+      console.error('Failed to create location in Firestore:', error);
+      throw error;
+    }
+  },
+
+  async createResource(resourceData: any): Promise<any> {
+    try {
+      const resourcesRef = collection(db, 'resources');
+      const docRef = await addDoc(resourcesRef, {
+        ...resourceData,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+        createdBy: 'ai_solyn'
+      });
+      return { id: docRef.id, ...resourceData };
+    } catch (error) {
+      console.error('Failed to create resource in Firestore:', error);
+      throw error;
     }
   }
 };

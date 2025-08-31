@@ -1,8 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.helloWorld = exports.moderationDigest = exports.weatherProxy = exports.icsFeed = exports.claimVolunteerRole = exports.submitFeedback = exports.submitRSVP = void 0;
+exports.fetchNewEmails = exports.testEmailConnection = exports.helloWorld = exports.moderationDigest = exports.weatherProxy = exports.icsFeed = exports.claimVolunteerRole = exports.submitFeedback = exports.submitRSVP = void 0;
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const Imap = require('node-imap');
 // Initialize Firebase Admin
 admin.initializeApp();
 // Get Firestore instance
@@ -68,11 +69,10 @@ function sanitizeInput(input) {
 // 1. Submit RSVP Function
 exports.submitRSVP = functions.https.onCall(async (data, context) => {
     try {
-        // Check App Check (skip in emulator for testing)
-        // Temporarily disabled for testing - will re-enable when App Check is configured
-        // if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
-        //   throw new functions.https.HttpsError('unauthenticated', 'App Check required');
-        // }
+        // Check App Check (required for production)
+        if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
+            throw new functions.https.HttpsError('unauthenticated', 'App Check verification required');
+        }
         // Rate limiting (5 submissions per hour per IP)
         if (!checkRateLimit(data.ipHash, 'rsvp', 5, 60 * 60 * 1000)) {
             throw new functions.https.HttpsError('resource-exhausted', 'Rate limit exceeded');
@@ -145,11 +145,10 @@ exports.submitRSVP = functions.https.onCall(async (data, context) => {
 // 2. Submit Feedback Function
 exports.submitFeedback = functions.https.onCall(async (data, context) => {
     try {
-        // Check App Check (skip in emulator for testing)
-        // Temporarily disabled for testing - will re-enable when App Check is configured
-        // if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
-        //   throw new functions.https.HttpsError('unauthenticated', 'App Check required');
-        // }
+        // Check App Check (required for production)
+        if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
+            throw new functions.https.HttpsError('unauthenticated', 'App Check verification required');
+        }
         // Rate limiting (3 feedback submissions per hour per IP)
         if (!checkRateLimit(data.ipHash, 'feedback', 3, 60 * 60 * 1000)) {
             throw new functions.https.HttpsError('resource-exhausted', 'Rate limit exceeded');
@@ -397,4 +396,184 @@ exports.helloWorld = functions.https.onCall(async (data, context) => {
         };
     }
 });
+// 8. Email Monitoring Functions
+exports.testEmailConnection = functions.https.onCall(async (data, context) => {
+    try {
+        const { emailAddress, password, imapServer, imapPort } = data;
+        if (!emailAddress || !password || !imapServer || !imapPort) {
+            throw new functions.https.HttpsError('invalid-argument', 'Missing required email configuration');
+        }
+        return new Promise((resolve, reject) => {
+            const imap = new Imap({
+                user: emailAddress,
+                password: password,
+                host: imapServer,
+                port: imapPort,
+                tls: true,
+                tlsOptions: { rejectUnauthorized: false }
+            });
+            imap.once('ready', () => {
+                console.log('IMAP connection successful');
+                imap.end();
+                resolve({
+                    success: true,
+                    message: 'Email connection successful'
+                });
+            });
+            imap.once('error', (err) => {
+                console.error('IMAP connection error:', err);
+                reject(new functions.https.HttpsError('unavailable', `Email connection failed: ${err.message}`));
+            });
+            imap.connect();
+        });
+    }
+    catch (error) {
+        console.error('Test email connection error:', error);
+        throw new functions.https.HttpsError('internal', 'Failed to test email connection');
+    }
+});
+exports.fetchNewEmails = functions.https.onCall(async (data, context) => {
+    try {
+        const { emailAddress, password, imapServer, imapPort, lastChecked } = data;
+        if (!emailAddress || !password || !imapServer || !imapPort) {
+            throw new functions.https.HttpsError('invalid-argument', 'Missing required email configuration');
+        }
+        return new Promise((resolve, reject) => {
+            const imap = new Imap({
+                user: emailAddress,
+                password: password,
+                host: imapServer,
+                port: imapPort,
+                tls: true,
+                tlsOptions: { rejectUnauthorized: false }
+            });
+            const emails = [];
+            imap.once('ready', () => {
+                imap.openBox('INBOX', false, (err, box) => {
+                    if (err) {
+                        console.error('Error opening inbox:', err);
+                        imap.end();
+                        reject(new functions.https.HttpsError('unavailable', `Failed to open inbox: ${err.message}`));
+                        return;
+                    }
+                    // Search for unread emails or emails from the last check
+                    const searchCriteria = lastChecked
+                        ? ['UNSEEN', ['SINCE', new Date(lastChecked)]]
+                        : ['UNSEEN'];
+                    imap.search(searchCriteria, (err, results) => {
+                        if (err) {
+                            console.error('Error searching emails:', err);
+                            imap.end();
+                            reject(new functions.https.HttpsError('unavailable', `Failed to search emails: ${err.message}`));
+                            return;
+                        }
+                        if (results.length === 0) {
+                            console.log('No new emails found');
+                            imap.end();
+                            resolve({
+                                success: true,
+                                emails: [],
+                                message: 'No new emails found'
+                            });
+                            return;
+                        }
+                        console.log(`Found ${results.length} new emails`);
+                        const fetch = imap.fetch(results, { bodies: '', markSeen: false });
+                        fetch.on('message', (msg, seqno) => {
+                            const email = {
+                                id: '',
+                                from: '',
+                                to: '',
+                                subject: '',
+                                body: '',
+                                date: new Date(),
+                                attachments: []
+                            };
+                            msg.on('body', (stream, info) => {
+                                let buffer = '';
+                                stream.on('data', (chunk) => {
+                                    buffer += chunk.toString('utf8');
+                                });
+                                stream.once('end', () => {
+                                    // Parse email headers and body
+                                    const parsed = parseEmail(buffer);
+                                    email.id = `${seqno}_${Date.now()}`;
+                                    email.from = parsed.from;
+                                    email.to = parsed.to;
+                                    email.subject = parsed.subject;
+                                    email.body = parsed.body;
+                                    email.date = parsed.date;
+                                });
+                            });
+                            msg.once('end', () => {
+                                emails.push(email);
+                            });
+                        });
+                        fetch.once('error', (err) => {
+                            console.error('Error fetching emails:', err);
+                            imap.end();
+                            reject(new functions.https.HttpsError('unavailable', `Failed to fetch emails: ${err.message}`));
+                        });
+                        fetch.once('end', () => {
+                            console.log(`Successfully fetched ${emails.length} emails`);
+                            imap.end();
+                            resolve({
+                                success: true,
+                                emails: emails,
+                                message: `Successfully fetched ${emails.length} emails`
+                            });
+                        });
+                    });
+                });
+            });
+            imap.once('error', (err) => {
+                console.error('IMAP connection error:', err);
+                reject(new functions.https.HttpsError('unavailable', `IMAP connection failed: ${err.message}`));
+            });
+            imap.connect();
+        });
+    }
+    catch (error) {
+        console.error('Fetch new emails error:', error);
+        throw new functions.https.HttpsError('internal', 'Failed to fetch emails');
+    }
+});
+// Helper function to parse email content
+function parseEmail(rawEmail) {
+    const lines = rawEmail.split('\n');
+    let from = '';
+    let to = '';
+    let subject = '';
+    let body = '';
+    let inBody = false;
+    for (const line of lines) {
+        if (inBody) {
+            body += line + '\n';
+            continue;
+        }
+        if (line.startsWith('From: ')) {
+            from = line.substring(6).trim();
+        }
+        else if (line.startsWith('To: ')) {
+            to = line.substring(4).trim();
+        }
+        else if (line.startsWith('Subject: ')) {
+            subject = line.substring(9).trim();
+        }
+        else if (line.startsWith('Date: ')) {
+            // Parse date if needed
+        }
+        else if (line === '') {
+            // Empty line indicates start of body
+            inBody = true;
+        }
+    }
+    return {
+        from,
+        to,
+        subject,
+        body: body.trim(),
+        date: new Date()
+    };
+}
 //# sourceMappingURL=index.js.map

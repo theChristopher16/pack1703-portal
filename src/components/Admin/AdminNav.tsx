@@ -12,11 +12,13 @@ const AdminNav: React.FC = () => {
   // Prioritize most important admin functions
   const primaryNavItems = [
     { path: '/admin', label: 'Dashboard', icon: '🏠' },
+    { path: '/admin/ai', label: 'Solyn', icon: '🤖' },
     { path: '/admin/events', label: 'Events', icon: '📅' },
     { path: '/admin/locations', label: 'Locations', icon: '📍' },
     { path: '/admin/announcements', label: 'News', icon: '📢' },
+    { path: '/admin/fundraising', label: 'Fundraising', icon: '🎯' },
+    { path: '/admin/finances', label: 'Finances', icon: '💰' },
     { path: '/admin/chat', label: 'Chat', icon: '💬' },
-    { path: '/admin/ai', label: 'AI Assistant', icon: '🤖' },
   ];
 
   const secondaryNavItems = [

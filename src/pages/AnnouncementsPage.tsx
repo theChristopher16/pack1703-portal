@@ -23,39 +23,10 @@ const AnnouncementsPage: React.FC = () => {
       } catch (err) {
         console.error('Failed to fetch announcements from Firebase:', err);
         
-        // Fallback to mock data if Firebase fails
-        const mockAnnouncements: Announcement[] = [
-          {
-            id: 'announcement-001',
-            title: 'Welcome to Pack 1703!',
-            body: 'Welcome to another exciting year of Scouting! We have many adventures planned for this year, including camping trips, community service projects, and the Pinewood Derby.',
-            pinned: true,
-            createdAt: { toDate: () => new Date('2024-09-01') } as any,
-            updatedAt: { toDate: () => new Date('2024-09-01') } as any
-          },
-          {
-            id: 'announcement-002',
-            title: 'Fall Campout Registration Open',
-            body: 'Registration for our annual fall campout is now open! This will be a great opportunity for families to bond and learn outdoor skills together. Please RSVP by October 1st.',
-            pinned: false,
-            eventId: 'event-001',
-            createdAt: { toDate: () => new Date('2024-09-15') } as any,
-            updatedAt: { toDate: () => new Date('2024-09-15') } as any
-          },
-          {
-            id: 'announcement-003',
-            title: 'Uniform Update',
-            body: 'New uniforms are now available! Please check with your den leader for sizing information and ordering details.',
-            pinned: false,
-            createdAt: { toDate: () => new Date('2024-09-10') } as any,
-            updatedAt: { toDate: () => new Date('2024-09-10') } as any
-          }
-        ];
-        
-        setAnnouncements(mockAnnouncements);
-        setUsingFallbackData(true);
-        setError('Unable to connect to database. Showing sample data.');
-        console.log('Using mock announcements due to Firebase error');
+        // No fallback data - show empty state
+        setAnnouncements([]);
+        setError('Unable to load announcements. Please try again later.');
+        console.log('Failed to load announcements from database');
       } finally {
         setLoading(false);
       }
@@ -95,16 +66,7 @@ const AnnouncementsPage: React.FC = () => {
     return diffInDays <= 7;
   }).length;
 
-  if (loading && announcements.length === 0) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Loading Announcements...</h2>
-          <p className="text-gray-600">Please wait while we fetch the latest updates.</p>
-        </div>
-      </div>
-    );
-  }
+  // Removed loading animation for faster page transitions
 
   if (error && announcements.length === 0) {
     return (

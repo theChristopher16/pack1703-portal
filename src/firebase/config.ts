@@ -11,8 +11,8 @@ const firebaseConfig = {
   projectId: "pack-1703-portal",
   storageBucket: "pack-1703-portal.firebasestorage.app",
   messagingSenderId: "1090892022787",
-  appId: "1:1090892022787:web:a04a0ad22006b26f557a36",
-  measurementId: "G-B7MG9074VL" // Your Google Analytics Measurement ID
+  appId: "1:1090892022787:web:a04a0ad22006b26f557a36"
+  // Removed measurementId to prevent conflicts with server-side configuration
 };
 
 const app = initializeApp(firebaseConfig);

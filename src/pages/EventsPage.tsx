@@ -88,39 +88,13 @@ const EventsPage: React.FC = () => {
       } catch (error) {
         console.error('Error loading events:', error);
         
-        // Fallback to mock data if Firebase fails
-        const mockEvents: Event[] = [
-          {
-            id: 'event-001',
-            title: 'Pack 1703 Fall Campout',
-            date: '2024-10-15',
-            startTime: '14:00',
-            endTime: '16:00',
-            location: {
-              name: 'Camp Wokanda',
-              address: '1234 Scout Road, Peoria, IL 61614',
-              coordinates: { lat: 40.7103, lng: -89.6144 }
-            },
-            category: 'camping',
-            denTags: ['Lions', 'Tigers', 'Wolves', 'Bears', 'Webelos', 'AOL'],
-            maxCapacity: 50,
-            currentRSVPs: 23,
-            description: 'Join us for our annual fall campout! This is a great opportunity for families to bond, learn outdoor skills, and enjoy nature together.',
-            packingList: ['Tent and sleeping bags', 'Warm clothing', 'Flashlight', 'Water bottle'],
-            fees: 15,
-            contactEmail: 'cubmaster@sfpack1703.com',
-            isOvernight: true,
-            requiresPermission: true
-          }
-        ];
+        // No fallback data - show empty state
+        setEvents([]);
+        setFilteredEvents([]);
+        setError('Unable to load events. Please try again later.');
         
-        setEvents(mockEvents);
-        setFilteredEvents(mockEvents);
-        setUsingFallbackData(true);
-        setError('Unable to connect to database. Showing sample data.');
-        
-        // Track fallback to mock data
-        console.log('Using mock data due to Firebase error');
+        // Track error
+        console.log('Failed to load events from database');
       } finally {
         setIsLoading(false);
       }
@@ -287,18 +261,7 @@ const EventsPage: React.FC = () => {
     }
   };
 
-  if (isLoading && events.length === 0) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading events...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Removed loading animation for faster page transitions
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12">

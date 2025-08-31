@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { Megaphone, Edit, Trash2, Plus, Search, Pin, Calendar, Link, FileText } from 'lucide-react';
+import { firestoreService } from '../services/firestore';
 
 interface Announcement {
   id: string;
@@ -34,51 +35,22 @@ const AdminAnnouncements: React.FC = () => {
   const [filterPriority, setFilterPriority] = useState('all');
   const [showPinnedOnly, setShowPinnedOnly] = useState(false);
 
-  // Mock data for now - will be replaced with Firebase calls
+  // Fetch announcements from database
   useEffect(() => {
-    const mockAnnouncements: Announcement[] = [
-      {
-        id: '1',
-        title: 'Fall Campout Registration Open!',
-        body: 'Registration for our annual Fall Campout is now open! This year we\'ll be heading to Camp Wokanda for a weekend of fun, adventure, and scouting activities. All families are welcome to join us for this exciting event.',
-        pinned: true,
-        eventId: 'event-001',
-        eventTitle: 'Pack 1703 Fall Campout',
-        category: 'event',
-        priority: 'high',
-        isActive: true,
-        createdAt: '2024-01-01T00:00:00',
-        updatedAt: '2024-01-01T00:00:00',
-        expiresAt: '2024-10-15T00:00:00'
-      },
-      {
-        id: '2',
-        title: 'Welcome Back to Scouting!',
-        body: 'Welcome back to another exciting year of scouting with Pack 1703! We have an amazing year planned with new adventures, learning opportunities, and fun activities for all our scouts and families.',
-        pinned: false,
-        category: 'general',
-        priority: 'medium',
-        isActive: true,
-        createdAt: '2024-01-15T00:00:00',
-        updatedAt: '2024-01-15T00:00:00'
-      },
-      {
-        id: '3',
-        title: 'Pinewood Derby Rules and Guidelines',
-        body: 'The Pinewood Derby is just around the corner! Please review the official rules and guidelines for car construction. All cars must be checked in by Friday evening for Saturday\'s race.',
-        pinned: true,
-        eventId: 'event-002',
-        eventTitle: 'Pinewood Derby',
-        category: 'reminder',
-        priority: 'high',
-        isActive: true,
-        createdAt: '2024-02-01T00:00:00',
-        updatedAt: '2024-02-01T00:00:00',
-        expiresAt: '2024-02-10T00:00:00'
+    const fetchAnnouncements = async () => {
+      try {
+        setLoading(true);
+        const announcementsData = await firestoreService.getAnnouncements();
+        setAnnouncements(announcementsData);
+      } catch (error) {
+        console.error('Error fetching announcements:', error);
+        setAnnouncements([]);
+      } finally {
+        setLoading(false);
       }
-    ];
-    setAnnouncements(mockAnnouncements);
-    setLoading(false);
+    };
+    
+    fetchAnnouncements();
   }, []);
 
   const handleCreateAnnouncement = () => {
@@ -193,187 +165,199 @@ const AdminAnnouncements: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Announcement Management</h1>
-          <p className="text-gray-600 mt-2">Manage pack announcements, updates, and communications</p>
+    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-gray-100/30 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-display font-bold text-gray-900 mb-4">
+            Announcement Management
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl">
+            Manage pack announcements, notifications, and important updates
+          </p>
         </div>
-        <button
-          onClick={handleCreateAnnouncement}
-          className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          New Announcement
-        </button>
-      </div>
 
-      {/* Filters and Search */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-              Search
-            </label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                id="search"
-                placeholder="Search announcements..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
+        {/* Controls */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6 mb-8">
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              {/* Search */}
+              <div className="relative flex-1 max-w-md">
+                <input
+                  type="text"
+                  placeholder="Search announcements..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
+                />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </div>
+              </div>
+
+              {/* Category Filter */}
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
+              >
+                <option value="all">All Categories</option>
+                <option value="general">General</option>
+                <option value="event">Event</option>
+                <option value="reminder">Reminder</option>
+                <option value="emergency">Emergency</option>
+                <option value="achievement">Achievement</option>
+              </select>
+
+              {/* Priority Filter */}
+              <select
+                value={filterPriority}
+                onChange={(e) => setFilterPriority(e.target.value)}
+                className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
+              >
+                <option value="all">All Priorities</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
             </div>
-          </div>
-          
-          <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-              Category
-            </label>
-            <select
-              id="category"
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+
+            {/* Create Button */}
+            <button
+              onClick={handleCreateAnnouncement}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 shadow-soft"
             >
-              <option value="all">All Categories</option>
-              <option value="general">General</option>
-              <option value="event">Event</option>
-              <option value="reminder">Reminder</option>
-              <option value="emergency">Emergency</option>
-              <option value="achievement">Achievement</option>
-            </select>
+              <Plus className="h-4 w-4" />
+              Create Announcement
+            </button>
           </div>
 
-          <div>
-            <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
-              Priority
-            </label>
-            <select
-              id="priority"
-              value={filterPriority}
-              onChange={(e) => setFilterPriority(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="all">All Priorities</option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-            </select>
-          </div>
-
-          <div className="flex items-end">
-            <label className="flex items-center">
+          {/* Pinned Filter */}
+          <div className="mt-4 flex items-center">
+            <label className="flex items-center cursor-pointer">
               <input
                 type="checkbox"
                 checked={showPinnedOnly}
                 onChange={(e) => setShowPinnedOnly(e.target.checked)}
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              <span className="ml-2 text-sm text-gray-700">Pinned Only</span>
+              <span className="text-sm text-gray-700">Show pinned only</span>
             </label>
           </div>
         </div>
-      </div>
 
-      {/* Announcements Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredAnnouncements.map((announcement) => (
-          <div key={announcement.id} className={`bg-white rounded-lg shadow-md overflow-hidden ${announcement.pinned ? 'ring-2 ring-yellow-400' : ''}`}>
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center flex-1">
-                  <Megaphone className="h-5 w-5 text-indigo-600 mr-2" />
-                  <h3 className="text-lg font-semibold text-gray-900 flex-1">{announcement.title}</h3>
+        {/* Announcements Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredAnnouncements.map((announcement) => (
+            <div key={announcement.id} className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft overflow-hidden hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center">
+                    <Megaphone className="h-5 w-5 text-blue-600 mr-2" />
+                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">{announcement.title}</h3>
+                  </div>
+                  <div className="flex space-x-2">
+                    {announcement.pinned && (
+                      <Pin className="h-4 w-4 text-yellow-600" />
+                    )}
+                    <button
+                      onClick={() => handleEditAnnouncement(announcement)}
+                      className="text-gray-400 hover:text-blue-600 transition-colors"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteAnnouncement(announcement.id)}
+                      className="text-gray-400 hover:text-red-600 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex space-x-2 ml-2">
+
+                <div className="space-y-3">
+                  <div className="p-2 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-700 line-clamp-3">{announcement.body}</p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(announcement.category)}`}>
+                      {announcement.category}
+                    </span>
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(announcement.priority)}`}>
+                      {announcement.priority}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
+                      <Calendar className="h-4 w-4 text-blue-600" />
+                      <span className="text-gray-700">{new Date(announcement.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    {announcement.eventTitle && (
+                      <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg">
+                        <Link className="h-4 w-4 text-green-600" />
+                        <span className="text-gray-700">{announcement.eventTitle}</span>
+                      </div>
+                    )}
+                    {announcement.attachments && announcement.attachments.length > 0 && (
+                      <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
+                        <FileText className="h-4 w-4 text-purple-600" />
+                        <span className="text-gray-700">{announcement.attachments.length} attachment(s)</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 flex gap-3">
                   <button
                     onClick={() => handleTogglePin(announcement.id)}
-                    className={`transition-colors ${announcement.pinned ? 'text-yellow-600' : 'text-gray-400 hover:text-yellow-600'}`}
-                    title={announcement.pinned ? 'Unpin announcement' : 'Pin announcement'}
+                    className={`flex-1 px-3 py-2 text-xs rounded-lg font-medium transition-all duration-200 ${
+                      announcement.pinned
+                        ? 'bg-white/80 backdrop-blur-sm border border-yellow-200 text-yellow-700 hover:bg-yellow-50 shadow-soft'
+                        : 'bg-white/80 backdrop-blur-sm border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-soft'
+                    }`}
                   >
-                    <Pin className="h-4 w-4" />
+                    {announcement.pinned ? 'Unpin' : 'Pin'}
                   </button>
                   <button
                     onClick={() => handleEditAnnouncement(announcement)}
-                    className="text-gray-400 hover:text-indigo-600 transition-colors"
+                    className="flex-1 bg-white/80 backdrop-blur-sm border border-blue-200 text-blue-700 hover:bg-blue-50 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-soft"
                   >
-                    <Edit className="h-4 w-4" />
+                    Edit
                   </button>
-                  <button
-                    onClick={() => handleDeleteAnnouncement(announcement.id)}
-                    className="text-gray-400 hover:text-red-600 transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-sm text-gray-700 line-clamp-3">{announcement.body}</p>
-
-                {announcement.eventId && (
-                  <div className="flex items-center text-sm text-indigo-600">
-                    <Link className="h-4 w-4 mr-1" />
-                    <span>Linked to: {announcement.eventTitle}</span>
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-2">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(announcement.category)}`}>
-                    {announcement.category}
-                  </span>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(announcement.priority)}`}>
-                    {announcement.priority}
-                  </span>
-                  {announcement.pinned && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      Pinned
-                    </span>
-                  )}
-                </div>
-
-                {announcement.attachments && announcement.attachments.length > 0 && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <FileText className="h-4 w-4 mr-1" />
-                    <span>{announcement.attachments.length} attachment(s)</span>
-                  </div>
-                )}
-
-                {announcement.expiresAt && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Calendar className="h-4 w-4 mr-1" />
-                    <span>Expires: {new Date(announcement.expiresAt).toLocaleDateString()}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>Created: {new Date(announcement.createdAt).toLocaleDateString()}</span>
-                  <span>Updated: {new Date(announcement.updatedAt).toLocaleDateString()}</span>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {filteredAnnouncements.length === 0 && (
-        <div className="text-center py-12">
-          <Megaphone className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No announcements found</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            {searchTerm || filterCategory !== 'all' || filterPriority !== 'all' || showPinnedOnly
-              ? 'Try adjusting your search or filters.'
-              : 'Get started by creating your first announcement.'}
-          </p>
+          ))}
         </div>
-      )}
+
+        {/* Empty State */}
+        {filteredAnnouncements.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📢</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {searchTerm || filterCategory !== 'all' || filterPriority !== 'all' || showPinnedOnly
+                ? 'No announcements match your filters' 
+                : 'No announcements yet'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {searchTerm || filterCategory !== 'all' || filterPriority !== 'all' || showPinnedOnly
+                ? 'Try adjusting your search or filters'
+                : 'Create your first announcement to get started'}
+            </p>
+            {!searchTerm && filterCategory === 'all' && filterPriority === 'all' && !showPinnedOnly && (
+              <button
+                onClick={handleCreateAnnouncement}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-soft"
+              >
+                Create Your First Announcement
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Announcement Modal */}
       {isModalOpen && (

@@ -117,6 +117,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               })}
             </nav>
 
+            {/* Chat Button */}
+            <div className="hidden md:flex items-center mr-4">
+              <Link
+                to="/chat"
+                className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2 ${
+                  isActive('/chat')
+                    ? 'text-white bg-blue-600 shadow-lg'
+                    : 'text-blue-600 bg-blue-50 hover:bg-blue-100 hover:shadow-md'
+                }`}
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span className="text-sm font-semibold">Chat</span>
+              </Link>
+            </div>
+
             {/* More Dropdown for Additional Navigation Items */}
             <div className="hidden md:flex items-center">
               <div className="relative group">
@@ -166,6 +181,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {/* Mobile Navigation */}
           {isMobileMenuOpen && (
             <div className="md:hidden py-4 border-t border-gray-200 animate-slide-down">
+              {/* Mobile Chat Button */}
+              <div className="mb-4 px-4">
+                <Link
+                  to="/chat"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center justify-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
+                    isActive('/chat')
+                      ? 'text-white bg-blue-600 shadow-lg'
+                      : 'text-blue-600 bg-blue-50 hover:bg-blue-100'
+                  }`}
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  <span className="font-semibold">Chat</span>
+                </Link>
+              </div>
+              
               <nav className="space-y-2">
                 {navigation.map((item) => {
                   const Icon = item.icon;

@@ -102,9 +102,9 @@ const ChatPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-[calc(100vh-4rem)]">
+      {/* Page Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200 mb-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
@@ -131,8 +131,8 @@ const ChatPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-12rem)]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-16rem)]">
           {/* Sidebar */}
           <div className={`${isSidebarOpen ? 'block' : 'hidden'} lg:block lg:w-80 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden`}>
             {/* User Profile */}

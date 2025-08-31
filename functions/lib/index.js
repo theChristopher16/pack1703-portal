@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.fetchUrlContent = exports.fetchNewEmails = exports.testEmailConnection = exports.helloWorld = exports.moderationDigest = exports.weatherProxy = exports.icsFeed = exports.claimVolunteerRole = exports.submitFeedback = exports.submitRSVP = void 0;
+exports.webSearch = exports.fetchUrlContent = exports.fetchNewEmails = exports.testEmailConnection = exports.helloWorld = exports.moderationDigest = exports.weatherProxy = exports.icsFeed = exports.claimVolunteerRole = exports.submitFeedback = exports.submitRSVP = void 0;
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const Imap = require('node-imap');
@@ -661,6 +661,65 @@ exports.fetchUrlContent = functions.https.onCall(async (data, context) => {
             throw error;
         }
         throw new functions.https.HttpsError('internal', 'Failed to fetch URL content');
+    }
+});
+// Cloud function to perform web searches for event enhancement
+exports.webSearch = functions.https.onCall(async (data, context) => {
+    try {
+        const { query, maxResults = 5 } = data;
+        if (!query) {
+            throw new functions.https.HttpsError('invalid-argument', 'Search query is required');
+        }
+        // Use a simple web search API (you can replace with Google Custom Search API)
+        const searchUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
+        const response = await fetch(searchUrl, {
+            method: 'GET',
+            headers: {
+                'User-Agent': 'Pack1703-AI/1.0',
+                'Accept': 'application/json'
+            },
+            signal: AbortSignal.timeout(10000) // 10 second timeout
+        });
+        if (!response.ok) {
+            throw new functions.https.HttpsError('unavailable', `Search API returned ${response.status}`);
+        }
+        const searchData = await response.json();
+        // Process search results
+        const results = [];
+        if (searchData.AbstractURL) {
+            results.push({
+                title: searchData.Heading || 'Search Result',
+                link: searchData.AbstractURL,
+                snippet: searchData.AbstractText || '',
+                source: 'DuckDuckGo'
+            });
+        }
+        if (searchData.RelatedTopics && searchData.RelatedTopics.length > 0) {
+            for (let i = 0; i < Math.min(maxResults - 1, searchData.RelatedTopics.length); i++) {
+                const topic = searchData.RelatedTopics[i];
+                if (topic.FirstURL && topic.Text) {
+                    results.push({
+                        title: topic.Text.split(' - ')[0] || 'Related Topic',
+                        link: topic.FirstURL,
+                        snippet: topic.Text,
+                        source: 'DuckDuckGo'
+                    });
+                }
+            }
+        }
+        return {
+            success: true,
+            results: results.slice(0, maxResults),
+            query: query,
+            totalResults: results.length
+        };
+    }
+    catch (error) {
+        console.error('Error performing web search:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to perform web search');
     }
 });
 //# sourceMappingURL=index.js.map

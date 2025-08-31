@@ -1,4 +1,5 @@
 import { getFirestore, collection, getDocs, query, where, orderBy, limit as firestoreLimit, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import systemMonitorService from './systemMonitorService';
 import chatService from './chatService';
 import configService from './configService';
@@ -22,6 +23,7 @@ export interface AIResponse {
     entityType: string;
     entityData: any;
     validationChecks: ValidationCheck[];
+    resourcesToCreate?: any[];
   };
 }
 
@@ -314,6 +316,8 @@ class AIService {
       // Extract event information from the query
       const eventData = this.extractEventDataFromQuery(userQuery);
       
+      console.log('🔍 DEBUG: Extracted event data:', JSON.stringify(eventData, null, 2));
+      
       if (!eventData.title || eventData.title === 'New Event') {
         return {
           id: Date.now().toString(),
@@ -323,8 +327,11 @@ class AIService {
         };
       }
 
-      // Validate the event data
-      const validationChecks = await this.validateEventData(eventData);
+      // Enhance event data with web search
+      const enhancedEventData = await this.enhanceEventDataWithWebSearch(eventData);
+      
+      // Validate the enhanced event data
+      const validationChecks = await this.validateEventData(enhancedEventData);
       const hasErrors = validationChecks.some(check => check.status === 'failed');
       
       if (hasErrors) {
@@ -341,20 +348,24 @@ class AIService {
         };
       }
 
+      // Check if we need to create additional resources
+      const resourcesToCreate = await this.identifyNeededResources(enhancedEventData);
+      
       // If we have good data, offer to create the event
-      const eventSummary = this.formatEventSummary(eventData);
+      const eventSummary = this.formatEventSummary(enhancedEventData, validationChecks, resourcesToCreate);
       
       return {
         id: Date.now().toString(),
-        message: `✅ **Event Ready to Create!**\n\nHere's what I'm about to create:\n\n${eventSummary}\n\n**Validation Results:**\n${validationChecks.map(check => `• ${check.message}`).join('\n')}\n\nDoes this look correct? I can create this event for you right now!`,
+        message: `✅ **Event Ready to Create!**\n\nHere's what I'm about to create:\n\n${eventSummary}\n\nDoes this look correct? I can create this event for you right now!`,
         timestamp: new Date(),
         type: 'success',
         requiresConfirmation: true,
         confirmationData: {
           action: 'create_event',
           entityType: 'event',
-          entityData: eventData,
-          validationChecks
+          entityData: enhancedEventData,
+          validationChecks,
+          resourcesToCreate
         }
       };
 
@@ -369,42 +380,111 @@ class AIService {
     }
   }
 
-  // Extract event data from user query
+    // Extract event data from user query
   private extractEventDataFromQuery(userQuery: string): any {
     const query = userQuery.toLowerCase();
     
-    // Extract title
-    const titlePatterns = [
-      /(?:called|named|titled?)\s+([^,]+?)(?:\s+on|\s+at|\s+in|$)/i,
-      /(?:create|add)\s+(?:an?\s+)?event\s+(?:called|named|titled?)?\s*([^,]+?)(?:\s+on|\s+at|\s+in|$)/i,
-      /event\s+(?:called|named|titled?)?\s*([^,]+?)(?:\s+on|\s+at|\s+in|$)/i
-    ];
+    // First, let's clean up the query and extract basic components
+    let cleanQuery = userQuery;
     
+    // Extract title - look for more patterns and be more flexible
     let title = '';
-    for (const pattern of titlePatterns) {
-      const match = userQuery.match(pattern);
-      if (match && match[1]) {
-        title = match[1].trim();
-        break;
+    
+    // Pattern 1: "create an event for [title]"
+    const createForPattern = /create\s+(?:an?\s+)?event\s+for\s+([^,]+?)(?:\s*,\s*|\s+(?:this|on|from|to|at|in)|$)/i;
+    const createForMatch = userQuery.match(createForPattern);
+    if (createForMatch && createForMatch[1]) {
+      const extractedTitle = createForMatch[1].trim();
+      // Check if this looks like a location rather than a title
+      if (extractedTitle.toLowerCase().includes('recreation area') || 
+          extractedTitle.toLowerCase().includes('campground') ||
+          extractedTitle.toLowerCase().includes('park') ||
+          extractedTitle.toLowerCase().includes('lake')) {
+        // This is likely a location, not a title
+        title = 'Campout'; // Infer title from location type
+      } else {
+        title = extractedTitle;
+      }
+      cleanQuery = cleanQuery.replace(createForMatch[0], '').trim();
+    }
+    
+    // Pattern 2: "for [title]"
+    if (!title) {
+      const forPattern = /^for\s+([^,]+?)(?:\s+(?:this|on|from|to|at|in)|$)/i;
+      const forMatch = userQuery.match(forPattern);
+      if (forMatch && forMatch[1]) {
+        title = forMatch[1].trim();
+        cleanQuery = cleanQuery.replace(forMatch[0], '').trim();
+      }
+    }
+    
+    // Pattern 3: "called [title]"
+    if (!title) {
+      const calledPattern = /(?:called|named|titled?)\s+([^,]+?)(?:\s+(?:on|from|to|at|in)|$)/i;
+      const calledMatch = userQuery.match(calledPattern);
+      if (calledMatch && calledMatch[1]) {
+        title = calledMatch[1].trim();
+        cleanQuery = cleanQuery.replace(calledMatch[0], '').trim();
       }
     }
 
-    // Extract date
-    const datePatterns = [
-      /(?:on|for)\s+([^,]+?)(?:\s+at|\s+in|$)/i,
-      /(\w+\s+\d{1,2},?\s+\d{4})/i,
-      /(\d{1,2}\/\d{1,2}\/\d{4})/i,
-      /(\d{4}-\d{2}-\d{2})/i
-    ];
+    // Extract date ranges (from X to Y or X-Y)
+    let startDate = null;
+    let endDate = null;
     
-    let date = null;
-    for (const pattern of datePatterns) {
-      const match = userQuery.match(pattern);
-      if (match && match[1]) {
-        const parsedDate = new Date(match[1]);
-        if (!isNaN(parsedDate.getTime())) {
-          date = parsedDate;
-          break;
+    // Pattern 1: "October 15-17th" or "Oct 15-17"
+    const dateRangePattern1 = /(\w+\s+)(\d{1,2})-(\d{1,2})(?:st|nd|rd|th)?/i;
+    const dateRangeMatch1 = userQuery.match(dateRangePattern1);
+    if (dateRangeMatch1) {
+      const month = dateRangeMatch1[1].trim();
+      const startDay = parseInt(dateRangeMatch1[2]);
+      const endDay = parseInt(dateRangeMatch1[3]);
+      const currentYear = new Date().getFullYear();
+      
+      startDate = new Date(`${month} ${startDay}, ${currentYear}`);
+      endDate = new Date(`${month} ${endDay}, ${currentYear}`);
+      
+      if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+        cleanQuery = cleanQuery.replace(dateRangeMatch1[0], '').trim();
+      } else {
+        startDate = null;
+        endDate = null;
+      }
+    }
+    
+    // Pattern 2: "from X to Y"
+    if (!startDate) {
+      const dateRangePattern2 = /(?:from|between)\s+([^,]+?)\s+(?:to|through)\s+([^,]+?)(?:\s+at|\s+in|$)/i;
+      const dateRangeMatch2 = userQuery.match(dateRangePattern2);
+      if (dateRangeMatch2 && dateRangeMatch2[1] && dateRangeMatch2[2]) {
+        const parsedStartDate = new Date(dateRangeMatch2[1]);
+        const parsedEndDate = new Date(dateRangeMatch2[2]);
+        if (!isNaN(parsedStartDate.getTime()) && !isNaN(parsedEndDate.getTime())) {
+          startDate = parsedStartDate;
+          endDate = parsedEndDate;
+          cleanQuery = cleanQuery.replace(dateRangeMatch2[0], '').trim();
+        }
+      }
+    }
+
+    // Extract single date if no range found
+    if (!startDate) {
+      const datePatterns = [
+        /(?:on|for)\s+([^,]+?)(?:\s+at|\s+in|$)/i,
+        /(\w+\s+\d{1,2},?\s+\d{4})/i,
+        /(\d{1,2}\/\d{1,2}\/\d{4})/i,
+        /(\d{4}-\d{2}-\d{2})/i
+      ];
+      
+      for (const pattern of datePatterns) {
+        const match = userQuery.match(pattern);
+        if (match && match[1]) {
+          const parsedDate = new Date(match[1]);
+          if (!isNaN(parsedDate.getTime())) {
+            startDate = parsedDate;
+            cleanQuery = cleanQuery.replace(match[0], '').trim();
+            break;
+          }
         }
       }
     }
@@ -420,22 +500,34 @@ class AIService {
       const match = userQuery.match(pattern);
       if (match && match[1]) {
         time = match[1];
+        cleanQuery = cleanQuery.replace(match[0], '').trim();
         break;
       }
     }
 
-    // Extract location
-    const locationPatterns = [
-      /(?:at|in|location|venue)\s+([^,]+?)(?:\s+on|\s+at|\s+in|$)/i,
-      /(\d+\s+[^,]+(?:street|avenue|road|drive|lane|way|plaza|center|park))/i
-    ];
-    
+    // Extract location - look for more specific patterns
     let location = '';
-    for (const pattern of locationPatterns) {
-      const match = userQuery.match(pattern);
-      if (match && match[1]) {
-        location = match[1].trim();
-        break;
+    
+    // Look for the full location string after title extraction
+    // The location should be the part after "for" that contains recreation area, etc.
+    const locationMatch = userQuery.match(/for\s+([^,]+(?:recreation area|campground|park|community center|church|school|scout camp|scout center|lake|forest|wilderness)[^,]*)/i);
+    if (locationMatch && locationMatch[1]) {
+      location = locationMatch[1].trim();
+    } else {
+      // Fallback to other patterns
+      const locationPatterns = [
+        /([^,]+(?:recreation area|campground|park|community center|church|school|scout camp|scout center|lake|forest|wilderness)[^,]*)/i,
+        /(?:at|in|location|venue)\s+([^,]+?)(?:\s+on|\s+from|\s+to|$)/i,
+        /(\d+\s+[^,]+(?:street|avenue|road|drive|lane|way|plaza|center|park|recreation area|campground))/i,
+        /(?:outside\s+of|near|in|north\s+of|south\s+of|east\s+of|west\s+of)\s+([^,]+?)(?:\s+on|\s+from|\s+to|$)/i
+      ];
+      
+      for (const pattern of locationPatterns) {
+        const match = userQuery.match(pattern);
+        if (match && match[1]) {
+          location = match[1].trim();
+          break;
+        }
       }
     }
 
@@ -449,13 +541,55 @@ class AIService {
       const match = userQuery.match(pattern);
       if (match && match[1]) {
         description = match[1].trim();
+        cleanQuery = cleanQuery.replace(match[0], '').trim();
         break;
+      }
+    }
+
+    // If no title was found but we have other info, try to infer title
+    if (!title && (startDate || location)) {
+      if (location.toLowerCase().includes('camp') || location.toLowerCase().includes('recreation')) {
+        title = '🏕️ Campout';
+      } else if (location.toLowerCase().includes('lake')) {
+        title = '🌊 Lake Trip';
+      } else if (startDate) {
+        const month = startDate.toLocaleDateString('en-US', { month: 'long' });
+        title = `📅 ${month} Event`;
+      }
+    }
+
+    // If still no title, generate a creative one based on available info
+    if (!title || title === 'New Event' || title === 'Campout') {
+      const tempEventData = {
+        title: title || 'New Event',
+        date: startDate,
+        endDate: endDate,
+        time: time,
+        location: location || 'TBD',
+        description: description || 'Event details to be determined'
+      };
+      title = this.generateCreativeEventTitle(tempEventData);
+    }
+
+    // Clean up the title if it contains date/location info
+    if (title) {
+      // Remove date info from title
+      title = title.replace(/\b(?:october|oct|november|nov|december|dec|january|jan|february|feb|march|mar|april|apr|may|june|july|august|aug|september|sep)\s+\d{1,2}(?:st|nd|rd|th)?/gi, '').trim();
+      title = title.replace(/\b\d{1,2}-\d{1,2}(?:st|nd|rd|th)?\b/g, '').trim();
+      title = title.replace(/\b(?:this|next|last)\s+(?:week|month|year)\b/gi, '').trim();
+      
+      // Remove location info from title if it's a generic location (but preserve emoji titles)
+      if (title.toLowerCase().includes('recreation area') || title.toLowerCase().includes('campground')) {
+        if (!title.includes('🏕️') && !title.includes('🌊') && !title.includes('🌳') && !title.includes('🌲') && !title.includes('🌿') && !title.includes('📅')) {
+          title = 'Campout';
+        }
       }
     }
 
     return {
       title: title || 'New Event',
-      date: date,
+      date: startDate,
+      endDate: endDate,
       time: time,
       location: location || 'TBD',
       description: description || 'Event details to be determined'
@@ -564,8 +698,8 @@ class AIService {
     }
   }
 
-  // Format event summary for display
-  private formatEventSummary(eventData: any): string {
+  // Enhanced event summary with validation and resources
+  private formatEventSummary(eventData: any, validationChecks?: ValidationCheck[], resourcesToCreate?: any[]): string {
     const parts = [];
     
     if (eventData.title) {
@@ -575,18 +709,609 @@ class AIService {
     if (eventData.date) {
       const dateStr = eventData.date.toLocaleDateString();
       const timeStr = eventData.time ? ` at ${eventData.time}` : '';
-      parts.push(`**Date:** ${dateStr}${timeStr}`);
+      if (eventData.endDate && eventData.endDate !== eventData.date) {
+        const endDateStr = eventData.endDate.toLocaleDateString();
+        parts.push(`**Date:** ${dateStr} to ${endDateStr}${timeStr}`);
+      } else {
+        parts.push(`**Date:** ${dateStr}${timeStr}`);
+      }
     }
     
     if (eventData.location && eventData.location !== 'TBD') {
-      parts.push(`**Location:** ${eventData.location}`);
+      const locationCheck = validationChecks?.find(check => check.type === 'location');
+      if (locationCheck?.status === 'warning') {
+        parts.push(`**Location:** ${eventData.location} ⚠️ (needs verification)`);
+      } else {
+        parts.push(`**Location:** ${eventData.location}`);
+      }
     }
     
     if (eventData.description && eventData.description !== 'Event details to be determined') {
       parts.push(`**Description:** ${eventData.description}`);
     }
+
+    // Add web search results
+    if (eventData.webSearchResults) {
+      parts.push(`\n**📡 Web Search Results:**`);
+      if (eventData.webSearchResults.location) {
+        parts.push(`• Location: ${eventData.webSearchResults.location.confidence > 0.7 ? '✅' : '⚠️'} ${eventData.webSearchResults.location.data}`);
+      }
+      if (eventData.webSearchResults.description) {
+        parts.push(`• Description: ${eventData.webSearchResults.description.confidence > 0.7 ? '✅' : '⚠️'} Found additional details`);
+      }
+      if (eventData.webSearchResults.requirements) {
+        parts.push(`• Requirements: ${eventData.webSearchResults.requirements.confidence > 0.7 ? '✅' : '⚠️'} Found packing list/requirements`);
+      }
+    }
+
+    // Add resources to be created
+    if (resourcesToCreate && resourcesToCreate.length > 0) {
+      parts.push(`\n**📚 Resources to Create:**`);
+      resourcesToCreate.forEach(resource => {
+        parts.push(`• ${resource.type}: ${resource.title}`);
+      });
+    }
     
     return parts.join('\n');
+  }
+
+  // Enhance event data with web search
+  private async enhanceEventDataWithWebSearch(eventData: any): Promise<any> {
+    const enhancedData = { ...eventData };
+    const searchResults: any = {};
+
+    try {
+      console.log('🚀 Starting enhanced web search for event data...');
+      
+      // Search for location information if missing or unclear
+      if (!eventData.location || eventData.location === 'TBD' || eventData.location.length < 5) {
+        const locationSearch = await this.enhancedWebSearch('location', eventData);
+        if (locationSearch.confidence > 0.5) {
+          enhancedData.location = locationSearch.data;
+          searchResults.location = locationSearch;
+          console.log(`✅ Found location: ${locationSearch.data}`);
+        }
+      }
+
+      // Search for event description if missing or generic
+      if (!eventData.description || eventData.description === 'Event details to be determined') {
+        const descriptionSearch = await this.enhancedWebSearch('description', eventData);
+        if (descriptionSearch.confidence > 0.6) {
+          enhancedData.description = descriptionSearch.data;
+          searchResults.description = descriptionSearch;
+          console.log(`✅ Found description with confidence ${descriptionSearch.confidence}`);
+        } else {
+          // Create a creative and factual description
+          enhancedData.description = this.createEventDescription(enhancedData);
+          searchResults.description = {
+            confidence: 0.8,
+            data: enhancedData.description,
+            source: 'ai_generated'
+          };
+          console.log('📝 Generated AI description as fallback');
+        }
+      }
+
+      // Search for requirements/packing lists for camping/outdoor events
+      if (this.isOutdoorEvent(eventData.title)) {
+        const requirementsSearch = await this.enhancedWebSearch('requirements', eventData);
+        if (requirementsSearch.confidence > 0.5) {
+          searchResults.requirements = requirementsSearch;
+          console.log(`✅ Found requirements with confidence ${requirementsSearch.confidence}`);
+        }
+      }
+
+      enhancedData.webSearchResults = searchResults;
+      console.log('🎉 Enhanced web search completed!');
+      return enhancedData;
+
+    } catch (error) {
+      console.error('Error enhancing event data with web search:', error);
+      
+      // Fallback: create a basic description
+      if (!enhancedData.description || enhancedData.description === 'Event details to be determined') {
+        enhancedData.description = this.createEventDescription(enhancedData);
+      }
+      
+      return enhancedData;
+    }
+  }
+
+  // Enhanced web search with multiple strategies and retry logic
+  private async enhancedWebSearch(searchType: 'location' | 'description' | 'requirements', eventData: any): Promise<{ confidence: number; data: any; source: string }> {
+    const maxAttempts = 3;
+    const searchStrategies = this.getSearchStrategies(searchType, eventData);
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      console.log(`🔍 Web search attempt ${attempt}/${maxAttempts} for ${searchType}`);
+      
+      for (const strategy of searchStrategies) {
+        try {
+          const functions = getFunctions();
+          const webSearch = httpsCallable(functions, 'webSearch');
+          
+          console.log(`   Trying strategy: "${strategy.query}"`);
+          const result = await webSearch({ query: strategy.query, maxResults: 5 });
+          
+          // Check if result.data exists and is an array
+          if (!result.data || !Array.isArray(result.data)) {
+            console.warn(`   Strategy failed - invalid data returned`);
+            continue;
+          }
+          
+          // Analyze results based on search type
+          let extractedData: any;
+          switch (searchType) {
+            case 'location':
+              extractedData = this.extractLocationsFromSearchResults(result.data);
+              break;
+            case 'description':
+              extractedData = this.extractDescriptionsFromSearchResults(result.data);
+              break;
+            case 'requirements':
+              extractedData = this.extractRequirementsFromSearchResults(result.data);
+              break;
+          }
+          
+          if (extractedData && extractedData.length > 0) {
+            const bestResult = extractedData[0];
+            console.log(`   ✅ Found ${searchType} data with confidence ${bestResult.confidence}`);
+            return {
+              confidence: bestResult.confidence,
+              data: bestResult[searchType === 'location' ? 'address' : searchType === 'requirements' ? 'requirements' : 'description'],
+              source: bestResult.source
+            };
+          }
+          
+          console.log(`   No useful data found in this strategy`);
+          
+        } catch (error) {
+          console.error(`   Strategy failed with error:`, error);
+          continue;
+        }
+      }
+      
+      // Wait before next attempt (exponential backoff)
+      if (attempt < maxAttempts) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 3000); // 1s, 2s, 3s max
+        console.log(`   Waiting ${delay}ms before next attempt...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    
+    console.log(`❌ All web search attempts failed for ${searchType}`);
+    return { confidence: 0, data: searchType === 'requirements' ? null : '', source: '' };
+  }
+
+  // Get search strategies for different types of information
+  private getSearchStrategies(searchType: 'location' | 'description' | 'requirements', eventData: any): Array<{ query: string; priority: number }> {
+    const { title, location } = eventData;
+    const strategies = [];
+    
+    switch (searchType) {
+      case 'location':
+        strategies.push(
+          { query: `${location} address phone number contact information`, priority: 1 },
+          { query: `${location} recreation area texas contact details`, priority: 2 },
+          { query: `${location} camping facilities amenities`, priority: 3 },
+          { query: `${location} scout camping location details`, priority: 4 },
+          { query: `${location} outdoor recreation area information`, priority: 5 }
+        );
+        break;
+        
+      case 'description':
+        strategies.push(
+          { query: `${title} scout event description details what to expect`, priority: 1 },
+          { query: `${location} camping activities outdoor recreation`, priority: 2 },
+          { query: `${title} outdoor adventure scouting activities`, priority: 3 },
+          { query: `${location} scout camping trip planning`, priority: 4 },
+          { query: `${title} multi-day camping event details`, priority: 5 }
+        );
+        break;
+        
+      case 'requirements':
+        strategies.push(
+          { query: `${title} packing list what to bring camping gear requirements`, priority: 1 },
+          { query: `${location} camping packing list essentials`, priority: 2 },
+          { query: `scout camping packing list outdoor gear requirements`, priority: 3 },
+          { query: `${title} outdoor camping equipment checklist`, priority: 4 },
+          { query: `boy scout camping packing list essentials`, priority: 5 }
+        );
+        break;
+    }
+    
+    // Sort by priority (lower number = higher priority)
+    return strategies.sort((a, b) => a.priority - b.priority);
+  }
+
+  // Search web for location information
+  private async searchWebForLocation(eventTitle: string): Promise<{ confidence: number; data: string; source: string }> {
+    try {
+      const functions = getFunctions();
+      const webSearch = httpsCallable(functions, 'webSearch');
+      
+      const searchQuery = `${eventTitle} location venue address scout event`;
+      const result = await webSearch({ query: searchQuery, maxResults: 3 });
+      
+      // Check if result.data exists and is an array
+      if (!result.data || !Array.isArray(result.data)) {
+        console.warn('Web search returned invalid data for location:', result.data);
+        return { confidence: 0, data: '', source: '' };
+      }
+      
+      // Analyze results for location information
+      const locations = this.extractLocationsFromSearchResults(result.data);
+      
+      if (locations.length > 0) {
+        return {
+          confidence: locations[0].confidence,
+          data: locations[0].address,
+          source: locations[0].source
+        };
+      }
+
+      return { confidence: 0, data: '', source: '' };
+    } catch (error) {
+      console.error('Error searching for location:', error);
+      return { confidence: 0, data: '', source: '' };
+    }
+  }
+
+  // Search web for event description
+  private async searchWebForDescription(eventTitle: string): Promise<{ confidence: number; data: string; source: string }> {
+    try {
+      const functions = getFunctions();
+      const webSearch = httpsCallable(functions, 'webSearch');
+      
+      const searchQuery = `${eventTitle} scout event description details what to expect`;
+      const result = await webSearch({ query: searchQuery, maxResults: 3 });
+      
+      // Check if result.data exists and is an array
+      if (!result.data || !Array.isArray(result.data)) {
+        console.warn('Web search returned invalid data for description:', result.data);
+        return { confidence: 0, data: '', source: '' };
+      }
+      
+      // Analyze results for description information
+      const descriptions = this.extractDescriptionsFromSearchResults(result.data);
+      
+      if (descriptions.length > 0) {
+        return {
+          confidence: descriptions[0].confidence,
+          data: descriptions[0].description,
+          source: descriptions[0].source
+        };
+      }
+
+      return { confidence: 0, data: '', source: '' };
+    } catch (error) {
+      console.error('Error searching for description:', error);
+      return { confidence: 0, data: '', source: '' };
+    }
+  }
+
+  // Create creative and factual description based on event type
+  private createEventDescription(eventData: any): string {
+    const { title, location, date, endDate } = eventData;
+    const isMultiDay = endDate && endDate !== date;
+    const isOutdoor = this.isOutdoorEvent(title);
+    const isCamping = title.toLowerCase().includes('camp') || location.toLowerCase().includes('camp');
+    const isLake = location.toLowerCase().includes('lake');
+    
+    let description = '';
+    
+    if (isCamping) {
+      if (isMultiDay) {
+        description = `Join us for an exciting ${isMultiDay ? 'multi-day ' : ''}camping adventure! This ${isLake ? 'lake-side ' : ''}campout will provide scouts with opportunities to practice outdoor skills, build teamwork, and enjoy nature. Scouts will learn camping fundamentals, participate in outdoor activities, and create lasting memories with their pack.`;
+      } else {
+        description = `A fun day of outdoor activities and camping skills! Scouts will learn essential camping techniques, enjoy outdoor games, and strengthen their connection with nature and fellow scouts.`;
+      }
+    } else if (isLake) {
+      description = `Experience the beauty of nature at this scenic lake location! Scouts will enjoy water activities, learn about lake ecology, and participate in outdoor adventures. Perfect for building confidence and outdoor skills.`;
+    } else if (isOutdoor) {
+      description = `An exciting outdoor adventure awaits! Scouts will explore nature, learn outdoor skills, and participate in activities that build character, leadership, and a love for the outdoors.`;
+    } else {
+      description = `Join us for this special scouting event! Scouts will participate in activities that build character, develop leadership skills, and strengthen friendships within the pack.`;
+    }
+    
+    // Add factual details if we have them
+    if (location && location !== 'TBD') {
+      description += ` The event will take place at ${location}.`;
+    }
+    
+    if (isMultiDay) {
+      description += ` This is a multi-day event, so scouts should be prepared for overnight camping.`;
+    }
+    
+    return description;
+  }
+
+  // Generate creative event title with emoji
+  private generateCreativeEventTitle(eventData: any): string {
+    const { location, date, endDate, time } = eventData;
+    const isMultiDay = endDate && endDate !== date;
+    const isOutdoor = this.isOutdoorEvent(location);
+    const isCamping = location.toLowerCase().includes('camp') || location.toLowerCase().includes('recreation');
+    const isLake = location.toLowerCase().includes('lake');
+    const isPark = location.toLowerCase().includes('park');
+    const isForest = location.toLowerCase().includes('forest') || location.toLowerCase().includes('wilderness');
+    
+    // Get season if we have a date
+    let season = '';
+    if (date) {
+      const month = date.getMonth();
+      if (month >= 2 && month <= 4) season = 'Spring';
+      else if (month >= 5 && month <= 7) season = 'Summer';
+      else if (month >= 8 && month <= 10) season = 'Fall';
+      else season = 'Winter';
+    }
+    
+    // Generate title based on location type and context
+    if (isLake) {
+      if (isMultiDay) {
+        return '🏕️ Lake Adventure Campout';
+      } else {
+        return '🌊 Lake Day Trip';
+      }
+    }
+    
+    if (isCamping) {
+      if (isMultiDay) {
+        return '🏕️ Wilderness Campout';
+      } else {
+        return '🏕️ Day Camp Adventure';
+      }
+    }
+    
+    if (isPark) {
+      if (isMultiDay) {
+        return '🏕️ Park Campout';
+      } else {
+        return '🌳 Park Day Trip';
+      }
+    }
+    
+    if (isForest) {
+      if (isMultiDay) {
+        return '🏕️ Forest Campout';
+      } else {
+        return '🌲 Forest Adventure';
+      }
+    }
+    
+    if (isOutdoor) {
+      if (isMultiDay) {
+        return '🏕️ Outdoor Adventure';
+      } else {
+        return '🌿 Outdoor Day Trip';
+      }
+    }
+    
+    // If we have a season, use it
+    if (season) {
+      if (isMultiDay) {
+        return `🏕️ ${season} Campout`;
+      } else {
+        return `📅 ${season} Event`;
+      }
+    }
+    
+    // Fallback options
+    if (isMultiDay) {
+      return '🏕️ Multi-Day Adventure';
+    } else {
+      return '📅 Scout Event';
+    }
+  }
+
+  // Search web for requirements/packing lists
+
+  // Search web for requirements/packing lists
+  private async searchWebForRequirements(eventTitle: string): Promise<{ confidence: number; data: any; source: string }> {
+    try {
+      const functions = getFunctions();
+      const webSearch = httpsCallable(functions, 'webSearch');
+      
+      const searchQuery = `${eventTitle} packing list requirements what to bring scout camping`;
+      const result = await webSearch({ query: searchQuery, maxResults: 3 });
+      
+      // Check if result.data exists and is an array
+      if (!result.data || !Array.isArray(result.data)) {
+        console.warn('Web search returned invalid data for requirements:', result.data);
+        return { confidence: 0, data: null, source: '' };
+      }
+      
+      // Analyze results for requirements information
+      const requirements = this.extractRequirementsFromSearchResults(result.data);
+      
+      if (requirements.length > 0) {
+        return {
+          confidence: requirements[0].confidence,
+          data: requirements[0].requirements,
+          source: requirements[0].source
+        };
+      }
+
+      return { confidence: 0, data: null, source: '' };
+    } catch (error) {
+      console.error('Error searching for requirements:', error);
+      return { confidence: 0, data: null, source: '' };
+    }
+  }
+
+  // Extract locations from search results
+  private extractLocationsFromSearchResults(searchResults: any[]): Array<{ confidence: number; address: string; source: string }> {
+    const locations = [];
+    
+    for (const result of searchResults) {
+      const content = result.snippet || result.title || '';
+      
+      // Look for address patterns
+      const addressPatterns = [
+        /(\d+\s+[^,]+(?:street|avenue|road|drive|lane|way|plaza|center|park|church|school|community center))/i,
+        /(?:at|location|venue|address)[:\s]+([^.\n]+)/i,
+        /([^,]+(?:community center|church|school|park|scout camp|scout center))/i
+      ];
+
+      for (const pattern of addressPatterns) {
+        const match = content.match(pattern);
+        if (match && match[1]) {
+          const address = match[1].trim();
+          if (address.length > 10) {
+            locations.push({
+              confidence: 0.8,
+              address,
+              source: result.link || 'web search'
+            });
+          }
+        }
+      }
+    }
+
+    return locations;
+  }
+
+  // Extract descriptions from search results
+  private extractDescriptionsFromSearchResults(searchResults: any[]): Array<{ confidence: number; description: string; source: string }> {
+    const descriptions = [];
+    
+    for (const result of searchResults) {
+      const content = result.snippet || '';
+      
+      // Look for descriptive content
+      if (content.length > 50 && content.length < 300) {
+        // Check if it contains scout-related keywords
+        const scoutKeywords = ['scout', 'pack', 'troop', 'camping', 'outdoor', 'activity', 'event'];
+        const hasScoutContent = scoutKeywords.some(keyword => content.toLowerCase().includes(keyword));
+        
+        if (hasScoutContent) {
+          descriptions.push({
+            confidence: 0.7,
+            description: content,
+            source: result.link || 'web search'
+          });
+        }
+      }
+    }
+
+    return descriptions;
+  }
+
+  // Extract requirements from search results
+  private extractRequirementsFromSearchResults(searchResults: any[]): Array<{ confidence: number; requirements: any; source: string }> {
+    const requirements = [];
+    
+    for (const result of searchResults) {
+      const content = result.snippet || result.title || '';
+      
+      // Look for packing list or requirements patterns
+      const requirementPatterns = [
+        /(?:packing list|what to bring|requirements|equipment|gear)/i,
+        /(?:tent|sleeping bag|water bottle|flashlight|first aid)/i
+      ];
+
+      const hasRequirements = requirementPatterns.some(pattern => pattern.test(content));
+      
+      if (hasRequirements) {
+        requirements.push({
+          confidence: 0.6,
+          requirements: {
+            type: 'packing_list',
+            title: result.title || 'Packing List',
+            content: content
+          },
+          source: result.link || 'web search'
+        });
+      }
+    }
+
+    return requirements;
+  }
+
+  // Check if event is outdoor/camping related
+  private isOutdoorEvent(eventTitle: string): boolean {
+    const outdoorKeywords = [
+      'camp', 'camping', 'hike', 'hiking', 'outdoor', 'wilderness', 'nature',
+      'canoe', 'kayak', 'rafting', 'climbing', 'fishing', 'hunting'
+    ];
+    
+    return outdoorKeywords.some(keyword => eventTitle.toLowerCase().includes(keyword));
+  }
+
+  // Identify needed resources based on event type
+  private async identifyNeededResources(eventData: any): Promise<any[]> {
+    const resources = [];
+
+    try {
+      // Check if we need a packing list for outdoor events
+      if (this.isOutdoorEvent(eventData.title) && eventData.webSearchResults?.requirements && eventData.webSearchResults.requirements.data) {
+        resources.push({
+          type: 'packing_list',
+          title: `${eventData.title} Packing List`,
+          description: 'Essential items to bring for this outdoor event',
+          content: eventData.webSearchResults.requirements.data,
+          confidence: eventData.webSearchResults.requirements.confidence
+        });
+      }
+
+      // Check if we need a location entry
+      if (eventData.location && eventData.location !== 'TBD') {
+        const locationExists = await this.checkLocationExists(eventData.location);
+        if (!locationExists) {
+          resources.push({
+            type: 'location',
+            title: eventData.location,
+            description: 'Event location',
+            address: eventData.location,
+            confidence: 0.8
+          });
+        }
+      }
+
+      // Check if we need a guide for new event types
+      if (this.isNewEventType(eventData.title)) {
+        resources.push({
+          type: 'guide',
+          title: `${eventData.title} Guide`,
+          description: 'Information and tips for this type of event',
+          content: `Guide for ${eventData.title} events. This guide provides information about what to expect, how to prepare, and tips for making the most of this experience.`,
+          confidence: 0.7
+        });
+      }
+
+    } catch (error) {
+      console.error('Error identifying needed resources:', error);
+    }
+
+    return resources;
+  }
+
+  // Check if location already exists in database
+  private async checkLocationExists(locationName: string): Promise<boolean> {
+    try {
+      const locationsRef = collection(this.db, 'locations');
+      const q = query(
+        locationsRef,
+        where('name', '==', locationName),
+        firestoreLimit(1)
+      );
+      
+      const snapshot = await getDocs(q);
+      return !snapshot.empty;
+    } catch (error) {
+      console.error('Error checking location existence:', error);
+      return false;
+    }
+  }
+
+  // Check if this is a new event type
+  private isNewEventType(eventTitle: string): boolean {
+    const commonEventTypes = [
+      'pack meeting', 'den meeting', 'campout', 'pinewood derby', 'blue and gold',
+      'camping', 'hiking', 'canoeing', 'fishing', 'service project', 'ceremony'
+    ];
+    
+    return !commonEventTypes.some(type => eventTitle.toLowerCase().includes(type));
   }
 
   // Method to handle confirmation and actually create the event
@@ -602,12 +1327,28 @@ class AIService {
       // Create the event in the database
       const eventId = await this.createEventInDatabase(confirmationData.entityData);
       
+      // Create additional resources if needed
+      const createdResources = [];
+      if (confirmationData.resourcesToCreate && confirmationData.resourcesToCreate.length > 0) {
+        for (const resource of confirmationData.resourcesToCreate) {
+          if (resource.confidence > 0.5) { // Only create if confidence is good
+            const resourceId = await this.createResourceForEvent(resource);
+            if (resourceId) {
+              createdResources.push({ id: resourceId, ...resource });
+            }
+          }
+        }
+      }
+
+      // Send chat notification
+      await this.sendEventCreationNotification(eventId, confirmationData.entityData, createdResources);
+      
       return {
         id: Date.now().toString(),
-        message: `🎉 **Event Created Successfully!**\n\nYour event "${confirmationData.entityData.title}" has been created with ID: ${eventId}\n\n**Next Steps:**\n• Review the event in the admin panel\n• Add any additional details\n• Share with your pack members\n\nThe event is now live and ready for RSVPs!`,
+        message: `🎉 **Event Created Successfully!**\n\nYour event "${confirmationData.entityData.title}" has been created with ID: ${eventId}\n\n**Created Resources:**\n${createdResources.length > 0 ? createdResources.map(r => `• ${r.type}: ${r.title}`).join('\n') : 'None needed'}\n\n**Next Steps:**\n• Review the event in the admin panel\n• Add any additional details\n• Share with your pack members\n\nThe event is now live and ready for RSVPs!`,
         timestamp: new Date(),
         type: 'success',
-        data: { eventId, eventData: confirmationData.entityData }
+        data: { eventId, eventData: confirmationData.entityData, createdResources }
       };
     } catch (error) {
       console.error('Error creating event:', error);
@@ -618,6 +1359,60 @@ class AIService {
         type: 'error'
       };
     }
+  }
+
+  // Create a resource (packing list, guide, location, etc.)
+  private async createResourceForEvent(resource: any): Promise<string | null> {
+    try {
+      const success = await this.createResource(resource);
+      return success ? 'created' : null;
+    } catch (error) {
+      console.error('Error creating resource:', error);
+      return null;
+    }
+  }
+
+  // Send chat notification about event creation
+  private async sendEventCreationNotification(eventId: string, eventData: any, createdResources: any[]): Promise<void> {
+    try {
+      const message = this.formatEventCreationMessage(eventData, createdResources);
+      
+      // Send to general chat
+      await chatService.sendMessage('general', message);
+
+      console.log('Sent event creation notification to chat');
+    } catch (error) {
+      console.error('Error sending event creation notification:', error);
+    }
+  }
+
+  // Format event creation message for chat
+  private formatEventCreationMessage(eventData: any, createdResources: any[]): string {
+    const parts = [];
+    
+    parts.push(`🎉 **New Event Created!**`);
+    parts.push(`**${eventData.title}**`);
+    
+    if (eventData.date) {
+      const dateStr = eventData.date.toLocaleDateString();
+      const timeStr = eventData.time ? ` at ${eventData.time}` : '';
+      parts.push(`📅 ${dateStr}${timeStr}`);
+    }
+    
+    if (eventData.location && eventData.location !== 'TBD') {
+      parts.push(`📍 ${eventData.location}`);
+    }
+    
+    if (createdResources.length > 0) {
+      parts.push(`\n📚 **I also created some helpful resources:**`);
+      createdResources.forEach(resource => {
+        parts.push(`• ${resource.type}: ${resource.title}`);
+      });
+    }
+    
+    parts.push(`\nCheck out the new event and resources in the portal! 🏕️`);
+    
+    return parts.join('\n');
   }
 
   // Real data fetching methods

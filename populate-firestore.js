@@ -332,6 +332,24 @@ const lists = [
   }
 ];
 
+// Configuration data
+const configurations = [
+  {
+    id: 'display.cycling_scout_icons',
+    key: 'display.cycling_scout_icons',
+    value: ['🏕️', '🔥', '🌲', '🏆', '⭐', '🎖️', '🏅', '🎯', '🗺️', '🔦'],
+    category: 'display',
+    description: 'Scout-themed icons that cycle through for important locations and features',
+    isEditable: true,
+    validationRules: {
+      type: 'array',
+      required: true,
+      minLength: 1,
+      maxLength: 20
+    }
+  }
+];
+
 // Main population function
 async function populateFirestore() {
   console.log('🚀 Starting Firestore population...\n');
@@ -379,6 +397,12 @@ async function populateFirestore() {
       await addDocWithId('lists', list.id, list);
     }
 
+    // Add configurations
+    console.log('\n⚙️ Adding configurations...');
+    for (const config of configurations) {
+      await addDocWithId('configurations', config.id, config);
+    }
+
     console.log('\n🎉 Firestore population complete!');
     console.log('\n📊 Summary:');
     console.log(`- Seasons: ${seasons.length}`);
@@ -388,6 +412,7 @@ async function populateFirestore() {
     console.log(`- Resources: ${resources.length}`);
     console.log(`- Volunteer Needs: ${volunteerNeeds.length}`);
     console.log(`- Lists: ${lists.length}`);
+    console.log(`- Configurations: ${configurations.length}`);
 
   } catch (error) {
     console.error('❌ Error populating Firestore:', error);

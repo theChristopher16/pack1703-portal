@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, MapPin, Star, X } from 'lucide-react';
+import { Search, Filter, MapPin, X } from 'lucide-react';
 import { Location, LocationCategory } from '../../types/firestore';
+import CyclingScoutIcon from '../ui/CyclingScoutIcon';
 
 interface LocationFiltersProps {
   locations: Location[];
@@ -191,7 +192,7 @@ const LocationFilters: React.FC<LocationFiltersProps> = ({
                 className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
               />
               <div className="flex items-center space-x-2">
-                <Star className="w-4 h-4 text-primary-500" />
+                <CyclingScoutIcon size={16} interval={3000} />
                 <span className="text-sm font-medium text-gray-900">Important Only</span>
               </div>
             </label>

@@ -1,0 +1,25 @@
+/* Cycling Scout Icon Animation */
+.cycling-scout-icon {
+  display: inline-block;
+  transition: transform 0.3s ease-in-out;
+}
+
+.cycling-scout-icon:hover {
+  transform: scale(1.1);
+}
+
+@keyframes scout-bounce {
+  0% {
+    transform: scale(1) translateX(0);
+  }
+  50% {
+    transform: scale(1.2) translateX(2px);
+  }
+  100% {
+    transform: scale(1) translateX(0);
+  }
+}
+
+.cycling-scout-icon.animating {
+  animation: scout-bounce 0.3s ease-in-out;
+}

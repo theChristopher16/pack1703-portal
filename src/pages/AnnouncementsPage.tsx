@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Pin, TrendingUp, Star, MessageSquare, Clock } from 'lucide-react';
+import { Bell, Pin, TrendingUp, MessageSquare, Clock } from 'lucide-react';
 import { firestoreService } from '../services/firestore';
 import { AnnouncementCard, AnnouncementFeed } from '../components/Announcements';
 import { Announcement } from '../types/firestore';
+import CyclingScoutIcon from '../components/ui/CyclingScoutIcon';
 
 const AnnouncementsPage: React.FC = () => {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
@@ -121,7 +122,7 @@ const AnnouncementsPage: React.FC = () => {
           </div>
           
           <div className="text-center p-6 bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50">
-            <Star className="w-8 h-8 text-accent-500 mx-auto mb-3" />
+            <CyclingScoutIcon size={32} interval={4000} className="mx-auto mb-3" />
             <div className="text-2xl font-bold text-gray-900">
               {announcements.filter(a => a.eventId).length}
             </div>

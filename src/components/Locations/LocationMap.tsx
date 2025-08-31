@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { MapPin, Navigation, Phone, Mail, Clock, Star } from 'lucide-react';
+import { MapPin, Navigation, Phone, Mail, Clock } from 'lucide-react';
 import { Location } from '../../types/firestore';
+import CyclingScoutIcon from '../ui/CyclingScoutIcon';
 
 interface LocationMapProps {
   locations: Location[];
@@ -255,7 +256,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
             
             {selectedLocation.isImportant && (
               <div className="flex items-center space-x-2 px-3 py-2 bg-yellow-100 text-yellow-700 rounded-lg">
-                <Star className="w-4 h-4 fill-current" />
+                <CyclingScoutIcon size={16} interval={2000} />
                 <span className="text-sm font-medium">Important Location</span>
               </div>
             )}

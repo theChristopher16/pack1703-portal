@@ -279,6 +279,18 @@ class ConfigService {
         }
       },
       {
+        key: 'display.cycling_scout_icons',
+        value: ['🏕️', '🔥', '🌲', '🏆', '⭐', '🎖️', '🏅', '🎯', '🗺️', '🔦'],
+        category: 'display',
+        description: 'Scout-themed icons that cycle through for important locations and features',
+        validationRules: {
+          type: 'array',
+          required: true,
+          minLength: 1,
+          maxLength: 20
+        }
+      },
+      {
         key: 'security.require.approval',
         value: false,
         category: 'security',

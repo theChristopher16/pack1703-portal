@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { MapPin, Clock, Car, Info, ExternalLink, Star } from 'lucide-react';
+import { MapPin, Clock, Car, Info, ExternalLink } from 'lucide-react';
 import { Location } from '../../types/firestore';
+import CyclingScoutIcon from '../ui/CyclingScoutIcon';
 
 interface LocationCardProps {
   location: Location;
@@ -94,7 +95,7 @@ const LocationCard: React.FC<LocationCardProps> = ({
         {/* Favorite/Important Indicator */}
         {location.isImportant && (
           <div className="flex items-center justify-center w-8 h-8 bg-primary-100 rounded-full">
-            <Star className="w-4 h-4 text-primary-500 fill-current" />
+            <CyclingScoutIcon size={16} interval={2500} />
           </div>
         )}
       </div>

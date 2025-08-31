@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Pin, Filter, Clock, Star, MessageSquare } from 'lucide-react';
+import { Pin, Filter, Clock, MessageSquare } from 'lucide-react';
 import AnnouncementCard from './AnnouncementCard';
 import { Announcement } from '../../types/firestore';
+import CyclingScoutIcon from '../ui/CyclingScoutIcon';
 
 interface AnnouncementFeedProps {
   announcements: Announcement[];
@@ -154,7 +155,7 @@ const AnnouncementFeed: React.FC<AnnouncementFeedProps> = ({
                     className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                   />
                   <div className="flex items-center space-x-2">
-                    <Star className="w-4 h-4 text-accent-500" />
+                    <CyclingScoutIcon size={16} interval={3500} />
                     <span className="text-sm font-medium text-gray-900">
                       Event Related ({eventRelatedCount})
                     </span>

@@ -154,6 +154,57 @@ export const ConfigManager: React.FC<ConfigManagerProps> = ({ className = '' }) 
     const type = config.validationRules?.type || 'string';
 
     switch (type) {
+      case 'array':
+        return (
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                placeholder="Add new item"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                    const newArray = Array.isArray(value) ? [...value, e.currentTarget.value.trim()] : [e.currentTarget.value.trim()];
+                    onChange(newArray);
+                    e.currentTarget.value = '';
+                  }
+                }}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+              <button
+                onClick={(e) => {
+                  const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                  if (input.value.trim()) {
+                    const newArray = Array.isArray(value) ? [...value, input.value.trim()] : [input.value.trim()];
+                    onChange(newArray);
+                    input.value = '';
+                  }
+                }}
+                className="px-3 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200"
+              >
+                Add
+              </button>
+            </div>
+            {Array.isArray(value) && value.length > 0 && (
+              <div className="space-y-1">
+                {value.map((item: string, index: number) => (
+                  <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                    <span className="flex-1 text-sm">{item}</span>
+                    <button
+                      onClick={() => {
+                        const newArray = value.filter((_: string, i: number) => i !== index);
+                        onChange(newArray);
+                      }}
+                      className="text-red-500 hover:text-red-700 transition-colors duration-200"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+
       case 'boolean':
         return (
           <select
@@ -439,7 +490,15 @@ export const ConfigManager: React.FC<ConfigManagerProps> = ({ className = '' }) 
                 <div className="bg-gray-50 rounded-lg p-3">
                   <div className="text-sm text-gray-600 mb-1">Current Value:</div>
                   <div className="font-mono text-gray-900 break-all">
-                    {typeof config.value === 'boolean' 
+                    {Array.isArray(config.value) ? (
+                      <div className="flex flex-wrap gap-1">
+                        {config.value.map((item: string, index: number) => (
+                          <span key={index} className="inline-block px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    ) : typeof config.value === 'boolean' 
                       ? (config.value ? 'true' : 'false')
                       : String(config.value)
                     }

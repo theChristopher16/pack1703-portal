@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Send, Users, MessageCircle, Settings, AlertTriangle, CheckCircle, User, Edit, Image, Smile, Type, Palette, Share2, Bold, Italic, Underline, Code, Quote, List, Link, Trash2, Shield, Ban, VolumeX, Loader2 } from 'lucide-react';
 import chatService, { ChatUser, ChatMessage, ChatChannel, SessionManager } from '../../services/chatService';
-import giphyService, { GiphyGif } from '../../services/giphyService';
+import tenorService, { TenorGif } from '../../services/tenorService';
 import { useToast } from '../../contexts/ToastContext';
 
 
@@ -28,10 +28,10 @@ const ChatAdmin: React.FC = () => {
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [showGifPicker, setShowGifPicker] = useState(false);
-  const [gifs, setGifs] = useState<GiphyGif[]>([]);
+  const [gifs, setGifs] = useState<TenorGif[]>([]);
   const [gifSearchQuery, setGifSearchQuery] = useState('');
   const [isLoadingGifs, setIsLoadingGifs] = useState(false);
-  const [gifSearchResults, setGifSearchResults] = useState<GiphyGif[]>([]);
+  const [gifSearchResults, setGifSearchResults] = useState<TenorGif[]>([]);
   const [showGifSearch, setShowGifSearch] = useState(false);
   const { showSuccess, showError, showInfo, showWarning } = useToast();
   const [systemStatus, setSystemStatus] = useState({
@@ -278,7 +278,7 @@ const ChatAdmin: React.FC = () => {
   const loadTrendingGifs = async () => {
     setIsLoadingGifs(true);
     try {
-      const trendingGifs = await giphyService.getTrendingGifs(20);
+      const trendingGifs = await tenorService.getTrendingGifs(20);
       setGifs(trendingGifs);
       showInfo('GIFs loaded', 'Trending GIFs are ready to use!');
     } catch (error) {
@@ -297,7 +297,7 @@ const ChatAdmin: React.FC = () => {
 
     setIsLoadingGifs(true);
     try {
-      const results = await giphyService.searchGifs(query, 20);
+      const results = await tenorService.searchGifs(query, 20);
       setGifSearchResults(results);
       if (results.length > 0) {
         showSuccess('GIFs found', `Found ${results.length} GIFs for "${query}"`);
@@ -317,8 +317,8 @@ const ChatAdmin: React.FC = () => {
     searchGifs(gifSearchQuery);
   };
 
-  const insertGif = (gif: GiphyGif) => {
-    setNewMessage(prev => prev + ` ![${gif.title}](${gif.images.fixed_height.url})`);
+  const insertGif = (gif: TenorGif) => {
+    setNewMessage(prev => prev + ` ![${gif.title}](${gif.media_formats.gif.url})`);
     setShowGifPicker(false);
     setShowGifSearch(false);
     setGifSearchQuery('');
@@ -1003,7 +1003,7 @@ const ChatAdmin: React.FC = () => {
                       {/* API Status */}
                       <div className="mb-3 p-2 bg-gray-50 rounded-lg">
                         <p className="text-xs text-gray-600">
-                          {giphyService.getApiStatus().message}
+                          {tenorService.getApiStatus()}
                         </p>
                       </div>
 
@@ -1027,7 +1027,7 @@ const ChatAdmin: React.FC = () => {
                               title={gif.title}
                             >
                               <img 
-                                src={gif.images.fixed_height_small.url} 
+                                src={gif.media_formats.tinygif.url} 
                                 alt={gif.title} 
                                 className="w-full h-full object-cover"
                               />

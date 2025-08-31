@@ -99,7 +99,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 return (
                   <button
                     key={item.name}
-                    onClick={() => handleNavigation(item.href)}
+                    onClick={() => {
+                      console.log('Main toolbar navigation clicked:', item.href);
+                      window.location.href = item.href;
+                    }}
                     className={`px-3 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
                       isActive(item.href)
                         ? 'text-primary-600 bg-primary-50 shadow-soft'
@@ -125,7 +128,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 return (
                   <button
                     key={item.name}
-                    onClick={() => handleNavigation(item.href)}
+                    onClick={() => {
+                      console.log('Medium toolbar navigation clicked:', item.href);
+                      window.location.href = item.href;
+                    }}
                     className={`px-3 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
                       isActive(item.href)
                         ? 'text-primary-600 bg-primary-50 shadow-soft'

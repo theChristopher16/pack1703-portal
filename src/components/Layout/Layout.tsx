@@ -148,8 +148,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="hidden md:flex items-center">
               <div className="relative">
                 <button 
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  onBlur={() => setTimeout(() => setIsDropdownOpen(false), 150)}
+                  onClick={() => {
+                    console.log('More button clicked, current state:', isDropdownOpen);
+                    setIsDropdownOpen(!isDropdownOpen);
+                  }}
                   className="flex items-center space-x-2 px-3 py-2 rounded-xl font-medium text-gray-600 hover:text-primary-600 hover:bg-primary-50/50 transition-all duration-300"
                 >
                   <span className="text-sm">More</span>
@@ -158,7 +160,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 
                 {/* Dropdown Menu */}
                 {isDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-48 bg-white/95 backdrop-blur-md rounded-2xl shadow-soft border border-white/50 z-50">
+                  <div 
+                    className="absolute top-full right-0 mt-2 w-48 bg-white/95 backdrop-blur-md rounded-2xl shadow-soft border border-white/50 z-50"
+                    onMouseLeave={() => {
+                      console.log('Mouse left dropdown, closing');
+                      setIsDropdownOpen(false);
+                    }}
+                  >
                     <div className="py-2">
                       {navigation.slice(4).map((item) => {
                         const Icon = item.icon;
@@ -169,9 +177,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                               e.preventDefault();
                               e.stopPropagation();
                               console.log('Dropdown navigation clicked:', item.href);
-                              // Force immediate navigation
                               console.log('Forcing navigation to:', item.href);
-                              window.location.href = item.href;
+                              // Close dropdown first
+                              setIsDropdownOpen(false);
+                              // Then navigate
+                              setTimeout(() => {
+                                window.location.href = item.href;
+                              }, 10);
                             }}
                             className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
                               isActive(item.href)
@@ -192,9 +204,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             e.preventDefault();
                             e.stopPropagation();
                             console.log('Admin navigation clicked');
-                            // Force immediate navigation
                             console.log('Forcing admin navigation');
-                            window.location.href = '/admin';
+                            // Close dropdown first
+                            setIsDropdownOpen(false);
+                            // Then navigate
+                            setTimeout(() => {
+                              window.location.href = '/admin';
+                            }, 10);
                           }}
                           className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
                             isActive('/admin')

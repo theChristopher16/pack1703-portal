@@ -199,7 +199,7 @@ const EventDetailPage: React.FC = () => {
       'VERSION:2.0',
       'PRODID:-//Pack 1703//Event Calendar//EN',
       'BEGIN:VEVENT',
-      `UID:${event.id}@pack1703.com`,
+              `UID:${event.id}@sfpack1703.com`,
       `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
       `DTSTART:${startDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
       `DTEND:${endDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,

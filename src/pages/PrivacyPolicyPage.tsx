@@ -394,8 +394,8 @@ const PrivacyPolicyPage: React.FC = () => {
             <div className="mt-6 p-4 bg-primary/10 rounded-lg">
               <p className="text-text font-medium">
                 To exercise any of these rights, contact us at: 
-                <a href="mailto:privacy@pack1703.com" className="text-accent hover:text-accent-dark ml-1">
-                  privacy@pack1703.com
+                <a href="mailto:cubmaster@sfpack1703.com" className="text-accent hover:text-accent-dark ml-1">
+                  cubmaster@sfpack1703.com
                 </a>
               </p>
             </div>
@@ -449,8 +449,8 @@ const PrivacyPolicyPage: React.FC = () => {
             <div className="space-y-2">
               <p className="text-text">
                 <strong>Email:</strong> 
-                <a href="mailto:privacy@pack1703.com" className="text-accent hover:text-accent-dark ml-2">
-                  privacy@pack1703.com
+                <a href="mailto:cubmaster@sfpack1703.com" className="text-accent hover:text-accent-dark ml-2">
+                  cubmaster@sfpack1703.com
                 </a>
               </p>
               <p className="text-text">

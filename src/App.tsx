@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import configService from './services/configService';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ToastProvider } from './contexts/ToastContext';
 
 // Components
 import Layout from './components/Layout/Layout';
@@ -77,8 +78,9 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <AdminProvider>
-        <Router>
+      <ToastProvider>
+        <AdminProvider>
+          <Router>
           <Routes>
           {/* Public Routes with Layout */}
           <Route path="/" element={<Layout><HomePage /></Layout>} />
@@ -110,9 +112,10 @@ function App() {
           <Route path="/admin/settings" element={<AdminLayout><div className="max-w-7xl mx-auto px-4 py-8"><h1 className="text-2xl font-bold text-gray-900">Admin Settings - Coming Soon</h1></div></AdminLayout>} />
           
           <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
-        </Routes>
-      </Router>
-    </AdminProvider>
+                  </Routes>
+        </Router>
+      </AdminProvider>
+      </ToastProvider>
     </ErrorBoundary>
   );
 }

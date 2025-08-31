@@ -300,10 +300,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <h3 className="text-lg font-display font-semibold text-gray-900 mb-4">Contact Us</h3>
               <div className="space-y-2 text-gray-600">
                 <p className="font-medium">{packName}</p>
-                <p>Peoria, Illinois</p>
-                {primaryEmail && (
-                  <p>Email: <a href={`mailto:${primaryEmail}`} className="text-primary-600 hover:text-primary-700 font-medium transition-colors duration-200">{primaryEmail}</a></p>
-                )}
+                <p>Houston, TX</p>
+                <p>Email: <a href="mailto:cubmaster@sfpack1703.com" className="text-primary-600 hover:text-primary-700 font-medium transition-colors duration-200">cubmaster@sfpack1703.com</a></p>
               </div>
             </div>
 

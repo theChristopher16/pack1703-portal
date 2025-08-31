@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Send, Users, MessageCircle, Settings, User, Edit, MoreVertical, Search, Image, Smile, Type, Palette, Share2, Bold, Italic, Underline, Code, Quote, List, Link, Loader2 } from 'lucide-react';
 import chatService, { ChatUser, ChatMessage, ChatChannel } from '../services/chatService';
 import giphyService, { GiphyGif } from '../services/giphyService';
+import { useToast } from '../contexts/ToastContext';
 
 const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -31,6 +32,7 @@ const ChatPage: React.FC = () => {
   const [isLoadingGifs, setIsLoadingGifs] = useState(false);
   const [gifSearchResults, setGifSearchResults] = useState<GiphyGif[]>([]);
   const [showGifSearch, setShowGifSearch] = useState(false);
+  const { showSuccess, showError, showInfo } = useToast();
 
   // Den emoji mapping
   const denEmojis: Record<string, string> = {
@@ -131,8 +133,10 @@ const ChatPage: React.FC = () => {
     try {
       const trendingGifs = await giphyService.getTrendingGifs(20);
       setGifs(trendingGifs);
+      showInfo('GIFs loaded', 'Trending GIFs are ready to use!');
     } catch (error) {
       console.error('Error loading trending GIFs:', error);
+      showError('GIFs failed to load', 'Using fallback GIFs instead.');
     } finally {
       setIsLoadingGifs(false);
     }
@@ -148,8 +152,14 @@ const ChatPage: React.FC = () => {
     try {
       const results = await giphyService.searchGifs(query, 20);
       setGifSearchResults(results);
+      if (results.length > 0) {
+        showSuccess('GIFs found', `Found ${results.length} GIFs for "${query}"`);
+      } else {
+        showInfo('No GIFs found', `Try a different search term for "${query}"`);
+      }
     } catch (error) {
       console.error('Error searching GIFs:', error);
+      showError('Search failed', 'Please try again or use trending GIFs.');
     } finally {
       setIsLoadingGifs(false);
     }
@@ -166,6 +176,7 @@ const ChatPage: React.FC = () => {
     setShowGifSearch(false);
     setGifSearchQuery('');
     setGifSearchResults([]);
+    showSuccess('GIF added!', `"${gif.title}" has been added to your message.`);
   };
 
   // Helper functions for message grouping and date separators
@@ -344,10 +355,10 @@ const ChatPage: React.FC = () => {
       setIsUnderline(false);
       setSelectedColor('#000000');
       setSelectedFont('normal');
+      showSuccess('Message sent!', 'Your message has been delivered to the channel.');
     } catch (error) {
       console.error('Failed to send message:', error);
-      // Show user-friendly error
-      alert('Failed to send message. Please try again.');
+      showError('Message failed to send', 'Please check your connection and try again.');
     }
   };
 

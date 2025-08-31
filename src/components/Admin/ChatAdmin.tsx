@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Send, Users, MessageCircle, Settings, AlertTriangle, CheckCircle, User, Edit, Image, Smile, Type, Palette, Share2, Bold, Italic, Underline, Code, Quote, List, Link, Trash2, Shield, Ban, VolumeX, Loader2 } from 'lucide-react';
 import chatService, { ChatUser, ChatMessage, ChatChannel, SessionManager } from '../../services/chatService';
 import giphyService, { GiphyGif } from '../../services/giphyService';
+import { useToast } from '../../contexts/ToastContext';
 
 
 
@@ -32,6 +33,7 @@ const ChatAdmin: React.FC = () => {
   const [isLoadingGifs, setIsLoadingGifs] = useState(false);
   const [gifSearchResults, setGifSearchResults] = useState<GiphyGif[]>([]);
   const [showGifSearch, setShowGifSearch] = useState(false);
+  const { showSuccess, showError, showInfo, showWarning } = useToast();
   const [systemStatus, setSystemStatus] = useState({
     totalUsers: 0,
     onlineUsers: 0,
@@ -191,10 +193,10 @@ const ChatAdmin: React.FC = () => {
       setIsUnderline(false);
       setSelectedColor('#000000');
       setSelectedFont('normal');
+      showSuccess('Admin message sent!', 'Your message has been delivered to the channel.');
     } catch (error) {
       console.error('Failed to send message:', error);
-      // Show user-friendly error
-      alert('Failed to send message. Please try again.');
+      showError('Message failed to send', 'Please check your connection and try again.');
     }
   };
 
@@ -203,8 +205,10 @@ const ChatAdmin: React.FC = () => {
 
     try {
       await chatService.deleteMessage(messageId);
+      showSuccess('Message deleted', 'The message has been removed from the channel.');
     } catch (error) {
       console.error('Failed to delete message:', error);
+      showError('Delete failed', 'Unable to delete the message. Please try again.');
     }
   };
 
@@ -276,8 +280,10 @@ const ChatAdmin: React.FC = () => {
     try {
       const trendingGifs = await giphyService.getTrendingGifs(20);
       setGifs(trendingGifs);
+      showInfo('GIFs loaded', 'Trending GIFs are ready to use!');
     } catch (error) {
       console.error('Error loading trending GIFs:', error);
+      showError('GIFs failed to load', 'Using fallback GIFs instead.');
     } finally {
       setIsLoadingGifs(false);
     }
@@ -293,8 +299,14 @@ const ChatAdmin: React.FC = () => {
     try {
       const results = await giphyService.searchGifs(query, 20);
       setGifSearchResults(results);
+      if (results.length > 0) {
+        showSuccess('GIFs found', `Found ${results.length} GIFs for "${query}"`);
+      } else {
+        showInfo('No GIFs found', `Try a different search term for "${query}"`);
+      }
     } catch (error) {
       console.error('Error searching GIFs:', error);
+      showError('Search failed', 'Please try again or use trending GIFs.');
     } finally {
       setIsLoadingGifs(false);
     }
@@ -311,6 +323,7 @@ const ChatAdmin: React.FC = () => {
     setShowGifSearch(false);
     setGifSearchQuery('');
     setGifSearchResults([]);
+    showSuccess('GIF added!', `"${gif.title}" has been added to your message.`);
   };
 
   const shareMessage = (message: ChatMessage) => {

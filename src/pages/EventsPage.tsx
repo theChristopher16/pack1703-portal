@@ -73,7 +73,7 @@ const EventsPage: React.FC = () => {
           description: firebaseEvent.description || '',
           packingList: firebaseEvent.packingList || [],
           fees: firebaseEvent.fees || null,
-          contactEmail: firebaseEvent.contactEmail || 'pack1703@gmail.com',
+          contactEmail: firebaseEvent.contactEmail || 'cubmaster@sfpack1703.com',
           isOvernight: firebaseEvent.isOvernight || false,
           requiresPermission: firebaseEvent.requiresPermission || false,
           attachments: firebaseEvent.attachments || []
@@ -108,7 +108,7 @@ const EventsPage: React.FC = () => {
             description: 'Join us for our annual fall campout! This is a great opportunity for families to bond, learn outdoor skills, and enjoy nature together.',
             packingList: ['Tent and sleeping bags', 'Warm clothing', 'Flashlight', 'Water bottle'],
             fees: 15,
-            contactEmail: 'pack1703@gmail.com',
+            contactEmail: 'cubmaster@sfpack1703.com',
             isOvernight: true,
             requiresPermission: true
           }
@@ -224,7 +224,7 @@ const EventsPage: React.FC = () => {
       'VERSION:2.0',
       'PRODID:-//Pack 1703//Event Calendar//EN',
       'BEGIN:VEVENT',
-      `UID:${event.id}@pack1703.com`,
+              `UID:${event.id}@sfpack1703.com`,
       `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
       `DTSTART:${new Date(`${event.date}T${event.startTime}`).toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
       `DTEND:${new Date(`${event.date}T${event.endTime}`).toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,

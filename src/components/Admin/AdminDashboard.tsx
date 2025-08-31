@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../contexts/AdminContext';
 import { EntityType, AdminActionType } from '../../types/admin';
 import ConfigManager from './ConfigManager';
+import { useToast } from '../../contexts/ToastContext';
 
 export const AdminDashboard: React.FC = () => {
   const {
@@ -24,6 +25,7 @@ export const AdminDashboard: React.FC = () => {
     setError,
     clearError
   } = useAdmin();
+  const { showSuccess, showError, showInfo } = useToast();
 
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [selectedEntityType, setSelectedEntityType] = useState<EntityType>('event');
@@ -42,13 +44,15 @@ export const AdminDashboard: React.FC = () => {
     e.preventDefault();
     const success = await login(loginForm.email, loginForm.password);
     if (success) {
-      addNotification('success', 'Login Successful', 'Welcome to the admin dashboard!');
+      showSuccess('Login Successful', 'Welcome to the admin dashboard!');
+    } else {
+      showError('Login Failed', 'Please check your credentials and try again.');
     }
   };
 
   const handleLogout = () => {
     logout();
-    addNotification('info', 'Logged Out', 'You have been successfully logged out.');
+    showInfo('Logged Out', 'You have been successfully logged out.');
   };
 
   const handleBulkOperation = async () => {
@@ -81,7 +85,7 @@ export const AdminDashboard: React.FC = () => {
                   value={loginForm.email}
                   onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-200"
-                  placeholder="admin@pack1703.com"
+                  placeholder="admin@sfpack1703.com"
                   required
                 />
               </div>
@@ -112,7 +116,7 @@ export const AdminDashboard: React.FC = () => {
             
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                Demo credentials: admin@pack1703.com / any password
+                Demo credentials: admin@sfpack1703.com / any password
               </p>
             </div>
           </div>

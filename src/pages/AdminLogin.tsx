@@ -68,7 +68,7 @@ const AdminLogin: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input-rainbow"
-                placeholder="admin@pack1703.com"
+                placeholder="admin@sfpack1703.com"
                 required
               />
             </div>
@@ -108,7 +108,7 @@ const AdminLogin: React.FC = () => {
           
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Demo credentials: admin@pack1703.com / any password
+              Demo credentials: admin@sfpack1703.com / any password
             </p>
           </div>
         </div>

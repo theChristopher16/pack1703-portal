@@ -82,7 +82,7 @@ const EventDetailPage: React.FC = () => {
           'Personal medications'
         ],
         fees: 15,
-        contactEmail: 'pack1703@gmail.com',
+        contactEmail: 'cubmaster@sfpack1703.com',
         contactPhone: '(555) 123-4567',
         isOvernight: true,
         requiresPermission: true,
@@ -168,7 +168,7 @@ const EventDetailPage: React.FC = () => {
       'VERSION:2.0',
       'PRODID:-//Pack 1703//Event Calendar//EN',
       'BEGIN:VEVENT',
-      `UID:${event.id}@pack1703.com`,
+              `UID:${event.id}@sfpack1703.com`,
       `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
       `DTSTART:${startDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
       `DTEND:${endDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,

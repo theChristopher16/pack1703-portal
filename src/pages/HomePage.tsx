@@ -77,28 +77,42 @@ const HomePage: React.FC = () => {
       description: 'Our smart system handles the heavy lifting of organization and coordination, making leadership transitions seamless and supporting busy families who can\'t attend every meeting.',
       color: 'text-green-600',
       bgColor: 'bg-green-50'
+    },
+    {
+      emoji: '🌟',
+      title: 'Inclusive Community',
+      description: 'Every family is welcome regardless of experience level. We believe every child deserves the adventure of scouting.',
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50'
     }
   ];
 
   const techFeatures = [
     {
-      emoji: '⚡',
-      title: 'AI-Enhanced Development',
-      description: 'Built with LLM assistance, ensuring no function or call is missed through systematic development with fine-grained testing and validation at every step.',
-      color: 'text-accent-500',
-      bgColor: 'bg-accent-50'
-    },
-    {
-      emoji: '🔒',
-      title: 'Enterprise Security',
-      description: 'Robust data protection with comprehensive validation, secure authentication, and privacy-first design for family safety.',
+      emoji: '📱',
+      title: 'Easy to Use',
+      description: 'Simple, intuitive interface that works on phones, tablets, and computers. No tech expertise required.',
       color: 'text-blue-600',
       bgColor: 'bg-blue-50'
     },
     {
-      emoji: '🚀',
-      title: 'Modern Architecture',
-      description: 'Built on Firebase with real-time updates, cloud functions, and responsive design for seamless cross-device experience.',
+      emoji: '🔒',
+      title: 'Family Privacy',
+      description: 'Your family\'s information stays private and secure. We use the same security standards as major banks.',
+      color: 'text-green-600',
+      bgColor: 'bg-green-50'
+    },
+    {
+      emoji: '⚡',
+      title: 'Real-Time Updates',
+      description: 'Get instant notifications about events, weather changes, and important updates. Never miss a thing.',
+      color: 'text-accent-500',
+      bgColor: 'bg-accent-50'
+    },
+    {
+      emoji: '📊',
+      title: 'Smart Organization',
+      description: 'Our system automatically organizes events, tracks RSVPs, and manages volunteer needs so leaders can focus on the kids.',
       color: 'text-purple-600',
       bgColor: 'bg-purple-50'
     }
@@ -237,8 +251,12 @@ const HomePage: React.FC = () => {
           <h2 className="text-4xl font-display font-bold text-gray-900 mb-12 text-center animate-fade-in">
             Why Choose <span className="text-gradient">Our Scout Pack</span>?
           </h2>
+          <p className="text-xl text-gray-600 max-w-4xl mx-auto text-center mb-12 leading-relaxed">
+            We're not just another scout pack. We're a community that believes every family deserves 
+            amazing adventures, regardless of their schedule or experience level.
+          </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {scoutingFeatures.map((feature, index) => (
               <div
                 key={feature.title}
@@ -264,10 +282,14 @@ const HomePage: React.FC = () => {
         {/* Technology Features Section */}
         <div className="mb-20">
           <h2 className="text-4xl font-display font-bold text-gray-900 mb-12 text-center animate-fade-in">
-            Built with <span className="text-gradient">Modern Technology</span>
+            How Our <span className="text-gradient">System Works</span>
           </h2>
+          <p className="text-xl text-gray-600 max-w-4xl mx-auto text-center mb-12 leading-relaxed">
+            We've built a smart system that takes care of the complicated stuff so you can focus on 
+            what matters most - spending time with your family and having fun adventures.
+          </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {techFeatures.map((feature, index) => (
               <div
                 key={feature.title}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Send, Users, MessageCircle, Settings, User, Edit, MoreVertical, Search, Image, Smile, Type, Palette, Share2, Bold, Italic, Underline, Code, Quote, List, Link, Loader2 } from 'lucide-react';
-import chatService, { ChatUser, ChatMessage, ChatChannel } from '../services/chatService';
+import chatService, { ChatUser, ChatMessage, ChatChannel, MessageReaction } from '../services/chatService';
 import tenorService, { TenorGif } from '../services/tenorService';
 import { useToast } from '../contexts/ToastContext';
 
@@ -32,6 +32,7 @@ const ChatPage: React.FC = () => {
   const [isLoadingGifs, setIsLoadingGifs] = useState(false);
   const [gifSearchResults, setGifSearchResults] = useState<TenorGif[]>([]);
   const [showGifSearch, setShowGifSearch] = useState(false);
+  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const { showSuccess, showError, showInfo } = useToast();
 
   // Den emoji mapping
@@ -178,6 +179,32 @@ const ChatPage: React.FC = () => {
     setGifSearchResults([]);
     showSuccess('GIF added!', `"${gif.title}" has been added to your message.`);
   };
+
+  const handleAddReaction = async (messageId: string, emoji: string) => {
+    if (!currentUser) {
+      showError('Not signed in', 'Please sign in to add reactions.');
+      return;
+    }
+
+    try {
+      await chatService.addReaction(messageId, emoji, currentUser.id, currentUser.name);
+      setShowReactionPicker(null);
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+      showError('Reaction failed', 'Unable to add reaction. Please try again.');
+    }
+  };
+
+  const getReactionCount = (message: ChatMessage, emoji: string): number => {
+    return message.reactions?.filter(r => r.emoji === emoji).length || 0;
+  };
+
+  const hasUserReacted = (message: ChatMessage, emoji: string): boolean => {
+    if (!currentUser) return false;
+    return message.reactions?.some(r => r.userId === currentUser.id && r.emoji === emoji) || false;
+  };
+
+  const commonReactions = ['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '🔥', '👏', '🙏'];
 
   // Helper functions for message grouping and date separators
   const formatMessageTime = (date: Date) => {
@@ -739,10 +766,36 @@ const ChatPage: React.FC = () => {
                             }`}>
                               {message.message}
                             </p>
+                            
+                            {/* Reactions */}
+                            {message.reactions && message.reactions.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {Array.from(new Set(message.reactions.map(r => r.emoji))).map(emoji => (
+                                  <button
+                                    key={emoji}
+                                    onClick={() => handleAddReaction(message.id, emoji)}
+                                    className={`px-2 py-1 text-xs rounded-full transition-colors duration-200 ${
+                                      hasUserReacted(message, emoji)
+                                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    }`}
+                                  >
+                                    {emoji} {getReactionCount(message, emoji)}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                           
                           {/* Message Actions */}
                           <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <button
+                              onClick={() => setShowReactionPicker(showReactionPicker === message.id ? null : message.id)}
+                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                              title="Add reaction"
+                            >
+                              <Smile className="w-4 h-4" />
+                            </button>
                             <button
                               onClick={() => shareMessage(message)}
                               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
@@ -757,6 +810,23 @@ const ChatPage: React.FC = () => {
                   );
                 })}
               </div>
+              
+              {/* Reaction Picker */}
+              {showReactionPicker && (
+                <div className="absolute bottom-20 right-4 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-10">
+                  <div className="grid grid-cols-5 gap-1">
+                    {commonReactions.map(emoji => (
+                      <button
+                        key={emoji}
+                        onClick={() => handleAddReaction(showReactionPicker, emoji)}
+                        className="w-8 h-8 text-lg hover:bg-gray-100 rounded transition-colors duration-200"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Send Message */}

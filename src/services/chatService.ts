@@ -52,6 +52,14 @@ export interface ChatMessage {
   isSystem: boolean;
   isAdmin: boolean;
   den?: string;
+  reactions?: MessageReaction[];
+}
+
+export interface MessageReaction {
+  emoji: string;
+  userId: string;
+  userName: string;
+  timestamp: Date;
 }
 
 export interface ChatChannel {
@@ -841,6 +849,66 @@ class ChatService {
     } catch (error) {
       console.warn('Failed to subscribe to online users:', error);
       return () => {};
+    }
+  }
+
+  async addReaction(messageId: string, emoji: string, userId: string, userName: string): Promise<void> {
+    try {
+      const messageRef = doc(db, 'chat-messages', messageId);
+      const messageDoc = await getDoc(messageRef);
+      
+      if (!messageDoc.exists()) {
+        throw new Error('Message not found');
+      }
+
+      const messageData = messageDoc.data();
+      const reactions = messageData.reactions || [];
+      
+      // Check if user already reacted with this emoji
+      const existingReactionIndex = reactions.findIndex(
+        (r: MessageReaction) => r.userId === userId && r.emoji === emoji
+      );
+
+      if (existingReactionIndex >= 0) {
+        // Remove existing reaction (toggle off)
+        reactions.splice(existingReactionIndex, 1);
+      } else {
+        // Add new reaction
+        reactions.push({
+          emoji,
+          userId,
+          userName,
+          timestamp: new Date()
+        });
+      }
+
+      await updateDoc(messageRef, { reactions });
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+      throw error;
+    }
+  }
+
+  async removeReaction(messageId: string, emoji: string, userId: string): Promise<void> {
+    try {
+      const messageRef = doc(db, 'chat-messages', messageId);
+      const messageDoc = await getDoc(messageRef);
+      
+      if (!messageDoc.exists()) {
+        throw new Error('Message not found');
+      }
+
+      const messageData = messageDoc.data();
+      const reactions = messageData.reactions || [];
+      
+      const updatedReactions = reactions.filter(
+        (r: MessageReaction) => !(r.userId === userId && r.emoji === emoji)
+      );
+
+      await updateDoc(messageRef, { reactions: updatedReactions });
+    } catch (error) {
+      console.error('Error removing reaction:', error);
+      throw error;
     }
   }
 

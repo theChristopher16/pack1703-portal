@@ -33,7 +33,7 @@ class TenorService {
 
   constructor() {
     // Get API key from environment or use a default one for testing
-    this.apiKey = process.env.REACT_APP_TENOR_API_KEY || 'AIzaSyCJqXqXqXqXqXqXqXqXqXqXqXqXqXqXqXq'; // Replace with actual default key
+    this.apiKey = process.env.REACT_APP_TENOR_API_KEY || 'AIzaSyCbPAw3QOuuzRJjUx1_jC0wgJPtVLYxLqY';
   }
 
   async getTrendingGifs(limit: number = 20): Promise<TenorGif[]> {

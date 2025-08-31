@@ -289,7 +289,31 @@ class ChatService {
       
       return channels;
     } catch (error) {
-      console.warn('Failed to fetch channels, using defaults:', error);
+      console.warn('Failed to fetch channels (index may be building), using defaults:', error);
+      // Try a simpler query without ordering while index builds
+      try {
+        const channelsRef = collection(db, 'chat-channels');
+        const simpleQuery = query(channelsRef, where('isActive', '==', true));
+        const snapshot = await getDocs(simpleQuery);
+        
+        const channels = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date(),
+            lastActivity: data.lastActivity?.toDate() || new Date()
+          } as ChatChannel;
+        });
+        
+        if (channels.length > 0) {
+          return channels;
+        }
+      } catch (fallbackError) {
+        console.warn('Fallback query also failed:', fallbackError);
+      }
+      
       return this.getDefaultChannels();
     }
   }
@@ -334,7 +358,8 @@ class ChatService {
         } as ChatMessage;
       }).reverse(); // Reverse to get chronological order
     } catch (error) {
-      console.warn('Failed to fetch messages:', error);
+      console.warn('Failed to fetch messages (index may be building):', error);
+      // Return empty array while index is building
       return [];
     }
   }
@@ -385,7 +410,8 @@ class ChatService {
         } as ChatUser;
       });
     } catch (error) {
-      console.warn('Failed to fetch online users:', error);
+      console.warn('Failed to fetch online users (index may be building):', error);
+      // Return empty array while index is building
       return [];
     }
   }

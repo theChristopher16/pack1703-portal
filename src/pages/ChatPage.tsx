@@ -9,12 +9,47 @@ const ChatPage: React.FC = () => {
   const [selectedChannel, setSelectedChannel] = useState<string>('general');
   const [newMessage, setNewMessage] = useState('');
   const [isConnected, setIsConnected] = useState(false);
-  const [expandedDens, setExpandedDens] = useState<Set<string>>(new Set());
+  const [expandedDens, setExpandedDens] = useState<Set<string>>(new Set(['pack', 'general']));
   const [currentUser, setCurrentUser] = useState<ChatUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Den emoji mapping
+  const denEmojis: Record<string, string> = {
+    'pack': '🏕️',
+    'lion': '🦁',
+    'tiger': '🐯',
+    'wolf': '🐺',
+    'bear': '🐻',
+    'webelos': '🏔️',
+    'arrow-of-light': '🏹',
+    'general': '💬'
+  };
+
+  // Den display names
+  const denNames: Record<string, string> = {
+    'pack': 'Pack Channels',
+    'lion': 'Lion Den',
+    'tiger': 'Tiger Den',
+    'wolf': 'Wolf Den',
+    'bear': 'Bear Den',
+    'webelos': 'Webelos Den',
+    'arrow-of-light': 'Arrow of Light',
+    'general': 'General'
+  };
+
+  // Toggle den expansion
+  const toggleDen = (denType: string) => {
+    const newExpanded = new Set(expandedDens);
+    if (newExpanded.has(denType)) {
+      newExpanded.delete(denType);
+    } else {
+      newExpanded.add(denType);
+    }
+    setExpandedDens(newExpanded);
+  };
 
   // Initialize chat (only once)
   useEffect(() => {
@@ -171,6 +206,21 @@ const ChatPage: React.FC = () => {
     });
   }, [filteredChannels]);
 
+  // Group channels by den type
+  const groupedChannels = React.useMemo(() => {
+    const groups: Record<string, ChatChannel[]> = {};
+    
+    uniqueChannels.forEach(channel => {
+      const denType = channel.denType || 'general';
+      if (!groups[denType]) {
+        groups[denType] = [];
+      }
+      groups[denType].push(channel);
+    });
+    
+    return groups;
+  }, [uniqueChannels]);
+
   // Debug: Check for duplicate channels
   useEffect(() => {
     if (channels.length > 0) {
@@ -284,23 +334,54 @@ const ChatPage: React.FC = () => {
               <div className="p-4">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Channels</h3>
                 
-                                  {/* All Channels */}
-                  <div className="space-y-1">
-                    {uniqueChannels.map(channel => (
-                    <button
-                      key={`channel-${channel.id}`}
-                      onClick={() => setSelectedChannel(channel.id)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                        selectedChannel === channel.id
-                          ? 'bg-blue-100 text-blue-700 font-medium shadow-sm'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span>#{channel.name}</span>
-                        <span className="text-xs text-gray-500">{channel.messageCount}</span>
-                      </div>
-                    </button>
+                {/* Den-organized Channels */}
+                <div className="space-y-3">
+                  {Object.entries(groupedChannels).map(([denType, denChannels]) => (
+                    <div key={denType} className="space-y-1">
+                      {/* Den Header */}
+                      <button
+                        onClick={() => toggleDen(denType)}
+                        className="w-full flex items-center justify-between px-2 py-1 rounded text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex items-center">
+                          <span className="mr-2">{denEmojis[denType] || '💬'}</span>
+                          <span>{denNames[denType]}</span>
+                          <span className="ml-2 text-xs text-gray-500">({denChannels.length})</span>
+                        </div>
+                        <svg
+                          className={`w-4 h-4 transform transition-transform ${
+                            expandedDens.has(denType) ? 'rotate-90' : ''
+                          }`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                      
+                      {/* Den Channels */}
+                      {expandedDens.has(denType) && (
+                        <div className="ml-4 space-y-1">
+                          {denChannels.map(channel => (
+                            <button
+                              key={`channel-${channel.id}`}
+                              onClick={() => setSelectedChannel(channel.id)}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                selectedChannel === channel.id
+                                  ? 'bg-blue-100 text-blue-700 font-medium shadow-sm'
+                                  : 'text-gray-700 hover:bg-gray-100'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span>#{channel.name}</span>
+                                <span className="text-xs text-gray-500">{channel.messageCount}</span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
                 

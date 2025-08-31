@@ -49,6 +49,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
+    "test:run": "react-scripts test --env=jsdom --watchAll=false --passWithNoTests",
     "test:coverage": "react-scripts test --env=jsdom --coverage --watchAll=false",
     "test:watch": "react-scripts test --env=jsdom --watch",
     "eject": "react-scripts eject"
@@ -76,6 +77,8 @@
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
-    "@types/jest": "^30.0.0"
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
   }
 }

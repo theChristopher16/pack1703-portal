@@ -8,18 +8,9 @@ const HomePage: React.FC = () => {
   const [contentLoaded, setContentLoaded] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-
-    const contentTimer = setTimeout(() => {
-      setContentLoaded(true);
-    }, 2500);
-
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(contentTimer);
-    };
+    // Remove artificial loading delays for better performance
+    setIsLoading(false);
+    setContentLoaded(true);
   }, []);
 
   const quickActions = [
@@ -114,12 +105,11 @@ const HomePage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Hero Section with Enhanced Solar-Punk Aesthetic */}
         <div className="text-center mb-20 relative overflow-hidden">
-          {/* Floating Background Elements */}
+          {/* Simplified Background Elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-primary-200/20 to-transparent rounded-full animate-float"></div>
-            <div className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-br from-secondary-200/20 to-transparent rounded-full animate-float" style={{ animationDelay: '2s' }}></div>
-            <div className="absolute bottom-20 left-1/4 w-20 h-20 bg-gradient-to-br from-accent-200/20 to-transparent rounded-full animate-float" style={{ animationDelay: '4s' }}></div>
-            <div className="absolute top-1/2 right-1/3 w-16 h-16 bg-gradient-to-br from-primary-300/20 to-transparent rounded-full animate-float" style={{ animationDelay: '6s' }}></div>
+            <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-primary-200/20 to-transparent rounded-full"></div>
+            <div className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-br from-secondary-200/20 to-transparent rounded-full"></div>
+            <div className="absolute bottom-20 left-1/4 w-20 h-20 bg-gradient-to-br from-accent-200/20 to-transparent rounded-full"></div>
           </div>
 
           {/* Main Hero Content */}

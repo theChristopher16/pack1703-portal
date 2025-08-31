@@ -77,6 +77,13 @@ const HomePage: React.FC = () => {
       description: 'Modern tools and real-time updates keep families connected and informed.',
       color: 'text-accent-500',
       bgColor: 'bg-accent-50'
+    },
+    {
+      emoji: '🤝',
+      title: 'Leader-Agnostic System',
+      description: 'Our smart system handles the heavy lifting of organization and coordination, making leadership transitions seamless and supporting busy families who can\'t attend every meeting.',
+      color: 'text-green-600',
+      bgColor: 'bg-green-50'
     }
   ];
 
@@ -214,7 +221,7 @@ const HomePage: React.FC = () => {
             Why Choose <span className="text-gradient">Our Scout Pack</span>?
           </h2>
 
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
              {features.map((feature, index) => (
                <div
                  key={feature.title}

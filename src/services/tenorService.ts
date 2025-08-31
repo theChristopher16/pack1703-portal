@@ -43,15 +43,22 @@ class TenorService {
 
   async getTrendingGifs(limit: number = 20): Promise<TenorGif[]> {
     try {
+      // Try using the search endpoint with a popular term instead
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
       const response = await fetch(
-        `${this.baseUrl}/trending?key=${this.apiKey}&limit=${limit}&media_filter=gif`
+        `${this.baseUrl}/search?q=funny&key=${this.apiKey}&limit=${limit}&media_filter=gif`,
+        { signal: controller.signal }
       );
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         throw new Error(`Tenor API error: ${response.status}`);
       }
 
-      const data: TenorTrendingResponse = await response.json();
+      const data: TenorSearchResponse = await response.json();
       return data.results || [];
     } catch (error) {
       console.error('Error fetching trending GIFs from Tenor:', error);
@@ -61,9 +68,15 @@ class TenorService {
 
   async searchGifs(query: string, limit: number = 20): Promise<TenorGif[]> {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
       const response = await fetch(
-        `${this.baseUrl}/search?q=${encodeURIComponent(query)}&key=${this.apiKey}&limit=${limit}&media_filter=gif`
+        `${this.baseUrl}/search?q=${encodeURIComponent(query)}&key=${this.apiKey}&limit=${limit}&media_filter=gif`,
+        { signal: controller.signal }
       );
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         throw new Error(`Tenor API error: ${response.status}`);
@@ -90,12 +103,12 @@ class TenorService {
         title: 'Scout Salute',
         media_formats: {
           gif: {
-            url: 'https://media.tenor.com/example1.gif',
+            url: 'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif',
             width: 480,
             height: 270
           },
           tinygif: {
-            url: 'https://media.tenor.com/example1.gif',
+            url: 'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif',
             width: 220,
             height: 124
           }
@@ -108,18 +121,54 @@ class TenorService {
         title: 'Camping Fun',
         media_formats: {
           gif: {
-            url: 'https://media.tenor.com/example2.gif',
+            url: 'https://media.giphy.com/media/26ufcVAuSJbqgFfIs/giphy.gif',
             width: 480,
             height: 270
           },
           tinygif: {
-            url: 'https://media.tenor.com/example2.gif',
+            url: 'https://media.giphy.com/media/26ufcVAuSJbqgFfIs/giphy.gif',
             width: 220,
             height: 124
           }
         },
         created: Date.now(),
         content_description: 'Camping fun GIF'
+      },
+      {
+        id: 'fallback3',
+        title: 'Nature Adventure',
+        media_formats: {
+          gif: {
+            url: 'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif',
+            width: 480,
+            height: 270
+          },
+          tinygif: {
+            url: 'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif',
+            width: 220,
+            height: 124
+          }
+        },
+        created: Date.now(),
+        content_description: 'Nature adventure GIF'
+      },
+      {
+        id: 'fallback4',
+        title: 'Outdoor Fun',
+        media_formats: {
+          gif: {
+            url: 'https://media.giphy.com/media/26ufcVAuSJbqgFfIs/giphy.gif',
+            width: 480,
+            height: 270
+          },
+          tinygif: {
+            url: 'https://media.giphy.com/media/26ufcVAuSJbqgFfIs/giphy.gif',
+            width: 220,
+            height: 124
+          }
+        },
+        created: Date.now(),
+        content_description: 'Outdoor fun GIF'
       }
     ];
   }

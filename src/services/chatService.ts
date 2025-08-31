@@ -171,7 +171,10 @@ class SessionManager {
         ...existingUser as ChatUser,
         isOnline: true,
         lastSeen: new Date(),
-        sessionId: this.generateSessionId()
+        sessionId: this.generateSessionId(),
+        isAdmin: existingUser.isAdmin || false,
+        userAgent: existingUser.userAgent || navigator.userAgent,
+        ipHash: existingUser.ipHash || this.generateIPHash()
       };
       this.saveUserToStorage(updatedUser);
       return updatedUser;
@@ -472,7 +475,7 @@ class ChatService {
           sessionId: user.sessionId,
           userAgent: user.userAgent,
           ipHash: user.ipHash,
-          isAdmin: user.isAdmin
+          isAdmin: user.isAdmin || false
         });
       } else {
         // Create new user document
@@ -482,7 +485,7 @@ class ChatService {
           den: user.den,
           isOnline: user.isOnline,
           lastSeen: serverTimestamp(),
-          isAdmin: user.isAdmin,
+          isAdmin: user.isAdmin || false,
           sessionId: user.sessionId,
           userAgent: user.userAgent,
           ipHash: user.ipHash,
@@ -757,6 +760,10 @@ class ChatService {
         }).reverse();
         
         callback(messages);
+      }, (error) => {
+        console.warn('Message subscription error:', error);
+        // Fallback to empty messages on error
+        callback([]);
       });
 
       this.unsubscribeFunctions.push(unsubscribe);
@@ -787,6 +794,10 @@ class ChatService {
         });
         
         callback(users);
+      }, (error) => {
+        console.warn('User subscription error:', error);
+        // Fallback to empty users on error
+        callback([]);
       });
 
       this.unsubscribeFunctions.push(unsubscribe);

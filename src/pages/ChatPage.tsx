@@ -22,9 +22,17 @@ const ChatPage: React.FC = () => {
         console.log('Initializing chat...');
         setIsLoading(true);
         
+        // Add timeout to prevent infinite loading
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Chat initialization timeout')), 10000)
+        );
+        
         // Initialize chat service and get current user
         console.log('Initializing chat service...');
-        const user = await chatService.initialize();
+        const user = await Promise.race([
+          chatService.initialize(),
+          timeoutPromise
+        ]) as ChatUser;
         console.log('Current user initialized:', user);
         setCurrentUser(user);
         
@@ -54,7 +62,7 @@ const ChatPage: React.FC = () => {
       } catch (error) {
         console.error('Failed to initialize chat:', error);
         setIsConnected(false);
-      } finally {
+        // Set loading to false even on error to prevent infinite loading
         setIsLoading(false);
       }
     };

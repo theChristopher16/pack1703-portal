@@ -6,6 +6,7 @@ import {
   addDoc, 
   updateDoc, 
   deleteDoc,
+  setDoc,
   query, 
   where, 
   orderBy, 
@@ -475,7 +476,7 @@ class ChatService {
         });
       } else {
         // Create new user document
-        await updateDoc(userRef, {
+        await setDoc(userRef, {
           id: user.id,
           name: user.name,
           den: user.den,

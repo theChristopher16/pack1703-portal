@@ -217,100 +217,34 @@ const ChatPage: React.FC = () => {
               <div className="p-4">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Channels</h3>
                 
-                {/* Pack Channels */}
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Pack Channels</span>
-                    <span className="text-xs text-gray-400">{channels.filter(c => !c.isDenChannel).length}</span>
-                  </div>
-                  <div className="space-y-1">
-                    {filteredChannels.filter(channel => !channel.isDenChannel).map(channel => (
-                      <button
-                        key={channel.id}
-                        onClick={() => setSelectedChannel(channel.id)}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                          selectedChannel === channel.id
-                            ? 'bg-blue-100 text-blue-700 font-medium shadow-sm'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span>#{channel.name}</span>
-                          <span className="text-xs text-gray-500">{channel.messageCount}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Den Channels */}
-                <div className="space-y-4">
-                  {[
-                    { id: 'lion', name: 'Lion Den', icon: '🦁', color: 'text-yellow-600' },
-                    { id: 'tiger', name: 'Tiger Den', icon: '🐯', color: 'text-orange-600' },
-                    { id: 'wolf', name: 'Wolf Den', icon: '🐺', color: 'text-blue-600' },
-                    { id: 'bear', name: 'Bear Den', icon: '🐻', color: 'text-brown-600' },
-                    { id: 'webelos', name: 'Webelos Den', icon: '🏕️', color: 'text-green-600' },
-                    { id: 'arrow-of-light', name: 'Arrow of Light', icon: '🏹', color: 'text-purple-600' }
-                  ].map(den => {
-                    const denChannels = filteredChannels.filter(channel => channel.denType === den.id);
-                    const isExpanded = expandedDens.has(den.id);
-                    
-                    return (
-                      <div key={den.id} className="space-y-1">
-                        <button
-                          onClick={() => {
-                            const newExpanded = new Set(expandedDens);
-                            if (isExpanded) {
-                              newExpanded.delete(den.id);
-                            } else {
-                              newExpanded.add(den.id);
-                            }
-                            setExpandedDens(newExpanded);
-                          }}
-                          className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors duration-200 flex items-center justify-between"
-                        >
-                          <div className="flex items-center">
-                            <span className="mr-2">{den.icon}</span>
-                            <span>{den.name}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <span className="text-xs text-gray-500 mr-1">{denChannels.length}</span>
-                            <svg
-                              className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </div>
-                        </button>
-                        
-                        {isExpanded && (
-                          <div className="ml-4 space-y-1">
-                            {denChannels.map(channel => (
-                              <button
-                                key={channel.id}
-                                onClick={() => setSelectedChannel(channel.id)}
-                                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                                  selectedChannel === channel.id
-                                    ? 'bg-blue-100 text-blue-700 font-medium shadow-sm'
-                                    : 'text-gray-600 hover:bg-gray-100'
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span>#{channel.name}</span>
-                                  <span className="text-xs text-gray-500">{channel.messageCount}</span>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                {/* All Channels */}
+                <div className="space-y-1">
+                  {filteredChannels.map(channel => (
+                    <button
+                      key={channel.id}
+                      onClick={() => setSelectedChannel(channel.id)}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                        selectedChannel === channel.id
+                          ? 'bg-blue-100 text-blue-700 font-medium shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>#{channel.name}</span>
+                        <span className="text-xs text-gray-500">{channel.messageCount}</span>
                       </div>
-                    );
-                  })}
+                    </button>
+                  ))}
                 </div>
+                
+                {/* Debug Info */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
+                    <p>Channels: {channels.length}</p>
+                    <p>Users: {users.length}</p>
+                    <p>Current User: {currentUser?.name || 'None'}</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -327,7 +261,19 @@ const ChatPage: React.FC = () => {
                 {users.length > 5 && (
                   <p className="text-xs text-gray-500">+{users.length - 5} more</p>
                 )}
+                {users.length === 0 && (
+                  <p className="text-xs text-gray-500">No users online</p>
+                )}
               </div>
+              
+              {/* Debug Info */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mt-2 p-2 bg-gray-100 rounded text-xs">
+                  <p>Users loaded: {users.length}</p>
+                  <p>Current user online: {currentUser?.isOnline ? 'Yes' : 'No'}</p>
+                  <p>Current user ID: {currentUser?.id || 'None'}</p>
+                </div>
+              )}
             </div>
           </div>
 

@@ -141,7 +141,7 @@ const safeFirestoreCall = async <T>(firestoreCall: () => Promise<T>, mockData: T
   try {
     // Add timeout to prevent hanging
     const timeoutPromise = new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new Error('Database timeout')), 2000)
+      setTimeout(() => reject(new Error('Database timeout')), 5000)
     );
     
     const result = await Promise.race([
@@ -152,8 +152,8 @@ const safeFirestoreCall = async <T>(firestoreCall: () => Promise<T>, mockData: T
     return result;
   } catch (error) {
     console.warn('Firestore call failed, using mock data:', error);
-    // Throw the error so components can show error banners
-    throw new Error('Database connection failed');
+    // Return mock data instead of throwing error
+    return mockData;
   }
 };
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { List, Edit, Trash2, Plus, Search, Filter, Tag, FileText } from 'lucide-react';
+import DatabaseMonitor from '../components/Admin/DatabaseMonitor';
 
 interface PackList {
   id: string;
@@ -179,6 +180,11 @@ const AdminLists: React.FC = () => {
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Manage packing lists, checklists, and other organized collections of items that scouts and families need for various activities.
           </p>
+        </div>
+
+        {/* Database Monitor */}
+        <div className="mb-8">
+          <DatabaseMonitor />
         </div>
 
         {/* Quick Stats */}

@@ -1157,17 +1157,26 @@ const ChatAdmin: React.FC = () => {
                   {/* Message Input */}
                   <div className="flex space-x-4">
                     <div className="flex-1">
-                      <input
-                        type="text"
+                      <textarea
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder={currentUser ? `Message #${channels.find(c => c.id === selectedChannel)?.name || 'general'}...` : 'Connecting to chat...'}
                         disabled={!currentUser}
                         style={{ 
                           color: selectedColor, 
-                          fontFamily: selectedFont === 'monospace' ? 'monospace' : selectedFont === 'serif' ? 'serif' : 'inherit' 
+                          fontFamily: selectedFont === 'monospace' ? 'monospace' : selectedFont === 'serif' ? 'serif' : 'inherit',
+                          resize: 'none',
+                          minHeight: '48px',
+                          maxHeight: '200px',
+                          overflowY: 'auto'
                         }}
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm shadow-soft transition-all duration-200"
+                        rows={1}
+                        onInput={(e) => {
+                          const target = e.target as HTMLTextAreaElement;
+                          target.style.height = 'auto';
+                          target.style.height = Math.min(target.scrollHeight, 200) + 'px';
+                        }}
                       />
                       
                       {/* Message Preview */}

@@ -1046,8 +1046,7 @@ const ChatPage: React.FC = () => {
                 {/* Message Input */}
                 <div className="flex space-x-4">
                   <div className="flex-1">
-                    <input
-                      type="text"
+                    <textarea
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder={currentUser 
@@ -1058,9 +1057,19 @@ const ChatPage: React.FC = () => {
                       style={{
                         color: selectedColor,
                         fontFamily: selectedFont === 'monospace' ? 'monospace' : 
-                                   selectedFont === 'serif' ? 'serif' : 'inherit'
+                                   selectedFont === 'serif' ? 'serif' : 'inherit',
+                        resize: 'none',
+                        minHeight: '48px',
+                        maxHeight: '200px',
+                        overflowY: 'auto'
                       }}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      rows={1}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = Math.min(target.scrollHeight, 200) + 'px';
+                      }}
                     />
                     
                     {/* Message Preview */}

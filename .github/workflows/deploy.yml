@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
@@ -20,8 +21,16 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
+    - name: Set up test environment
+      run: |
+        echo "NODE_ENV=test" >> $GITHUB_ENV
+        echo "CI=true" >> $GITHUB_ENV
+    
     - name: Run tests
-      run: npm test -- --coverage --watchAll=false --testTimeout=30000
+      run: npm test -- --coverage --watchAll=false --testTimeout=30000 --verbose
+      env:
+        CI: true
+        NODE_ENV: test
     
     - name: Build project
       run: npm run build

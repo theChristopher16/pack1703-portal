@@ -48,47 +48,59 @@ const LocationMap: React.FC<LocationMapProps> = ({
         // Initialize map
         const map = L.map(mapRef.current, {
           zoomControl: true,
-          attributionControl: true
+          attributionControl: true,
+          preferCanvas: false,
+          zoomSnap: 0.1,
+          zoomDelta: 0.5
         }).setView([40.7103, -89.6144], 11);
         mapInstanceRef.current = map;
 
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // Add OpenStreetMap tiles with fallback
+        const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors',
-          maxZoom: 18
+          maxZoom: 18,
+          subdomains: ['a', 'b', 'c']
         }).addTo(map);
 
-        // Add markers for each location
-        const markers: any[] = [];
-        locations.forEach((location) => {
-          if (location.geo?.lat && location.geo?.lng) {
-            try {
-              const marker = L.marker([location.geo.lat, location.geo.lng], {
-                icon: L.Icon.Default.prototype
-              })
-                .addTo(map)
-                .bindPopup(createPopupContent(location))
-                .on('click', () => onLocationSelect(location));
+        // Add error handling for tile loading
+        tileLayer.on('tileerror', (e) => {
+          console.warn('Tile loading error:', e);
+        });
 
-              markers.push(marker);
-            } catch (error) {
-              console.warn(`Failed to create marker for location ${location.name}:`, error);
+        // Wait for map to be ready before adding markers
+        map.whenReady(() => {
+          // Add markers for each location
+          const markers: any[] = [];
+          locations.forEach((location) => {
+            if (location.geo?.lat && location.geo?.lng) {
+              try {
+                const marker = L.marker([location.geo.lat, location.geo.lng])
+                  .addTo(map)
+                  .bindPopup(createPopupContent(location))
+                  .on('click', () => onLocationSelect(location));
+
+                markers.push(marker);
+              } catch (error) {
+                console.warn(`Failed to create marker for location ${location.name}:`, error);
+              }
             }
+          });
+          markersRef.current = markers;
+
+          // Fit map to show all markers
+          if (markers.length > 0) {
+            setTimeout(() => {
+              try {
+                const group = new (L as any).featureGroup(markers);
+                if (group.getBounds().isValid()) {
+                  map.fitBounds(group.getBounds().pad(0.1));
+                }
+              } catch (error) {
+                console.warn('Failed to fit map bounds:', error);
+              }
+            }, 500);
           }
         });
-        markersRef.current = markers;
-
-        // Fit map to show all markers
-        if (markers.length > 0) {
-          setTimeout(() => {
-            try {
-              const group = new (L as any).featureGroup(markers);
-              map.fitBounds(group.getBounds().pad(0.1));
-            } catch (error) {
-              console.warn('Failed to fit map bounds:', error);
-            }
-          }, 100);
-        }
 
       } catch (error) {
         console.error('Failed to load map:', error);
@@ -199,9 +211,15 @@ const LocationMap: React.FC<LocationMapProps> = ({
           <button
             onClick={async () => {
               if (mapInstanceRef.current && markersRef.current.length > 0) {
-                const L = await import('leaflet');
-                const group = new (L as any).featureGroup(markersRef.current);
-                mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
+                try {
+                  const L = await import('leaflet');
+                  const group = new (L as any).featureGroup(markersRef.current);
+                  if (group.getBounds().isValid()) {
+                    mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
+                  }
+                } catch (error) {
+                  console.warn('Failed to fit bounds in button click:', error);
+                }
               }
             }}
             className="flex items-center space-x-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200"

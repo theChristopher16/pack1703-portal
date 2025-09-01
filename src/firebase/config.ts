@@ -17,22 +17,21 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Initialize App Check for security (disabled temporarily for admin login debugging)
-// TODO: Re-enable after configuring reCAPTCHA v3 site key
-/*
+// Initialize App Check for security
 if (process.env.NODE_ENV === 'production') {
   // Initialize App Check with reCAPTCHA v3
   initializeAppCheck(app, {
     provider: new ReCaptchaV3Provider(process.env.REACT_APP_RECAPTCHA_V3_SITE_KEY || ''),
     isTokenAutoRefreshEnabled: true
   });
-  
-  // In development, we can use debug tokens
 } else if (process.env.NODE_ENV === 'development') {
   // Set debug token for development
   (globalThis as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider('debug-token'),
+    isTokenAutoRefreshEnabled: true
+  });
 }
-*/
 
 // Initialize Firestore
 export const db = getFirestore(app);

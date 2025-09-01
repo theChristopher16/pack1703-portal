@@ -1,10 +1,8 @@
-name: Test Suite
+name: Test Suite (DISABLED)
 
+# This workflow is disabled - using deploy.yml instead
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+  workflow_dispatch: # Only allow manual triggering
 
 jobs:
   test:

@@ -34,6 +34,8 @@ jobs:
     
     - name: Build project
       run: npm run build
+      env:
+        CI: false
 
   deploy:
     needs: test
@@ -54,6 +56,8 @@ jobs:
     
     - name: Build project
       run: npm run build
+      env:
+        CI: false
     
     - name: Deploy to Firebase
       uses: FirebaseExtended/action-hosting-deploy@v0

@@ -27,7 +27,13 @@ if (process.env.NODE_ENV === 'production') {
       isTokenAutoRefreshEnabled: true
     });
   } else {
-    console.warn('App Check disabled: REACT_APP_RECAPTCHA_V3_SITE_KEY not configured');
+    // Fallback: Use debug token in production if no reCAPTCHA key
+    console.warn('App Check using debug token: REACT_APP_RECAPTCHA_V3_SITE_KEY not configured');
+    (globalThis as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider('debug-token'),
+      isTokenAutoRefreshEnabled: true
+    });
   }
 } else if (process.env.NODE_ENV === 'development') {
   // Set debug token for development

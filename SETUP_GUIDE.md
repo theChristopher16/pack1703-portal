@@ -26,6 +26,7 @@
 - ✅ Every push to `main` branch → Auto deploy to production
 - ✅ Every PR → Run tests automatically
 - ✅ Failed tests → Block deployment
+- ✅ **LIVE**: Automated deployment is now active! 🚀
 
 ### Manual Deployments
 ```bash

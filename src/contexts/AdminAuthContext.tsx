@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
 import { auth } from '../firebase/config';
 
 export interface AdminUser {
@@ -72,7 +72,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
   // Sign out
   const signOut = async () => {
     try {
-      await auth.signOut();
+      await firebaseSignOut(auth);
       setAdminUser(null);
     } catch (err) {
       console.error('Error signing out:', err);

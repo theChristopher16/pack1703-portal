@@ -314,7 +314,7 @@ class EmailMonitorService {
   // Process individual email
   private async processEmail(email: EmailMessage): Promise<void> {
     try {
-      console.log(`Processing email: ${email.subject}`);
+      // console.log(`Processing email: ${email.subject}`);
 
       // Analyze email content
       const analysis = await this.analyzeEmailContent(email);

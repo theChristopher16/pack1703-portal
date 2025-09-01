@@ -5,6 +5,7 @@ import { Shield, Mail } from 'lucide-react';
 import DatabaseMonitor from '../components/Admin/DatabaseMonitor';
 import SystemMonitor from '../components/Admin/SystemMonitor';
 import InviteManagement from '../components/Admin/InviteManagement';
+import AccountLinking from '../components/Admin/AccountLinking';
 
 const AdminDashboard: React.FC = () => {
   const { state } = useAdmin();
@@ -112,6 +113,18 @@ const AdminDashboard: React.FC = () => {
                    <Shield className="w-4 h-4 mr-2" />
                    View Permissions Audit
                  </Link>
+               </div>
+
+               {/* Account Linking */}
+               <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft mt-8">
+                 <h2 className="text-2xl font-display font-semibold text-gray-800 mb-6 flex items-center">
+                   <span className="w-2 h-8 bg-gradient-to-b from-primary-500 to-secondary-500 rounded-full mr-4"></span>
+                   Account Security
+                 </h2>
+                 <p className="text-gray-600 mb-4">
+                   Link your social accounts for enhanced security and easier sign-in
+                 </p>
+                 <AccountLinking />
                </div>
 
                {/* Invite Management */}

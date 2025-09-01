@@ -25,12 +25,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   // Debug navigation issues
   useEffect(() => {
-    console.log('Navigation changed to:', location.pathname);
+    // console.log('Navigation changed to:', location.pathname);
   }, [location.pathname]);
 
   // Handle navigation with error recovery
   const handleNavigation = (href: string) => {
-    console.log('Attempting navigation to:', href);
+    // console.log('Attempting navigation to:', href);
     
     // Close dropdown if open
     setIsDropdownOpen(false);
@@ -39,7 +39,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setTimeout(() => {
       // Force navigation even if there are issues
       try {
-        console.log('Executing navigation to:', href);
+        // console.log('Executing navigation to:', href);
         navigate(href);
       } catch (error) {
         console.error('Navigation error, forcing redirect:', error);
@@ -99,7 +99,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <button
                     key={item.name}
                     onClick={() => {
-                      console.log('Main toolbar navigation clicked:', item.href);
+                      // console.log('Main toolbar navigation clicked:', item.href);
                       window.location.href = item.href;
                     }}
                     className={`px-3 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
@@ -128,7 +128,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <button
                     key={item.name}
                     onClick={() => {
-                      console.log('Medium toolbar navigation clicked:', item.href);
+                      // console.log('Medium toolbar navigation clicked:', item.href);
                       window.location.href = item.href;
                     }}
                     className={`px-3 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
@@ -181,8 +181,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              console.log('Dropdown navigation clicked:', item.href);
-                              console.log('Forcing navigation to:', item.href);
+                              // console.log('Dropdown navigation clicked:', item.href);
+                              // console.log('Forcing navigation to:', item.href);
                               window.location.href = item.href;
                             }}
                             className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
@@ -203,8 +203,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            console.log('Admin navigation clicked');
-                            console.log('Forcing admin navigation');
+                            // console.log('Admin navigation clicked');
+                            // console.log('Forcing admin navigation');
                             window.location.href = '/admin';
                           }}
                           className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${

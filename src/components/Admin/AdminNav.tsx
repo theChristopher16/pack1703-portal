@@ -94,7 +94,7 @@ const AdminNav: React.FC = () => {
                 
                 {/* Dropdown menu */}
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-xl border border-gray-200 z-[9999] transform opacity-100 scale-100 transition-all duration-200">
                     <div className="py-1">
                       {secondaryNavItems.map((item) => (
                         <Link

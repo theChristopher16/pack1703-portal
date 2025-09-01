@@ -458,7 +458,7 @@ class EmailMonitorService {
   // Process Wolf Watch emails - extract links and process content
   private async processWolfWatchEmail(email: EmailMessage): Promise<EmailProcessingResult> {
     try {
-      console.log('Processing Wolf Watch email:', email.subject);
+      // console.log('Processing Wolf Watch email:', email.subject);
       
       // Extract URLs from email content
       const urls = this.extractUrlsFromEmail(email);
@@ -531,7 +531,7 @@ class EmailMonitorService {
 
     for (const url of urls) {
       try {
-        console.log('Processing Wolf Watch URL:', url);
+        // console.log('Processing Wolf Watch URL:', url);
         
         // Fetch content from URL
         const content = await this.fetchUrlContent(url);
@@ -800,7 +800,7 @@ class EmailMonitorService {
       };
 
       const docRef = await addDoc(collection(this.db, 'events'), eventDoc);
-      console.log('Created event from Wolf Watch:', docRef.id);
+              // console.log('Created event from Wolf Watch:', docRef.id);
       
       return { id: docRef.id, ...eventDoc };
     } catch (error) {
@@ -825,7 +825,7 @@ class EmailMonitorService {
       };
 
       const docRef = await addDoc(collection(this.db, 'announcements'), announcementDoc);
-      console.log('Created announcement from Wolf Watch:', docRef.id);
+              // console.log('Created announcement from Wolf Watch:', docRef.id);
       
       return { id: docRef.id, ...announcementDoc };
     } catch (error) {

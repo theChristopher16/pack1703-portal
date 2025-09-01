@@ -29,7 +29,7 @@ const MultiTenantManagement: React.FC = () => {
     createOrganization, 
     loadCategories, 
     loadUserOrganizations,
-    switchOrganization,
+    // switchOrganization,
     clearError 
   } = useMultiTenant();
   

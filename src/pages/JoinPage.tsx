@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { authService, SocialProvider } from '../services/authService';
+// import { authService, SocialProvider } from '../services/authService';
 import { inviteService, Invite } from '../services/inviteService';
 import SocialLogin from '../components/Auth/SocialLogin';
 import { 
-  Mail, 
   Shield, 
   Crown, 
   User, 

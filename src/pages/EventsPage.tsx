@@ -4,7 +4,7 @@ import EventCard from '../components/Events/EventCard';
 import EventCalendar from '../components/Events/EventCalendar';
 import EventFilters, { EventFilters as EventFiltersType } from '../components/Events/EventFilters';
 import { firestoreService } from '../services/firestore';
-import { analytics } from '../services/analytics';
+// import { analytics } from '../services/analytics';
 
 interface Event {
   id: string;
@@ -38,7 +38,7 @@ const EventsPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [usingFallbackData, setUsingFallbackData] = useState(false);
@@ -46,7 +46,7 @@ const EventsPage: React.FC = () => {
   // Load events from Firebase
   useEffect(() => {
     const loadEvents = async () => {
-      setIsLoading(true);
+      // setIsLoading(true);
       setError(null);
       setUsingFallbackData(false);
       
@@ -96,7 +96,7 @@ const EventsPage: React.FC = () => {
         // Track error
         console.log('Failed to load events from database');
       } finally {
-        setIsLoading(false);
+        // setIsLoading(false);
       }
     };
     

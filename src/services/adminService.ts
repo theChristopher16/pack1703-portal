@@ -1,18 +1,6 @@
 import { 
   collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
   addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy, 
-  limit,
-  writeBatch,
-  runTransaction,
-  Timestamp,
   serverTimestamp
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
@@ -23,7 +11,7 @@ import {
   AdminAction, 
   AuditLog, 
   ValidationResult,
-  AdminSearchResult,
+  // AdminSearchResult,
   AdminDashboardStats,
   EntityType,
   AdminActionType

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, FileText, Users, ArrowRight, Zap, Mountain, Compass, MessageSquare, Download, Shield } from 'lucide-react';
+import { Calendar, MapPin, FileText, Users, ArrowRight, Compass, MessageSquare, Download } from 'lucide-react';
 import { LoadingSpinner, SkeletonLoader } from '../components/Loading';
 import { SecurityAuditService } from '../services/securityAuditService';
 

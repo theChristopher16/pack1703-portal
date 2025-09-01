@@ -20,7 +20,7 @@ const ChatPage: React.FC = () => {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [messageListRef, setMessageListRef] = useState<HTMLDivElement | null>(null);
   const [hasNewMessages, setHasNewMessages] = useState(false);
-  const [showRichInput, setShowRichInput] = useState(false);
+  // const [showRichInput, setShowRichInput] = useState(false);
   const [selectedColor, setSelectedColor] = useState<string>('#000000');
   const [selectedFont, setSelectedFont] = useState<string>('normal');
   const [isBold, setIsBold] = useState(false);
@@ -206,11 +206,11 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  const handleGifSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    searchGifs(gifSearchQuery);
-  };
+  // const handleGifSearch = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   e.stopPropagation();
+  //   searchGifs(gifSearchQuery);
+  // };
 
   const insertGif = (gif: TenorGif) => {
     const gifUrl = gif.media_formats.gif?.url || gif.media_formats.tinygif?.url || gif.media_formats.nanogif?.url || '';
@@ -607,19 +607,19 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  const formatTimestamp = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
+  // const formatTimestamp = (date: Date) => {
+  //   const now = new Date();
+  //   const diff = now.getTime() - date.getTime();
+  //   const minutes = Math.floor(diff / 60000);
+  //   const hours = Math.floor(diff / 3600000);
+  //   const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString();
-  };
+  //   if (minutes < 1) return 'Just now';
+  //   if (minutes < 60) return `${minutes}m ago`;
+  //   if (hours < 24) return `${hours}h ago`;
+  //   if (days < 7) return `${days}d ago`;
+  //   return date.toLocaleDateString();
+  // };
 
   const filteredChannels = channels.filter(channel => 
     channel.name.toLowerCase().includes(searchQuery.toLowerCase())

@@ -30,7 +30,7 @@ export const requiredEmailString = z.string()
 
 // Phone validation with international support
 export const phoneString = z.string()
-  .regex(/^\+?[\d\s\-\(\)\.]{7,20}$/, 'Please enter a valid phone number')
+  .regex(/^\+?[\d\s\-().]{7,20}$/, 'Please enter a valid phone number')
   .transform(val => val.replace(/[^\d\+]/g, '')) // Strip formatting
   .optional();
 

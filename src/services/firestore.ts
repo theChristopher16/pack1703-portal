@@ -4,7 +4,6 @@ import {
   getDocs, 
   getDoc, 
   addDoc, 
-  updateDoc, 
   query, 
   where, 
   orderBy, 
@@ -13,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase/config';
-import configService from './configService';
+// import configService from './configService';
 
 // Cloud Function calls
 export const submitRSVP = httpsCallable(functions, 'submitRSVP');

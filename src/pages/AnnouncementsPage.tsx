@@ -8,14 +8,14 @@ import CyclingScoutIcon from '../components/ui/CyclingScoutIcon';
 const AnnouncementsPage: React.FC = () => {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usingFallbackData, setUsingFallbackData] = useState(false);
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        setLoading(true);
+        // setLoading(true);
         setError(null);
         setUsingFallbackData(false);
         const fetchedAnnouncements = await firestoreService.getAnnouncements();
@@ -28,7 +28,7 @@ const AnnouncementsPage: React.FC = () => {
         setError('Unable to load announcements. Please try again later.');
         console.log('Failed to load announcements from database');
       } finally {
-        setLoading(false);
+        // setLoading(false);
       }
     };
 

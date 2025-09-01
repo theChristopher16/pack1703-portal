@@ -1,4 +1,4 @@
-import { getFirestore, collection, addDoc, serverTimestamp, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 interface AnalyticsEvent {

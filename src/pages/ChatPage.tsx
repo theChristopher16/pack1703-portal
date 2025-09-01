@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Users, MessageCircle, Settings, User, Edit, MoreVertical, Search, Image, Smile, Type, Palette, Share2, Bold, Italic, Underline, Code, Quote, List, Link, Loader2, Camera } from 'lucide-react';
-import chatService, { ChatUser, ChatMessage, ChatChannel, MessageReaction } from '../services/chatService';
+import { Send, MessageCircle, Settings, User, Search, Smile, Share2, Bold, Italic, Underline, Loader2, Camera } from 'lucide-react';
+import chatService, { ChatUser, ChatMessage, ChatChannel } from '../services/chatService';
 import tenorService, { TenorGif } from '../services/tenorService';
 import { useToast } from '../contexts/ToastContext';
 

@@ -16,7 +16,7 @@ import {
   GithubAuthProvider,
   TwitterAuthProvider,
   linkWithPopup,
-  linkWithRedirect
+  // linkWithRedirect
 } from 'firebase/auth';
 import { 
   doc, 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
-import { Users, Calendar, MapPin, Clock, UserCheck, UserPlus, Search, Filter, Tag, AlertCircle, CheckCircle, Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { Users, Clock, UserCheck, Search, AlertCircle, CheckCircle, Plus, Edit, Trash2, Eye } from 'lucide-react';
 
 interface VolunteerNeed {
   id: string;

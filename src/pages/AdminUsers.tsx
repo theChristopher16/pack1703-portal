@@ -5,29 +5,22 @@ import {
   Edit, 
   Trash2, 
   Search, 
-  Filter, 
-  MoreVertical,
   Crown,
   Shield,
   User,
   Star,
-  Calendar,
   MapPin,
   Phone,
   Mail,
-  Plus,
   X,
   Save,
   Loader2,
   AlertCircle,
-  CheckCircle,
-  Eye,
-  EyeOff,
   ChevronDown,
   ChevronRight
 } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
-import { authService, AppUser, UserRole, SocialProvider } from '../services/authService';
+import { authService, AppUser, UserRole } from '../services/authService';
 
 interface UserWithChildren extends AppUser {
   children?: UserWithChildren[];

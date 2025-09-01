@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAdmin } from '../../contexts/AdminContext';
 import { Menu, X, ChevronDown } from 'lucide-react';
-import { createPortal } from 'react-dom';
 
 const AdminNav: React.FC = () => {
   const { state, logout } = useAdmin();
@@ -11,7 +10,6 @@ const AdminNav: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -26,18 +24,6 @@ const AdminNav: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
-  // Calculate dropdown position when opening
-  const handleDropdownToggle = () => {
-    if (!dropdownOpen && dropdownRef.current) {
-      const rect = dropdownRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.right - 224 // 224px is the width of the dropdown (w-56 = 14rem = 224px)
-      });
-    }
-    setDropdownOpen(!dropdownOpen);
-  };
 
   // Prioritize most important admin functions - limit to 6 for desktop
   const primaryNavItems = [
@@ -98,13 +84,34 @@ const AdminNav: React.FC = () => {
               {/* More dropdown for secondary items */}
               <div className="relative flex-shrink-0" ref={dropdownRef}>
                 <button
-                  onClick={handleDropdownToggle}
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm rounded-md transition-all duration-200"
                 >
                   <Menu className="w-4 h-4 mr-1" />
                   <span className="hidden xl:inline">More</span>
                   <ChevronDown className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
+                
+                {/* Dropdown menu */}
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-xl border border-gray-200 z-[99999] transform opacity-100 scale-100 transition-all duration-200">
+                    <div className="py-1">
+                      {secondaryNavItems.map((item) => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setDropdownOpen(false)}
+                          className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors ${
+                            location.pathname === item.path ? 'bg-blue-50 text-blue-700' : ''
+                          }`}
+                        >
+                          <span className="mr-3">{item.icon}</span>
+                          <span>{item.label}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -181,34 +188,6 @@ const AdminNav: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
-      
-      {/* Portal dropdown menu */}
-      {dropdownOpen && createPortal(
-        <div 
-          className="fixed w-56 bg-white rounded-md shadow-xl border border-gray-200 z-[99999] transform opacity-100 scale-100 transition-all duration-200"
-          style={{ 
-            top: dropdownPosition.top, 
-            left: dropdownPosition.left 
-          }}
-        >
-          <div className="py-1">
-            {secondaryNavItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setDropdownOpen(false)}
-                className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors ${
-                  location.pathname === item.path ? 'bg-blue-50 text-blue-700' : ''
-                }`}
-              >
-                <span className="mr-3">{item.icon}</span>
-                <span>{item.label}</span>
-              </Link>
-            ))}
-          </div>
-        </div>,
-        document.body
       )}
     </div>
   );

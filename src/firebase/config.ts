@@ -19,11 +19,16 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize App Check for security
 if (process.env.NODE_ENV === 'production') {
-  // Initialize App Check with reCAPTCHA v3
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider(process.env.REACT_APP_RECAPTCHA_V3_SITE_KEY || ''),
-    isTokenAutoRefreshEnabled: true
-  });
+  // Initialize App Check with reCAPTCHA v3 (only if site key is available)
+  const recaptchaSiteKey = process.env.REACT_APP_RECAPTCHA_V3_SITE_KEY;
+  if (recaptchaSiteKey) {
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(recaptchaSiteKey),
+      isTokenAutoRefreshEnabled: true
+    });
+  } else {
+    console.warn('App Check disabled: REACT_APP_RECAPTCHA_V3_SITE_KEY not configured');
+  }
 } else if (process.env.NODE_ENV === 'development') {
   // Set debug token for development
   (globalThis as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;

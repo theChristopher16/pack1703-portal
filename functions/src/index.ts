@@ -940,3 +940,330 @@ export const webSearch = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('internal', 'Failed to perform web search');
   }
 });
+
+// Admin Cloud Functions for Event Management
+export const adminCreateEvent = functions.https.onCall(async (data, context) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    if (!userData?.isAdmin && !userData?.isDenLeader && !userData?.isCubmaster) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to create events');
+    }
+
+    // Validate required fields
+    const { title, description, startDate, endDate, startTime, endTime, locationId, category, seasonId } = data;
+    
+    if (!title || !description || !startDate || !endDate || !startTime || !endTime || !locationId || !category || !seasonId) {
+      throw new functions.https.HttpsError('invalid-argument', 'Missing required fields');
+    }
+
+    // Validate dates
+    const startDateTime = new Date(startDate);
+    const endDateTime = new Date(endDate);
+    
+    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+      throw new functions.https.HttpsError('invalid-argument', 'Invalid date format');
+    }
+
+    if (startDateTime >= endDateTime) {
+      throw new functions.https.HttpsError('invalid-argument', 'End date must be after start date');
+    }
+
+    // Validate time format (HH:MM)
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+      throw new functions.https.HttpsError('invalid-argument', 'Invalid time format. Use HH:MM');
+    }
+
+    // Check if location exists
+    const locationDoc = await db.collection('locations').doc(locationId).get();
+    if (!locationDoc.exists) {
+      throw new functions.https.HttpsError('invalid-argument', 'Location not found');
+    }
+
+    // Check if season exists
+    const seasonDoc = await db.collection('seasons').doc(seasonId).get();
+    if (!seasonDoc.exists) {
+      throw new functions.https.HttpsError('invalid-argument', 'Season not found');
+    }
+
+    // Check for duplicate events (same title, date, and location)
+    const existingEvents = await db.collection('events')
+      .where('title', '==', title)
+      .where('startDate', '==', startDateTime)
+      .where('locationId', '==', locationId)
+      .get();
+
+    if (!existingEvents.empty) {
+      throw new functions.https.HttpsError('already-exists', 'An event with this title, date, and location already exists');
+    }
+
+    // Create event document
+    const eventData = {
+      ...data,
+      startDate: startDateTime,
+      endDate: endDateTime,
+      currentParticipants: 0,
+      createdAt: getTimestamp(),
+      updatedAt: getTimestamp(),
+      createdBy: context.auth.uid,
+      status: 'active',
+      visibility: data.visibility || 'public'
+    };
+
+    const eventRef = await db.collection('events').add(eventData);
+    const eventId = eventRef.id;
+
+    // Log admin action
+    await db.collection('adminActions').add({
+      userId: context.auth.uid,
+      userEmail: context.auth.token.email || '',
+      action: 'create',
+      entityType: 'event',
+      entityId: eventId,
+      entityName: title,
+      details: eventData,
+      timestamp: getTimestamp(),
+      ipAddress: context.rawRequest.ip || 'unknown',
+      userAgent: context.rawRequest.headers['user-agent'] || 'unknown',
+      success: true
+    });
+
+    // Send notification to chat if enabled
+    if (data.sendNotification !== false) {
+      try {
+        const locationData = locationDoc.data();
+        const notificationMessage = `🎉 **New Event Created!**\n\n**${title}**\n📅 ${startDate} ${startTime} - ${endTime}\n📍 ${locationData?.name || 'TBD'}\n\n${description.substring(0, 100)}${description.length > 100 ? '...' : ''}`;
+        
+        // Send to general chat
+        await db.collection('chatMessages').add({
+          channelId: 'general',
+          message: notificationMessage,
+          senderId: 'system',
+          senderName: 'System',
+          senderEmail: 'system@sfpack1703.com',
+          timestamp: getTimestamp(),
+          type: 'event_created'
+        });
+      } catch (notificationError) {
+        console.error('Failed to send event notification:', notificationError);
+      }
+    }
+
+    return {
+      success: true,
+      eventId: eventId,
+      message: 'Event created successfully'
+    };
+
+  } catch (error) {
+    console.error('Error creating event:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to create event');
+  }
+});
+
+export const adminUpdateEvent = functions.https.onCall(async (data, context) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    if (!userData?.isAdmin && !userData?.isDenLeader && !userData?.isCubmaster) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update events');
+    }
+
+    const { eventId, eventData } = data;
+    
+    if (!eventId) {
+      throw new functions.https.HttpsError('invalid-argument', 'Event ID is required');
+    }
+
+    // Check if event exists
+    const eventDoc = await db.collection('events').doc(eventId).get();
+    if (!eventDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Event not found');
+    }
+
+    const existingEvent = eventDoc.data();
+    if (!existingEvent) {
+      throw new functions.https.HttpsError('not-found', 'Event data not found');
+    }
+
+    // Validate dates if provided
+    if (eventData.startDate && eventData.endDate) {
+      const startDateTime = new Date(eventData.startDate);
+      const endDateTime = new Date(eventData.endDate);
+      
+      if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+        throw new functions.https.HttpsError('invalid-argument', 'Invalid date format');
+      }
+
+      if (startDateTime >= endDateTime) {
+        throw new functions.https.HttpsError('invalid-argument', 'End date must be after start date');
+      }
+    }
+
+    // Validate time format if provided
+    if (eventData.startTime || eventData.endTime) {
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (eventData.startTime && !timeRegex.test(eventData.startTime)) {
+        throw new functions.https.HttpsError('invalid-argument', 'Invalid start time format. Use HH:MM');
+      }
+      if (eventData.endTime && !timeRegex.test(eventData.endTime)) {
+        throw new functions.https.HttpsError('invalid-argument', 'Invalid end time format. Use HH:MM');
+      }
+    }
+
+    // Check location if provided
+    if (eventData.locationId) {
+      const locationDoc = await db.collection('locations').doc(eventData.locationId).get();
+      if (!locationDoc.exists) {
+        throw new functions.https.HttpsError('invalid-argument', 'Location not found');
+      }
+    }
+
+    // Check season if provided
+    if (eventData.seasonId) {
+      const seasonDoc = await db.collection('seasons').doc(eventData.seasonId).get();
+      if (!seasonDoc.exists) {
+        throw new functions.https.HttpsError('invalid-argument', 'Season not found');
+      }
+    }
+
+    // Update event
+    const updateData = {
+      ...eventData,
+      updatedAt: getTimestamp(),
+      updatedBy: context.auth.uid
+    };
+
+    await db.collection('events').doc(eventId).update(updateData);
+
+    // Log admin action
+    await db.collection('adminActions').add({
+      userId: context.auth.uid,
+      userEmail: context.auth.token.email || '',
+      action: 'update',
+      entityType: 'event',
+      entityId: eventId,
+      entityName: eventData.title || existingEvent.title,
+      details: { old: existingEvent, new: updateData },
+      timestamp: getTimestamp(),
+      ipAddress: context.rawRequest.ip || 'unknown',
+      userAgent: context.rawRequest.headers['user-agent'] || 'unknown',
+      success: true
+    });
+
+    return {
+      success: true,
+      message: 'Event updated successfully'
+    };
+
+  } catch (error) {
+    console.error('Error updating event:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to update event');
+  }
+});
+
+export const adminDeleteEvent = functions.https.onCall(async (data, context) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    if (!userData?.isAdmin && !userData?.isDenLeader && !userData?.isCubmaster) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to delete events');
+    }
+
+    const { eventId, reason } = data;
+    
+    if (!eventId) {
+      throw new functions.https.HttpsError('invalid-argument', 'Event ID is required');
+    }
+
+    // Check if event exists
+    const eventDoc = await db.collection('events').doc(eventId).get();
+    if (!eventDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Event not found');
+    }
+
+    const eventData = eventDoc.data();
+    if (!eventData) {
+      throw new functions.https.HttpsError('not-found', 'Event data not found');
+    }
+
+    // Check if event has RSVPs
+    const rsvpDocs = await db.collection('rsvps').where('eventId', '==', eventId).get();
+    if (!rsvpDocs.empty) {
+      throw new functions.https.HttpsError('failed-precondition', 'Cannot delete event with existing RSVPs. Please cancel RSVPs first.');
+    }
+
+    // Delete event
+    await db.collection('events').doc(eventId).delete();
+
+    // Log admin action
+    await db.collection('adminActions').add({
+      userId: context.auth.uid,
+      userEmail: context.auth.token.email || '',
+      action: 'delete',
+      entityType: 'event',
+      entityId: eventId,
+      entityName: eventData.title,
+      details: { reason: reason || 'No reason provided', deletedEvent: eventData },
+      timestamp: getTimestamp(),
+      ipAddress: context.rawRequest.ip || 'unknown',
+      userAgent: context.rawRequest.headers['user-agent'] || 'unknown',
+      success: true
+    });
+
+    return {
+      success: true,
+      message: 'Event deleted successfully'
+    };
+
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to delete event');
+  }
+});

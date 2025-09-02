@@ -804,6 +804,33 @@ class AIService {
         }
       }
       
+      if (eventData.webSearchResults.medical) {
+        const medical = eventData.webSearchResults.medical;
+        parts.push(`\n**🏥 Medical Services:**`);
+        parts.push(`• **Confidence:** ${Math.round(medical.confidence * 100)}% ${medical.confidence > 0.7 ? '✅' : medical.confidence > 0.5 ? '⚠️' : '❌'}`);
+        parts.push(`• **Data Found:** ${medical.data.name || 'Medical facility found'}`);
+        if (medical.data.address) {
+          parts.push(`• **Address:** ${medical.data.address}`);
+        }
+        if (medical.data.phone) {
+          parts.push(`• **Phone:** ${medical.data.phone}`);
+        }
+        if (medical.source) {
+          parts.push(`• **Source:** ${medical.source}`);
+        }
+        if (medical.details) {
+          parts.push(`• **Search Query:** "${medical.details.searchQuery}"`);
+          parts.push(`• **Total Results:** ${medical.details.totalResults} pages found`);
+          if (medical.details.topResults && medical.details.topResults.length > 0) {
+            parts.push(`• **Top Sources:**`);
+            medical.details.topResults.forEach((result: any, index: number) => {
+              parts.push(`  ${index + 1}. ${result.title}`);
+              parts.push(`     ${result.snippet}`);
+            });
+          }
+        }
+      }
+      
       // Show what searches were attempted but failed
       const attemptedSearches = [];
       if (!eventData.webSearchResults.location && eventData.location && eventData.location !== 'TBD') {
@@ -814,6 +841,9 @@ class AIService {
       }
       if (!eventData.webSearchResults.requirements && this.isOutdoorEvent(eventData.title)) {
         attemptedSearches.push('Requirements/packing list');
+      }
+      if (!eventData.webSearchResults.medical) {
+        attemptedSearches.push('Medical services');
       }
       
       if (attemptedSearches.length > 0) {
@@ -883,6 +913,13 @@ class AIService {
         }
       }
 
+      // Search for nearest medical services for all events
+      const medicalSearch = await this.enhancedWebSearch('medical', eventData);
+      if (medicalSearch.confidence > 0.5) {
+        searchResults.medical = medicalSearch;
+        console.log(`✅ Found medical services with confidence ${medicalSearch.confidence}`);
+      }
+
       enhancedData.webSearchResults = searchResults;
       console.log('🎉 Enhanced web search completed!');
       return enhancedData;
@@ -900,7 +937,7 @@ class AIService {
   }
 
   // Enhanced web search with multiple strategies and retry logic
-  private async enhancedWebSearch(searchType: 'location' | 'description' | 'requirements', eventData: any): Promise<{ confidence: number; data: any; source: string; details?: any }> {
+  private async enhancedWebSearch(searchType: 'location' | 'description' | 'requirements' | 'medical', eventData: any): Promise<{ confidence: number; data: any; source: string; details?: any }> {
     const maxAttempts = 3;
     const searchStrategies = this.getSearchStrategies(searchType, eventData);
     
@@ -933,6 +970,9 @@ class AIService {
             case 'requirements':
               extractedData = this.extractRequirementsFromSearchResults(result.data);
               break;
+            case 'medical':
+              extractedData = this.extractMedicalServicesFromSearchResults(result.data);
+              break;
           }
           
           if (extractedData && extractedData.length > 0) {
@@ -954,7 +994,7 @@ class AIService {
             
             return {
               confidence: bestResult.confidence,
-              data: bestResult[searchType === 'location' ? 'address' : searchType === 'requirements' ? 'requirements' : 'description'],
+              data: bestResult[searchType === 'location' ? 'address' : searchType === 'requirements' ? 'requirements' : searchType === 'medical' ? 'medicalServices' : 'description'],
               source: bestResult.source,
               details
             };
@@ -977,22 +1017,22 @@ class AIService {
     }
     
     console.log(`❌ All web search attempts failed for ${searchType}`);
-    return { confidence: 0, data: searchType === 'requirements' ? null : '', source: '' };
+    return { confidence: 0, data: searchType === 'requirements' ? null : searchType === 'medical' ? null : '', source: '' };
   }
 
   // Get search strategies for different types of information
-  private getSearchStrategies(searchType: 'location' | 'description' | 'requirements', eventData: any): Array<{ query: string; priority: number }> {
+  private getSearchStrategies(searchType: 'location' | 'description' | 'requirements' | 'medical', eventData: any): Array<{ query: string; priority: number }> {
     const { title, location } = eventData;
     const strategies = [];
     
     switch (searchType) {
       case 'location':
         strategies.push(
-          { query: `${location} address phone number contact information`, priority: 1 },
-          { query: `${location} recreation area texas contact details`, priority: 2 },
-          { query: `${location} camping facilities amenities`, priority: 3 },
-          { query: `${location} scout camping location details`, priority: 4 },
-          { query: `${location} outdoor recreation area information`, priority: 5 }
+          { query: `${location} address phone number`, priority: 1 },
+          { query: `${location} texas contact information`, priority: 2 },
+          { query: `${location} camping facilities`, priority: 3 },
+          { query: `${location} recreation area`, priority: 4 },
+          { query: `${location} outdoor activities`, priority: 5 }
         );
         break;
         
@@ -1013,6 +1053,16 @@ class AIService {
           { query: `scout camping packing list outdoor gear requirements`, priority: 3 },
           { query: `${title} outdoor camping equipment checklist`, priority: 4 },
           { query: `boy scout camping packing list essentials`, priority: 5 }
+        );
+        break;
+        
+      case 'medical':
+        strategies.push(
+          { query: `${location} nearest hospital emergency room medical services`, priority: 1 },
+          { query: `${location} nearby urgent care clinic medical facilities`, priority: 2 },
+          { query: `${location} closest hospital emergency medical services`, priority: 3 },
+          { query: `${location} medical facilities emergency care nearby`, priority: 4 },
+          { query: `${location} hospital urgent care medical center`, priority: 5 }
         );
         break;
     }
@@ -1243,18 +1293,20 @@ class AIService {
     for (const result of searchResults) {
       const content = result.snippet || result.title || '';
       
-      // Look for address patterns
+      // Look for address patterns - more flexible matching
       const addressPatterns = [
-        /(\d+\s+[^,]+(?:street|avenue|road|drive|lane|way|plaza|center|park|church|school|community center))/i,
+        /(\d+\s+[^,]+(?:street|avenue|road|drive|lane|way|plaza|center|park|church|school|community center|recreation area))/i,
         /(?:at|location|venue|address)[:\s]+([^.\n]+)/i,
-        /([^,]+(?:community center|church|school|park|scout camp|scout center))/i
+        /([^,]+(?:community center|church|school|park|scout camp|scout center|recreation area))/i,
+        /(?:located at|found at|situated at)[:\s]+([^.\n]+)/i,
+        /(?:address|location)[:\s]+([^.\n]+)/i
       ];
 
       for (const pattern of addressPatterns) {
         const match = content.match(pattern);
         if (match && match[1]) {
           const address = match[1].trim();
-          if (address.length > 10) {
+          if (address.length > 8) { // Reduced minimum length for more flexibility
             locations.push({
               confidence: 0.8,
               address,
@@ -1262,6 +1314,16 @@ class AIService {
             });
           }
         }
+      }
+      
+      // Also look for phone numbers as a fallback
+      const phoneMatch = content.match(/(\(\d{3}\)\s*\d{3}-\d{4}|\d{3}-\d{3}-\d{4})/);
+      if (phoneMatch && !locations.some(loc => loc.address.includes(phoneMatch[1]))) {
+        locations.push({
+          confidence: 0.6,
+          address: `${result.title} - ${phoneMatch[1]}`,
+          source: result.link || 'web search'
+        });
       }
     }
 
@@ -1323,6 +1385,53 @@ class AIService {
     }
 
     return requirements;
+  }
+
+  // Extract medical services from search results
+  private extractMedicalServicesFromSearchResults(searchResults: any[]): Array<{ confidence: number; medicalServices: any; source: string }> {
+    const medicalServices = [];
+    
+    for (const result of searchResults) {
+      const content = result.snippet || result.title || '';
+      
+      // Look for medical facility patterns
+      const medicalPatterns = [
+        /(?:hospital|urgent care|emergency room|medical center|clinic)/i,
+        /(?:emergency|medical|healthcare|health care)/i,
+        /(?:doctor|physician|nurse|medical staff)/i
+      ];
+
+      const hasMedicalServices = medicalPatterns.some(pattern => pattern.test(content));
+      
+      if (hasMedicalServices) {
+        // Extract facility name and details
+        const facilityMatch = content.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Hospital|Medical Center|Urgent Care|Clinic|Emergency Room))/i);
+        const facilityName = facilityMatch ? facilityMatch[1] : result.title;
+        
+        // Extract address if present
+        const addressMatch = content.match(/(\d+\s+[^,]+(?:street|avenue|road|drive|lane|way|plaza|center|park))/i);
+        const address = addressMatch ? addressMatch[1] : '';
+        
+        // Extract phone number if present
+        const phoneMatch = content.match(/(\(\d{3}\)\s*\d{3}-\d{4}|\d{3}-\d{3}-\d{4})/);
+        const phone = phoneMatch ? phoneMatch[1] : '';
+        
+        medicalServices.push({
+          confidence: 0.7,
+          medicalServices: {
+            type: 'medical_facility',
+            name: facilityName,
+            address: address,
+            phone: phone,
+            content: content,
+            distance: 'nearest'
+          },
+          source: result.link || 'web search'
+        });
+      }
+    }
+
+    return medicalServices;
   }
 
   // Check if event is outdoor/camping related

@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Users, Heart, CheckCircle, AlertCircle, Loader2, Clock, MapPin } from 'lucide-react';
+import { claimVolunteerRole } from '../../services/firestore';
 import { useAnalytics } from '../../hooks/useAnalytics';
+import { formValidator, SecurityMetadata } from '../../services/security';
+import { volunteerFormSchema } from '../../types/validation';
 
 interface VolunteerSignupFormProps {
   volunteerNeed: VolunteerNeed;
@@ -144,10 +147,6 @@ const VolunteerSignupForm: React.FC<VolunteerSignupFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
-      return;
-    }
-
     setIsSubmitting(true);
     setSubmitStatus('idle');
     setErrorMessage('');
@@ -159,29 +158,49 @@ const VolunteerSignupForm: React.FC<VolunteerSignupFormProps> = ({
         action: 'submit_attempt' 
       });
 
-      // Prepare submission data
-      const submissionData: VolunteerSignupData = {
-        ...formData as VolunteerSignupData,
-        ipHash: generateIPHash(),
-        userAgent: navigator.userAgent,
-        timestamp: new Date()
+      // Generate security metadata
+      const securityMeta = await SecurityMetadata.generateMetadata();
+
+      // Prepare submission data with security metadata
+      const submissionData = {
+        ...formData,
+        volunteerNeedId: volunteerNeed.id,
+        ...securityMeta
       };
 
-      // In a real app, this would call Firebase Cloud Function
-      // For now, simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Validate and sanitize with enhanced security
+      const validationResult = await formValidator.validateVolunteerForm(
+        submissionData, 
+        securityMeta.ipHash
+      );
+
+      if (!validationResult.isValid) {
+        if (validationResult.rateLimited) {
+          setErrorMessage('Too many requests. Please wait before submitting again.');
+        } else {
+          setErrorMessage(validationResult.errors?.join(', ') || 'Validation failed');
+        }
+        setSubmitStatus('error');
+        return;
+      }
+
+      // Use validated and sanitized data
+      const secureData = validationResult.data;
+
+      // Call Firebase Cloud Function with secure data
+      await claimVolunteerRole(secureData);
 
       // Simulate success
       setSubmitStatus('success');
       
       // Track successful submission
       analytics.trackVolunteerSignup(volunteerNeed.id, true, { 
-        skills: submissionData.skills.length 
+        skills: secureData.skills.length 
       });
       
       // Call success callback
       if (onSuccess) {
-        onSuccess(submissionData);
+        onSuccess(secureData);
       }
 
       // Reset form after success

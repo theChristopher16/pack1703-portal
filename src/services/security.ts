@@ -372,6 +372,102 @@ export class FormValidator {
   }
 
   /**
+   * Validate and sanitize feedback form data
+   */
+  public async validateFeedbackForm(data: unknown, ipHash: string): Promise<{
+    isValid: boolean;
+    data?: any;
+    errors?: string[];
+    rateLimited?: boolean;
+  }> {
+    // Check rate limiting first
+    if (!this.rateLimiter.isAllowed(ipHash, 'feedback')) {
+      return {
+        isValid: false,
+        rateLimited: true,
+        errors: ['Too many requests. Please wait before submitting again.']
+      };
+    }
+
+    try {
+      // Validate with Zod schema
+      const validatedData = await this.validateWithSchema(data, 'feedback');
+      
+      // Additional security checks
+      const securityErrors = this.performSecurityChecks(validatedData);
+      if (securityErrors.length > 0) {
+        return {
+          isValid: false,
+          errors: securityErrors
+        };
+      }
+
+      // Sanitize all text content
+      const sanitizedData = this.sanitizeFormData(validatedData);
+      
+      return {
+        isValid: true,
+        data: sanitizedData
+      };
+    } catch (error) {
+      return {
+        isValid: false,
+        errors: error instanceof z.ZodError ? 
+          error.issues.map(e => e.message) : 
+          ['Validation failed']
+      };
+    }
+  }
+
+  /**
+   * Validate and sanitize volunteer form data
+   */
+  public async validateVolunteerForm(data: unknown, ipHash: string): Promise<{
+    isValid: boolean;
+    data?: any;
+    errors?: string[];
+    rateLimited?: boolean;
+  }> {
+    // Check rate limiting first
+    if (!this.rateLimiter.isAllowed(ipHash, 'volunteer')) {
+      return {
+        isValid: false,
+        rateLimited: true,
+        errors: ['Too many requests. Please wait before submitting again.']
+      };
+    }
+
+    try {
+      // Validate with Zod schema
+      const validatedData = await this.validateWithSchema(data, 'volunteer');
+      
+      // Additional security checks
+      const securityErrors = this.performSecurityChecks(validatedData);
+      if (securityErrors.length > 0) {
+        return {
+          isValid: false,
+          errors: securityErrors
+        };
+      }
+
+      // Sanitize all text content
+      const sanitizedData = this.sanitizeFormData(validatedData);
+      
+      return {
+        isValid: true,
+        data: sanitizedData
+      };
+    } catch (error) {
+      return {
+        isValid: false,
+        errors: error instanceof z.ZodError ? 
+          error.issues.map(e => e.message) : 
+          ['Validation failed']
+      };
+    }
+  }
+
+  /**
    * Validate data against Zod schemas
    */
   private async validateWithSchema(data: unknown, formType: 'rsvp' | 'feedback' | 'volunteer'): Promise<any> {

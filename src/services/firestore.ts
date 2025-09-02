@@ -143,37 +143,44 @@ export const firestoreService = {
     });
   },
 
-  // RSVP submissions
+  // RSVP submissions - Use Cloud Function for enhanced security
   async submitRSVP(rsvpData: any): Promise<any> {
-    const rsvpRef = collection(db, 'rsvps');
-    const docRef = await addDoc(rsvpRef, {
-      ...rsvpData,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    });
-    return { id: docRef.id, ...rsvpData };
+    try {
+      const functions = getFunctions();
+      const submitRSVPFunction = httpsCallable(functions, 'submitRSVP');
+      const result = await submitRSVPFunction(rsvpData);
+      return result.data;
+    } catch (error) {
+      console.error('Failed to submit RSVP via Cloud Function:', error);
+      throw error;
+    }
   },
 
-  // Feedback submissions
+  // Feedback submissions - Use Cloud Function for enhanced security
   async submitFeedback(feedbackData: any): Promise<any> {
-    const feedbackRef = collection(db, 'feedback');
-    const docRef = await addDoc(feedbackRef, {
-      ...feedbackData,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    });
-    return { id: docRef.id, ...feedbackData };
+    try {
+      const functions = getFunctions();
+      const submitFeedbackFunction = httpsCallable(functions, 'submitFeedback');
+      const result = await submitFeedbackFunction(feedbackData);
+      return result.data;
+    } catch (error) {
+      console.error('Failed to submit feedback via Cloud Function:', error);
+      throw error;
+    }
   },
 
-  // Volunteer signups
+  // Volunteer signups - Use Cloud Function for enhanced security
   async claimVolunteerRole(claimData: any): Promise<any> {
-    const signupRef = collection(db, 'volunteer-signups');
-    const docRef = await addDoc(signupRef, {
-      ...claimData,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    });
-    return { id: docRef.id, ...claimData };
+    try {
+      const functions = getFunctions();
+      const claimVolunteerRoleFunction = httpsCallable(functions, 'claimVolunteerRole');
+      const result = await claimVolunteerRoleFunction(claimData);
+      return result.data;
+    } catch (error) {
+      console.error('Failed to claim volunteer role via Cloud Function:', error);
+      throw error;
+    }
+  },
   },
 
   // AI Content Creation Methods

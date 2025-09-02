@@ -26,7 +26,7 @@ Apple Sign-In shows "CONTINUE TO THE APP" window and fails because:
 
 1. **Go to Apple Developer Console**: https://developer.apple.com/account/resources/identifiers/list/serviceId
 
-2. **Find your Service ID** (should be `com.sfpack1703.portal.web`)
+2. **Find your Service ID** (should be `com.sfpack1703.portal`)
 
 3. **Update Return URLs**:
    - Add: `https://sfpack1703.com/__/auth/handler`

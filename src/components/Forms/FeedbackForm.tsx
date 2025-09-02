@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { MessageSquare, Star, Send, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { submitFeedback } from '../../services/firestore';
 import { useAnalytics } from '../../hooks/useAnalytics';
+import { formValidator, SecurityMetadata } from '../../services/security';
+import { feedbackFormSchema } from '../../types/validation';
 
 interface FeedbackFormProps {
   onSuccess?: (data: FeedbackData) => void;
@@ -121,10 +124,6 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
-      return;
-    }
-
     setIsSubmitting(true);
     setSubmitStatus('idle');
     setErrorMessage('');
@@ -136,30 +135,49 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
         action: 'submit_attempt' 
       });
 
-      // Prepare submission data
-      const submissionData: FeedbackData = {
-        ...formData as FeedbackData,
-        ipHash: generateIPHash(),
-        userAgent: navigator.userAgent,
-        timestamp: new Date()
+      // Generate security metadata
+      const securityMeta = await SecurityMetadata.generateMetadata();
+
+      // Prepare submission data with security metadata
+      const submissionData = {
+        ...formData,
+        ...securityMeta
       };
 
-      // In a real app, this would call Firebase Cloud Function
-      // For now, simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Validate and sanitize with enhanced security
+      const validationResult = await formValidator.validateFeedbackForm(
+        submissionData, 
+        securityMeta.ipHash
+      );
+
+      if (!validationResult.isValid) {
+        if (validationResult.rateLimited) {
+          setErrorMessage('Too many requests. Please wait before submitting again.');
+        } else {
+          setErrorMessage(validationResult.errors?.join(', ') || 'Validation failed');
+        }
+        setSubmitStatus('error');
+        return;
+      }
+
+      // Use validated and sanitized data
+      const secureData = validationResult.data;
+
+      // Call Firebase Cloud Function with secure data
+      await submitFeedback(secureData);
 
       // Simulate success
       setSubmitStatus('success');
       
       // Track successful submission
       analytics.trackFeedbackSubmission(true, { 
-        category: submissionData.category, 
-        rating: submissionData.rating 
+        category: secureData.category, 
+        rating: secureData.rating 
       });
       
       // Call success callback
       if (onSuccess) {
-        onSuccess(submissionData);
+        onSuccess(secureData);
       }
 
       // Reset form after success

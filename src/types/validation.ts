@@ -114,9 +114,12 @@ export const rsvpFormSchema = z.object({
 // Enhanced feedback form validation
 export const feedbackFormSchema = z.object({
   category: z.string().min(1, 'Please select a valid category'),
+  rating: z.number().min(1, 'Please provide a rating').max(5, 'Rating must be between 1 and 5'),
+  title: requiredString,
   message: requiredSafeText,
-  email: emailString,
-  contactOk: booleanValue,
+  contactEmail: emailString,
+  contactName: requiredString,
+  eventId: z.string().optional(),
   // Security metadata
   ipHash: z.string().optional(),
   userAgent: z.string().max(500).optional(),
@@ -125,14 +128,16 @@ export const feedbackFormSchema = z.object({
 
 // Enhanced volunteer form validation  
 export const volunteerFormSchema = z.object({
-  needId: requiredString,
-  quantity: positiveInteger.max(10, 'Cannot volunteer for more than 10 positions'),
-  contactName: requiredString,
-  contactEmail: emailString,
-  contactPhone: phoneString,
-  experience: safeTextContent,
-  availability: safeTextContent,
-  notes: safeTextContent,
+  volunteerNeedId: requiredString,
+  volunteerName: requiredString,
+  email: emailString,
+  phone: phoneString,
+  age: z.number().min(1, 'Please provide a valid age'),
+  skills: z.array(z.string()).min(1, 'Please select at least one skill'),
+  availability: requiredString,
+  experience: requiredString,
+  specialNeeds: safeTextContent,
+  emergencyContact: safeTextContent,
   // Security metadata
   ipHash: z.string().optional(),
   userAgent: z.string().max(500).optional(),

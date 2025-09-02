@@ -1,7 +1,7 @@
 import { getFirestore, collection, addDoc, serverTimestamp, query, where, orderBy, limit as firestoreLimit, getDocs } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { externalApiService } from './externalApiService';
-import aiService from './aiService';
+import aiServiceFactory from './aiServiceFactory';
 
 interface EmailMessage {
   id: string;
@@ -1297,7 +1297,7 @@ class EmailMonitorService {
       const message = `📧 **Email Event Created**\n\nI just processed an email from **${email.from}** and created a new event:\n\n**${analysis.eventData?.title || 'Untitled Event'}**\n\n*Subject: ${email.subject}*\n\nThis event has been automatically added to the calendar. Please review and make any necessary adjustments.`;
       
       // Send to general announcements channel
-      await aiService.sendAIMessage('general', message, true);
+      await aiServiceFactory.sendAIMessage('general', message, true, 'admin');
       
       console.log('Chat notification sent about created event');
     } catch (error) {

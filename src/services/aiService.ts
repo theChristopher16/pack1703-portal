@@ -952,9 +952,11 @@ class AIService {
           console.log(`   Trying strategy: "${strategy.query}"`);
           const result = await webSearch({ query: strategy.query, maxResults: 5 });
           
-          // Check if result.data exists and is an array
-          if (!result.data || !Array.isArray(result.data)) {
-            console.warn(`   Strategy failed - invalid data returned`);
+          // Check if result.data exists and is an array, or if result.results exists
+          const responseData = result.data as any;
+          const searchResults = responseData?.results || responseData;
+          if (!searchResults || !Array.isArray(searchResults)) {
+            console.warn(`   Strategy failed - invalid data returned:`, result);
             continue;
           }
           
@@ -962,16 +964,16 @@ class AIService {
           let extractedData: any;
           switch (searchType) {
             case 'location':
-              extractedData = this.extractLocationsFromSearchResults(result.data);
+              extractedData = this.extractLocationsFromSearchResults(searchResults);
               break;
             case 'description':
-              extractedData = this.extractDescriptionsFromSearchResults(result.data);
+              extractedData = this.extractDescriptionsFromSearchResults(searchResults);
               break;
             case 'requirements':
-              extractedData = this.extractRequirementsFromSearchResults(result.data);
+              extractedData = this.extractRequirementsFromSearchResults(searchResults);
               break;
             case 'medical':
-              extractedData = this.extractMedicalServicesFromSearchResults(result.data);
+              extractedData = this.extractMedicalServicesFromSearchResults(searchResults);
               break;
           }
           
@@ -982,8 +984,8 @@ class AIService {
             // Include additional details about what was found
             const details = {
               searchQuery: strategy.query,
-              totalResults: result.data.length,
-              topResults: result.data.slice(0, 3).map((r: any) => ({
+              totalResults: searchResults.length,
+              topResults: searchResults.slice(0, 3).map((r: any) => ({
                 title: r.title,
                 snippet: r.snippet?.substring(0, 100) + '...',
                 link: r.link

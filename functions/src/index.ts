@@ -879,47 +879,93 @@ export const webSearch = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError('invalid-argument', 'Search query is required');
     }
 
-    // Use a simple web search API (you can replace with Google Custom Search API)
-    const searchUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
+    // Use Google Custom Search API for better results
+    const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+    const GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID;
     
-    const response = await fetch(searchUrl, {
+    if (!GOOGLE_API_KEY || !GOOGLE_CSE_ID) {
+      console.warn('Google API credentials not configured, falling back to DuckDuckGo');
+      
+      // Fallback to DuckDuckGo if Google API is not configured
+      const searchUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
+      
+      const response = await fetch(searchUrl, {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Pack1703-AI/1.0',
+          'Accept': 'application/json'
+        },
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      });
+
+      if (!response.ok) {
+        throw new functions.https.HttpsError('unavailable', `Search API returned ${response.status}`);
+      }
+
+      const searchData = await response.json();
+      
+      // Process DuckDuckGo search results
+      const results = [];
+      
+      if (searchData.AbstractURL) {
+        results.push({
+          title: searchData.Heading || 'Search Result',
+          link: searchData.AbstractURL,
+          snippet: searchData.AbstractText || '',
+          source: 'DuckDuckGo'
+        });
+      }
+      
+      if (searchData.RelatedTopics && searchData.RelatedTopics.length > 0) {
+        for (let i = 0; i < Math.min(maxResults - 1, searchData.RelatedTopics.length); i++) {
+          const topic = searchData.RelatedTopics[i];
+          if (topic.FirstURL && topic.Text) {
+            results.push({
+              title: topic.Text.split(' - ')[0] || 'Related Topic',
+              link: topic.FirstURL,
+              snippet: topic.Text,
+              source: 'DuckDuckGo'
+            });
+          }
+        }
+      }
+
+      return {
+        success: true,
+        results: results.slice(0, maxResults),
+        query: query,
+        totalResults: results.length
+      };
+    }
+
+    // Use Google Custom Search API
+    const googleSearchUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query)}&num=${maxResults}`;
+    
+    const response = await fetch(googleSearchUrl, {
       method: 'GET',
       headers: {
-        'User-Agent': 'Pack1703-AI/1.0',
         'Accept': 'application/json'
       },
-      signal: AbortSignal.timeout(10000) // 10 second timeout
+      signal: AbortSignal.timeout(15000) // 15 second timeout for Google API
     });
 
     if (!response.ok) {
-      throw new functions.https.HttpsError('unavailable', `Search API returned ${response.status}`);
+      throw new functions.https.HttpsError('unavailable', `Google Search API returned ${response.status}`);
     }
 
     const searchData = await response.json();
     
-    // Process search results
+    // Process Google search results
     const results = [];
     
-    if (searchData.AbstractURL) {
-      results.push({
-        title: searchData.Heading || 'Search Result',
-        link: searchData.AbstractURL,
-        snippet: searchData.AbstractText || '',
-        source: 'DuckDuckGo'
-      });
-    }
-    
-    if (searchData.RelatedTopics && searchData.RelatedTopics.length > 0) {
-      for (let i = 0; i < Math.min(maxResults - 1, searchData.RelatedTopics.length); i++) {
-        const topic = searchData.RelatedTopics[i];
-        if (topic.FirstURL && topic.Text) {
-          results.push({
-            title: topic.Text.split(' - ')[0] || 'Related Topic',
-            link: topic.FirstURL,
-            snippet: topic.Text,
-            source: 'DuckDuckGo'
-          });
-        }
+    if (searchData.items && Array.isArray(searchData.items)) {
+      for (const item of searchData.items) {
+        results.push({
+          title: item.title || 'Search Result',
+          link: item.link || '',
+          snippet: item.snippet || '',
+          source: 'Google'
+        });
       }
     }
 
@@ -927,7 +973,8 @@ export const webSearch = functions.https.onCall(async (data, context) => {
       success: true,
       results: results.slice(0, maxResults),
       query: query,
-      totalResults: results.length
+      totalResults: results.length,
+      searchInformation: searchData.searchInformation
     };
 
   } catch (error) {

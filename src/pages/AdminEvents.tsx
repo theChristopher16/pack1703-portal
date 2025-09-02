@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { EntityType, AdminActionType } from '../types/admin';
 import { firestoreService } from '../services/firestore';
+import { collection, query, orderBy, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '../firebase/config';
 
 interface Event {
   id: string;
@@ -35,7 +37,16 @@ const AdminEvents: React.FC = () => {
     const fetchEvents = async () => {
       try {
         setLoading(true);
-        const eventsData = await firestoreService.getEvents();
+        // Use direct Firestore query to get all events (not just public ones)
+        const eventsRef = collection(db, 'events');
+        const q = query(eventsRef, orderBy('startDate', 'desc'));
+        const snapshot = await getDocs(q);
+        const eventsData = snapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(),
+          startDate: doc.data().startDate?.toDate?.()?.toISOString() || doc.data().startDate,
+          endDate: doc.data().endDate?.toDate?.()?.toISOString() || doc.data().endDate,
+        }));
         setEvents(eventsData);
       } catch (error) {
         console.error('Error fetching events:', error);
@@ -63,7 +74,9 @@ const AdminEvents: React.FC = () => {
   const handleDeleteEvent = async (eventId: string) => {
     if (window.confirm('Are you sure you want to delete this event?')) {
       try {
-        await deleteEntity('event', eventId);
+        // Delete event directly from Firestore
+        const eventRef = doc(db, 'events', eventId);
+        await deleteDoc(eventRef);
         setEvents(events.filter(e => e.id !== eventId));
       } catch (error) {
         console.error('Error deleting event:', error);
@@ -74,27 +87,45 @@ const AdminEvents: React.FC = () => {
   const handleSaveEvent = async (eventData: Partial<Event>) => {
     try {
       if (modalMode === 'create') {
-        const result = await createEntity('event', eventData);
-        if (result.success && result.id) {
-          const newEvent: Event = {
-            id: result.id,
-            ...eventData,
-            currentParticipants: 0,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          } as Event;
-          setEvents([...events, newEvent]);
-        }
+        // Create event directly in Firestore
+        const eventsRef = collection(db, 'events');
+        const eventToCreate = {
+          ...eventData,
+          startDate: new Date(eventData.startDate!),
+          endDate: new Date(eventData.endDate!),
+          currentParticipants: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          visibility: eventData.visibility || 'public',
+          status: 'active'
+        };
+        
+        const docRef = await addDoc(eventsRef, eventToCreate);
+        const newEvent: Event = {
+          id: docRef.id,
+          ...eventData,
+          currentParticipants: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        } as Event;
+        setEvents([newEvent, ...events]); // Add to beginning since we're ordering by desc
       } else if (selectedEvent) {
-        const result = await updateEntity('event', selectedEvent.id, eventData);
-        if (result.success) {
-          const updatedEvent: Event = {
-            ...selectedEvent,
-            ...eventData,
-            updatedAt: new Date().toISOString()
-          } as Event;
-          setEvents(events.map(e => e.id === selectedEvent.id ? updatedEvent : e));
-        }
+        // Update event directly in Firestore
+        const eventRef = doc(db, 'events', selectedEvent.id);
+        const eventToUpdate = {
+          ...eventData,
+          startDate: new Date(eventData.startDate!),
+          endDate: new Date(eventData.endDate!),
+          updatedAt: new Date()
+        };
+        
+        await updateDoc(eventRef, eventToUpdate);
+        const updatedEvent: Event = {
+          ...selectedEvent,
+          ...eventData,
+          updatedAt: new Date().toISOString()
+        } as Event;
+        setEvents(events.map(e => e.id === selectedEvent.id ? updatedEvent : e));
       }
       setIsModalOpen(false);
     } catch (error) {

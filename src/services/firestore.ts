@@ -244,6 +244,65 @@ export const firestoreService = {
       console.error('Failed to create resource in Firestore:', error);
       throw error;
     }
+  },
+
+  // User Settings and Account Management
+  async getLinkedAccounts(userId: string): Promise<any[]> {
+    return safeFirestoreCall(async () => {
+      const accountsRef = collection(db, 'users', userId, 'linkedAccounts');
+      const snapshot = await getDocs(accountsRef);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    });
+  },
+
+  async getUserSettings(userId: string): Promise<any> {
+    return safeFirestoreCall(async () => {
+      const settingsRef = doc(db, 'users', userId, 'settings', 'preferences');
+      const settingsDoc = await getDoc(settingsRef);
+      if (settingsDoc.exists()) {
+        return settingsDoc.data();
+      }
+      return null;
+    });
+  },
+
+  async updateUserSettings(userId: string, settings: any): Promise<void> {
+    return safeFirestoreCall(async () => {
+      const settingsRef = doc(db, 'users', userId, 'settings', 'preferences');
+      await addDoc(collection(db, 'users', userId, 'settings'), {
+        ...settings,
+        updatedAt: Timestamp.now()
+      });
+    });
+  },
+
+  async linkAccount(userId: string, provider: string, accountData: any): Promise<void> {
+    return safeFirestoreCall(async () => {
+      const accountsRef = collection(db, 'users', userId, 'linkedAccounts');
+      await addDoc(accountsRef, {
+        provider,
+        email: accountData.email,
+        linkedAt: Timestamp.now(),
+        isActive: true,
+        ...accountData
+      });
+    });
+  },
+
+  async unlinkAccount(userId: string, provider: string): Promise<void> {
+    return safeFirestoreCall(async () => {
+      const accountsRef = collection(db, 'users', userId, 'linkedAccounts');
+      const q = query(accountsRef, where('provider', '==', provider));
+      const snapshot = await getDocs(q);
+      
+      for (const doc of snapshot.docs) {
+        await addDoc(collection(db, 'users', userId, 'linkedAccounts'), {
+          ...doc.data(),
+          isActive: false,
+          unlinkedAt: Timestamp.now()
+        });
+      }
+    });
   }
 };
 

@@ -55,7 +55,7 @@ function testDropdownPositioning() {
     return { passed: false, issues: ['Dropdown or button not found'] };
   }
   
-  const issues: string[] = [];
+  const issues = [];
   
   // Test ARIA attributes
   const ariaExpanded = button.getAttribute('aria-expanded');
@@ -86,7 +86,7 @@ function testNavigationSpacing() {
   console.log('Testing Navigation Spacing...');
   
   const navItems = document.querySelectorAll('.nav-item');
-  const issues: string[] = [];
+  const issues = [];
   
   // Test item count (excluding the More dropdown container)
   const primaryNavItems = Array.from(navItems).filter(item => 
@@ -122,7 +122,7 @@ function testNavigationSpacing() {
 function testResponsiveLayout() {
   console.log('Testing Responsive Layout...');
   
-  const issues: string[] = [];
+  const issues = [];
   
   // Test for responsive classes (simulated)
   const hasResponsiveClasses = true; // In real test, check for lg:flex, md:hidden etc.
@@ -141,7 +141,7 @@ function testAccessibility() {
   console.log('Testing Accessibility...');
   
   const button = document.querySelector('button');
-  const issues: string[] = [];
+  const issues = [];
   
   if (button) {
     // Test ARIA attributes
@@ -175,7 +175,7 @@ async function runVisualTests() {
     { name: 'Accessibility', fn: testAccessibility }
   ];
   
-  const results: Array<{testName: string; passed: boolean; issues: string[]}> = [];
+  const results = [];
   
   for (const test of tests) {
     const result = test.fn();
@@ -226,5 +226,3 @@ async function runVisualTests() {
 
 // Run the tests
 runVisualTests().catch(console.error);
-
-export {};

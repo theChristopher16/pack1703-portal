@@ -905,6 +905,51 @@ class AuthService {
       throw error;
     }
   }
+
+  // Account linking methods for AdminSettings
+  async linkGoogleAccount(): Promise<void> {
+    return this.linkSocialAccount(SocialProvider.GOOGLE);
+  },
+
+  async linkAppleAccount(): Promise<void> {
+    return this.linkSocialAccount(SocialProvider.APPLE);
+  },
+
+  async linkMicrosoftAccount(): Promise<void> {
+    return this.linkSocialAccount(SocialProvider.MICROSOFT);
+  },
+
+  async unlinkAccount(provider: string): Promise<void> {
+    if (!this.currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    try {
+      // Get the user's linked accounts
+      const user = this.auth.currentUser;
+      const providers = user?.providerData || [];
+      
+      // Find the provider to unlink
+      const providerToUnlink = providers.find(p => p.providerId.includes(provider));
+      
+      if (!providerToUnlink) {
+        throw new Error(`No ${provider} account linked`);
+      }
+
+      // Note: Firebase doesn't support unlinking accounts directly
+      // This would typically require re-authentication and account deletion
+      // For now, we'll just update the Firestore record
+      await updateDoc(doc(db, 'users', this.currentUser.uid), {
+        [`linkedAccounts.${provider}`]: {
+          isActive: false,
+          unlinkedAt: serverTimestamp()
+        }
+      });
+    } catch (error) {
+      console.error('Error unlinking account:', error);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance

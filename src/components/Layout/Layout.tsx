@@ -122,7 +122,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Medium Screen Navigation (shorter names) */}
             <nav className="hidden md:flex lg:hidden items-center space-x-1">
-              {navigation.slice(0, 3).map((item) => {
+              {navigation.slice(0, 4).map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
@@ -173,7 +173,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     }}
                   >
                     <div className="py-2">
-                      {navigation.slice(4).map((item) => {
+                      {navigation.slice(5).map((item) => {
                         const Icon = item.icon;
                         return (
                           <button

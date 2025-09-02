@@ -46,7 +46,7 @@ const AdminEvents: React.FC = () => {
           ...doc.data(),
           startDate: doc.data().startDate?.toDate?.()?.toISOString() || doc.data().startDate,
           endDate: doc.data().endDate?.toDate?.()?.toISOString() || doc.data().endDate,
-        }));
+        } as Event));
         setEvents(eventsData);
       } catch (error) {
         console.error('Error fetching events:', error);

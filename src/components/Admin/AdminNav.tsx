@@ -25,12 +25,11 @@ const AdminNav: React.FC = () => {
     };
   }, []);
 
-  // Prioritize most important admin functions - limit to 6 for desktop
+  // Prioritize most important admin functions - limit to 5 items for desktop to prevent overflow
   const primaryNavItems = [
     { path: '/admin', label: 'Dashboard', icon: '🏠' },
     { path: '/admin/ai', label: 'Solyn', icon: '🤖' },
     { path: '/admin/events', label: 'Events', icon: '📅' },
-    { path: '/admin/locations', label: 'Locations', icon: '📍' },
     { path: '/admin/announcements', label: 'News', icon: '📢' },
     { path: '/admin/chat', label: 'Chat', icon: '💬' },
   ];
@@ -38,12 +37,13 @@ const AdminNav: React.FC = () => {
   // Add SOC Console for root users only
   const socNavItem = { path: '/admin/soc', label: 'SOC Console', icon: '🖥️' };
   
-  // Show SOC Console in primary nav for root users
+  // Show SOC Console in primary nav for root users (but limit to 5 total)
   const navItems = currentUser?.role === 'root' 
-    ? [...primaryNavItems, socNavItem]
+    ? [...primaryNavItems.slice(0, 4), socNavItem] // Limit to 5 items total
     : primaryNavItems;
 
   const secondaryNavItems = [
+    { path: '/admin/locations', label: 'Locations', icon: '📍' },
     { path: '/admin/fundraising', label: 'Fundraising', icon: '🎯' },
     { path: '/admin/finances', label: 'Finances', icon: '💰' },
     { path: '/admin/multi-tenant', label: 'Multi-Tenant', icon: '🏢' },
@@ -71,7 +71,7 @@ const AdminNav: React.FC = () => {
               </h1>
             </div>
             
-            {/* Primary navigation - limited to 6 items for desktop */}
+            {/* Primary navigation - limited to 5 items for desktop */}
             <div className="hidden lg:flex items-center space-x-1 flex-1 min-w-0">
               {navItems.map((item) => (
                 <Link

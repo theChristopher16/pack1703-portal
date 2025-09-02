@@ -1,16 +1,39 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+
+// Mock Firebase before importing components
+jest.mock('firebase/auth', () => ({
+  getAuth: jest.fn(() => ({})),
+  signInWithEmailAndPassword: jest.fn(),
+  createUserWithEmailAndPassword: jest.fn(),
+  signOut: jest.fn(),
+  onAuthStateChanged: jest.fn(),
+  updateProfile: jest.fn(),
+}));
+
+jest.mock('firebase/firestore', () => ({
+  getFirestore: jest.fn(() => ({})),
+  collection: jest.fn(),
+  doc: jest.fn(),
+  getDoc: jest.fn(),
+  setDoc: jest.fn(),
+  updateDoc: jest.fn(),
+  addDoc: jest.fn(),
+  query: jest.fn(),
+  where: jest.fn(),
+  orderBy: jest.fn(),
+  getDocs: jest.fn(),
+  serverTimestamp: jest.fn(),
+}));
+
 import UserProfileManager from '../Profile/UserProfileManager';
 import { authService, UserRole, SocialProvider } from '../../services/authService';
-import { useAuth } from '../../contexts/AuthContext';
 
 // Mock dependencies
 jest.mock('../../services/authService');
-jest.mock('../../contexts/AuthContext');
 
 const mockAuthService = authService as jest.Mocked<typeof authService>;
-const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 
 describe('UserProfileManager', () => {
   const mockUser = {
@@ -67,17 +90,12 @@ describe('UserProfileManager', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseAuth.mockReturnValue({
-      user: mockUser,
-      loading: false,
-      error: null
-    });
     mockAuthService.validateUsername.mockResolvedValue({ isValid: true });
   });
 
   describe('Rendering', () => {
     test('should render user profile information', () => {
-      render(<UserProfileManager />);
+      render(<UserProfileManager propUser={mockUser} />);
       
       expect(screen.getByText('Test User')).toBeInTheDocument();
       expect(screen.getByText('Scout')).toBeInTheDocument();
@@ -90,7 +108,7 @@ describe('UserProfileManager', () => {
     });
 
     test('should render profile sections', () => {
-      render(<UserProfileManager />);
+      render(<UserProfileManager propUser={mockUser} />);
       
       expect(screen.getByText('Basic Information')).toBeInTheDocument();
       expect(screen.getByText('Contact Information')).toBeInTheDocument();
@@ -452,7 +470,7 @@ describe('UserProfileManager', () => {
       expect(screen.getByText('Loading user profile...')).toBeInTheDocument();
     });
 
-    test('should clear error when canceling', () => {
+    test('should clear error when canceling', async () => {
       mockAuthService.updateUserProfile.mockRejectedValue(new Error('Update failed'));
       
       render(<UserProfileManager />);

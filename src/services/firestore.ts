@@ -146,7 +146,6 @@ export const firestoreService = {
   // RSVP submissions - Use Cloud Function for enhanced security
   async submitRSVP(rsvpData: any): Promise<any> {
     try {
-      const functions = getFunctions();
       const submitRSVPFunction = httpsCallable(functions, 'submitRSVP');
       const result = await submitRSVPFunction(rsvpData);
       return result.data;
@@ -159,7 +158,6 @@ export const firestoreService = {
   // Feedback submissions - Use Cloud Function for enhanced security
   async submitFeedback(feedbackData: any): Promise<any> {
     try {
-      const functions = getFunctions();
       const submitFeedbackFunction = httpsCallable(functions, 'submitFeedback');
       const result = await submitFeedbackFunction(feedbackData);
       return result.data;
@@ -172,7 +170,6 @@ export const firestoreService = {
   // Volunteer signups - Use Cloud Function for enhanced security
   async claimVolunteerRole(claimData: any): Promise<any> {
     try {
-      const functions = getFunctions();
       const claimVolunteerRoleFunction = httpsCallable(functions, 'claimVolunteerRole');
       const result = await claimVolunteerRoleFunction(claimData);
       return result.data;
@@ -181,7 +178,8 @@ export const firestoreService = {
       throw error;
     }
   },
-  },
+
+  // AI Content Creation Methods
 
   // AI Content Creation Methods
   async createEvent(eventData: any): Promise<any> {

@@ -2196,9 +2196,52 @@ class AIService {
   }
 
   private async createEventInDatabase(eventData: any): Promise<string> {
-    // This would create the event in your events collection
-    // For now, return a mock ID
-    return `event_${Date.now()}`;
+    try {
+      // Transform AI event data to match Firestore schema
+      const transformedEventData = {
+        title: eventData.title,
+        description: eventData.description || 'Event details to be determined',
+        startDate: eventData.date ? new Date(eventData.date) : new Date(),
+        endDate: eventData.endDate ? new Date(eventData.endDate) : eventData.date ? new Date(eventData.date) : new Date(),
+        location: eventData.location || 'TBD',
+        category: this.determineEventCategory(eventData.title, eventData.location),
+        visibility: 'public' as const,
+        maxParticipants: 50, // Default max participants
+        currentParticipants: 0,
+        isActive: true,
+        status: 'active',
+        // Add any additional fields from web search results
+        ...(eventData.webSearchResults && { webSearchResults: eventData.webSearchResults })
+      };
+
+      // Use the firestoreService to create the event
+      const event = await firestoreService.createEvent(transformedEventData);
+      console.log('AI created event successfully:', event.id);
+      return event.id;
+    } catch (error) {
+      console.error('AI failed to create event in database:', error);
+      throw error;
+    }
+  }
+
+  // Helper method to determine event category based on title and location
+  private determineEventCategory(title: string, location: string): string {
+    const titleLower = title.toLowerCase();
+    const locationLower = location.toLowerCase();
+    
+    if (titleLower.includes('camp') || locationLower.includes('camp') || locationLower.includes('recreation area')) {
+      return 'Camping';
+    } else if (titleLower.includes('lake') || locationLower.includes('lake')) {
+      return 'Outdoor';
+    } else if (titleLower.includes('meeting') || titleLower.includes('pack')) {
+      return 'Meeting';
+    } else if (titleLower.includes('service') || titleLower.includes('volunteer')) {
+      return 'Service';
+    } else if (titleLower.includes('fundraiser') || titleLower.includes('fundraising')) {
+      return 'Fundraising';
+    } else {
+      return 'General';
+    }
   }
 
   private async handleDynamicConversation(userQuery: string, context: AIContext): Promise<AIResponse | null> {

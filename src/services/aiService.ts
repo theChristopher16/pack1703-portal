@@ -730,18 +730,97 @@ class AIService {
       parts.push(`**Description:** ${eventData.description}`);
     }
 
-    // Add web search results
+    // Add detailed web search results
     if (eventData.webSearchResults) {
-      parts.push(`\n**📡 Web Search Results:**`);
+      parts.push(`\n**📡 Detailed Web Search Results:**`);
+      
       if (eventData.webSearchResults.location) {
-        parts.push(`• Location: ${eventData.webSearchResults.location.confidence > 0.7 ? '✅' : '⚠️'} ${eventData.webSearchResults.location.data}`);
+        const location = eventData.webSearchResults.location;
+        parts.push(`\n**📍 Location Information:**`);
+        parts.push(`• **Confidence:** ${Math.round(location.confidence * 100)}% ${location.confidence > 0.7 ? '✅' : location.confidence > 0.5 ? '⚠️' : '❌'}`);
+        parts.push(`• **Data Found:** ${location.data}`);
+        if (location.source && location.source !== 'ai_generated') {
+          parts.push(`• **Source:** ${location.source}`);
+        }
+        if (location.details) {
+          parts.push(`• **Search Query:** "${location.details.searchQuery}"`);
+          parts.push(`• **Total Results:** ${location.details.totalResults} pages found`);
+          if (location.details.topResults && location.details.topResults.length > 0) {
+            parts.push(`• **Top Sources:**`);
+            location.details.topResults.forEach((result: any, index: number) => {
+              parts.push(`  ${index + 1}. ${result.title}`);
+              parts.push(`     ${result.snippet}`);
+            });
+          }
+        }
       }
+      
       if (eventData.webSearchResults.description) {
-        parts.push(`• Description: ${eventData.webSearchResults.description.confidence > 0.7 ? '✅' : '⚠️'} Found additional details`);
+        const description = eventData.webSearchResults.description;
+        parts.push(`\n**📝 Description Information:**`);
+        parts.push(`• **Confidence:** ${Math.round(description.confidence * 100)}% ${description.confidence > 0.7 ? '✅' : description.confidence > 0.5 ? '⚠️' : '❌'}`);
+        if (description.source === 'ai_generated') {
+          parts.push(`• **Source:** AI Generated (no web data found)`);
+        } else {
+          parts.push(`• **Data Found:** ${description.data}`);
+          if (description.source) {
+            parts.push(`• **Source:** ${description.source}`);
+          }
+          if (description.details) {
+            parts.push(`• **Search Query:** "${description.details.searchQuery}"`);
+            parts.push(`• **Total Results:** ${description.details.totalResults} pages found`);
+            if (description.details.topResults && description.details.topResults.length > 0) {
+              parts.push(`• **Top Sources:**`);
+              description.details.topResults.forEach((result: any, index: number) => {
+                parts.push(`  ${index + 1}. ${result.title}`);
+                parts.push(`     ${result.snippet}`);
+              });
+            }
+          }
+        }
       }
+      
       if (eventData.webSearchResults.requirements) {
-        parts.push(`• Requirements: ${eventData.webSearchResults.requirements.confidence > 0.7 ? '✅' : '⚠️'} Found packing list/requirements`);
+        const requirements = eventData.webSearchResults.requirements;
+        parts.push(`\n**🎒 Requirements/Packing List:**`);
+        parts.push(`• **Confidence:** ${Math.round(requirements.confidence * 100)}% ${requirements.confidence > 0.7 ? '✅' : requirements.confidence > 0.5 ? '⚠️' : '❌'}`);
+        parts.push(`• **Data Found:** ${requirements.data}`);
+        if (requirements.source) {
+          parts.push(`• **Source:** ${requirements.source}`);
+        }
+        if (requirements.details) {
+          parts.push(`• **Search Query:** "${requirements.details.searchQuery}"`);
+          parts.push(`• **Total Results:** ${requirements.details.totalResults} pages found`);
+          if (requirements.details.topResults && requirements.details.topResults.length > 0) {
+            parts.push(`• **Top Sources:**`);
+            requirements.details.topResults.forEach((result: any, index: number) => {
+              parts.push(`  ${index + 1}. ${result.title}`);
+              parts.push(`     ${result.snippet}`);
+            });
+          }
+        }
       }
+      
+      // Show what searches were attempted but failed
+      const attemptedSearches = [];
+      if (!eventData.webSearchResults.location && eventData.location && eventData.location !== 'TBD') {
+        attemptedSearches.push('Location verification');
+      }
+      if (!eventData.webSearchResults.description) {
+        attemptedSearches.push('Description enhancement');
+      }
+      if (!eventData.webSearchResults.requirements && this.isOutdoorEvent(eventData.title)) {
+        attemptedSearches.push('Requirements/packing list');
+      }
+      
+      if (attemptedSearches.length > 0) {
+        parts.push(`\n**🔍 Searches Attempted but No Results:**`);
+        attemptedSearches.forEach(search => {
+          parts.push(`• ${search}`);
+        });
+      }
+    } else {
+      parts.push(`\n**🔍 Web Search:** No web searches were performed for this event.`);
     }
 
     // Add resources to be created
@@ -818,7 +897,7 @@ class AIService {
   }
 
   // Enhanced web search with multiple strategies and retry logic
-  private async enhancedWebSearch(searchType: 'location' | 'description' | 'requirements', eventData: any): Promise<{ confidence: number; data: any; source: string }> {
+  private async enhancedWebSearch(searchType: 'location' | 'description' | 'requirements', eventData: any): Promise<{ confidence: number; data: any; source: string; details?: any }> {
     const maxAttempts = 3;
     const searchStrategies = this.getSearchStrategies(searchType, eventData);
     
@@ -856,10 +935,25 @@ class AIService {
           if (extractedData && extractedData.length > 0) {
             const bestResult = extractedData[0];
             console.log(`   ✅ Found ${searchType} data with confidence ${bestResult.confidence}`);
+            
+            // Include additional details about what was found
+            const details = {
+              searchQuery: strategy.query,
+              totalResults: result.data.length,
+              topResults: result.data.slice(0, 3).map((r: any) => ({
+                title: r.title,
+                snippet: r.snippet?.substring(0, 100) + '...',
+                link: r.link
+              })),
+              confidence: bestResult.confidence,
+              source: bestResult.source
+            };
+            
             return {
               confidence: bestResult.confidence,
               data: bestResult[searchType === 'location' ? 'address' : searchType === 'requirements' ? 'requirements' : 'description'],
-              source: bestResult.source
+              source: bestResult.source,
+              details
             };
           }
           

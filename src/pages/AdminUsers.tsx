@@ -51,7 +51,7 @@ const AdminUsers: React.FC = () => {
     scoutRank: '',
     emergencyContact: '',
     address: '',
-    role: UserRole.PACK_MEMBER,
+    role: UserRole.SCOUT,
     isActive: true
   });
 
@@ -104,7 +104,7 @@ const AdminUsers: React.FC = () => {
       
       // Check if this user has a parent (based on profile or other logic)
       // For now, we'll assume users with 'scout' in their role are children
-      const isChild = user.role === UserRole.PACK_MEMBER && 
+      const isChild = user.role === UserRole.SCOUT && 
                      user.profile?.den && 
                      user.profile.scoutRank;
       
@@ -114,7 +114,7 @@ const AdminUsers: React.FC = () => {
           u.uid !== user.uid && 
           (u.profile?.den === user.profile?.den || 
            u.role === UserRole.DEN_LEADER ||
-           u.role === UserRole.COMMITTEE_MEMBER)
+           u.role === UserRole.ADMIN)
         );
         
         if (potentialParent) {
@@ -257,9 +257,8 @@ const AdminUsers: React.FC = () => {
     switch (role) {
       case UserRole.ROOT: return <Crown className="w-4 h-4 text-yellow-600" />;
       case UserRole.ADMIN: return <Shield className="w-4 h-4 text-red-600" />;
-      case UserRole.COMMITTEE_MEMBER: return <Star className="w-4 h-4 text-blue-600" />;
       case UserRole.DEN_LEADER: return <Users className="w-4 h-4 text-green-600" />;
-      case UserRole.STAR_VOLUNTEER: return <Star className="w-4 h-4 text-purple-600" />;
+      case UserRole.PARENT: return <Star className="w-4 h-4 text-purple-600" />;
       default: return <User className="w-4 h-4 text-gray-600" />;
     }
   };
@@ -268,9 +267,8 @@ const AdminUsers: React.FC = () => {
     switch (role) {
       case UserRole.ROOT: return 'bg-yellow-100 text-yellow-800';
       case UserRole.ADMIN: return 'bg-red-100 text-red-800';
-      case UserRole.COMMITTEE_MEMBER: return 'bg-blue-100 text-blue-800';
       case UserRole.DEN_LEADER: return 'bg-green-100 text-green-800';
-      case UserRole.STAR_VOLUNTEER: return 'bg-purple-100 text-purple-800';
+      case UserRole.PARENT: return 'bg-purple-100 text-purple-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -492,10 +490,9 @@ const AdminUsers: React.FC = () => {
               <option value="all">All Roles</option>
               <option value={UserRole.ROOT}>Root</option>
               <option value={UserRole.ADMIN}>Admin</option>
-              <option value={UserRole.COMMITTEE_MEMBER}>Committee Member</option>
               <option value={UserRole.DEN_LEADER}>Den Leader</option>
-              <option value={UserRole.STAR_VOLUNTEER}>Star Volunteer</option>
-              <option value={UserRole.PACK_MEMBER}>Pack Member</option>
+              <option value={UserRole.PARENT}>Parent</option>
+              <option value={UserRole.SCOUT}>Scout</option>
               <option value={UserRole.GUEST}>Guest</option>
             </select>
             
@@ -521,7 +518,7 @@ const AdminUsers: React.FC = () => {
                   scoutRank: '',
                   emergencyContact: '',
                   address: '',
-                  role: UserRole.PACK_MEMBER,
+                  role: UserRole.SCOUT,
                   isActive: true
                 });
                 setShowUserModal(true);
@@ -668,10 +665,9 @@ const AdminUsers: React.FC = () => {
                   onChange={(e) => setEditForm({...editForm, role: e.target.value as UserRole})}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
-                  <option value={UserRole.PACK_MEMBER}>Pack Member</option>
+                  <option value={UserRole.SCOUT}>Scout</option>
                   <option value={UserRole.DEN_LEADER}>Den Leader</option>
-                  <option value={UserRole.COMMITTEE_MEMBER}>Committee Member</option>
-                  <option value={UserRole.STAR_VOLUNTEER}>Star Volunteer</option>
+                  <option value={UserRole.PARENT}>Parent</option>
                   <option value={UserRole.ADMIN}>Admin</option>
                   <option value={UserRole.GUEST}>Guest</option>
                 </select>

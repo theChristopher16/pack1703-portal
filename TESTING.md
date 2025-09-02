@@ -1,306 +1,382 @@
-# Testing Documentation for sfpack1703app
+# Testing Documentation for Pack1703 Portal
 
-## Overview
-
-This application includes a comprehensive testing suite that works without complex testing frameworks, making it compatible with various Node.js versions and environments.
-
-## GitHub Actions Configuration
-
-### Repository Permissions
-The following permissions have been enabled for GitHub Actions:
-
-- **Read and write permissions for actions**: Allows GitHub Actions to read and write repository contents, including code, issues, pull requests, and other repository data.
-- **Allow GitHub Actions to create and approve pull requests**: Enables automated workflows to create pull requests and approve them when appropriate, facilitating automated code reviews and deployments.
-
-These permissions are configured in the repository settings under:
-- **Settings** → **Actions** → **General** → **Workflow permissions**
-- **Settings** → **Actions** → **General** → **Pull request workflows from outside collaborators**
-
-### Workflow Files
-- `deploy.yml`: Main deployment workflow with test and deploy jobs
-- `test.yml`: Dedicated test suite (currently disabled)
-- `test-deploy.yml`: Combined test and deployment workflow
-
-## Test Structure
-
-The testing suite is organized into several test categories:
-
-### 1. Basic Functionality Tests
-- **File**: `test/simple-test-runner.js`
-- **Purpose**: Tests fundamental JavaScript functionality
-- **Coverage**: Arithmetic, strings, booleans, arrays, objects
-- **Tests**: 5 basic tests
-
-### 2. Utility Function Tests
-- **File**: `test/comprehensive-test-runner.js` (included)
-- **Purpose**: Tests utility functions and data validation
-- **Coverage**: Date formatting, email validation, string truncation
-- **Tests**: 3 utility tests
-
-### 3. Component Structure Tests
-- **File**: `test/comprehensive-test-runner.js` (included)
-- **Purpose**: Validates React component structure and routing
-- **Coverage**: Component imports, route configuration, context providers
-- **Tests**: 3 component tests
-
-### 4. Accessibility Tests
-- **File**: `test/comprehensive-test-runner.js` (included)
-- **Purpose**: Ensures accessibility compliance
-- **Coverage**: ARIA attributes, keyboard navigation, screen reader support
-- **Tests**: 3 accessibility tests
-
-### 5. Performance Tests
-- **File**: `test/comprehensive-test-runner.js` (included)
-- **Purpose**: Validates application performance
-- **Coverage**: Component rendering speed, memory usage monitoring
-- **Tests**: 2 performance tests
-
-## Running Tests
-
-### Prerequisites
-- Node.js (version 18+ recommended)
-- npm or yarn package manager
-
-### Available Test Commands
-
-```bash
-# Run all tests (comprehensive suite)
-npm test
-
-# Run basic functionality tests only
-npm run test:basic
-
-# Run comprehensive test suite
-npm run test:comprehensive
-
-# Run tests with coverage reporting
-npm run test:coverage
-
-# Run tests in watch mode
-npm run test:watch
-```
-
-### Test Output Example
+## Test Organization Structure
 
 ```
-🚀 Starting Comprehensive Test Suite for sfpack1703app
+src/
+├── __tests__/                    # Main test directory
+│   ├── unit/                     # Unit tests
+│   │   ├── services/            # Service layer tests
+│   │   │   ├── authService.test.ts
+│   │   │   ├── aiService.test.ts
+│   │   │   ├── firestore.test.ts
+│   │   │   └── security.test.ts
+│   │   ├── components/          # Component tests
+│   │   │   ├── Profile/
+│   │   │   │   └── UserProfileManager.test.tsx
+│   │   │   ├── Admin/
+│   │   │   │   └── UserManagement.test.tsx
+│   │   │   └── Forms/
+│   │   │       ├── FeedbackForm.test.tsx
+│   │   │       └── VolunteerSignupForm.test.tsx
+│   │   ├── contexts/            # Context tests
+│   │   │   ├── AuthContext.test.tsx
+│   │   │   └── AdminContext.test.tsx
+│   │   └── utils/               # Utility function tests
+│   │       ├── validation.test.ts
+│   │       └── helpers.test.ts
+│   ├── integration/             # Integration tests
+│   │   ├── auth-flow.test.ts    # Authentication flow tests
+│   │   ├── user-management.test.ts
+│   │   └── ai-integration.test.ts
+│   ├── e2e/                     # End-to-end tests
+│   │   ├── user-journey.test.ts
+│   │   └── admin-workflow.test.ts
+│   └── fixtures/                # Test data and fixtures
+│       ├── mockUsers.ts
+│       ├── mockEvents.ts
+│       └── mockData.ts
+```
 
-============================================================
-🧪 Running Basic Functionality Tests
-============================================================
+## Test Categories
 
-🧪 Running Basic Functionality Tests
+### 1. Unit Tests
+- **Services**: Test individual service methods in isolation
+- **Components**: Test React components with mocked dependencies
+- **Contexts**: Test React context providers and consumers
+- **Utils**: Test utility functions and helpers
 
-1. Testing basic arithmetic...
-✅ PASS: 2 + 2 should equal 4
-2. Testing string operations...
-✅ PASS: Strings should concatenate correctly
-3. Testing boolean logic...
-✅ PASS: true should be truthy
-✅ PASS: false should be falsy
-4. Testing array operations...
-✅ PASS: Array should have correct length
-✅ PASS: Array should have correct first element
-5. Testing object properties...
-✅ PASS: Object name property should be correct
-✅ PASS: Object value property should be correct
+### 2. Integration Tests
+- **Auth Flow**: Test complete authentication processes
+- **User Management**: Test user CRUD operations end-to-end
+- **AI Integration**: Test AI service interactions
 
-⏱️  Basic Functionality Tests completed in 1ms
+### 3. End-to-End Tests
+- **User Journey**: Test complete user workflows
+- **Admin Workflow**: Test administrative processes
 
-============================================================
-🧪 Running Utility Function Tests
-============================================================
-...
+## Test Configuration
 
-🎯 COMPREHENSIVE TEST RESULTS SUMMARY
-============================================================
-⏱️  Total Test Duration: 15ms
-📊 Total Tests: 16
-✅ Total Passed: 16
-❌ Total Failed: 0
-📈 Success Rate: 100.0%
+### Jest Configuration
+```javascript
+// jest.config.js
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
+  moduleNameMapping: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/index.tsx',
+    '!src/serviceWorker.ts',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
+  testMatch: [
+    '<rootDir>/src/**/__tests__/**/*.{ts,tsx}',
+    '<rootDir>/src/**/*.{test,spec}.{ts,tsx}',
+  ],
+};
+```
+
+### Test Setup
+```typescript
+// src/setupTests.ts
+import '@testing-library/jest-dom';
+import { server } from './__tests__/fixtures/msw/server';
+
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+// Mock Firebase
+jest.mock('./firebase/config', () => ({
+  db: {},
+  auth: {},
+}));
+
+// Mock window.matchMedia
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: jest.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
+});
 ```
 
 ## Test Utilities
 
-### Assertion Functions
+### Custom Render Function
+```typescript
+// src/__tests__/utils/test-utils.tsx
+import React, { ReactElement } from 'react';
+import { render, RenderOptions } from '@testing-library/react';
+import { AuthProvider } from '../../contexts/AuthContext';
+import { AdminProvider } from '../../contexts/AdminContext';
 
-The test suite includes several assertion functions:
-
-```javascript
-const assert = {
-  // Test equality
-  equal: (actual, expected, message) => boolean,
-  
-  // Test truthy values
-  truthy: (value, message) => boolean,
-  
-  // Test falsy values
-  falsy: (value, message) => boolean,
-  
-  // Test deep equality for objects/arrays
-  deepEqual: (actual, expected, message) => boolean
+const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <AuthProvider>
+      <AdminProvider>
+        {children}
+      </AdminProvider>
+    </AuthProvider>
+  );
 };
+
+const customRender = (
+  ui: ReactElement,
+  options?: Omit<RenderOptions, 'wrapper'>,
+) => render(ui, { wrapper: AllTheProviders, ...options });
+
+export * from '@testing-library/react';
+export { customRender as render };
 ```
 
-### Example Usage
+### Mock Data Factories
+```typescript
+// src/__tests__/fixtures/mockUsers.ts
+import { AppUser, UserRole, SocialProvider } from '../../services/authService';
 
-```javascript
-// Test equality
-assert.equal(2 + 2, 4, '2 + 2 should equal 4');
+export const createMockUser = (overrides: Partial<AppUser> = {}): AppUser => ({
+  uid: 'test-user-123',
+  email: 'test@example.com',
+  displayName: 'Test User',
+  photoURL: 'https://example.com/photo.jpg',
+  role: UserRole.SCOUT,
+  permissions: [],
+  isActive: true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  lastLoginAt: new Date(),
+  authProvider: SocialProvider.GOOGLE,
+  profile: {
+    firstName: 'Test',
+    lastName: 'User',
+    nickname: 'Tester',
+    phone: '555-1234',
+    address: '123 Test St',
+    emergencyContact: '555-5678',
+    scoutRank: 'Wolf',
+    den: 'Wolf',
+    packNumber: '1703',
+    scoutAge: 9,
+    scoutGrade: '3rd Grade',
+    familyId: 'family-123',
+    parentNames: ['Parent 1', 'Parent 2'],
+    siblings: ['Sibling 1'],
+    username: 'testuser',
+    socialData: {
+      google: {
+        id: 'google-123',
+        email: 'test@example.com',
+        name: 'Test User',
+        picture: 'https://example.com/photo.jpg'
+      }
+    },
+    preferences: {
+      emailNotifications: true,
+      pushNotifications: true,
+      smsNotifications: false,
+      language: 'en',
+      timezone: 'America/Chicago'
+    },
+    security: {
+      twoFactorEnabled: false,
+      lastPasswordChange: new Date(),
+      failedLoginAttempts: 0,
+      accountLocked: false
+    }
+  },
+  ...overrides,
+});
 
-// Test truthy values
-assert.truthy(user.isAuthenticated, 'User should be authenticated');
-
-// Test deep equality
-assert.deepEqual(actualArray, expectedArray, 'Arrays should match');
+export const createMockRootUser = () => createMockUser({ role: UserRole.ROOT });
+export const createMockAdminUser = () => createMockUser({ role: UserRole.ADMIN });
+export const createMockDenLeaderUser = () => createMockUser({ role: UserRole.DEN_LEADER });
+export const createMockParentUser = () => createMockUser({ role: UserRole.PARENT });
+export const createMockScoutUser = () => createMockUser({ role: UserRole.SCOUT });
+export const createMockGuestUser = () => createMockUser({ role: UserRole.GUEST });
 ```
 
-## Adding New Tests
+## Test Scripts
 
-### 1. Create a New Test File
-
-```javascript
-// test/new-feature.test.js
-const assert = {
-  equal: (actual, expected, message) => {
-    if (actual === expected) {
-      console.log(`✅ PASS: ${message}`);
-      return true;
-    } else {
-      console.log(`❌ FAIL: ${message}`);
-      console.log(`   Expected: ${expected}`);
-      console.log(`   Actual: ${actual}`);
-      return false;
-    }
+### Package.json Scripts
+```json
+{
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest --testPathPattern=src/__tests__/unit",
+    "test:integration": "jest --testPathPattern=src/__tests__/integration",
+    "test:e2e": "jest --testPathPattern=src/__tests__/e2e",
+    "test:services": "jest --testPathPattern=src/__tests__/unit/services",
+    "test:components": "jest --testPathPattern=src/__tests__/unit/components",
+    "test:auth": "jest --testPathPattern=auth",
+    "test:user-management": "jest --testPathPattern=user-management",
+    "test:ai": "jest --testPathPattern=aiService"
   }
-};
-
-const testNewFeature = () => {
-  let passed = 0;
-  let failed = 0;
-  
-  // Test 1: Basic functionality
-  try {
-    console.log('1. Testing basic functionality...');
-    if (assert.equal(newFeature.calculate(2, 3), 5, 'Addition should work')) {
-      passed++;
-    } else {
-      failed++;
-    }
-  } catch (error) {
-    console.log(`❌ FAIL: Basic functionality test failed - ${error.message}`);
-    failed++;
-  }
-  
-  return { passed, failed };
-};
-
-// Export for use in comprehensive test runner
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { testNewFeature };
-} else {
-  testNewFeature();
 }
 ```
 
-### 2. Integrate with Comprehensive Test Runner
+## Running Tests
 
-Add your test to the main test runner:
+### Individual Test Categories
+```bash
+# Run all tests
+npm test
 
-```javascript
-// In comprehensive-test-runner.js
-const newFeatureTests = require('./new-feature.test.js');
+# Run unit tests only
+npm run test:unit
 
-// Add to runAllTests function
-results.push(runTestSuite('New Feature Tests', newFeatureTests.testNewFeature));
+# Run integration tests only
+npm run test:integration
+
+# Run specific service tests
+npm run test:services
+
+# Run specific component tests
+npm run test:components
+
+# Run auth-related tests
+npm run test:auth
+
+# Run user management tests
+npm run test:user-management
+
+# Run AI service tests
+npm run test:ai
+```
+
+### Test Coverage
+```bash
+# Generate coverage report
+npm run test:coverage
+
+# Coverage will be available at:
+# coverage/lcov-report/index.html
 ```
 
 ## Test Best Practices
 
 ### 1. Test Structure
 - Use descriptive test names
-- Group related tests together
-- Include setup and teardown when necessary
-- Handle errors gracefully
+- Group related tests in describe blocks
+- Follow AAA pattern (Arrange, Act, Assert)
+- Keep tests independent and isolated
 
-### 2. Assertions
-- Use clear, descriptive assertion messages
-- Test both positive and negative cases
-- Validate edge cases and error conditions
-- Use appropriate assertion types
+### 2. Mocking
+- Mock external dependencies (Firebase, APIs)
+- Use factory functions for test data
+- Mock only what's necessary
+- Reset mocks between tests
 
-### 3. Test Data
-- Use realistic test data
-- Avoid hardcoded values when possible
-- Clean up test data after tests
-- Use mock data for external dependencies
+### 3. Assertions
+- Test one thing per test
+- Use specific assertions
+- Test both success and failure cases
+- Test edge cases and error conditions
 
-### 4. Performance
-- Keep tests fast and lightweight
-- Avoid unnecessary I/O operations
-- Use timeouts for long-running tests
-- Monitor memory usage in performance tests
+### 4. Component Testing
+- Test user interactions
+- Test prop changes
+- Test error states
+- Test loading states
+- Test accessibility
 
-## Troubleshooting
+### 5. Integration Testing
+- Test complete workflows
+- Test data flow between components
+- Test API interactions
+- Test error handling
 
-### Common Issues
+## Current Test Status
 
-1. **Tests not running**: Ensure you're in the correct directory (`app/sfpack1703app`)
-2. **Permission errors**: Make sure test files have execute permissions
-3. **Module not found**: Check file paths and extensions
-4. **Test failures**: Review error messages and fix underlying issues
+### ✅ Completed Tests
+- **AuthService**: RBAC, social login, username validation, user management
+- **UserProfileManager**: Form updates, validation, role management, family info
+- **AI Service**: Event creation, web search, medical services integration
 
-### Debug Mode
+### 🔄 In Progress
+- **UserManagement Component**: Admin interface for user management
+- **Integration Tests**: Auth flow, user management workflows
+- **E2E Tests**: Complete user journeys
 
-To run tests with more verbose output, you can modify the test files to include additional logging:
+### 📋 Planned Tests
+- **Security Service**: Rate limiting, validation, sanitization
+- **Firestore Service**: CRUD operations, queries, transactions
+- **Admin Components**: All admin interface components
+- **Form Components**: All form validation and submission
+- **Context Tests**: Auth and Admin context providers
 
-```javascript
-// Add debug logging
-const DEBUG = process.env.DEBUG === 'true';
-if (DEBUG) {
-  console.log('Debug: Test data:', testData);
-  console.log('Debug: Expected result:', expectedResult);
+## Test Data Management
+
+### Mock Service Worker
+```typescript
+// src/__tests__/fixtures/msw/handlers.ts
+import { rest } from 'msw';
+
+export const handlers = [
+  rest.post('/api/auth/login', (req, res, ctx) => {
+    return res(
+      ctx.status(200),
+      ctx.json({
+        user: mockUser,
+        token: 'mock-jwt-token'
+      })
+    );
+  }),
+  
+  rest.get('/api/users', (req, res, ctx) => {
+    return res(
+      ctx.status(200),
+      ctx.json([mockUser, mockAdminUser])
+    );
+  }),
+];
+```
+
+### Test Database
+```typescript
+// src/__tests__/fixtures/testDb.ts
+export class TestDatabase {
+  private users: Map<string, AppUser> = new Map();
+  private events: Map<string, Event> = new Map();
+  
+  addUser(user: AppUser) {
+    this.users.set(user.uid, user);
+  }
+  
+  getUser(uid: string) {
+    return this.users.get(uid);
+  }
+  
+  getAllUsers() {
+    return Array.from(this.users.values());
+  }
+  
+  clear() {
+    this.users.clear();
+    this.events.clear();
+  }
 }
 ```
 
-Then run with:
-```bash
-DEBUG=true npm test
-```
-
-## Continuous Integration
-
-The test suite is designed to work with CI/CD pipelines:
-
-- **Exit Codes**: Tests exit with code 0 for success, 1 for failure
-- **Output Format**: Structured output suitable for CI parsing
-- **Performance Metrics**: Includes timing information for CI monitoring
-- **Coverage Reporting**: Provides test coverage statistics
-
-## Future Enhancements
-
-Planned improvements to the testing suite:
-
-1. **Parallel Test Execution**: Run test suites in parallel for faster execution
-2. **Test Coverage Visualization**: Generate HTML coverage reports
-3. **Mock Framework**: Enhanced mocking capabilities for external dependencies
-4. **Test Categories**: Support for test tagging and selective execution
-5. **Performance Benchmarks**: More sophisticated performance testing
-
-## Support
-
-For testing-related issues or questions:
-
-1. Check this documentation first
-2. Review test output for specific error messages
-3. Verify Node.js version compatibility
-4. Check file permissions and paths
-5. Review recent changes to test files
-
----
-
-**Last Updated**: August 28, 2025  
-**Test Suite Version**: 1.0.0  
-**Total Tests**: 16  
-**Success Rate**: 100%
+This comprehensive test organization ensures thorough coverage of all functionality while maintaining clear structure and easy maintenance.

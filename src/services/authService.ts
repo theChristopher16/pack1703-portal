@@ -28,19 +28,19 @@ import {
   where, 
   getDocs,
   serverTimestamp,
-  deleteDoc
+  deleteDoc,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
-// User roles and permissions
+// User roles and permissions - Simplified and intuitive
 export enum UserRole {
-  ROOT = 'root',
-  ADMIN = 'admin',
-  COMMITTEE_MEMBER = 'committee_member',
-  DEN_LEADER = 'den_leader',
-  STAR_VOLUNTEER = 'star_volunteer',
-  PACK_MEMBER = 'pack_member',
-  GUEST = 'guest'
+  ROOT = 'root',           // You - Full system control
+  ADMIN = 'admin',         // Pack leadership - Full pack management
+  DEN_LEADER = 'den_leader', // Den leaders - Den-specific management
+  PARENT = 'parent',       // Parents - Family management
+  SCOUT = 'scout',         // Scouts - Basic access
+  GUEST = 'guest'          // Visitors - Limited access
 }
 
 export enum Permission {
@@ -50,24 +50,32 @@ export enum Permission {
   ROLE_MANAGEMENT = 'role_management',
   SYSTEM_CONFIG = 'system_config',
   
-  // Admin permissions
-  CONTENT_MANAGEMENT = 'content_management',
+  // Admin permissions (pack-level management)
+  PACK_MANAGEMENT = 'pack_management',
   EVENT_MANAGEMENT = 'event_management',
   LOCATION_MANAGEMENT = 'location_management',
   ANNOUNCEMENT_MANAGEMENT = 'announcement_management',
   FINANCIAL_MANAGEMENT = 'financial_management',
   FUNDRAISING_MANAGEMENT = 'fundraising_management',
+  ALL_DEN_ACCESS = 'all_den_access',
   
-  // Den leader permissions
+  // Den leader permissions (den-specific)
   DEN_CONTENT = 'den_content',
   DEN_EVENTS = 'den_events',
   DEN_MEMBERS = 'den_members',
   DEN_CHAT_MANAGEMENT = 'den_chat_management',
+  DEN_ANNOUNCEMENTS = 'den_announcements',
   
-  // Pack permissions
-  PACK_CONTENT = 'pack_content',
-  PACK_EVENTS = 'pack_events',
-  PACK_MEMBERS = 'pack_members',
+  // Parent permissions (family management)
+  FAMILY_MANAGEMENT = 'family_management',
+  FAMILY_EVENTS = 'family_events',
+  FAMILY_RSVP = 'family_rsvp',
+  FAMILY_VOLUNTEER = 'family_volunteer',
+  
+  // Scout permissions (basic access)
+  SCOUT_CONTENT = 'scout_content',
+  SCOUT_EVENTS = 'scout_events',
+  SCOUT_CHAT = 'scout_chat',
   
   // Chat permissions
   CHAT_READ = 'chat_read',
@@ -98,42 +106,56 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.USER_MANAGEMENT,
     Permission.ROLE_MANAGEMENT,
     Permission.SYSTEM_CONFIG,
-    Permission.CONTENT_MANAGEMENT,
+    Permission.PACK_MANAGEMENT,
     Permission.EVENT_MANAGEMENT,
     Permission.LOCATION_MANAGEMENT,
     Permission.ANNOUNCEMENT_MANAGEMENT,
     Permission.FINANCIAL_MANAGEMENT,
     Permission.FUNDRAISING_MANAGEMENT,
+    Permission.ALL_DEN_ACCESS,
     Permission.DEN_CONTENT,
     Permission.DEN_EVENTS,
     Permission.DEN_MEMBERS,
-    Permission.PACK_CONTENT,
-    Permission.PACK_EVENTS,
-    Permission.PACK_MEMBERS,
+    Permission.DEN_CHAT_MANAGEMENT,
+    Permission.DEN_ANNOUNCEMENTS,
+    Permission.FAMILY_MANAGEMENT,
+    Permission.FAMILY_EVENTS,
+    Permission.FAMILY_RSVP,
+    Permission.FAMILY_VOLUNTEER,
+    Permission.SCOUT_CONTENT,
+    Permission.SCOUT_EVENTS,
+    Permission.SCOUT_CHAT,
+    Permission.CHAT_READ,
+    Permission.CHAT_WRITE,
+    Permission.CHAT_MANAGEMENT,
     Permission.READ_CONTENT,
     Permission.CREATE_CONTENT,
     Permission.UPDATE_CONTENT,
     Permission.DELETE_CONTENT
   ],
   [UserRole.ADMIN]: [
-    Permission.CONTENT_MANAGEMENT,
+    Permission.PACK_MANAGEMENT,
     Permission.EVENT_MANAGEMENT,
     Permission.LOCATION_MANAGEMENT,
     Permission.ANNOUNCEMENT_MANAGEMENT,
     Permission.FINANCIAL_MANAGEMENT,
     Permission.FUNDRAISING_MANAGEMENT,
-    Permission.READ_CONTENT,
-    Permission.CREATE_CONTENT,
-    Permission.UPDATE_CONTENT,
-    Permission.DELETE_CONTENT
-  ],
-  [UserRole.COMMITTEE_MEMBER]: [
-    Permission.CONTENT_MANAGEMENT,
-    Permission.EVENT_MANAGEMENT,
-    Permission.LOCATION_MANAGEMENT,
-    Permission.ANNOUNCEMENT_MANAGEMENT,
-    Permission.FINANCIAL_MANAGEMENT,
-    Permission.FUNDRAISING_MANAGEMENT,
+    Permission.ALL_DEN_ACCESS,
+    Permission.DEN_CONTENT,
+    Permission.DEN_EVENTS,
+    Permission.DEN_MEMBERS,
+    Permission.DEN_CHAT_MANAGEMENT,
+    Permission.DEN_ANNOUNCEMENTS,
+    Permission.FAMILY_MANAGEMENT,
+    Permission.FAMILY_EVENTS,
+    Permission.FAMILY_RSVP,
+    Permission.FAMILY_VOLUNTEER,
+    Permission.SCOUT_CONTENT,
+    Permission.SCOUT_EVENTS,
+    Permission.SCOUT_CHAT,
+    Permission.CHAT_READ,
+    Permission.CHAT_WRITE,
+    Permission.CHAT_MANAGEMENT,
     Permission.READ_CONTENT,
     Permission.CREATE_CONTENT,
     Permission.UPDATE_CONTENT,
@@ -144,23 +166,41 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.DEN_EVENTS,
     Permission.DEN_MEMBERS,
     Permission.DEN_CHAT_MANAGEMENT,
+    Permission.DEN_ANNOUNCEMENTS,
+    Permission.FAMILY_MANAGEMENT,
+    Permission.FAMILY_EVENTS,
+    Permission.FAMILY_RSVP,
+    Permission.FAMILY_VOLUNTEER,
+    Permission.SCOUT_CONTENT,
+    Permission.SCOUT_EVENTS,
+    Permission.SCOUT_CHAT,
     Permission.CHAT_READ,
     Permission.CHAT_WRITE,
     Permission.CHAT_MANAGEMENT,
     Permission.READ_CONTENT,
     Permission.CREATE_CONTENT,
-    Permission.UPDATE_CONTENT,
-    Permission.DELETE_CONTENT
+    Permission.UPDATE_CONTENT
   ],
-  [UserRole.STAR_VOLUNTEER]: [
-    Permission.PACK_CONTENT,
-    Permission.PACK_EVENTS,
-    Permission.PACK_MEMBERS,
+  [UserRole.PARENT]: [
+    Permission.FAMILY_MANAGEMENT,
+    Permission.FAMILY_EVENTS,
+    Permission.FAMILY_RSVP,
+    Permission.FAMILY_VOLUNTEER,
+    Permission.SCOUT_CONTENT,
+    Permission.SCOUT_EVENTS,
+    Permission.SCOUT_CHAT,
+    Permission.CHAT_READ,
+    Permission.CHAT_WRITE,
     Permission.READ_CONTENT,
     Permission.CREATE_CONTENT,
     Permission.UPDATE_CONTENT
   ],
-  [UserRole.PACK_MEMBER]: [
+  [UserRole.SCOUT]: [
+    Permission.SCOUT_CONTENT,
+    Permission.SCOUT_EVENTS,
+    Permission.SCOUT_CHAT,
+    Permission.CHAT_READ,
+    Permission.CHAT_WRITE,
     Permission.READ_CONTENT,
     Permission.CREATE_CONTENT
   ],
@@ -169,7 +209,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ]
 };
 
-// User interface
+// User interface with enhanced profile data
 export interface AppUser {
   uid: string;
   email: string;
@@ -182,13 +222,70 @@ export interface AppUser {
   updatedAt: Date;
   lastLoginAt?: Date;
   authProvider?: SocialProvider;
+  
+  // Enhanced profile with social login data
   profile?: {
+    // Basic info
+    firstName?: string;
+    lastName?: string;
+    nickname?: string;
     phone?: string;
     address?: string;
     emergencyContact?: string;
+    
+    // Scouting info
     scoutRank?: string;
     den?: string;
-    nickname?: string;
+    packNumber?: string;
+    scoutAge?: number;
+    scoutGrade?: string;
+    
+    // Family info
+    familyId?: string;
+    parentNames?: string[];
+    siblings?: string[];
+    
+    // Social login data
+    socialData?: {
+      google?: {
+        id?: string;
+        email?: string;
+        name?: string;
+        picture?: string;
+        locale?: string;
+        verifiedEmail?: boolean;
+      };
+      apple?: {
+        id?: string;
+        email?: string;
+        name?: string;
+        picture?: string;
+      };
+      facebook?: {
+        id?: string;
+        email?: string;
+        name?: string;
+        picture?: string;
+      };
+    };
+    
+    // Preferences
+    preferences?: {
+      emailNotifications?: boolean;
+      pushNotifications?: boolean;
+      smsNotifications?: boolean;
+      language?: string;
+      timezone?: string;
+    };
+    
+    // Security
+    security?: {
+      twoFactorEnabled?: boolean;
+      lastPasswordChange?: Date;
+      failedLoginAttempts?: number;
+      accountLocked?: boolean;
+      lockoutUntil?: Date;
+    };
   };
 }
 
@@ -298,7 +395,7 @@ class AuthService {
     const isFirstUser = usersSnapshot.empty;
 
     // Determine role based on whether this is the first user
-    const role = isFirstUser ? UserRole.ROOT : UserRole.PACK_MEMBER;
+          const role = isFirstUser ? UserRole.ROOT : UserRole.SCOUT;
 
     // Create user document in Firestore
     console.log('Creating Firestore user document...');
@@ -330,7 +427,135 @@ class AuthService {
     return appUser;
   }
 
-  // Sign in with social provider
+  // Extract social login data from Firebase user
+  private extractSocialLoginData(firebaseUser: FirebaseUser) {
+    const socialData: any = {};
+    
+    // Extract Google data
+    if (firebaseUser.providerData.some(provider => provider.providerId === 'google.com')) {
+      const googleProvider = firebaseUser.providerData.find(provider => provider.providerId === 'google.com');
+      if (googleProvider) {
+        socialData.google = {
+          id: googleProvider.uid,
+          email: googleProvider.email,
+          name: googleProvider.displayName,
+          picture: googleProvider.photoURL,
+          locale: (googleProvider as any).locale,
+          verifiedEmail: (googleProvider as any).verifiedEmail
+        };
+      }
+    }
+    
+    // Extract Apple data
+    if (firebaseUser.providerData.some(provider => provider.providerId === 'apple.com')) {
+      const appleProvider = firebaseUser.providerData.find(provider => provider.providerId === 'apple.com');
+      if (appleProvider) {
+        socialData.apple = {
+          id: appleProvider.uid,
+          email: appleProvider.email,
+          name: appleProvider.displayName,
+          picture: appleProvider.photoURL
+        };
+      }
+    }
+    
+    // Extract Facebook data
+    if (firebaseUser.providerData.some(provider => provider.providerId === 'facebook.com')) {
+      const facebookProvider = firebaseUser.providerData.find(provider => provider.providerId === 'facebook.com');
+      if (facebookProvider) {
+        socialData.facebook = {
+          id: facebookProvider.uid,
+          email: facebookProvider.email,
+          name: facebookProvider.displayName,
+          picture: facebookProvider.photoURL
+        };
+      }
+    }
+    
+    return socialData;
+  }
+
+  // Generate safe username with uniqueness check
+  private async generateSafeUsername(baseUsername: string): Promise<string> {
+    const cleanUsername = baseUsername
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .substring(0, 20);
+    
+    if (!cleanUsername) {
+      return `user${Math.floor(Math.random() * 10000)}`;
+    }
+    
+    // Check if username exists
+    const usernameQuery = query(
+      collection(db, 'users'),
+      where('profile.username', '==', cleanUsername)
+    );
+    
+    const usernameSnapshot = await getDocs(usernameQuery);
+    
+    if (usernameSnapshot.empty) {
+      return cleanUsername;
+    }
+    
+    // Add number suffix
+    let counter = 1;
+    let newUsername = `${cleanUsername}${counter}`;
+    
+    while (true) {
+      const checkQuery = query(
+        collection(db, 'users'),
+        where('profile.username', '==', newUsername)
+      );
+      
+      const checkSnapshot = await getDocs(checkQuery);
+      
+      if (checkSnapshot.empty) {
+        return newUsername;
+      }
+      
+      counter++;
+      newUsername = `${cleanUsername}${counter}`;
+      
+      // Prevent infinite loop
+      if (counter > 100) {
+        return `${cleanUsername}${Date.now()}`;
+      }
+    }
+  }
+
+  // Validate username for safety and uniqueness
+  async validateUsername(username: string): Promise<{ isValid: boolean; error?: string }> {
+    // Check length
+    if (username.length < 3 || username.length > 20) {
+      return { isValid: false, error: 'Username must be between 3 and 20 characters' };
+    }
+    
+    // Check for invalid characters
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      return { isValid: false, error: 'Username can only contain letters, numbers, underscores, and hyphens' };
+    }
+    
+    // Check for reserved words
+    const reservedWords = ['admin', 'root', 'system', 'user', 'test', 'demo', 'guest'];
+    if (reservedWords.includes(username.toLowerCase())) {
+      return { isValid: false, error: 'Username is reserved and cannot be used' };
+    }
+    
+    // Check for uniqueness
+    const usernameQuery = query(
+      collection(db, 'users'),
+      where('profile.username', '==', username)
+    );
+    
+    const usernameSnapshot = await getDocs(usernameQuery);
+    
+    if (!usernameSnapshot.empty) {
+      return { isValid: false, error: 'Username is already taken' };
+    }
+    
+    return { isValid: true };
+  }
   async signInWithSocial(provider: SocialProvider): Promise<AppUser> {
     try {
       let authProvider;
@@ -587,14 +812,6 @@ class AuthService {
     });
   }
 
-  // Check if user has permission
-  hasPermission(permission: Permission): boolean {
-    if (!this.currentUser || !this.currentUser.isActive) {
-      return false;
-    }
-    return this.currentUser.permissions.includes(permission);
-  }
-
   // Check if user has any of the specified permissions
   hasAnyPermission(permissions: Permission[]): boolean {
     return permissions.some(permission => this.hasPermission(permission));
@@ -620,9 +837,99 @@ class AuthService {
     return this.isAdmin() || this.currentUser?.role === UserRole.DEN_LEADER;
   }
 
-  // Check if user is star volunteer or higher
-  isStarVolunteer(): boolean {
-    return this.isAdmin() || this.currentUser?.role === UserRole.STAR_VOLUNTEER;
+  // Check if user has specific permission
+  hasPermission(permission: Permission, user?: AppUser): boolean {
+    const targetUser = user || this.currentUser;
+    if (!targetUser) return false;
+    
+    return targetUser.permissions.includes(permission);
+  }
+
+  // Check if user can manage roles
+  canManageRoles(): boolean {
+    return this.isRoot() || this.isAdmin();
+  }
+
+  // Check if user can manage other users
+  canManageUsers(): boolean {
+    return this.isRoot() || this.isAdmin() || this.isDenLeader();
+  }
+
+  // Get users that current user can manage
+  async getManageableUsers(): Promise<AppUser[]> {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser) {
+      throw new Error('User not authenticated');
+    }
+
+    const allUsers = await this.getUsers();
+    
+    if (this.isRoot()) {
+      return allUsers; // Root can manage all users
+    }
+    
+    if (this.isAdmin()) {
+      return allUsers.filter(user => user.role !== UserRole.ROOT); // Admin can manage all except root
+    }
+    
+    if (this.isDenLeader()) {
+      // Den leaders can manage users in their den
+      return allUsers.filter(user => 
+        user.profile?.den === currentUser.profile?.den ||
+        user.role === UserRole.SCOUT ||
+        user.role === UserRole.PARENT
+      );
+    }
+    
+    return []; // Regular users cannot manage others
+  }
+
+  // Bulk user operations (root and admin only)
+  async bulkUpdateUsers(updates: Array<{ uid: string; updates: Partial<AppUser> }>): Promise<void> {
+    if (!this.canManageUsers()) {
+      throw new Error('Insufficient permissions for bulk operations');
+    }
+
+    const batch = writeBatch(db);
+    
+    for (const { uid, updates: userUpdates } of updates) {
+      const userRef = doc(db, 'users', uid);
+      batch.update(userRef, {
+        ...userUpdates,
+        updatedAt: serverTimestamp()
+      });
+    }
+    
+    await batch.commit();
+  }
+
+  // Export user data (admin and root only)
+  async exportUserData(): Promise<AppUser[]> {
+    if (!this.canManageUsers()) {
+      throw new Error('Insufficient permissions to export user data');
+    }
+
+    return await this.getUsers();
+  }
+
+  // Import user data (root only)
+  async importUserData(users: Omit<AppUser, 'uid' | 'createdAt' | 'updatedAt'>[]): Promise<void> {
+    if (!this.isRoot()) {
+      throw new Error('Only root users can import user data');
+    }
+
+    const batch = writeBatch(db);
+    
+    for (const userData of users) {
+      const userRef = doc(collection(db, 'users'));
+      batch.set(userRef, {
+        ...userData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+    }
+    
+    await batch.commit();
   }
 
   // Add auth state listener

@@ -34,7 +34,7 @@ const InviteManagement: React.FC<InviteManagementProps> = ({ className = '' }) =
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: '',
-    role: UserRole.PACK_MEMBER,
+    role: UserRole.SCOUT,
     message: '',
     denId: '',
     expiresInDays: 7
@@ -71,7 +71,7 @@ const InviteManagement: React.FC<InviteManagementProps> = ({ className = '' }) =
       setShowCreateModal(false);
       setFormData({
         email: '',
-        role: UserRole.PACK_MEMBER,
+        role: UserRole.SCOUT,
         message: '',
         denId: '',
         expiresInDays: 7
@@ -130,12 +130,12 @@ const InviteManagement: React.FC<InviteManagementProps> = ({ className = '' }) =
         return <Crown className="w-4 h-4 text-yellow-500" />;
       case UserRole.ADMIN:
         return <Shield className="w-4 h-4 text-blue-500" />;
-      case UserRole.COMMITTEE_MEMBER:
-        return <Shield className="w-4 h-4 text-indigo-500" />;
       case UserRole.DEN_LEADER:
         return <User className="w-4 h-4 text-green-500" />;
-      case UserRole.STAR_VOLUNTEER:
+      case UserRole.PARENT:
         return <User className="w-4 h-4 text-purple-500" />;
+      case UserRole.SCOUT:
+        return <User className="w-4 h-4 text-blue-500" />;
       default:
         return <User className="w-4 h-4 text-gray-500" />;
     }
@@ -147,12 +147,12 @@ const InviteManagement: React.FC<InviteManagementProps> = ({ className = '' }) =
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case UserRole.ADMIN:
         return 'bg-blue-100 text-blue-800 border-blue-200';
-      case UserRole.COMMITTEE_MEMBER:
-        return 'bg-indigo-100 text-indigo-800 border-indigo-200';
       case UserRole.DEN_LEADER:
         return 'bg-green-100 text-green-800 border-green-200';
-      case UserRole.STAR_VOLUNTEER:
+      case UserRole.PARENT:
         return 'bg-purple-100 text-purple-800 border-purple-200';
+      case UserRole.SCOUT:
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -358,10 +358,9 @@ const InviteManagement: React.FC<InviteManagementProps> = ({ className = '' }) =
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value={UserRole.PACK_MEMBER}>Pack Member</option>
-                  <option value={UserRole.STAR_VOLUNTEER}>Star Volunteer</option>
+                  <option value={UserRole.SCOUT}>Scout</option>
+                  <option value={UserRole.PARENT}>Parent</option>
                   <option value={UserRole.DEN_LEADER}>Den Leader</option>
-                  <option value={UserRole.COMMITTEE_MEMBER}>Committee Member</option>
                   <option value={UserRole.ADMIN}>Admin</option>
                 </select>
               </div>
@@ -399,7 +398,7 @@ const InviteManagement: React.FC<InviteManagementProps> = ({ className = '' }) =
                   setShowCreateModal(false);
                   setFormData({
                     email: '',
-                    role: UserRole.PACK_MEMBER,
+                    role: UserRole.SCOUT,
                     message: '',
                     denId: '',
                     expiresInDays: 7

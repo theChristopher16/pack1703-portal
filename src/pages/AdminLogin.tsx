@@ -73,7 +73,7 @@ const AdminLogin: React.FC = () => {
         navigate('/admin');
       } else if (user.role === 'admin') {
         navigate('/admin');
-      } else if (user.role === 'den_leader' || user.role === 'star_volunteer') {
+      } else if (user.role === 'den_leader') {
         navigate('/admin');
       } else {
         navigate('/');

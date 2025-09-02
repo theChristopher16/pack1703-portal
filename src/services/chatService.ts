@@ -441,8 +441,8 @@ class ChatService {
   // Process AI mentions in messages
   private async processAIMentions(message: string, channelId: string): Promise<void> {
     try {
-      // Import AI service dynamically to avoid circular dependencies
-      const aiService = (await import('./aiService')).default;
+      // Import AI service factory dynamically to avoid circular dependencies
+      const aiServiceFactory = (await import('./aiServiceFactory')).default;
       
       // Check if message contains @mention of AI
       const mentionPattern = /@(solyn|ai|assistant)/i;
@@ -450,7 +450,7 @@ class ChatService {
         // Process the mention asynchronously
         setTimeout(async () => {
           try {
-            await aiService.processChatMention(
+            await aiServiceFactory.processChatMention(
               message, 
               channelId, 
               this.currentUser?.id || '', 

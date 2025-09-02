@@ -1,6 +1,15 @@
 // Mock Firebase services for testing
 export const getFirestore = jest.fn(() => ({}));
 export const getAuth = jest.fn(() => ({}));
+export const getFunctions = jest.fn(() => ({
+  httpsCallable: jest.fn(() => jest.fn(() => Promise.resolve({ data: {} })))
+}));
+export const getStorage = jest.fn(() => ({
+  ref: jest.fn(() => ({
+    put: jest.fn(() => Promise.resolve()),
+    getDownloadURL: jest.fn(() => Promise.resolve('mock-url'))
+  }))
+}));
 export const initializeApp = jest.fn(() => ({}));
 export const getApp = jest.fn(() => ({}));
 
@@ -23,16 +32,23 @@ export const writeBatch = jest.fn(() => ({
 }));
 export const runTransaction = jest.fn(() => Promise.resolve());
 export const Timestamp = jest.fn();
+export const serverTimestamp = jest.fn(() => new Date());
+export const increment = jest.fn(() => 1);
 
 export const signInWithEmailAndPassword = jest.fn(() => Promise.resolve({}));
 export const createUserWithEmailAndPassword = jest.fn(() => Promise.resolve({}));
 export const signOut = jest.fn(() => Promise.resolve());
 export const onAuthStateChanged = jest.fn(() => jest.fn());
 
+// Functions
+export const httpsCallable = jest.fn(() => jest.fn(() => Promise.resolve({ data: {} })));
+
 // Default export
 export default {
   getFirestore,
   getAuth,
+  getFunctions,
+  getStorage,
   initializeApp,
   getApp,
   collection,
@@ -49,8 +65,11 @@ export default {
   writeBatch,
   runTransaction,
   Timestamp,
+  serverTimestamp,
+  increment,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  httpsCallable
 };

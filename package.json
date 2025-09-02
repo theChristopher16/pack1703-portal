@@ -52,8 +52,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test --env=jsdom",
-    "test:coverage": "react-scripts test --env=jsdom --coverage --watchAll=false",
+    "test": "react-scripts test --env=jsdom --silent",
+    "test:coverage": "react-scripts test --env=jsdom --coverage --watchAll=false --silent",
     "test:watch": "react-scripts test --env=jsdom --watch",
     "eject": "react-scripts eject",
     "deploy": "npm run build && firebase deploy --only hosting",

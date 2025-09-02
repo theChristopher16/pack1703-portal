@@ -103,7 +103,7 @@ const AdminNav: React.FC = () => {
                 {/* Dropdown menu */}
                 {dropdownOpen && (
                   <div className="fixed inset-0 z-[99999]" onClick={() => setDropdownOpen(false)}>
-                    <div className="absolute right-4 top-16 w-56 bg-white rounded-md shadow-xl border border-gray-200 transform opacity-100 scale-100 transition-all duration-200">
+                    <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-xl border border-gray-200 transform opacity-100 scale-100 transition-all duration-200">
                       <div className="py-1">
                         {secondaryNavItems.map((item) => (
                           <Link

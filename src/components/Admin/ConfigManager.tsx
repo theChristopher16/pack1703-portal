@@ -119,7 +119,7 @@ export const ConfigManager: React.FC<ConfigManagerProps> = ({ className = '' }) 
   };
 
   const handleDelete = async (key: string) => {
-    if (!confirm('Are you sure you want to delete this configuration? This action cannot be undone.')) {
+    if (!window.confirm('Are you sure you want to delete this configuration? This action cannot be undone.')) {
       return;
     }
 

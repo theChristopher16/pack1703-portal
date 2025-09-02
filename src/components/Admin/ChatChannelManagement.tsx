@@ -125,7 +125,7 @@ const ChatChannelManagement: React.FC<ChatChannelManagementProps> = ({ className
   };
 
   const handleDeleteChannel = async (channelId: string) => {
-    if (!confirm('Are you sure you want to delete this channel? This action cannot be undone.')) {
+    if (!window.confirm('Are you sure you want to delete this channel? This action cannot be undone.')) {
       return;
     }
 

@@ -460,7 +460,7 @@ describe('UserProfileManager', () => {
       fireEvent.click(screen.getByText('Edit Profile'));
       fireEvent.click(screen.getByText('Save Changes'));
       
-      waitFor(() => {
+      await waitFor(() => {
         expect(screen.getByText('Update failed')).toBeInTheDocument();
       });
       

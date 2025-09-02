@@ -69,7 +69,7 @@ const ChannelManager: React.FC = () => {
   };
 
   const handleDeleteChannel = async (channelId: string, channelName: string) => {
-    if (!confirm(`Are you sure you want to delete "${channelName}"? This action cannot be undone.`)) {
+    if (!window.confirm(`Are you sure you want to delete "${channelName}"? This action cannot be undone.`)) {
       return;
     }
 

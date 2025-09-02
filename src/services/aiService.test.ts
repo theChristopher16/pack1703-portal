@@ -1,4 +1,29 @@
-import { AIService } from './aiService';
+import AIService from './aiService';
+
+// Mock Firebase
+jest.mock('firebase/firestore', () => ({
+  getFirestore: jest.fn(() => ({})),
+  collection: jest.fn(),
+  getDocs: jest.fn(),
+  query: jest.fn(),
+  where: jest.fn(),
+  orderBy: jest.fn(),
+  limit: jest.fn(),
+  addDoc: jest.fn(),
+  serverTimestamp: jest.fn(),
+  doc: jest.fn(),
+  updateDoc: jest.fn(),
+  increment: jest.fn(),
+  getDoc: jest.fn(),
+  Timestamp: {
+    now: jest.fn(() => ({ toDate: () => new Date() }))
+  }
+}));
+
+jest.mock('firebase/functions', () => ({
+  getFunctions: jest.fn(() => ({})),
+  httpsCallable: jest.fn(() => jest.fn())
+}));
 
 // Mock dependencies
 jest.mock('./firestore', () => ({
@@ -59,10 +84,10 @@ jest.mock('./dataAuditService', () => ({
 }));
 
 describe('AIService', () => {
-  let aiService: AIService;
+  let aiService: any;
 
   beforeEach(() => {
-    aiService = new AIService();
+    aiService = require('./aiService').default;
   });
 
   describe('Event Creation Recognition', () => {

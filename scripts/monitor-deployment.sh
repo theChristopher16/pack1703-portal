@@ -21,7 +21,7 @@ echo ""
 
 # Function to get the latest run
 get_latest_run() {
-    gh run list --workflow="$WORKFLOW_NAME" --limit 1 --json id,status,conclusion,createdAt,headBranch,headSha,url
+    gh run list --workflow="$WORKFLOW_NAME" --limit 1 --json databaseId,status,conclusion,createdAt,headBranch,headSha,url
 }
 
 # Function to get run status
@@ -52,7 +52,7 @@ while true; do
     fi
     
     # Extract run ID and status
-    run_id=$(echo "$latest_run" | jq -r '.[0].id')
+    run_id=$(echo "$latest_run" | jq -r '.[0].databaseId')
     status=$(echo "$latest_run" | jq -r '.[0].status')
     conclusion=$(echo "$latest_run" | jq -r '.[0].conclusion')
     created_at=$(echo "$latest_run" | jq -r '.[0].createdAt')

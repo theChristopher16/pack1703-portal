@@ -74,14 +74,16 @@ jest.mock('./systemMonitorService', () => ({
       memoryUsage: 65,
       cpuUsage: 45,
       activeConnections: 12,
-      errorRate: 0.1
+      errorRate: 0.1,
+      averageResponseTime: 25
     })),
     getCostMetrics: jest.fn(() => Promise.resolve({
       firestore: 10.50,
       storage: 2.30,
       functions: 5.20,
       hosting: 1.80,
-      total: 19.80
+      total: 19.80,
+      estimatedMonthlyCost: 19.80
     })),
     getUserMetrics: jest.fn(() => Promise.resolve({
       totalUsers: 150,
@@ -97,7 +99,13 @@ jest.mock('./chatService', () => ({
   __esModule: true,
   default: {
     getChatHistory: jest.fn(() => Promise.resolve([])),
-    sendMessage: jest.fn(() => Promise.resolve({ id: 'test-message-id' }))
+    sendMessage: jest.fn(() => Promise.resolve({ id: 'test-message-id' })),
+    getCurrentUser: jest.fn(() => Promise.resolve({
+      uid: 'test-user-id',
+      displayName: 'Test User',
+      email: 'test@example.com',
+      isActive: true
+    }))
   }
 }));
 

@@ -264,7 +264,11 @@ const AdminLocations: React.FC = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg">
                       <span className="text-green-600">🚗</span>
-                      <span className="text-gray-700 capitalize">{location.parking} parking</span>
+                      <span className="text-gray-700 capitalize">
+                        {typeof location.parking === 'string' 
+                          ? location.parking 
+                          : (location.parking as any)?.text || 'unknown'} parking
+                      </span>
                     </div>
                     <div className="p-2 bg-gray-50 rounded-lg">
                       <p className="text-sm text-gray-700 line-clamp-2">{location.notes}</p>

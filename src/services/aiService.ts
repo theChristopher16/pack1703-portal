@@ -101,8 +101,11 @@ class AIService {
   private async analyzeQuery(userQuery: string, context: AIContext): Promise<AIResponse> {
     const query = userQuery.toLowerCase();
     
-    // Event creation requests
-    if (query.includes('create event') || query.includes('create an event') || query.includes('add event')) {
+    // Event creation requests - Enhanced pattern matching
+    if (query.includes('create event') || query.includes('create an event') || query.includes('add event') || 
+        query.includes('make event') || query.includes('make an event') || query.includes('new event') ||
+        query.includes('schedule event') || query.includes('plan event') || query.includes('set up event') ||
+        query.includes('organize event') || query.includes('arrange event')) {
       return await this.handleEventCreation(userQuery, context);
     }
     

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useAdmin } from '../../contexts/AdminContext';
-import { authService } from '../../services/authService';
-import { firestoreService } from '../../services/firestore';
+import { useAdmin } from '../contexts/AdminContext';
+import { authService } from '../services/authService';
+import { firestoreService } from '../services/firestore';
 import { 
   User, 
   Settings, 
@@ -63,12 +63,17 @@ const AdminSettings: React.FC = () => {
     try {
       setLoading(true);
       
+      if (!currentUser?.uid) {
+        console.warn('No current user found');
+        return;
+      }
+      
       // Load linked accounts
-      const accounts = await firestoreService.getLinkedAccounts(currentUser?.uid);
+      const accounts = await firestoreService.getLinkedAccounts(currentUser.uid);
       setLinkedAccounts(accounts);
       
       // Load user settings
-      const userSettings = await firestoreService.getUserSettings(currentUser?.uid);
+      const userSettings = await firestoreService.getUserSettings(currentUser.uid);
       if (userSettings) {
         setSettings(prev => ({ ...prev, ...userSettings }));
       }
@@ -125,7 +130,13 @@ const AdminSettings: React.FC = () => {
   const handleSaveSettings = async () => {
     try {
       setSaving(true);
-      await firestoreService.updateUserSettings(currentUser?.uid, settings);
+      
+      if (!currentUser?.uid) {
+        console.warn('No current user found');
+        return;
+      }
+      
+      await firestoreService.updateUserSettings(currentUser.uid, settings);
     } catch (error) {
       console.error('Error saving settings:', error);
     } finally {
@@ -198,7 +209,7 @@ const AdminSettings: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Member Since</label>
                   <p className="mt-1 text-sm text-gray-900">
-                    {currentUser?.createdAt ? new Date(currentUser.createdAt).toLocaleDateString() : 'N/A'}
+                    {currentUser?.lastLogin ? new Date(currentUser.lastLogin).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
               </div>

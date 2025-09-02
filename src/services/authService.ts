@@ -909,15 +909,15 @@ class AuthService {
   // Account linking methods for AdminSettings
   async linkGoogleAccount(): Promise<void> {
     return this.linkSocialAccount(SocialProvider.GOOGLE);
-  },
+  }
 
   async linkAppleAccount(): Promise<void> {
     return this.linkSocialAccount(SocialProvider.APPLE);
-  },
+  }
 
   async linkMicrosoftAccount(): Promise<void> {
     return this.linkSocialAccount(SocialProvider.MICROSOFT);
-  },
+  }
 
   async unlinkAccount(provider: string): Promise<void> {
     if (!this.currentUser) {

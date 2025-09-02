@@ -4,6 +4,23 @@
 
 This application includes a comprehensive testing suite that works without complex testing frameworks, making it compatible with various Node.js versions and environments.
 
+## GitHub Actions Configuration
+
+### Repository Permissions
+The following permissions have been enabled for GitHub Actions:
+
+- **Read and write permissions for actions**: Allows GitHub Actions to read and write repository contents, including code, issues, pull requests, and other repository data.
+- **Allow GitHub Actions to create and approve pull requests**: Enables automated workflows to create pull requests and approve them when appropriate, facilitating automated code reviews and deployments.
+
+These permissions are configured in the repository settings under:
+- **Settings** → **Actions** → **General** → **Workflow permissions**
+- **Settings** → **Actions** → **General** → **Pull request workflows from outside collaborators**
+
+### Workflow Files
+- `deploy.yml`: Main deployment workflow with test and deploy jobs
+- `test.yml`: Dedicated test suite (currently disabled)
+- `test-deploy.yml`: Combined test and deployment workflow
+
 ## Test Structure
 
 The testing suite is organized into several test categories:

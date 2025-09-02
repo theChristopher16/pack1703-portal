@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, ChevronDown } from 'lucide-react';
-import { useAdmin } from '../contexts/AdminContext';
+import { useAdmin } from '../../contexts/AdminContext';
 
 const AdminNav: React.FC = () => {
   const { state } = useAdmin();

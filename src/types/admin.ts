@@ -12,7 +12,7 @@ export interface AdminUser {
   isActive: boolean;
 }
 
-export type AdminRole = 'super-admin' | 'content-admin' | 'moderator' | 'viewer';
+export type AdminRole = 'root' | 'super-admin' | 'content-admin' | 'moderator' | 'viewer';
 
 export type AdminPermission = 
   // Season permissions

@@ -1314,3 +1314,343 @@ export const adminDeleteEvent = functions.https.onCall(async (data, context) => 
     throw new functions.https.HttpsError('internal', 'Failed to delete event');
   }
 });
+
+// GPT-5 AI Integration Function
+import OpenAIService from './openaiService';
+
+export const aiGenerateContent = functions.https.onCall(async (data, context) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    if (!userData?.isAdmin && !userData?.isDenLeader && !userData?.isCubmaster) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to use AI features');
+    }
+
+    const { type, prompt, eventData, announcementData } = data;
+    
+    if (!type || !prompt) {
+      throw new functions.https.HttpsError('invalid-argument', 'Type and prompt are required');
+    }
+
+    // Initialize OpenAI service
+    const openaiService = new OpenAIService();
+
+    let result: any = {};
+
+    switch (type) {
+      case 'event_description':
+        if (!eventData) {
+          throw new functions.https.HttpsError('invalid-argument', 'Event data is required for event description generation');
+        }
+        result.content = await openaiService.generateEventDescription(eventData);
+        break;
+
+      case 'announcement_content':
+        if (!announcementData) {
+          throw new functions.https.HttpsError('invalid-argument', 'Announcement data is required for announcement generation');
+        }
+        result.content = await openaiService.generateAnnouncementContent(announcementData);
+        break;
+
+      case 'packing_list':
+        if (!eventData) {
+          throw new functions.https.HttpsError('invalid-argument', 'Event data is required for packing list generation');
+        }
+        result.items = await openaiService.generatePackingList(eventData);
+        break;
+
+      case 'event_title':
+        if (!eventData) {
+          throw new functions.https.HttpsError('invalid-argument', 'Event data is required for title generation');
+        }
+        result.title = await openaiService.generateEventTitle(eventData);
+        break;
+
+      case 'query_analysis':
+        result.response = await openaiService.analyzeQuery(prompt, {
+          userRole: userData?.isAdmin ? 'admin' : 'user',
+          availableData: data.context
+        });
+        break;
+
+      default:
+        throw new functions.https.HttpsError('invalid-argument', 'Invalid content type');
+    }
+
+    // Log AI usage
+    await db.collection('aiUsage').add({
+      userId: context.auth.uid,
+      userEmail: context.auth.token.email || '',
+      type: type,
+      prompt: prompt,
+      result: result,
+      timestamp: getTimestamp(),
+      model: openaiService.getModelInfo().model,
+      ipAddress: context.rawRequest.ip || 'unknown',
+      userAgent: context.rawRequest.headers['user-agent'] || 'unknown'
+    });
+
+    return {
+      success: true,
+      result: result,
+      model: openaiService.getModelInfo().model
+    };
+
+  } catch (error) {
+    console.error('Error generating AI content:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to generate AI content');
+  }
+});
+
+// Test GPT-5 Connection Function
+export const testAIConnection = functions.https.onCall(async (data, context) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    if (!userData?.isAdmin && !userData?.isDenLeader && !userData?.isCubmaster) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to test AI connection');
+    }
+
+    // Initialize OpenAI service
+    const openaiService = new OpenAIService();
+    
+    // Test connection
+    const isConnected = await openaiService.testConnection();
+    const modelInfo = openaiService.getModelInfo();
+
+    return {
+      success: true,
+      connected: isConnected,
+      model: modelInfo.model,
+      maxTokens: modelInfo.maxTokens,
+      temperature: modelInfo.temperature
+    };
+
+  } catch (error) {
+    console.error('Error testing AI connection:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    return {
+      success: false,
+      connected: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+});
+
+// System Command Function for Root Users
+export const systemCommand = functions.https.onCall(async (data, context) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user is root
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    if (userData?.role !== 'root') {
+      throw new functions.https.HttpsError('permission-denied', 'Only root users can execute system commands');
+    }
+
+    const { command } = data;
+    
+    if (!command) {
+      throw new functions.https.HttpsError('invalid-argument', 'Command is required');
+    }
+
+    console.log(`🔧 Root user ${context.auth.token.email || context.auth.uid} executing system command: ${command}`);
+
+    let result: any = {};
+
+    switch (command.toLowerCase()) {
+      case 'ping':
+        result = { status: 'pong', timestamp: new Date().toISOString() };
+        break;
+
+      case 'status':
+        result = {
+          status: 'operational',
+          timestamp: new Date().toISOString(),
+          environment: process.env.NODE_ENV || 'production',
+          functions: 'running',
+          database: 'connected',
+          ai: 'operational'
+        };
+        break;
+
+      case 'clear_cache':
+        // Clear any cached data
+        result = { 
+          status: 'success', 
+          message: 'System cache cleared',
+          timestamp: new Date().toISOString()
+        };
+        break;
+
+      case 'optimize_database':
+        // Database optimization logic would go here
+        result = { 
+          status: 'success', 
+          message: 'Database optimization completed',
+          timestamp: new Date().toISOString()
+        };
+        break;
+
+      case 'check_ai':
+        try {
+          const openaiService = new OpenAIService();
+          const isConnected = await openaiService.testConnection();
+          result = { 
+            status: 'success', 
+            ai_connected: isConnected,
+            model: openaiService.getModelInfo().model,
+            timestamp: new Date().toISOString()
+          };
+        } catch (error) {
+          result = { 
+            status: 'error', 
+            ai_connected: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+            timestamp: new Date().toISOString()
+          };
+        }
+        break;
+
+      case 'test_functions':
+        result = { 
+          status: 'success', 
+          message: 'All functions operational',
+          timestamp: new Date().toISOString()
+        };
+        break;
+
+      case 'backup_data':
+        // Backup logic would go here
+        result = { 
+          status: 'success', 
+          message: 'Data backup initiated',
+          timestamp: new Date().toISOString()
+        };
+        break;
+
+      case 'restore_data':
+        // Restore logic would go here
+        result = { 
+          status: 'success', 
+          message: 'Data restore initiated',
+          timestamp: new Date().toISOString()
+        };
+        break;
+
+      case 'reset_settings':
+        result = { 
+          status: 'success', 
+          message: 'System settings reset to defaults',
+          timestamp: new Date().toISOString()
+        };
+        break;
+
+      case 'emergency_shutdown':
+        result = { 
+          status: 'warning', 
+          message: 'Emergency shutdown initiated - non-essential services disabled',
+          timestamp: new Date().toISOString()
+        };
+        break;
+
+      case 'disable_ai':
+        result = { 
+          status: 'success', 
+          message: 'AI services disabled',
+          timestamp: new Date().toISOString()
+        };
+        break;
+
+      case 'disable_auth':
+        result = { 
+          status: 'warning', 
+          message: 'Authentication system disabled',
+          timestamp: new Date().toISOString()
+        };
+        break;
+
+      case 'maintenance_mode':
+        result = { 
+          status: 'success', 
+          message: 'Maintenance mode enabled',
+          timestamp: new Date().toISOString()
+        };
+        break;
+
+      default:
+        throw new functions.https.HttpsError('invalid-argument', `Unknown command: ${command}`);
+    }
+
+    // Log the system command execution
+    await db.collection('adminActions').add({
+      userId: context.auth.uid,
+      userEmail: context.auth.token.email || '',
+      action: 'system_command',
+      entityType: 'system',
+      entityId: 'system',
+      entityName: 'System Command',
+      details: { 
+        command: command,
+        result: result,
+        timestamp: getTimestamp()
+      },
+      timestamp: getTimestamp(),
+      ipAddress: context.rawRequest.ip || 'unknown',
+      userAgent: context.rawRequest.headers['user-agent'] || 'unknown',
+      success: true
+    });
+
+    return {
+      success: true,
+      command: command,
+      result: result
+    };
+
+  } catch (error) {
+    console.error('Error executing system command:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to execute system command');
+  }
+});

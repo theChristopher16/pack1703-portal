@@ -35,6 +35,14 @@ const AdminNav: React.FC = () => {
     { path: '/admin/chat', label: 'Chat', icon: '💬' },
   ];
 
+  // Add SOC Console for root users only
+  const socNavItem = { path: '/admin/soc', label: 'SOC Console', icon: '🖥️' };
+  
+  // Show SOC Console in primary nav for root users
+  const navItems = currentUser?.role === 'root' 
+    ? [...primaryNavItems, socNavItem]
+    : primaryNavItems;
+
   const secondaryNavItems = [
     { path: '/admin/fundraising', label: 'Fundraising', icon: '🎯' },
     { path: '/admin/finances', label: 'Finances', icon: '💰' },
@@ -64,8 +72,8 @@ const AdminNav: React.FC = () => {
             </div>
             
             {/* Primary navigation - limited to 6 items for desktop */}
-            <div className="hidden lg:flex items-center space-x-1 flex-1 min-w-0 overflow-x-auto">
-              {primaryNavItems.map((item) => (
+            <div className="hidden lg:flex items-center space-x-1 flex-1 min-w-0">
+              {navItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
@@ -94,21 +102,23 @@ const AdminNav: React.FC = () => {
                 
                 {/* Dropdown menu */}
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-xl border border-gray-200 z-[99999] transform opacity-100 scale-100 transition-all duration-200">
-                    <div className="py-1">
-                      {secondaryNavItems.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          onClick={() => setDropdownOpen(false)}
-                          className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors ${
-                            location.pathname === item.path ? 'bg-blue-50 text-blue-700' : ''
-                          }`}
-                        >
-                          <span className="mr-3">{item.icon}</span>
-                          <span>{item.label}</span>
-                        </Link>
-                      ))}
+                  <div className="fixed inset-0 z-[99999]" onClick={() => setDropdownOpen(false)}>
+                    <div className="absolute right-4 top-16 w-56 bg-white rounded-md shadow-xl border border-gray-200 transform opacity-100 scale-100 transition-all duration-200">
+                      <div className="py-1">
+                        {secondaryNavItems.map((item) => (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            onClick={() => setDropdownOpen(false)}
+                            className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors ${
+                              location.pathname === item.path ? 'bg-blue-50 text-blue-700' : ''
+                            }`}
+                          >
+                            <span className="mr-3">{item.icon}</span>
+                            <span>{item.label}</span>
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -117,7 +127,7 @@ const AdminNav: React.FC = () => {
 
             {/* Medium screen navigation - show fewer items */}
             <div className="hidden md:flex lg:hidden items-center space-x-1 overflow-x-auto">
-              {primaryNavItems.slice(0, 4).map((item) => (
+              {navItems.slice(0, 4).map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
@@ -170,7 +180,7 @@ const AdminNav: React.FC = () => {
         <div className="border-t border-gray-200 bg-white shadow-lg md:hidden">
           <div className="px-4 py-3">
             <div className="grid grid-cols-2 gap-2">
-              {[...primaryNavItems, ...secondaryNavItems].map((item) => (
+              {[...navItems, ...secondaryNavItems].map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}

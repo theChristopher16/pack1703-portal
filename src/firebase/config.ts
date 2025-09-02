@@ -18,6 +18,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Initialize App Check for security
+// Temporarily disabled to fix Firestore access issues
+// TODO: Re-enable with proper reCAPTCHA v3 configuration
+/*
 if (process.env.NODE_ENV === 'production') {
   // Initialize App Check with reCAPTCHA v3 (only if site key is available)
   const recaptchaSiteKey = process.env.REACT_APP_RECAPTCHA_V3_SITE_KEY;
@@ -43,6 +46,7 @@ if (process.env.NODE_ENV === 'production') {
     isTokenAutoRefreshEnabled: true
   });
 }
+*/
 
 // Initialize Firestore
 export const db = getFirestore(app);

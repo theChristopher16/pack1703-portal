@@ -24,20 +24,14 @@ const AdminNav: React.FC = () => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        console.log('Click outside detected, closing dropdown');
         setDropdownOpen(false);
       }
     };
 
     if (dropdownOpen) {
-      // Use a small delay to avoid immediate closure
-      const timeoutId = setTimeout(() => {
-        document.addEventListener('mousedown', handleClickOutside);
-      }, 100);
-      
-      return () => {
-        clearTimeout(timeoutId);
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [dropdownOpen]);
 
@@ -115,14 +109,16 @@ const AdminNav: React.FC = () => {
             <div className="relative flex-shrink-0" ref={dropdownRef}>
               <button
                 onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
+                  console.log('More button clicked, current state:', dropdownOpen);
                   setDropdownOpen(!dropdownOpen);
                 }}
                 onKeyDown={handleKeyDown}
                 tabIndex={0}
                 aria-expanded={dropdownOpen}
                 aria-haspopup="true"
-                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm rounded-md transition-all duration-200"
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm rounded-md transition-all duration-200 border border-gray-200"
               >
                 <Menu className="w-4 h-4 mr-1" />
                 <span className="hidden xl:inline">More</span>
@@ -131,7 +127,7 @@ const AdminNav: React.FC = () => {
               
               {/* Dropdown menu */}
               {dropdownOpen && (
-                <div className="absolute top-full right-0 mt-1 w-56 bg-white rounded-md shadow-xl border border-gray-200 z-50">
+                <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-xl border border-gray-200 z-50">
                   <div className="py-1">
                     {secondaryNavItems.map((item) => (
                       <Link

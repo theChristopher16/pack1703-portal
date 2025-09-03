@@ -21,13 +21,13 @@ export const API_KEYS = {
     OPENAI: process.env.REACT_APP_USER_OPENAI_API_KEY || 'demo_key',
     
     // Google Maps API - User access for basic location features
-    GOOGLE_MAPS: process.env.REACT_APP_USER_GOOGLE_MAPS_API_KEY || 'demo_key',
+    GOOGLE_MAPS: process.env.REACT_APP_USER_GOOGLE_MAPS_API_KEY || 'AIzaSyC1nkEYq0YP89BwS_An_sMc3Kn4FJY2Nos',
     
     // OpenWeather API - User access for basic weather features
-    OPENWEATHER: process.env.REACT_APP_USER_OPENWEATHER_API_KEY || 'demo_key',
+    OPENWEATHER: process.env.REACT_APP_USER_OPENWEATHER_API_KEY || 'a769d61ef03910861ff1734bb254f87c',
     
     // Google Places API - User access for basic business info
-    GOOGLE_PLACES: process.env.REACT_APP_USER_GOOGLE_PLACES_API_KEY || 'demo_key',
+    GOOGLE_PLACES: process.env.REACT_APP_USER_GOOGLE_PLACES_API_KEY || 'AIzaSyC1nkEYq0YP89BwS_An_sMc3Kn4FJY2Nos',
   },
   
   // Phone Validation API (NumLookupAPI) - Shared between admin and user
@@ -213,19 +213,19 @@ export const API_STATUS = {
       errorsToday: 0,
     },
     GOOGLE_MAPS: {
-      status: 'inactive', // No user API key provided yet
+      status: 'active', // User API key now configured
       lastCheck: new Date(),
       requestsToday: 0,
       errorsToday: 0,
     },
     OPENWEATHER: {
-      status: 'inactive', // No user API key provided yet
+      status: 'active', // User API key now configured
       lastCheck: new Date(),
       requestsToday: 0,
       errorsToday: 0,
     },
     GOOGLE_PLACES: {
-      status: 'inactive', // No user API key provided yet
+      status: 'active', // User API key now configured
       lastCheck: new Date(),
       requestsToday: 0,
       errorsToday: 0,

@@ -49,7 +49,7 @@ These are needed for regular user functions:
 - **Usage**: Regular user functions
 - **Cost**: $5 per 1000 requests
 - **Limit**: 1,000 requests/day
-- **Status**: ❌ **MISSING**
+- **Status**: ✅ **CONFIGURED** (using same key as admin for now)
 
 ### 3. **User OpenWeather API Key**
 - **Environment Variable**: `REACT_APP_USER_OPENWEATHER_API_KEY`
@@ -57,7 +57,7 @@ These are needed for regular user functions:
 - **Usage**: Regular user functions
 - **Cost**: $1 per 1000 requests
 - **Limit**: 500 requests/day
-- **Status**: ❌ **MISSING**
+- **Status**: ✅ **CONFIGURED** (using same key as admin for now)
 
 ### 4. **User Google Places API Key**
 - **Environment Variable**: `REACT_APP_USER_GOOGLE_PLACES_API_KEY`
@@ -65,7 +65,7 @@ These are needed for regular user functions:
 - **Usage**: Regular user functions
 - **Cost**: $17 per 1000 requests
 - **Limit**: 1,000 requests/day
-- **Status**: ❌ **MISSING**
+- **Status**: ✅ **CONFIGURED** (using same key as admin for now)
 
 ---
 

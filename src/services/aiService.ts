@@ -138,7 +138,7 @@ class AIService {
     }
     
     // System status queries
-    if (query.includes('system status') || query.includes('system health') || query.includes('performance')) {
+    if (query.includes('system status') || query.includes('system health') || query.includes('performance') || query.includes('system monitoring')) {
       return await this.getSystemStatusResponse(context);
     }
     
@@ -2507,7 +2507,7 @@ class AIService {
     }
     
     // Questions about email monitoring
-    if (query.includes('email') || query.includes('inbox') || query.includes('monitoring')) {
+    if ((query.includes('email') || query.includes('inbox')) && query.includes('monitoring')) {
       try {
         const emailStatus = emailMonitorService.getMonitoringStatus();
         

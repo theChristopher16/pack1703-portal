@@ -35,6 +35,12 @@ export const API_KEYS = {
   
   // Tenor API (GIF Service) - Shared between admin and user
   TENOR: process.env.REACT_APP_TENOR_API_KEY || 'AIzaSyCbPAw3QOuuzRJjUx1_jC0wgJPtVLYxLqY',
+  
+  // reCAPTCHA v3 - Shared between admin and user
+  RECAPTCHA: {
+    SITE_KEY: process.env.REACT_APP_RECAPTCHA_V3_SITE_KEY || '6LcDK7wrAAAAAJ52gvpmjYx5abUzCIKmg-APPKmz',
+    SECRET_KEY: process.env.REACT_APP_RECAPTCHA_V3_SECRET_KEY || '6LcDK7wrAAAAAMXRAymx4JRKz-tDzwzfBlibjnDr',
+  },
 };
 
 // API Configuration Settings - Separated by Admin and User permissions
@@ -125,6 +131,13 @@ export const API_CONFIG = {
     maxRequestsPerDay: 1000, // Free tier limit
     costPerRequest: 0.0005, // $0.50 per 1000 requests
   },
+  RECAPTCHA: {
+    baseUrl: 'https://www.google.com/recaptcha/api',
+    siteVerifyEndpoint: 'https://www.google.com/recaptcha/api/siteverify',
+    maxRequestsPerDay: 10000, // Free tier limit
+    costPerRequest: 0.0, // Free tier
+    minScore: 0.5, // Minimum score to consider user as human
+  },
 };
 
 // Feature Flags - Control which features are enabled
@@ -147,6 +160,7 @@ export const FEATURE_FLAGS = {
   COST_MONITORING: true,
   FALLBACK_MODE: true, // Enable fallback when APIs fail
   GIF_INTEGRATION: true, // Enabled with Tenor API
+  RECAPTCHA_PROTECTION: true, // Enabled with reCAPTCHA v3
 };
 
 // Fallback Behavior Configuration
@@ -252,6 +266,12 @@ export const API_STATUS = {
   },
   TENOR: {
     status: 'active', // Tenor API key now configured
+    lastCheck: new Date(),
+    requestsToday: 0,
+    errorsToday: 0,
+  },
+  RECAPTCHA: {
+    status: 'active', // reCAPTCHA v3 now configured
     lastCheck: new Date(),
     requestsToday: 0,
     errorsToday: 0,

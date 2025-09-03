@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { Shield, User, Lock, Mail, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import SocialLogin from '../components/Auth/SocialLogin';
+import { useRecaptcha } from '../hooks/useRecaptcha';
 
 const AdminLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +16,12 @@ const AdminLogin: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showRootSetup, setShowRootSetup] = useState(false);
   const [isCheckingRoot, setIsCheckingRoot] = useState(true);
+
+  // Initialize reCAPTCHA
+  const { isLoaded: recaptchaLoaded, execute: executeRecaptcha, error: recaptchaError } = useRecaptcha({
+    action: 'login',
+    autoExecute: false,
+  });
 
   useEffect(() => {
     // Check if root account exists
@@ -66,6 +73,15 @@ const AdminLogin: React.FC = () => {
     setError(null);
 
     try {
+      // Execute reCAPTCHA verification
+      if (recaptchaLoaded) {
+        const recaptchaResult = await executeRecaptcha('login');
+        if (!recaptchaResult.isValid) {
+          setError('Security verification failed. Please try again.');
+          return;
+        }
+      }
+
       const user = await authService.signIn(formData.email, formData.password);
       
       // Redirect based on user role
@@ -212,9 +228,9 @@ const AdminLogin: React.FC = () => {
             </div>
 
             {/* Error Message */}
-            {error && (
+            {(error || recaptchaError) && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                <p className="text-sm text-red-600">{error}</p>
+                <p className="text-sm text-red-600">{error || recaptchaError}</p>
               </div>
             )}
 

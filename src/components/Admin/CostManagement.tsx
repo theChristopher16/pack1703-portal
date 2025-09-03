@@ -34,12 +34,6 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (hasPermission('cost:read')) {
-      loadCostData();
-    }
-  }, []);
-
   // Check admin access
   if (!hasPermission('cost:read')) {
     return (
@@ -54,6 +48,10 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
       </div>
     );
   }
+
+  useEffect(() => {
+    loadCostData();
+  }, []);
 
   const loadCostData = async () => {
     try {

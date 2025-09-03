@@ -73,6 +73,14 @@ class ExternalApiService {
     }
 
     try {
+      // Track API usage for cost monitoring
+      try {
+        const { costManagementService } = await import('./costManagementService');
+        await costManagementService.instance.trackApiUsage('googleMaps', 'admin', 0.005);
+      } catch (costError) {
+        console.warn('Cost tracking not available:', costError);
+      }
+
       const response = await fetch(
         `${API_CONFIG.ADMIN.GOOGLE_MAPS.baseUrl}${API_CONFIG.ADMIN.GOOGLE_MAPS.geocodingEndpoint}?address=${encodeURIComponent(address)}&key=${this.googleMapsKey}`
       );
@@ -291,6 +299,14 @@ class ExternalApiService {
     }
 
     try {
+      // Track API usage for cost monitoring
+      try {
+        const { costManagementService } = await import('./costManagementService');
+        await costManagementService.instance.trackApiUsage('phoneValidation', 'admin', 0.001);
+      } catch (costError) {
+        console.warn('Cost tracking not available:', costError);
+      }
+
       const response = await fetch(
         `${API_CONFIG.PHONE_VALIDATION.baseUrl}${API_CONFIG.PHONE_VALIDATION.endpoint}?apikey=${this.phoneValidationKey}&number=${phone}`
       );
@@ -330,6 +346,14 @@ class ExternalApiService {
     }
 
     try {
+      // Track API usage for cost monitoring
+      try {
+        const { costManagementService } = await import('./costManagementService');
+        await costManagementService.instance.trackApiUsage('openWeather', 'admin', 0.001);
+      } catch (costError) {
+        console.warn('Cost tracking not available:', costError);
+      }
+
       const response = await fetch(
         `${API_CONFIG.ADMIN.OPENWEATHER.baseUrl}${API_CONFIG.ADMIN.OPENWEATHER.currentEndpoint}?lat=${lat}&lon=${lng}&appid=${this.openWeatherKey}&units=imperial`
       );

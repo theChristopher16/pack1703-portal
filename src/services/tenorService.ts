@@ -51,6 +51,14 @@ class TenorService {
       // Track API usage
       API_STATUS.TENOR.requestsToday++;
       
+      // Track API usage for cost monitoring
+      try {
+        const { costManagementService } = await import('./costManagementService');
+        await costManagementService.instance.trackApiUsage('tenor', 'user', 0.001);
+      } catch (costError) {
+        console.warn('Cost tracking not available:', costError);
+      }
+      
       // Try using the search endpoint with a popular term instead
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
@@ -79,6 +87,14 @@ class TenorService {
     try {
       // Track API usage
       API_STATUS.TENOR.requestsToday++;
+      
+      // Track API usage for cost monitoring
+      try {
+        const { costManagementService } = await import('./costManagementService');
+        await costManagementService.instance.trackApiUsage('tenor', 'user', 0.001);
+      } catch (costError) {
+        console.warn('Cost tracking not available:', costError);
+      }
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout

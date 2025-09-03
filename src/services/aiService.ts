@@ -96,9 +96,13 @@ class AIService {
     }
 
     try {
-      // Track API usage for cost monitoring
-      const { costManagementService } = await import('./costManagementService');
-      await costManagementService.instance.trackApiUsage('openai', context.userRole, 0.002);
+      // Track API usage for cost monitoring (optional)
+      try {
+        const { costManagementService } = await import('./costManagementService');
+        await costManagementService.instance.trackApiUsage('openai', context.userRole, 0.002);
+      } catch (costError) {
+        console.warn('Cost tracking not available:', costError);
+      }
       
       // Analyze the query and determine the appropriate response
       const response = await this.analyzeQuery(userQuery, context);

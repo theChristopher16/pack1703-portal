@@ -122,7 +122,11 @@ const ReminderManagement: React.FC = () => {
       const reminderData = {
         ...formData,
         scheduledFor: Timestamp.fromDate(new Date(formData.scheduledFor)),
-        dueDate: formData.dueDate ? Timestamp.fromDate(new Date(formData.dueDate)) : undefined
+        dueDate: formData.dueDate ? Timestamp.fromDate(new Date(formData.dueDate)) : undefined,
+        // Add required properties that are missing
+        createdBy: currentUser?.uid || '',
+        status: 'pending' as const,
+        sendAttempts: 0
       };
 
       await reminderService.createReminder(reminderData, currentUser?.uid || '');

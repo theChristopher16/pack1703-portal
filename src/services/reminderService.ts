@@ -154,7 +154,7 @@ class ReminderService {
       const reminders: Reminder[] = [];
       
       querySnapshot.forEach((doc) => {
-        reminders.push({ id: doc.id, ...doc.data() } as Reminder);
+        reminders.push({ id: doc.id, ...(doc.data() as any) } as Reminder);
       });
 
       // Get total count (simplified - in production you'd want to optimize this)
@@ -467,10 +467,10 @@ class ReminderService {
    */
   async getStats(dateRange?: { start: Timestamp; end: Timestamp }): Promise<ReminderStatsResponse> {
     try {
-      let q = collection(db, this.COLLECTIONS.REMINDERS);
+            let q: any = collection(db, this.COLLECTIONS.REMINDERS);
       
       if (dateRange) {
-        q = query(q, 
+        q = query(collection(db, this.COLLECTIONS.REMINDERS), 
           where('createdAt', '>=', dateRange.start),
           where('createdAt', '<=', dateRange.end)
         );
@@ -480,7 +480,7 @@ class ReminderService {
       const reminders: Reminder[] = [];
       
       querySnapshot.forEach((doc) => {
-        reminders.push({ id: doc.id, ...doc.data() } as Reminder);
+        reminders.push({ id: doc.id, ...(doc.data() as any) } as Reminder);
       });
 
       // Calculate statistics
@@ -607,7 +607,7 @@ class ReminderService {
       const reminders: Reminder[] = [];
       
       querySnapshot.forEach((doc) => {
-        reminders.push({ id: doc.id, ...doc.data() } as Reminder);
+        reminders.push({ id: doc.id, ...(doc.data() as any) } as Reminder);
       });
       
       return reminders;

@@ -29,8 +29,15 @@ const AdminNav: React.FC = () => {
     };
 
     if (dropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      // Use a small delay to avoid immediate closure
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+      }, 100);
+      
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
     }
   }, [dropdownOpen]);
 
@@ -107,7 +114,10 @@ const AdminNav: React.FC = () => {
             {/* More dropdown for secondary items */}
             <div className="relative flex-shrink-0" ref={dropdownRef}>
               <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDropdownOpen(!dropdownOpen);
+                }}
                 onKeyDown={handleKeyDown}
                 tabIndex={0}
                 aria-expanded={dropdownOpen}
@@ -121,13 +131,16 @@ const AdminNav: React.FC = () => {
               
               {/* Dropdown menu */}
               {dropdownOpen && (
-                <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-xl border border-gray-200 transform opacity-100 scale-100 transition-all duration-200 z-50">
+                <div className="absolute top-full right-0 mt-1 w-56 bg-white rounded-md shadow-xl border border-gray-200 z-50">
                   <div className="py-1">
                     {secondaryNavItems.map((item) => (
                       <Link
                         key={item.path}
                         to={item.path}
-                        onClick={() => setDropdownOpen(false)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDropdownOpen(false);
+                        }}
                         className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors ${
                           location.pathname === item.path ? 'bg-blue-50 text-blue-700' : ''
                         }`}

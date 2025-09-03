@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback } from 'react';
 import { multiTenantService } from '../services/multiTenantService';
 import { authService } from '../services/authService';
 import {
@@ -145,7 +145,7 @@ export function MultiTenantProvider({ children }: MultiTenantProviderProps) {
   }, []);
 
   // Category operations
-  const createCategory = async (data: Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'organizationCount'>): Promise<{ success: boolean; categoryId?: string; error?: string }> => {
+  const createCategory = useCallback(async (data: Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'organizationCount'>): Promise<{ success: boolean; categoryId?: string; error?: string }> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
@@ -166,9 +166,9 @@ export function MultiTenantProvider({ children }: MultiTenantProviderProps) {
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  };
+  }, [dispatch]);
 
-  const loadCategories = async (): Promise<void> => {
+  const loadCategories = useCallback(async (): Promise<void> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       
@@ -179,10 +179,10 @@ export function MultiTenantProvider({ children }: MultiTenantProviderProps) {
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  };
+  }, [dispatch]);
 
   // Organization operations
-  const createOrganization = async (data: Omit<Organization, 'id' | 'createdAt' | 'updatedAt' | 'memberCount'>): Promise<{ success: boolean; organizationId?: string; error?: string }> => {
+  const createOrganization = useCallback(async (data: Omit<Organization, 'id' | 'createdAt' | 'updatedAt' | 'memberCount'>): Promise<{ success: boolean; organizationId?: string; error?: string }> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
@@ -203,9 +203,9 @@ export function MultiTenantProvider({ children }: MultiTenantProviderProps) {
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  };
+  }, [dispatch]);
 
-  const loadUserOrganizations = async (): Promise<void> => {
+  const loadUserOrganizations = useCallback(async (): Promise<void> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       
@@ -221,7 +221,7 @@ export function MultiTenantProvider({ children }: MultiTenantProviderProps) {
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  };
+  }, [dispatch, state.currentOrganization]);
 
   const switchOrganization = async (organizationId: string): Promise<{ success: boolean; error?: string }> => {
     try {

@@ -46,6 +46,12 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
   const [systemMetrics, setSystemMetrics] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'breakdown' | 'alerts' | 'optimization'>('overview');
 
+  useEffect(() => {
+    if (hasPermission('cost:read')) {
+      loadCostData();
+    }
+  }, []);
+
   // Check admin access
   if (!hasPermission('cost:read')) {
     return (
@@ -60,10 +66,6 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
       </div>
     );
   }
-
-  useEffect(() => {
-    loadCostData();
-  }, []);
 
   const loadCostData = async () => {
     try {

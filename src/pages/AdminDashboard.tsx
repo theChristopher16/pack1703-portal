@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { Link } from 'react-router-dom';
-import { Shield, Mail, Bell } from 'lucide-react';
+import { Shield, Mail, Bell, ArrowLeft, Home } from 'lucide-react';
 import DatabaseMonitor from '../components/Admin/DatabaseMonitor';
 import SystemMonitor from '../components/Admin/SystemMonitor';
 import InviteManagement from '../components/Admin/InviteManagement';
@@ -36,9 +36,21 @@ const AdminDashboard: React.FC = () => {
           <h1 className="text-4xl md:text-6xl font-display font-bold mb-6 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
             Admin Dashboard
           </h1>
-          <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed mb-8">
             Welcome back, <span className="font-semibold text-primary-700">{currentUser?.displayName || 'Admin'}</span>!
           </p>
+          
+          {/* Back to User Portal Button */}
+          <div className="flex justify-center mb-8">
+            <Link
+              to="/"
+              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-semibold"
+            >
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              <Home className="w-5 h-5 mr-2" />
+              Back to User Portal
+            </Link>
+          </div>
         </div>
         
         {/* Quick Stats Cards */}

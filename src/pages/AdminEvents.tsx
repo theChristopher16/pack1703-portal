@@ -4,6 +4,8 @@ import { EntityType, AdminActionType } from '../types/admin';
 import { firestoreService } from '../services/firestore';
 import { collection, query, orderBy, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { Link } from 'react-router-dom';
+import { ArrowLeft, Home } from 'lucide-react';
 
 interface Event {
   id: string;
@@ -155,9 +157,21 @@ const AdminEvents: React.FC = () => {
           <h1 className="text-4xl font-display font-bold text-gray-900 mb-4">
             Events Management
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl">
+          <p className="text-xl text-gray-600 max-w-3xl mb-8">
             Manage all pack events, including scheduling, visibility, and participant limits.
           </p>
+          
+          {/* Back to User Portal Button */}
+          <div className="flex justify-center mb-8">
+            <Link
+              to="/"
+              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-semibold"
+            >
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              <Home className="w-5 h-5 mr-2" />
+              Back to User Portal
+            </Link>
+          </div>
         </div>
 
         {/* Controls */}

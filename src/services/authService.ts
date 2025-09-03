@@ -42,6 +42,15 @@ export enum UserRole {
   ROOT = 'root'               // System owner (you)
 }
 
+// Role hierarchy - each role inherits permissions from roles below it
+export const ROLE_HIERARCHY: Record<UserRole, number> = {
+  [UserRole.ANONYMOUS]: 0,
+  [UserRole.PARENT]: 1,
+  [UserRole.VOLUNTEER]: 2,
+  [UserRole.ADMIN]: 3,
+  [UserRole.ROOT]: 4
+};
+
 export enum Permission {
   // Root permissions (full system access)
   SYSTEM_ADMIN = 'system_admin',
@@ -214,49 +223,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ]
 };
 
-// Role color configuration
-export const ROLE_COLORS: Record<UserRole, {
-  primary: string;
-  secondary: string;
-  text: string;
-  bg: string;
-  border: string;
-}> = {
-  [UserRole.ANONYMOUS]: {
-    primary: '#6B7280', // Gray
-    secondary: '#9CA3AF',
-    text: '#374151',
-    bg: '#F9FAFB',
-    border: '#E5E7EB'
-  },
-  [UserRole.PARENT]: {
-    primary: '#3B82F6', // Blue
-    secondary: '#60A5FA',
-    text: '#1E40AF',
-    bg: '#EFF6FF',
-    border: '#BFDBFE'
-  },
-  [UserRole.VOLUNTEER]: {
-    primary: '#10B981', // Green
-    secondary: '#34D399',
-    text: '#065F46',
-    bg: '#ECFDF5',
-    border: '#A7F3D0'
-  },
-  [UserRole.ADMIN]: {
-    primary: '#8B5CF6', // Purple
-    secondary: '#A78BFA',
-    text: '#5B21B6',
-    bg: '#F3F4F6',
-    border: '#C4B5FD'
-  },
-  [UserRole.ROOT]: {
-    primary: '#D97706', // Deep Heritage Yellow (Amber)
-    secondary: '#F59E0B',
-    text: '#92400E',
-    bg: '#FFFBEB',
-    border: '#FCD34D'
-  }
+// Role color configuration (Tailwind classes for UI)
+export const ROLE_COLORS: Record<UserRole, string> = {
+  [UserRole.ANONYMOUS]: 'bg-gray-100 text-gray-800 border-gray-200',
+  [UserRole.PARENT]: 'bg-blue-100 text-blue-800 border-blue-200',
+  [UserRole.VOLUNTEER]: 'bg-green-100 text-green-800 border-green-200',
+  [UserRole.ADMIN]: 'bg-purple-100 text-purple-800 border-purple-200',
+  [UserRole.ROOT]: 'bg-yellow-100 text-yellow-800 border-yellow-200'
 };
 
 // Role display names
@@ -264,17 +237,17 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   [UserRole.ANONYMOUS]: 'Anonymous',
   [UserRole.PARENT]: 'Parent',
   [UserRole.VOLUNTEER]: 'Volunteer',
-  [UserRole.ADMIN]: 'Administrator',
-  [UserRole.ROOT]: 'System Owner'
+  [UserRole.ADMIN]: 'Admin',
+  [UserRole.ROOT]: 'Root'
 };
 
 // Role descriptions
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  [UserRole.ANONYMOUS]: 'Default access - limited content viewing',
-  [UserRole.PARENT]: 'Family management and basic pack access',
-  [UserRole.VOLUNTEER]: 'Active volunteers with den-level access',
-  [UserRole.ADMIN]: 'Pack administrators with full management access',
-  [UserRole.ROOT]: 'System owner with complete control'
+  [UserRole.ANONYMOUS]: 'No account - limited access',
+  [UserRole.PARENT]: 'Family account - manage family events and RSVPs',
+  [UserRole.VOLUNTEER]: 'Active volunteer - den-specific management',
+  [UserRole.ADMIN]: 'Pack administrator - full pack management',
+  [UserRole.ROOT]: 'System owner - complete system access'
 };
 
 // User interface with enhanced profile data
@@ -905,17 +878,103 @@ class AuthService {
     return this.isAdmin() || this.currentUser?.role === UserRole.VOLUNTEER;
   }
 
-  // Check if user has specific permission
+  // Check if user has specific permission (with role hierarchy)
   hasPermission(permission: Permission, user?: AppUser): boolean {
     const targetUser = user || this.currentUser;
     if (!targetUser) return false;
     
-    return targetUser.permissions.includes(permission);
+    // Root has access to everything
+    if (targetUser.role === UserRole.ROOT) return true;
+    
+    // Check if user has the specific permission
+    if (targetUser.permissions.includes(permission)) return true;
+    
+    // Check role hierarchy - higher roles inherit permissions from lower roles
+    const userRoleLevel = ROLE_HIERARCHY[targetUser.role];
+    
+    // Define permission-to-role mappings for inheritance
+    const permissionRoleMap: Record<Permission, UserRole> = {
+      // System permissions - only root
+      [Permission.SYSTEM_ADMIN]: UserRole.ROOT,
+      [Permission.USER_MANAGEMENT]: UserRole.ROOT,
+      [Permission.ROLE_MANAGEMENT]: UserRole.ROOT,
+      [Permission.SYSTEM_CONFIG]: UserRole.ROOT,
+      
+      // Admin permissions - admin and root
+      [Permission.PACK_MANAGEMENT]: UserRole.ADMIN,
+      [Permission.EVENT_MANAGEMENT]: UserRole.ADMIN,
+      [Permission.LOCATION_MANAGEMENT]: UserRole.ADMIN,
+      [Permission.ANNOUNCEMENT_MANAGEMENT]: UserRole.ADMIN,
+      [Permission.FINANCIAL_MANAGEMENT]: UserRole.ADMIN,
+      [Permission.FUNDRAISING_MANAGEMENT]: UserRole.ADMIN,
+      [Permission.ALL_DEN_ACCESS]: UserRole.ADMIN,
+      
+      // Den leader permissions - volunteer and above
+      [Permission.DEN_CONTENT]: UserRole.VOLUNTEER,
+      [Permission.DEN_EVENTS]: UserRole.VOLUNTEER,
+      [Permission.DEN_MEMBERS]: UserRole.VOLUNTEER,
+      [Permission.DEN_CHAT_MANAGEMENT]: UserRole.VOLUNTEER,
+      [Permission.DEN_ANNOUNCEMENTS]: UserRole.VOLUNTEER,
+      
+      // Parent permissions - parent and above
+      [Permission.FAMILY_MANAGEMENT]: UserRole.PARENT,
+      [Permission.FAMILY_EVENTS]: UserRole.PARENT,
+      [Permission.FAMILY_RSVP]: UserRole.PARENT,
+      [Permission.FAMILY_VOLUNTEER]: UserRole.PARENT,
+      
+      // Scout permissions - all authenticated users
+      [Permission.SCOUT_CONTENT]: UserRole.PARENT,
+      [Permission.SCOUT_EVENTS]: UserRole.PARENT,
+      [Permission.SCOUT_CHAT]: UserRole.PARENT,
+      
+      // Chat permissions
+      [Permission.CHAT_READ]: UserRole.PARENT,
+      [Permission.CHAT_WRITE]: UserRole.PARENT,
+      [Permission.CHAT_MANAGEMENT]: UserRole.VOLUNTEER,
+      
+      // General permissions
+      [Permission.READ_CONTENT]: UserRole.ANONYMOUS,
+      [Permission.CREATE_CONTENT]: UserRole.PARENT,
+      [Permission.UPDATE_CONTENT]: UserRole.VOLUNTEER,
+      [Permission.DELETE_CONTENT]: UserRole.ADMIN,
+      
+      // Cost management permissions
+      [Permission.COST_MANAGEMENT]: UserRole.ADMIN,
+      [Permission.COST_ANALYTICS]: UserRole.ADMIN,
+      [Permission.COST_ALERTS]: UserRole.ADMIN
+    };
+    
+    const requiredRoleLevel = ROLE_HIERARCHY[permissionRoleMap[permission]];
+    
+    // User has permission if their role level is >= required role level
+    return userRoleLevel >= requiredRoleLevel;
   }
 
-  // Check if user can manage roles
-  canManageRoles(): boolean {
-    return this.isRoot() || this.isAdmin();
+  // Check if user has at least the specified role level
+  hasAtLeastRole(requiredRole: UserRole, user?: AppUser): boolean {
+    const targetUser = user || this.currentUser;
+    if (!targetUser) return false;
+    
+    const userRoleLevel = ROLE_HIERARCHY[targetUser.role];
+    const requiredRoleLevel = ROLE_HIERARCHY[requiredRole];
+    
+    return userRoleLevel >= requiredRoleLevel;
+  }
+
+  // Check if user has exactly the specified role
+  hasRole(role: UserRole, user?: AppUser): boolean {
+    const targetUser = user || this.currentUser;
+    if (!targetUser) return false;
+    
+    return targetUser.role === role;
+  }
+
+  // Get user's role level
+  getRoleLevel(user?: AppUser): number {
+    const targetUser = user || this.currentUser;
+    if (!targetUser) return -1;
+    
+    return ROLE_HIERARCHY[targetUser.role];
   }
 
   // Check if user can manage other users

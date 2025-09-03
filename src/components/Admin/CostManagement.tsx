@@ -47,14 +47,14 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'breakdown' | 'alerts' | 'optimization'>('overview');
 
   useEffect(() => {
-    // Load cost data for admin users
-    if (state.currentUser?.isAdmin) {
+    // Load cost data for admin users (ADMIN and ROOT roles)
+    if (state.currentUser?.isAdmin || state.currentUser?.role === 'admin' || state.currentUser?.role === 'root') {
       loadCostData();
     }
   }, [state.currentUser]);
 
-  // Check admin access - allow access to any admin user
-  if (!state.currentUser?.isAdmin) {
+  // Check admin access - allow access to ADMIN and ROOT roles
+  if (!state.currentUser?.isAdmin && state.currentUser?.role !== 'admin' && state.currentUser?.role !== 'root') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-gray-100/30 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -62,7 +62,7 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
             <p className="text-gray-600">You don't have permission to access cost management features.</p>
-            <p className="text-sm text-gray-500 mt-2">Admin access required</p>
+            <p className="text-sm text-gray-500 mt-2">Admin or Root access required</p>
           </div>
         </div>
       </div>

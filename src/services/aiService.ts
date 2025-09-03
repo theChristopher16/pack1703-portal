@@ -10,7 +10,6 @@ import { externalApiService } from './externalApiService';
 import emailMonitorService from './emailMonitorService';
 import dataAuditService from './dataAuditService';
 import firestoreService from './firestore';
-import { costManagementService } from './costManagementService';
 import { UserRole } from './authService';
 
 export interface AIResponse {
@@ -98,6 +97,7 @@ class AIService {
 
     try {
       // Track API usage for cost monitoring
+      const { costManagementService } = await import('./costManagementService');
       await costManagementService.instance.trackApiUsage('openai', context.userRole, 0.002);
       
       // Analyze the query and determine the appropriate response

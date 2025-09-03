@@ -29,6 +29,7 @@ import {
 import { costManagementService, UsageMetrics, CostAlert } from '../../services/costManagementService';
 import { useAdmin } from '../../contexts/AdminContext';
 import systemMonitorService from '../../services/systemMonitorService';
+import { UserRole } from '../../services/authService';
 
 interface CostManagementProps {
   className?: string;
@@ -48,13 +49,13 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
 
   useEffect(() => {
     // Load cost data for admin users (ADMIN and ROOT roles)
-    if (state.currentUser?.isAdmin || state.currentUser?.role === 'admin' || state.currentUser?.role === 'root') {
+    if (state.currentUser?.isAdmin || state.currentUser?.role === UserRole.ADMIN || state.currentUser?.role === UserRole.ROOT) {
       loadCostData();
     }
   }, [state.currentUser]);
 
   // Check admin access - allow access to ADMIN and ROOT roles
-  if (!state.currentUser?.isAdmin && state.currentUser?.role !== 'admin' && state.currentUser?.role !== 'root') {
+  if (!state.currentUser?.isAdmin && state.currentUser?.role !== UserRole.ADMIN && state.currentUser?.role !== UserRole.ROOT) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-gray-100/30 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

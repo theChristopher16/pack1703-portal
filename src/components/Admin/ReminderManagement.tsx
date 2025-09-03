@@ -167,7 +167,7 @@ const ReminderManagement: React.FC = () => {
   };
 
   const handleDeleteReminder = async (reminderId: string) => {
-    if (!confirm('Are you sure you want to delete this reminder?')) return;
+    if (!window.confirm('Are you sure you want to delete this reminder?')) return;
 
     try {
       setLoading(true);

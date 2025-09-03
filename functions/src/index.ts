@@ -1654,3 +1654,268 @@ export const systemCommand = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('internal', 'Failed to execute system command');
   }
 });
+
+// ============================================================================
+// REMINDER PROCESSING FUNCTIONS
+// ============================================================================
+
+// Process scheduled reminders every 5 minutes
+export const processScheduledReminders = functions.pubsub.schedule('every 5 minutes').onRun(async (context: functions.EventContext) => {
+  try {
+    console.log('🔔 Processing scheduled reminders...');
+    
+    const now = admin.firestore.Timestamp.now();
+    const batch = db.batch();
+    let processedCount = 0;
+    let errorCount = 0;
+
+    // Get reminders that are due to be sent
+    const remindersQuery = await db.collection('reminders')
+      .where('status', '==', 'pending')
+      .where('scheduledFor', '<=', now)
+      .limit(50) // Process in batches
+      .get();
+
+    for (const doc of remindersQuery.docs) {
+      try {
+        const reminder = { id: doc.id, ...doc.data() };
+        
+        // Process the reminder
+        await processReminder(reminder, batch);
+        processedCount++;
+        
+        console.log(`✅ Processed reminder: ${reminder.title}`);
+      } catch (error) {
+        console.error(`❌ Error processing reminder ${doc.id}:`, error);
+        errorCount++;
+        
+        // Mark reminder as failed
+        batch.update(doc.ref, {
+          status: 'failed',
+          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          lastSendAttempt: now,
+          sendAttempts: (reminder.sendAttempts || 0) + 1,
+          updatedAt: now
+        });
+      }
+    }
+
+    // Commit all changes
+    await batch.commit();
+
+    console.log(`🎉 Reminder processing complete: ${processedCount} processed, ${errorCount} errors`);
+    
+    return {
+      success: true,
+      processed: processedCount,
+      errors: errorCount,
+      timestamp: now.toDate().toISOString()
+    };
+  } catch (error) {
+    console.error('❌ Error in reminder processing:', error);
+    throw error;
+  }
+});
+
+// Process overdue reminders daily at 9 AM
+export const processOverdueReminders = functions.pubsub.schedule('0 9 * * *').onRun(async (context: functions.EventContext) => {
+  try {
+    console.log('⏰ Processing overdue reminders...');
+    
+    const now = admin.firestore.Timestamp.now();
+    const batch = db.batch();
+    let escalatedCount = 0;
+
+    // Get overdue reminders
+    const overdueQuery = await db.collection('reminders')
+      .where('status', 'in', ['pending', 'sent', 'acknowledged'])
+      .where('dueDate', '<', now)
+      .where('autoEscalate', '==', true)
+      .get();
+
+    for (const doc of overdueQuery.docs) {
+      try {
+        const reminder = { id: doc.id, ...doc.data() };
+        
+        // Escalate the reminder
+        await escalateReminder(reminder, batch);
+        escalatedCount++;
+        
+        console.log(`🚨 Escalated overdue reminder: ${reminder.title}`);
+      } catch (error) {
+        console.error(`❌ Error escalating reminder ${doc.id}:`, error);
+      }
+    }
+
+    // Commit all changes
+    await batch.commit();
+
+    console.log(`🎉 Overdue reminder processing complete: ${escalatedCount} escalated`);
+    
+    return {
+      success: true,
+      escalated: escalatedCount,
+      timestamp: now.toDate().toISOString()
+    };
+  } catch (error) {
+    console.error('❌ Error in overdue reminder processing:', error);
+    throw error;
+  }
+});
+
+// ============================================================================
+// REMINDER HELPER FUNCTIONS
+// ============================================================================
+
+async function processReminder(reminder: any, batch: admin.firestore.WriteBatch) {
+  const now = admin.firestore.Timestamp.now();
+  
+  // Update reminder status to sent
+  batch.update(db.collection('reminders').doc(reminder.id), {
+    status: 'sent',
+    sentAt: now,
+    lastSendAttempt: now,
+    sendAttempts: (reminder.sendAttempts || 0) + 1,
+    updatedAt: now
+  });
+
+  // Send reminders through different channels
+  const deliveryPromises = reminder.channels.map(async (channel: string) => {
+    try {
+      await sendReminderThroughChannel(reminder, channel);
+      
+      // Record delivery
+      batch.create(db.collection('reminder_deliveries').doc(), {
+        reminderId: reminder.id,
+        recipientId: reminder.recipientIds[0], // Simplified - would need to iterate through all recipients
+        channel: channel,
+        status: 'sent',
+        sentAt: now,
+        metadata: {
+          message: reminder.message,
+          title: reminder.title
+        }
+      });
+    } catch (error) {
+      console.error(`Failed to send reminder through ${channel}:`, error);
+      
+      // Record failed delivery
+      batch.create(db.collection('reminder_deliveries').doc(), {
+        reminderId: reminder.id,
+        recipientId: reminder.recipientIds[0],
+        channel: channel,
+        status: 'failed',
+        sentAt: now,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        metadata: {
+          message: reminder.message,
+          title: reminder.title
+        }
+      });
+    }
+  });
+
+  await Promise.allSettled(deliveryPromises);
+}
+
+async function sendReminderThroughChannel(reminder: any, channel: string) {
+  switch (channel) {
+    case 'email':
+      return await sendEmailReminder(reminder);
+    case 'chat':
+      return await sendChatReminder(reminder);
+    case 'push':
+      return await sendPushReminder(reminder);
+    case 'sms':
+      return await sendSMSReminder(reminder);
+    case 'in_app':
+      return await sendInAppReminder(reminder);
+    default:
+      throw new Error(`Unknown channel: ${channel}`);
+  }
+}
+
+async function sendEmailReminder(reminder: any) {
+  // This would integrate with your email service
+  // For now, we'll just log it
+  console.log(`📧 Sending email reminder: ${reminder.title} to ${reminder.recipientIds.length} recipients`);
+  
+  // TODO: Implement actual email sending
+  // You could use SendGrid, Mailgun, or Firebase Extensions for email
+}
+
+async function sendChatReminder(reminder: any) {
+  // This would send to your chat system
+  console.log(`💬 Sending chat reminder: ${reminder.title}`);
+  
+  // TODO: Implement chat integration
+  // You could send to Slack, Discord, or your internal chat system
+}
+
+async function sendPushReminder(reminder: any) {
+  // This would send push notifications
+  console.log(`📱 Sending push reminder: ${reminder.title}`);
+  
+  // TODO: Implement push notifications
+  // You could use Firebase Cloud Messaging (FCM)
+}
+
+async function sendSMSReminder(reminder: any) {
+  // This would send SMS messages
+  console.log(`📞 Sending SMS reminder: ${reminder.title}`);
+  
+  // TODO: Implement SMS sending
+  // You could use Twilio, AWS SNS, or other SMS providers
+}
+
+async function sendInAppReminder(reminder: any) {
+  // This would create in-app notifications
+  console.log(`🔔 Creating in-app reminder: ${reminder.title}`);
+  
+  // Create in-app notification
+  await db.collection('notifications').add({
+    userId: reminder.recipientIds[0], // Simplified
+    type: 'reminder',
+    title: reminder.title,
+    message: reminder.message,
+    actionUrl: reminder.actionUrl,
+    actionText: reminder.actionText,
+    priority: reminder.priority,
+    isRead: false,
+    createdAt: admin.firestore.Timestamp.now(),
+    metadata: {
+      reminderId: reminder.id,
+      reminderType: reminder.type
+    }
+  });
+}
+
+async function escalateReminder(reminder: any, batch: admin.firestore.WriteBatch) {
+  const now = admin.firestore.Timestamp.now();
+  
+  // Update reminder priority to urgent
+  batch.update(db.collection('reminders').doc(reminder.id), {
+    priority: 'urgent',
+    updatedAt: now
+  });
+
+  // Create escalation record
+  batch.create(db.collection('reminder_escalations').doc(), {
+    reminderId: reminder.id,
+    escalatedAt: now,
+    escalatedBy: 'system',
+    reason: 'Overdue reminder',
+    newPriority: 'urgent',
+    notes: 'Automatically escalated due to overdue status'
+  });
+
+  // Send escalation notification to admins
+  await sendEscalationNotification(reminder);
+}
+
+async function sendEscalationNotification(reminder: any) {
+  console.log(`🚨 Sending escalation notification for reminder: ${reminder.title}`);
+  
+  // TODO: Implement escalation notification
+  // This could send to admin email, create admin notification, etc.
+}

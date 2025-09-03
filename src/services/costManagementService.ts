@@ -518,5 +518,14 @@ class CostManagementService {
   }
 }
 
-// Export singleton instance
-export const costManagementService = new CostManagementService();
+// Export singleton instance with lazy initialization
+let _costManagementService: CostManagementService | null = null;
+
+export const costManagementService = {
+  get instance(): CostManagementService {
+    if (!_costManagementService) {
+      _costManagementService = new CostManagementService();
+    }
+    return _costManagementService;
+  }
+};

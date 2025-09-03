@@ -98,7 +98,7 @@ class AIService {
 
     try {
       // Track API usage for cost monitoring
-      await costManagementService.trackApiUsage('openai', context.userRole, 0.002);
+      await costManagementService.instance.trackApiUsage('openai', context.userRole, 0.002);
       
       // Analyze the query and determine the appropriate response
       const response = await this.analyzeQuery(userQuery, context);

@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { costManagementService, UsageMetrics, CostAlert } from '../../services/costManagementService';
 import { useAdmin } from '../../contexts/AdminContext';
-import { systemMonitorService } from '../../services/systemMonitorService';
+import systemMonitorService from '../../services/systemMonitorService';
 
 interface CostManagementProps {
   className?: string;

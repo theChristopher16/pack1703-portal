@@ -1,4 +1,5 @@
 import { API_KEYS, API_CONFIG, FEATURE_FLAGS, FALLBACK_BEHAVIOR } from '../config/apiKeys';
+import { apiKeyService } from './apiKeyService';
 
 // Interfaces for API responses
 export interface LocationData {
@@ -57,9 +58,10 @@ class ExternalApiService {
   private openWeatherKey: string;
 
   constructor() {
-    this.googleMapsKey = API_KEYS.GOOGLE_MAPS;
+    // Use admin keys for external API service (this service is used by admin functions)
+    this.googleMapsKey = API_KEYS.ADMIN.GOOGLE_MAPS;
     this.phoneValidationKey = API_KEYS.PHONE_VALIDATION;
-    this.openWeatherKey = API_KEYS.OPENWEATHER;
+    this.openWeatherKey = API_KEYS.ADMIN.OPENWEATHER;
   }
 
   /**
@@ -72,7 +74,7 @@ class ExternalApiService {
 
     try {
       const response = await fetch(
-        `${API_CONFIG.GOOGLE_MAPS.baseUrl}${API_CONFIG.GOOGLE_MAPS.geocodingEndpoint}?address=${encodeURIComponent(address)}&key=${this.googleMapsKey}`
+        `${API_CONFIG.ADMIN.GOOGLE_MAPS.baseUrl}${API_CONFIG.ADMIN.GOOGLE_MAPS.geocodingEndpoint}?address=${encodeURIComponent(address)}&key=${this.googleMapsKey}`
       );
 
       if (!response.ok) {
@@ -121,7 +123,7 @@ class ExternalApiService {
 
     try {
       const response = await fetch(
-        `${API_CONFIG.GOOGLE_PLACES.baseUrl}${API_CONFIG.GOOGLE_PLACES.detailsEndpoint}?place_id=${placeId}&fields=name,rating,formatted_phone_number,website,opening_hours,types,price_level,user_ratings_total&key=${this.googleMapsKey}`
+        `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}${API_CONFIG.ADMIN.GOOGLE_PLACES.detailsEndpoint}?place_id=${placeId}&fields=name,rating,formatted_phone_number,website,opening_hours,types,price_level,user_ratings_total&key=${this.googleMapsKey}`
       );
 
       if (!response.ok) {
@@ -163,10 +165,10 @@ class ExternalApiService {
       
       if (query) {
         // Use text search for better results with business names
-        url = `${API_CONFIG.GOOGLE_PLACES.baseUrl}${API_CONFIG.GOOGLE_PLACES.textSearchEndpoint}?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=1000&key=${this.googleMapsKey}`;
+        url = `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}${API_CONFIG.ADMIN.GOOGLE_PLACES.textSearchEndpoint}?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=1000&key=${this.googleMapsKey}`;
       } else {
         // Use nearby search
-        url = `${API_CONFIG.GOOGLE_PLACES.baseUrl}${API_CONFIG.GOOGLE_PLACES.nearbySearchEndpoint}?location=${lat},${lng}&radius=1000&key=${this.googleMapsKey}`;
+        url = `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}${API_CONFIG.ADMIN.GOOGLE_PLACES.nearbySearchEndpoint}?location=${lat},${lng}&radius=1000&key=${this.googleMapsKey}`;
       }
 
       const response = await fetch(url);
@@ -214,7 +216,7 @@ class ExternalApiService {
 
     try {
       const response = await fetch(
-        `${API_CONFIG.GOOGLE_PLACES.baseUrl}${API_CONFIG.GOOGLE_PLACES.nearbySearchEndpoint}?location=${lat},${lng}&radius=500&type=parking&key=${this.googleMapsKey}`
+        `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}${API_CONFIG.ADMIN.GOOGLE_PLACES.nearbySearchEndpoint}?location=${lat},${lng}&radius=500&type=parking&key=${this.googleMapsKey}`
       );
 
       if (!response.ok) {
@@ -236,7 +238,7 @@ class ExternalApiService {
 
       // Check for street parking indicators
       const streetParkingResponse = await fetch(
-        `${API_CONFIG.GOOGLE_PLACES.baseUrl}${API_CONFIG.GOOGLE_PLACES.nearbySearchEndpoint}?location=${lat},${lng}&radius=200&keyword=parking&key=${this.googleMapsKey}`
+        `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}${API_CONFIG.ADMIN.GOOGLE_PLACES.nearbySearchEndpoint}?location=${lat},${lng}&radius=200&keyword=parking&key=${this.googleMapsKey}`
       );
 
       if (streetParkingResponse.ok) {
@@ -329,7 +331,7 @@ class ExternalApiService {
 
     try {
       const response = await fetch(
-        `${API_CONFIG.OPENWEATHER.baseUrl}${API_CONFIG.OPENWEATHER.currentEndpoint}?lat=${lat}&lon=${lng}&appid=${this.openWeatherKey}&units=imperial`
+        `${API_CONFIG.ADMIN.OPENWEATHER.baseUrl}${API_CONFIG.ADMIN.OPENWEATHER.currentEndpoint}?lat=${lat}&lon=${lng}&appid=${this.openWeatherKey}&units=imperial`
       );
 
       if (!response.ok) {
@@ -444,7 +446,7 @@ class ExternalApiService {
 
     try {
       const response = await fetch(
-        `${API_CONFIG.GOOGLE_PLACES.baseUrl}/place/autocomplete/json?input=${encodeURIComponent(query)}&types=establishment&key=${this.googleMapsKey}`
+        `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}/place/autocomplete/json?input=${encodeURIComponent(query)}&types=establishment&key=${this.googleMapsKey}`
       );
 
       if (!response.ok) {

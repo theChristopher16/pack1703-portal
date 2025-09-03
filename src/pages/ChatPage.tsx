@@ -156,11 +156,17 @@ const ChatPage: React.FC = () => {
 
   // Rich text formatting functions
   const applyFormatting = (format: keyof typeof FORMATTING_PATTERNS) => {
+    console.log('applyFormatting called with:', format);
     const textarea = textareaRef.current;
-    if (!textarea) return;
+    if (!textarea) {
+      console.log('textarea ref is null');
+      return;
+    }
 
     const { selectionStart, selectionEnd } = textarea;
+    console.log('Selection:', { selectionStart, selectionEnd });
     const selectedText = newMessage.substring(selectionStart, selectionEnd);
+    console.log('Selected text:', selectedText);
     const beforeText = newMessage.substring(0, selectionStart);
     const afterText = newMessage.substring(selectionEnd);
 
@@ -205,7 +211,9 @@ const ChatPage: React.FC = () => {
         return;
     }
 
+    console.log('Formatted text:', formattedText);
     const newText = beforeText + formattedText + afterText;
+    console.log('New text:', newText);
     setNewMessage(newText);
     
     // Set cursor position after formatting

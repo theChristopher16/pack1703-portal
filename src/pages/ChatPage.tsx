@@ -1,8 +1,51 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageCircle, Settings, User, Search, Smile, Share2, Bold, Italic, Underline, Loader2, Camera } from 'lucide-react';
+import { 
+  Send, MessageCircle, Settings, User, Search, Smile, Share2, 
+  Bold, Italic, Underline, Loader2, Camera, Palette, Type, 
+  List, Code, Quote, Link, Image, AtSign, Hash, Star
+} from 'lucide-react';
 import chatService, { ChatUser, ChatMessage, ChatChannel } from '../services/chatService';
 import tenorService, { TenorGif } from '../services/tenorService';
 import { useToast } from '../contexts/ToastContext';
+
+// Rich text formatting utilities
+const FORMATTING_PATTERNS = {
+  bold: { pattern: '**', shortcut: 'Ctrl+B', icon: Bold },
+  italic: { pattern: '*', shortcut: 'Ctrl+I', icon: Italic },
+  underline: { pattern: '__', shortcut: 'Ctrl+U', icon: Underline },
+  strikethrough: { pattern: '~~', shortcut: 'Ctrl+S', icon: 'Strikethrough' },
+  code: { pattern: '`', shortcut: 'Ctrl+`', icon: Code },
+  codeBlock: { pattern: '```', shortcut: 'Ctrl+Shift+`', icon: Code },
+  quote: { pattern: '> ', shortcut: 'Ctrl+Shift+Q', icon: Quote },
+  list: { pattern: '- ', shortcut: 'Ctrl+L', icon: List },
+  link: { pattern: '[text](url)', shortcut: 'Ctrl+K', icon: Link },
+  mention: { pattern: '@', shortcut: '@', icon: AtSign },
+  hashtag: { pattern: '#', shortcut: '#', icon: Hash },
+};
+
+// Color palette for text colors
+const TEXT_COLORS = [
+  { name: 'Default', value: 'inherit', hex: '#000000' },
+  { name: 'Red', value: 'text-red-500', hex: '#EF4444' },
+  { name: 'Orange', value: 'text-orange-500', hex: '#F97316' },
+  { name: 'Yellow', value: 'text-yellow-500', hex: '#EAB308' },
+  { name: 'Green', value: 'text-green-500', hex: '#22C55E' },
+  { name: 'Blue', value: 'text-blue-500', hex: '#3B82F6' },
+  { name: 'Purple', value: 'text-purple-500', hex: '#A855F7' },
+  { name: 'Pink', value: 'text-pink-500', hex: '#EC4899' },
+  { name: 'Gray', value: 'text-gray-500', hex: '#6B7280' },
+];
+
+interface RichTextState {
+  isBold: boolean;
+  isItalic: boolean;
+  isUnderline: boolean;
+  isStrikethrough: boolean;
+  isCode: boolean;
+  selectedColor: string;
+  selectedText: string;
+  cursorPosition: { start: number; end: number };
+}
 
 const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -20,12 +63,21 @@ const ChatPage: React.FC = () => {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [messageListRef, setMessageListRef] = useState<HTMLDivElement | null>(null);
   const [hasNewMessages, setHasNewMessages] = useState(false);
-  // const [showRichInput, setShowRichInput] = useState(false);
-  const [selectedColor, setSelectedColor] = useState<string>('#000000');
-  const [selectedFont, setSelectedFont] = useState<string>('normal');
-  const [isBold, setIsBold] = useState(false);
-  const [isItalic, setIsItalic] = useState(false);
-  const [isUnderline, setIsUnderline] = useState(false);
+  
+  // Rich text state
+  const [richTextState, setRichTextState] = useState<RichTextState>({
+    isBold: false,
+    isItalic: false,
+    isUnderline: false,
+    isStrikethrough: false,
+    isCode: false,
+    selectedColor: 'inherit',
+    selectedText: '',
+    cursorPosition: { start: 0, end: 0 },
+  });
+  
+  const [showRichToolbar, setShowRichToolbar] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const [showGifPicker, setShowGifPicker] = useState(false);
   const [gifs, setGifs] = useState<TenorGif[]>([]);
   const [gifSearchQuery, setGifSearchQuery] = useState('');
@@ -33,9 +85,10 @@ const ChatPage: React.FC = () => {
   const [gifSearchResults, setGifSearchResults] = useState<TenorGif[]>([]);
   const [showGifSearch, setShowGifSearch] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
-  const [showFontPicker, setShowFontPicker] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showSuccess, showError, showInfo } = useToast();
 
@@ -101,13 +154,242 @@ const ChatPage: React.FC = () => {
     }
   }, [messages, isAtBottom]);
 
-  // Rich chat helper functions
-  const applyFormatting = (text: string) => {
-    let formattedText = text;
-    if (isBold) formattedText = `**${formattedText}**`;
-    if (isItalic) formattedText = `*${formattedText}*`;
-    if (isUnderline) formattedText = `__${formattedText}__`;
-    return formattedText;
+  // Rich text formatting functions
+  const applyFormatting = (format: keyof typeof FORMATTING_PATTERNS) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const { selectionStart, selectionEnd } = textarea;
+    const selectedText = newMessage.substring(selectionStart, selectionEnd);
+    const beforeText = newMessage.substring(0, selectionStart);
+    const afterText = newMessage.substring(selectionEnd);
+
+    const pattern = FORMATTING_PATTERNS[format].pattern;
+    let formattedText = '';
+
+    switch (format) {
+      case 'bold':
+        formattedText = `**${selectedText}**`;
+        break;
+      case 'italic':
+        formattedText = `*${selectedText}*`;
+        break;
+      case 'underline':
+        formattedText = `__${selectedText}__`;
+        break;
+      case 'strikethrough':
+        formattedText = `~~${selectedText}~~`;
+        break;
+      case 'code':
+        formattedText = `\`${selectedText}\``;
+        break;
+      case 'codeBlock':
+        formattedText = `\`\`\`\n${selectedText}\n\`\`\``;
+        break;
+      case 'quote':
+        formattedText = `> ${selectedText}`;
+        break;
+      case 'list':
+        formattedText = `- ${selectedText}`;
+        break;
+      case 'link':
+        formattedText = `[${selectedText}](url)`;
+        break;
+      case 'mention':
+        formattedText = `@${selectedText}`;
+        break;
+      case 'hashtag':
+        formattedText = `#${selectedText}`;
+        break;
+      default:
+        return;
+    }
+
+    const newText = beforeText + formattedText + afterText;
+    setNewMessage(newText);
+    
+    // Set cursor position after formatting
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = selectionStart + formattedText.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
+
+  // Apply color formatting
+  const applyColor = (color: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const { selectionStart, selectionEnd } = textarea;
+    const selectedText = newMessage.substring(selectionStart, selectionEnd);
+    const beforeText = newMessage.substring(0, selectionStart);
+    const afterText = newMessage.substring(selectionEnd);
+
+    const colorClass = TEXT_COLORS.find(c => c.hex === color)?.value || 'inherit';
+    const formattedText = `<span class="${colorClass}">${selectedText}</span>`;
+    
+    const newText = beforeText + formattedText + afterText;
+    setNewMessage(newText);
+    setShowColorPicker(false);
+    
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = selectionStart + formattedText.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
+
+  // Handle keyboard shortcuts
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key.toLowerCase()) {
+        case 'b':
+          e.preventDefault();
+          applyFormatting('bold');
+          break;
+        case 'i':
+          e.preventDefault();
+          applyFormatting('italic');
+          break;
+        case 'u':
+          e.preventDefault();
+          applyFormatting('underline');
+          break;
+        case 's':
+          e.preventDefault();
+          applyFormatting('strikethrough');
+          break;
+        case '`':
+          e.preventDefault();
+          if (e.shiftKey) {
+            applyFormatting('codeBlock');
+          } else {
+            applyFormatting('code');
+          }
+          break;
+        case 'k':
+          e.preventDefault();
+          applyFormatting('link');
+          break;
+        case 'l':
+          e.preventDefault();
+          applyFormatting('list');
+          break;
+      }
+    }
+    
+    // Handle special characters
+    if (e.key === '@') {
+      e.preventDefault();
+      applyFormatting('mention');
+    }
+    if (e.key === '#') {
+      e.preventDefault();
+      applyFormatting('hashtag');
+    }
+  };
+
+  // Enhanced message rendering with rich text support
+  const renderMessageContent = (messageText: string) => {
+    // First, handle HTML color spans
+    let processedText = messageText.replace(
+      /<span class="([^"]+)">([^<]+)<\/span>/g,
+      (match, className, text) => {
+        return `[color:${className}]${text}[/color]`;
+      }
+    );
+
+    // Split the message into parts (text, images, code blocks, and color blocks)
+    const parts = processedText.split(/(!\[.*?\]\(.*?\)|```[\s\S]*?```|\[color:[^\]]+\][^[]*\[\/color\])/g);
+    
+    return parts.map((part, index) => {
+      // Check if this part is an image markdown
+      const imageMatch = part.match(/!\[(.*?)\]\((.*?)\)/);
+      if (imageMatch) {
+        const [, altText, imageUrl] = imageMatch;
+        return (
+          <img
+            key={index}
+            src={imageUrl}
+            alt={altText}
+            className="max-w-xs max-h-48 rounded-lg shadow-sm my-2"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
+          />
+        );
+      }
+      
+      // Check if this part is a code block
+      const codeMatch = part.match(/```([\s\S]*?)```/);
+      if (codeMatch) {
+        const codeContent = codeMatch[1];
+        return (
+          <pre key={index} className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto my-2 text-sm font-mono">
+            <code>{codeContent}</code>
+          </pre>
+        );
+      }
+
+      // Check if this part is a color block
+      const colorMatch = part.match(/\[color:([^\]]+)\]([^[]*)\[\/color\]/);
+      if (colorMatch) {
+        const [, colorClass, text] = colorMatch;
+        return (
+          <span key={index} className={colorClass}>
+            {renderFormattedText(text)}
+          </span>
+        );
+      }
+      
+      // Regular text with formatting
+      return (
+        <span key={index}>
+          {renderFormattedText(part)}
+        </span>
+      );
+    });
+  };
+
+  // Render formatted text with markdown support
+  const renderFormattedText = (text: string) => {
+    // Handle @mentions
+    text = text.replace(/(@(?:solyn|ai|assistant|user))/gi, (match) => (
+      `<span class="bg-blue-100 text-blue-800 px-1 py-0.5 rounded-md font-medium text-sm">${match}</span>`
+    ));
+
+    // Handle #hashtags
+    text = text.replace(/(#[a-zA-Z0-9_]+)/g, (match) => (
+      `<span class="bg-purple-100 text-purple-800 px-1 py-0.5 rounded-md font-medium text-sm">${match}</span>`
+    ));
+
+    // Handle **bold**
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    // Handle *italic*
+    text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+    // Handle __underline__
+    text = text.replace(/__(.*?)__/g, '<u>$1</u>');
+
+    // Handle ~~strikethrough~~
+    text = text.replace(/~~(.*?)~~/g, '<del>$1</del>');
+
+    // Handle `code`
+    text = text.replace(/`([^`]+)`/g, '<code class="bg-gray-100 text-gray-800 px-1 py-0.5 rounded text-sm font-mono">$1</code>');
+
+    // Handle > quotes
+    text = text.replace(/^> (.+)$/gm, '<blockquote class="border-l-4 border-gray-300 pl-4 italic text-gray-600">$1</blockquote>');
+
+    // Handle - lists
+    text = text.replace(/^- (.+)$/gm, '<li class="list-disc ml-4">$1</li>');
+
+    // Handle links
+    text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 hover:text-blue-800 underline" target="_blank" rel="noopener noreferrer">$1</a>');
+
+    return <span dangerouslySetInnerHTML={{ __html: text }} />;
   };
 
   // Function to apply formatting to selected text
@@ -273,63 +555,6 @@ const ChatPage: React.FC = () => {
 
   const removeUploadedImage = (index: number) => {
     setUploadedImages(prev => prev.filter((_, i) => i !== index));
-  };
-
-  // Function to render message content with GIF, code, and @mention support
-  const renderMessageContent = (messageText: string) => {
-    // Split the message into parts (text, images, and code blocks)
-    const parts = messageText.split(/(!\[.*?\]\(.*?\)|```[\s\S]*?```)/g);
-    
-    return parts.map((part, index) => {
-      // Check if this part is an image markdown
-      const imageMatch = part.match(/!\[(.*?)\]\((.*?)\)/);
-      if (imageMatch) {
-        const [, altText, imageUrl] = imageMatch;
-        return (
-          <img
-            key={index}
-            src={imageUrl}
-            alt={altText}
-            className="max-w-xs max-h-48 rounded-lg shadow-sm my-2"
-            onError={(e) => {
-              // Fallback if image fails to load
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-            }}
-          />
-        );
-      }
-      
-      // Check if this part is a code block
-      const codeMatch = part.match(/```([\s\S]*?```)/);
-      if (codeMatch) {
-        const codeContent = codeMatch[1];
-        return (
-          <pre key={index} className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto my-2 text-sm font-mono">
-            <code>{codeContent}</code>
-          </pre>
-        );
-      }
-      
-      // Regular text with @mention highlighting
-      return (
-        <span key={index}>
-          {part.split(/(@(?:solyn|ai|assistant))/gi).map((text, textIndex) => {
-            if (text.match(/@(solyn|ai|assistant)/i)) {
-              return (
-                <span 
-                  key={textIndex} 
-                  className="bg-blue-100 text-blue-800 px-1 py-0.5 rounded-md font-medium text-sm"
-                >
-                  {text}
-                </span>
-              );
-            }
-            return text;
-          })}
-        </span>
-      );
-    });
   };
 
   // Function to remove GIF from message
@@ -586,18 +811,25 @@ const ChatPage: React.FC = () => {
         messageWithImages = messageWithImages + (messageWithImages ? '\n' : '') + imageTexts.join('\n');
       }
       
-      const formattedMessage = applyFormatting(messageWithImages);
+      const formattedMessage = newMessage; // Rich text formatting is handled by renderFormattedText
       await chatService.sendMessage(selectedChannel, formattedMessage);
       console.log('Message sent successfully');
       
       // Reset everything
       setNewMessage('');
       setUploadedImages([]);
-      setIsBold(false);
-      setIsItalic(false);
-      setIsUnderline(false);
-      setSelectedColor('#000000');
-      setSelectedFont('normal');
+      setRichTextState({
+        isBold: false,
+        isItalic: false,
+        isUnderline: false,
+        isStrikethrough: false,
+        isCode: false,
+        selectedColor: 'inherit',
+        selectedText: '',
+        cursorPosition: { start: 0, end: 0 },
+      });
+      setShowRichToolbar(false);
+      setShowColorPicker(false);
       showSuccess('Message sent!', 'Your message has been delivered to the channel.');
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -1055,27 +1287,27 @@ const ChatPage: React.FC = () => {
                   {/* Formatting Buttons */}
                   <button
                     type="button"
-                    onClick={() => applyTextFormatting('bold')}
+                    onClick={() => applyFormatting('bold')}
                     className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                    title="Bold"
+                    title="Bold (Ctrl+B)"
                   >
                     <Bold className="w-4 h-4" />
                   </button>
                   
                   <button
                     type="button"
-                    onClick={() => applyTextFormatting('italic')}
+                    onClick={() => applyFormatting('italic')}
                     className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                    title="Italic"
+                    title="Italic (Ctrl+I)"
                   >
                     <Italic className="w-4 h-4" />
                   </button>
                   
                   <button
                     type="button"
-                    onClick={() => applyTextFormatting('underline')}
+                    onClick={() => applyFormatting('underline')}
                     className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                    title="Underline"
+                    title="Underline (Ctrl+U)"
                   >
                     <Underline className="w-4 h-4" />
                   </button>
@@ -1088,11 +1320,36 @@ const ChatPage: React.FC = () => {
                       setNewMessage(prev => prev + codeBlock);
                     }}
                     className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors duration-200 font-medium"
-                    title="Insert Code Block"
+                    title="Insert Code Block (Ctrl+`)"
                   >
+                    <Code className="w-4 h-4 mr-1" />
                     Code
                   </button>
                   
+                  <div className="w-px h-6 bg-gray-300"></div>
+                  
+                  {/* List Button */}
+                  <button
+                    type="button"
+                    onClick={() => applyFormatting('list')}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                    title="List (Ctrl+L)"
+                  >
+                    <List className="w-4 h-4 mr-1" />
+                    List
+                  </button>
+
+                  {/* Quote Button */}
+                  <button
+                    type="button"
+                    onClick={() => applyFormatting('quote')}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                    title="Quote (Ctrl+Shift+Q)"
+                  >
+                    <Quote className="w-4 h-4 mr-1" />
+                    Quote
+                  </button>
+
                   <div className="w-px h-6 bg-gray-300"></div>
                   
                   {/* GIF Button */}
@@ -1102,6 +1359,7 @@ const ChatPage: React.FC = () => {
                     className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors duration-200 font-medium"
                     title="Insert GIF"
                   >
+                    <Smile className="w-4 h-4 mr-1" />
                     GIF
                   </button>
 
@@ -1112,7 +1370,8 @@ const ChatPage: React.FC = () => {
                     className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
                     title="Upload Photo"
                   >
-                    <Camera className="w-4 h-4" />
+                    <Image className="w-4 h-4 mr-1" />
+                    Photo
                   </button>
                   <input
                     ref={fileInputRef}
@@ -1124,13 +1383,15 @@ const ChatPage: React.FC = () => {
                   />
                   
                   {/* Color Picker */}
-                  <input
-                    type="color"
-                    value={selectedColor}
-                    onChange={(e) => setSelectedColor(e.target.value)}
-                    className="w-8 h-8 border-0 rounded-lg cursor-pointer"
-                    title="Text color"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowColorPicker(!showColorPicker)}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                    title="Text Color"
+                  >
+                    <Palette className="w-4 h-4 mr-1" />
+                    Color
+                  </button>
                   
                   <div className="w-px h-6 bg-gray-300"></div>
                   
@@ -1138,15 +1399,19 @@ const ChatPage: React.FC = () => {
                   <div className="relative">
                     <button
                       type="button"
-                      onClick={() => setShowFontPicker(!showFontPicker)}
+                      onClick={() => {
+                        // This functionality is not yet implemented in the new rich text system
+                        // setShowFontPicker(!showFontPicker); 
+                      }}
                       className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors duration-200 font-medium"
                       title="Font style"
                     >
+                      <Type className="w-4 h-4 mr-1" />
                       Fonts
                     </button>
                     
                     {/* Font Picker Dropdown */}
-                    {showFontPicker && (
+                    {/* {showFontPicker && (
                       <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-32">
                       <div className="p-2 space-y-1">
                         {[
@@ -1174,7 +1439,7 @@ const ChatPage: React.FC = () => {
                         ))}
                       </div>
                     </div>
-                  )}
+                  )} */}
                 </div>
                 </div>
                 
@@ -1281,21 +1546,26 @@ const ChatPage: React.FC = () => {
                 <div className="flex space-x-4">
                   <div className="flex-1">
                     <textarea
+                      ref={textareaRef}
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      onSelect={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        setRichTextState(prev => ({
+                          ...prev,
+                          selectedText: target.value.substring(target.selectionStart, target.selectionEnd),
+                          cursorPosition: { start: target.selectionStart, end: target.selectionEnd }
+                        }));
+                      }}
                       placeholder={currentUser 
                         ? `Message #${channels.find(c => c.id === selectedChannel)?.name || 'general'}...`
                         : 'Connecting to chat...'
                       }
                       disabled={!currentUser}
                                           style={{
-                      color: selectedColor,
-                      fontFamily: selectedFont === 'monospace' ? 'Monaco, monospace' : 
-                                 selectedFont === 'serif' ? 'Georgia, serif' :
-                                 selectedFont === 'cursive' ? 'Brush Script MT, cursive' :
-                                 selectedFont === 'fantasy' ? 'Papyrus, fantasy' :
-                                 selectedFont === 'sans-serif' ? 'Arial, sans-serif' :
-                                 selectedFont === 'system' ? 'System UI, sans-serif' : 'Inter, sans-serif',
+                      color: richTextState.selectedColor,
+                      fontFamily: richTextState.isCode ? 'Monaco, monospace' : 'Inter, sans-serif', // Apply font based on rich text state
                       resize: 'none',
                       minHeight: '48px',
                       maxHeight: '200px',
@@ -1311,7 +1581,7 @@ const ChatPage: React.FC = () => {
                     />
                     
                     {/* Message Preview */}
-                    {(newMessage.includes('![') || newMessage.includes('```')) && (
+                    {(newMessage.includes('![') || newMessage.includes('```') || newMessage.includes('<span class="')) && (
                       <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <p className="text-xs text-gray-500 mb-2">Preview:</p>
                         <div className="text-sm text-gray-700">
@@ -1342,6 +1612,119 @@ const ChatPage: React.FC = () => {
                 </div>
               </form>
               
+              {/* Rich Text Toolbar */}
+              {showRichToolbar && (
+                <div className="bg-white border-t border-gray-200 p-3">
+                  <div className="flex items-center space-x-2 flex-wrap">
+                    {/* Text Formatting */}
+                    <button
+                      onClick={() => applyFormatting('bold')}
+                      className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Bold (Ctrl+B)"
+                    >
+                      <Bold className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => applyFormatting('italic')}
+                      className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Italic (Ctrl+I)"
+                    >
+                      <Italic className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => applyFormatting('underline')}
+                      className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Underline (Ctrl+U)"
+                    >
+                      <Underline className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => applyFormatting('strikethrough')}
+                      className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Strikethrough (Ctrl+S)"
+                    >
+                      <span className="w-4 h-4 border-b border-gray-600"></span>
+                    </button>
+
+                    <div className="w-px h-6 bg-gray-300"></div>
+
+                    {/* Code and Lists */}
+                    <button
+                      onClick={() => applyFormatting('code')}
+                      className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Code (Ctrl+`)"
+                    >
+                      <Code className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => applyFormatting('list')}
+                      className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="List (Ctrl+L)"
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => applyFormatting('quote')}
+                      className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Quote"
+                    >
+                      <Quote className="w-4 h-4" />
+                    </button>
+
+                    <div className="w-px h-6 bg-gray-300"></div>
+
+                    {/* Colors */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowColorPicker(!showColorPicker)}
+                        className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Text Color"
+                      >
+                        <Palette className="w-4 h-4" />
+                      </button>
+                      {showColorPicker && (
+                        <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-10">
+                          <div className="grid grid-cols-3 gap-1">
+                            {TEXT_COLORS.map((color) => (
+                              <button
+                                key={color.hex}
+                                onClick={() => applyColor(color.hex)}
+                                className="w-6 h-6 rounded border border-gray-200 hover:scale-110 transition-transform"
+                                style={{ backgroundColor: color.hex }}
+                                title={color.name}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Special Formatting */}
+                    <button
+                      onClick={() => applyFormatting('link')}
+                      className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Link (Ctrl+K)"
+                    >
+                      <Link className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => applyFormatting('mention')}
+                      className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Mention (@)"
+                    >
+                      <AtSign className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => applyFormatting('hashtag')}
+                      className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Hashtag (#)"
+                    >
+                      <Hash className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Debug Info (remove in production) */}
               {process.env.NODE_ENV === 'development' && (
                 <div className="mt-2 text-xs text-gray-500">

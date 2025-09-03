@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserRole, ROLE_COLORS, ROLE_DISPLAY_NAMES } from '../services/authService';
+import { UserRole, ROLE_COLORS, ROLE_DISPLAY_NAMES } from '../../services/authService';
 
 interface RoleBadgeProps {
   role: UserRole;

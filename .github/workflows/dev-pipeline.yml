@@ -76,3 +76,4 @@ jobs:
         channelId: development
         projectId: pack-1703-portal
         entryPoint: .
+

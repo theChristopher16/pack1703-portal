@@ -28,9 +28,11 @@ const AdminNav: React.FC = () => {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [dropdownOpen]);
 
   // Close dropdown on escape key
   useEffect(() => {
@@ -108,7 +110,6 @@ const AdminNav: React.FC = () => {
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 onKeyDown={handleKeyDown}
                 tabIndex={0}
-                role="button"
                 aria-expanded={dropdownOpen}
                 aria-haspopup="true"
                 className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm rounded-md transition-all duration-200"
@@ -120,23 +121,21 @@ const AdminNav: React.FC = () => {
               
               {/* Dropdown menu */}
               {dropdownOpen && (
-                <div className="fixed inset-0 z-[99999]" onClick={() => setDropdownOpen(false)}>
-                  <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-xl border border-gray-200 transform opacity-100 scale-100 transition-all duration-200">
-                    <div className="py-1">
-                      {secondaryNavItems.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          onClick={() => setDropdownOpen(false)}
-                          className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors ${
-                            location.pathname === item.path ? 'bg-blue-50 text-blue-700' : ''
-                          }`}
-                        >
-                          <span className="mr-3">{item.icon}</span>
-                          <span>{item.label}</span>
-                        </Link>
-                      ))}
-                    </div>
+                <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-xl border border-gray-200 transform opacity-100 scale-100 transition-all duration-200 z-50">
+                  <div className="py-1">
+                    {secondaryNavItems.map((item) => (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={() => setDropdownOpen(false)}
+                        className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors ${
+                          location.pathname === item.path ? 'bg-blue-50 text-blue-700' : ''
+                        }`}
+                      >
+                        <span className="mr-3">{item.icon}</span>
+                        <span>{item.label}</span>
+                      </Link>
+                    ))}
                   </div>
                 </div>
               )}

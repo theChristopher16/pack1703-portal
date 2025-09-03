@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Send, MessageCircle, Settings, User, Search, Smile, Share2, 
   Bold, Italic, Underline, Loader2, Camera, Palette, Type, 
-  List, Code, Quote, Link, Image, AtSign, Hash, Star
+  List, Code, Quote, Link, Image, AtSign, Hash, Star, Bot
 } from 'lucide-react';
 import chatService, { ChatUser, ChatMessage, ChatChannel } from '../services/chatService';
 import tenorService, { TenorGif } from '../services/tenorService';
 import { useToast } from '../contexts/ToastContext';
+import { UserRole } from '../services/authService';
 
 // Rich text formatting utilities
 const FORMATTING_PATTERNS = {
@@ -64,6 +65,11 @@ const ChatPage: React.FC = () => {
   const [messageListRef, setMessageListRef] = useState<HTMLDivElement | null>(null);
   const [hasNewMessages, setHasNewMessages] = useState(false);
   
+  // AI Assistant state
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [aiQuery, setAiQuery] = useState('');
+  const [isAIProcessing, setIsAIProcessing] = useState(false);
+  
   // Rich text state
   const [richTextState, setRichTextState] = useState<RichTextState>({
     isBold: false,
@@ -91,6 +97,11 @@ const ChatPage: React.FC = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showSuccess, showError, showInfo } = useToast();
+
+  // Helper function to check if user has admin access
+  const hasAdminAccess = (): boolean => {
+    return currentUser?.isAdmin === true;
+  };
 
   // Den emoji mapping
   const denEmojis: Record<string, string> = {

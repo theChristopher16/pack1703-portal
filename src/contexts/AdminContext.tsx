@@ -232,7 +232,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
           email: user.email,
           displayName: user.displayName || null,
           photoURL: user.photoURL || null,
-          isAdmin: user.role === 'root' || user.role === 'admin' || user.role === 'den_leader',
+          isAdmin: user.role === 'root' || user.role === 'admin' || user.role === 'volunteer',
           role: user.role as unknown as AdminRole,
           permissions: user.permissions as unknown as AdminPermission[],
           lastLogin: user.lastLoginAt || new Date(),

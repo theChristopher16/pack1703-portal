@@ -30,7 +30,9 @@ export type AdminPermission =
   // User management permissions
   | 'users:create' | 'users:read' | 'users:update' | 'users:delete'
   // System permissions
-  | 'system:read' | 'system:update' | 'system:delete';
+  | 'system:read' | 'system:update' | 'system:delete'
+  // Cost management permissions
+  | 'cost:read' | 'cost:manage' | 'cost:analytics';
 
 export interface AdminAction {
   id: string;

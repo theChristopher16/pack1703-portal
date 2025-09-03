@@ -35,12 +35,11 @@ import { db } from '../firebase/config';
 
 // User roles and permissions - Simplified and intuitive
 export enum UserRole {
-  ROOT = 'root',           // You - Full system control
-  ADMIN = 'admin',         // Pack leadership - Full pack management
-  DEN_LEADER = 'den_leader', // Den leaders - Den-specific management
-  PARENT = 'parent',       // Parents - Family management
-  SCOUT = 'scout',         // Scouts - Basic access
-  GUEST = 'guest'          // Visitors - Limited access
+  ANONYMOUS = 'anonymous',    // Default - no account
+  PARENT = 'parent',          // Family account (default after signup)
+  VOLUNTEER = 'volunteer',    // Active volunteers
+  ADMIN = 'admin',            // Pack administrators
+  ROOT = 'root'               // System owner (you)
 }
 
 export enum Permission {
@@ -86,7 +85,12 @@ export enum Permission {
   READ_CONTENT = 'read_content',
   CREATE_CONTENT = 'create_content',
   UPDATE_CONTENT = 'update_content',
-  DELETE_CONTENT = 'delete_content'
+  DELETE_CONTENT = 'delete_content',
+  
+  // Cost management permissions
+  COST_MANAGEMENT = 'cost_management',
+  COST_ANALYTICS = 'cost_analytics',
+  COST_ALERTS = 'cost_alerts'
 }
 
 // Social login providers
@@ -101,6 +105,78 @@ export enum SocialProvider {
 
 // Role to permissions mapping
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+  [UserRole.ANONYMOUS]: [
+    Permission.READ_CONTENT,
+    Permission.SCOUT_CONTENT,
+    Permission.SCOUT_EVENTS
+  ],
+  [UserRole.PARENT]: [
+    Permission.READ_CONTENT,
+    Permission.CREATE_CONTENT,
+    Permission.UPDATE_CONTENT,
+    Permission.FAMILY_MANAGEMENT,
+    Permission.FAMILY_EVENTS,
+    Permission.FAMILY_RSVP,
+    Permission.FAMILY_VOLUNTEER,
+    Permission.SCOUT_CONTENT,
+    Permission.SCOUT_EVENTS,
+    Permission.SCOUT_CHAT,
+    Permission.CHAT_READ,
+    Permission.CHAT_WRITE
+  ],
+  [UserRole.VOLUNTEER]: [
+    Permission.READ_CONTENT,
+    Permission.CREATE_CONTENT,
+    Permission.UPDATE_CONTENT,
+    Permission.FAMILY_MANAGEMENT,
+    Permission.FAMILY_EVENTS,
+    Permission.FAMILY_RSVP,
+    Permission.FAMILY_VOLUNTEER,
+    Permission.DEN_CONTENT,
+    Permission.DEN_EVENTS,
+    Permission.DEN_MEMBERS,
+    Permission.DEN_CHAT_MANAGEMENT,
+    Permission.DEN_ANNOUNCEMENTS,
+    Permission.SCOUT_CONTENT,
+    Permission.SCOUT_EVENTS,
+    Permission.SCOUT_CHAT,
+    Permission.CHAT_READ,
+    Permission.CHAT_WRITE,
+    Permission.CHAT_MANAGEMENT
+  ],
+  [UserRole.ADMIN]: [
+    Permission.SYSTEM_ADMIN,
+    Permission.USER_MANAGEMENT,
+    Permission.PACK_MANAGEMENT,
+    Permission.EVENT_MANAGEMENT,
+    Permission.LOCATION_MANAGEMENT,
+    Permission.ANNOUNCEMENT_MANAGEMENT,
+    Permission.FINANCIAL_MANAGEMENT,
+    Permission.FUNDRAISING_MANAGEMENT,
+    Permission.ALL_DEN_ACCESS,
+    Permission.DEN_CONTENT,
+    Permission.DEN_EVENTS,
+    Permission.DEN_MEMBERS,
+    Permission.DEN_CHAT_MANAGEMENT,
+    Permission.DEN_ANNOUNCEMENTS,
+    Permission.FAMILY_MANAGEMENT,
+    Permission.FAMILY_EVENTS,
+    Permission.FAMILY_RSVP,
+    Permission.FAMILY_VOLUNTEER,
+    Permission.SCOUT_CONTENT,
+    Permission.SCOUT_EVENTS,
+    Permission.SCOUT_CHAT,
+    Permission.CHAT_READ,
+    Permission.CHAT_WRITE,
+    Permission.CHAT_MANAGEMENT,
+    Permission.READ_CONTENT,
+    Permission.CREATE_CONTENT,
+    Permission.UPDATE_CONTENT,
+    Permission.DELETE_CONTENT,
+    Permission.COST_MANAGEMENT,
+    Permission.COST_ANALYTICS,
+    Permission.COST_ALERTS
+  ],
   [UserRole.ROOT]: [
     Permission.SYSTEM_ADMIN,
     Permission.USER_MANAGEMENT,
@@ -131,82 +207,74 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.READ_CONTENT,
     Permission.CREATE_CONTENT,
     Permission.UPDATE_CONTENT,
-    Permission.DELETE_CONTENT
-  ],
-  [UserRole.ADMIN]: [
-    Permission.PACK_MANAGEMENT,
-    Permission.EVENT_MANAGEMENT,
-    Permission.LOCATION_MANAGEMENT,
-    Permission.ANNOUNCEMENT_MANAGEMENT,
-    Permission.FINANCIAL_MANAGEMENT,
-    Permission.FUNDRAISING_MANAGEMENT,
-    Permission.ALL_DEN_ACCESS,
-    Permission.DEN_CONTENT,
-    Permission.DEN_EVENTS,
-    Permission.DEN_MEMBERS,
-    Permission.DEN_CHAT_MANAGEMENT,
-    Permission.DEN_ANNOUNCEMENTS,
-    Permission.FAMILY_MANAGEMENT,
-    Permission.FAMILY_EVENTS,
-    Permission.FAMILY_RSVP,
-    Permission.FAMILY_VOLUNTEER,
-    Permission.SCOUT_CONTENT,
-    Permission.SCOUT_EVENTS,
-    Permission.SCOUT_CHAT,
-    Permission.CHAT_READ,
-    Permission.CHAT_WRITE,
-    Permission.CHAT_MANAGEMENT,
-    Permission.READ_CONTENT,
-    Permission.CREATE_CONTENT,
-    Permission.UPDATE_CONTENT,
-    Permission.DELETE_CONTENT
-  ],
-  [UserRole.DEN_LEADER]: [
-    Permission.DEN_CONTENT,
-    Permission.DEN_EVENTS,
-    Permission.DEN_MEMBERS,
-    Permission.DEN_CHAT_MANAGEMENT,
-    Permission.DEN_ANNOUNCEMENTS,
-    Permission.FAMILY_MANAGEMENT,
-    Permission.FAMILY_EVENTS,
-    Permission.FAMILY_RSVP,
-    Permission.FAMILY_VOLUNTEER,
-    Permission.SCOUT_CONTENT,
-    Permission.SCOUT_EVENTS,
-    Permission.SCOUT_CHAT,
-    Permission.CHAT_READ,
-    Permission.CHAT_WRITE,
-    Permission.CHAT_MANAGEMENT,
-    Permission.READ_CONTENT,
-    Permission.CREATE_CONTENT,
-    Permission.UPDATE_CONTENT
-  ],
-  [UserRole.PARENT]: [
-    Permission.FAMILY_MANAGEMENT,
-    Permission.FAMILY_EVENTS,
-    Permission.FAMILY_RSVP,
-    Permission.FAMILY_VOLUNTEER,
-    Permission.SCOUT_CONTENT,
-    Permission.SCOUT_EVENTS,
-    Permission.SCOUT_CHAT,
-    Permission.CHAT_READ,
-    Permission.CHAT_WRITE,
-    Permission.READ_CONTENT,
-    Permission.CREATE_CONTENT,
-    Permission.UPDATE_CONTENT
-  ],
-  [UserRole.SCOUT]: [
-    Permission.SCOUT_CONTENT,
-    Permission.SCOUT_EVENTS,
-    Permission.SCOUT_CHAT,
-    Permission.CHAT_READ,
-    Permission.CHAT_WRITE,
-    Permission.READ_CONTENT,
-    Permission.CREATE_CONTENT
-  ],
-  [UserRole.GUEST]: [
-    Permission.READ_CONTENT
+    Permission.DELETE_CONTENT,
+    Permission.COST_MANAGEMENT,
+    Permission.COST_ANALYTICS,
+    Permission.COST_ALERTS
   ]
+};
+
+// Role color configuration
+export const ROLE_COLORS: Record<UserRole, {
+  primary: string;
+  secondary: string;
+  text: string;
+  bg: string;
+  border: string;
+}> = {
+  [UserRole.ANONYMOUS]: {
+    primary: '#6B7280', // Gray
+    secondary: '#9CA3AF',
+    text: '#374151',
+    bg: '#F9FAFB',
+    border: '#E5E7EB'
+  },
+  [UserRole.PARENT]: {
+    primary: '#3B82F6', // Blue
+    secondary: '#60A5FA',
+    text: '#1E40AF',
+    bg: '#EFF6FF',
+    border: '#BFDBFE'
+  },
+  [UserRole.VOLUNTEER]: {
+    primary: '#10B981', // Green
+    secondary: '#34D399',
+    text: '#065F46',
+    bg: '#ECFDF5',
+    border: '#A7F3D0'
+  },
+  [UserRole.ADMIN]: {
+    primary: '#8B5CF6', // Purple
+    secondary: '#A78BFA',
+    text: '#5B21B6',
+    bg: '#F3F4F6',
+    border: '#C4B5FD'
+  },
+  [UserRole.ROOT]: {
+    primary: '#D97706', // Deep Heritage Yellow (Amber)
+    secondary: '#F59E0B',
+    text: '#92400E',
+    bg: '#FFFBEB',
+    border: '#FCD34D'
+  }
+};
+
+// Role display names
+export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
+  [UserRole.ANONYMOUS]: 'Anonymous',
+  [UserRole.PARENT]: 'Parent',
+  [UserRole.VOLUNTEER]: 'Volunteer',
+  [UserRole.ADMIN]: 'Administrator',
+  [UserRole.ROOT]: 'System Owner'
+};
+
+// Role descriptions
+export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+  [UserRole.ANONYMOUS]: 'Default access - limited content viewing',
+  [UserRole.PARENT]: 'Family management and basic pack access',
+  [UserRole.VOLUNTEER]: 'Active volunteers with den-level access',
+  [UserRole.ADMIN]: 'Pack administrators with full management access',
+  [UserRole.ROOT]: 'System owner with complete control'
 };
 
 // User interface with enhanced profile data
@@ -395,7 +463,7 @@ class AuthService {
     const isFirstUser = usersSnapshot.empty;
 
     // Determine role based on whether this is the first user
-          const role = isFirstUser ? UserRole.ROOT : UserRole.SCOUT;
+          const role = isFirstUser ? UserRole.ROOT : UserRole.PARENT;
 
     // Create user document in Firestore
     console.log('Creating Firestore user document...');
@@ -834,7 +902,7 @@ class AuthService {
 
   // Check if user is den leader or higher
   isDenLeader(): boolean {
-    return this.isAdmin() || this.currentUser?.role === UserRole.DEN_LEADER;
+    return this.isAdmin() || this.currentUser?.role === UserRole.VOLUNTEER;
   }
 
   // Check if user has specific permission
@@ -876,8 +944,8 @@ class AuthService {
       // Den leaders can manage users in their den
       return allUsers.filter(user => 
         user.profile?.den === currentUser.profile?.den ||
-        user.role === UserRole.SCOUT ||
-        user.role === UserRole.PARENT
+        user.role === UserRole.PARENT ||
+        user.role === UserRole.VOLUNTEER
       );
     }
     

@@ -518,11 +518,13 @@ class ChatService {
 
   async updateUserStatus(userId: string, isOnline: boolean): Promise<void> {
     try {
-      const userRef = doc(db, 'chat-users', userId);
-      await updateDoc(userRef, {
-        isOnline,
-        lastSeen: serverTimestamp()
-      });
+      if (!this.currentUser) return;
+      
+      // Update the current user's online status
+      this.currentUser.isOnline = isOnline;
+      
+      // Use createOrUpdateUserInFirestore to handle both creation and updates
+      await this.createOrUpdateUserInFirestore(this.currentUser);
     } catch (error) {
       console.warn('Failed to update user status:', error);
     }
@@ -533,30 +535,30 @@ class ChatService {
       const userRef = doc(db, 'chat-users', user.id);
       const userDoc = await getDoc(userRef);
       
+      // Prepare update data, excluding undefined values
+      const updateData: any = {
+        name: user.name,
+        isOnline: user.isOnline,
+        lastSeen: serverTimestamp(),
+        sessionId: user.sessionId,
+        userAgent: user.userAgent,
+        ipHash: user.ipHash,
+        isAdmin: user.isAdmin || false
+      };
+      
+      // Only add den if it's not undefined
+      if (user.den !== undefined) {
+        updateData.den = user.den;
+      }
+      
       if (userDoc.exists()) {
         // Update existing user
-        await updateDoc(userRef, {
-          name: user.name,
-          den: user.den,
-          isOnline: user.isOnline,
-          lastSeen: serverTimestamp(),
-          sessionId: user.sessionId,
-          userAgent: user.userAgent,
-          ipHash: user.ipHash,
-          isAdmin: user.isAdmin || false
-        });
+        await updateDoc(userRef, updateData);
       } else {
         // Create new user document
         await setDoc(userRef, {
           id: user.id,
-          name: user.name,
-          den: user.den,
-          isOnline: user.isOnline,
-          lastSeen: serverTimestamp(),
-          isAdmin: user.isAdmin || false,
-          sessionId: user.sessionId,
-          userAgent: user.userAgent,
-          ipHash: user.ipHash,
+          ...updateData,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
@@ -569,16 +571,24 @@ class ChatService {
   async updateUserInFirestore(user: ChatUser): Promise<void> {
     try {
       const userRef = doc(db, 'chat-users', user.id);
-      await updateDoc(userRef, {
+      
+      // Prepare update data, excluding undefined values
+      const updateData: any = {
         name: user.name,
-        den: user.den,
         isOnline: user.isOnline,
         lastSeen: serverTimestamp(),
         sessionId: user.sessionId,
         userAgent: user.userAgent,
         ipHash: user.ipHash,
         isAdmin: user.isAdmin || false
-      });
+      };
+      
+      // Only add den if it's not undefined
+      if (user.den !== undefined) {
+        updateData.den = user.den;
+      }
+      
+      await updateDoc(userRef, updateData);
     } catch (error) {
       console.warn('Failed to update user in Firestore:', error);
     }

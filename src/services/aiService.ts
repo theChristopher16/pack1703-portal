@@ -10,6 +10,8 @@ import { externalApiService } from './externalApiService';
 import emailMonitorService from './emailMonitorService';
 import dataAuditService from './dataAuditService';
 import firestoreService from './firestore';
+import { costManagementService } from './costManagementService';
+import { UserRole } from './authService';
 
 export interface AIResponse {
   id: string;
@@ -63,6 +65,11 @@ class AIService {
   private aiName = 'Solyn';
   private aiUserId = 'ai_solyn';
 
+  // Check if user has admin access for AI features
+  private hasAdminAccess(userRole: string): boolean {
+    return userRole === 'admin' || userRole === 'root';
+  }
+
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
     
@@ -79,7 +86,20 @@ class AIService {
   async processQuery(userQuery: string, context: AIContext): Promise<AIResponse> {
     await this.initialize();
 
+    // Check if user has admin access for AI features
+    if (!this.hasAdminAccess(context.userRole)) {
+      return {
+        id: Date.now().toString(),
+        message: 'Access denied. AI Assistant features are only available to administrators and system owners.',
+        timestamp: new Date(),
+        type: 'error'
+      };
+    }
+
     try {
+      // Track API usage for cost monitoring
+      await costManagementService.trackApiUsage('openai', context.userRole, 0.002);
+      
       // Analyze the query and determine the appropriate response
       const response = await this.analyzeQuery(userQuery, context);
       

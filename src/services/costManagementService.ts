@@ -159,8 +159,8 @@ class CostManagementService {
       }
 
       // Recalculate totals
-      const apiCosts = Object.values(currentData.costs.api).reduce((sum, cost) => sum + cost, 0);
-      const firebaseCosts = Object.values(currentData.costs.firebase).reduce((sum, cost) => sum + cost, 0);
+      const apiCosts = Object.values(currentData.costs.api).reduce((sum: number, cost: any) => sum + (cost as number), 0);
+      const firebaseCosts = Object.values(currentData.costs.firebase).reduce((sum: number, cost: any) => sum + (cost as number), 0);
       
       currentData.costs.total.daily = apiCosts + firebaseCosts;
       currentData.costs.total.monthly = currentData.costs.total.daily * 30;

@@ -80,12 +80,15 @@ class AIService {
     await this.initialize();
 
     try {
-      // Track API usage for cost monitoring
+      // Track API usage for cost monitoring (optional in test environment)
       try {
         const { costManagementService } = await import('./costManagementService');
         await costManagementService.instance.trackApiUsage('openai', context.userRole, 0.002);
       } catch (costError) {
-        console.warn('Cost tracking not available:', costError);
+        // Silently ignore cost tracking errors in test environment
+        if (process.env.NODE_ENV !== 'test') {
+          console.warn('Cost tracking not available:', costError);
+        }
       }
       
       // Analyze the query and determine the appropriate response
@@ -2505,19 +2508,28 @@ class AIService {
     
     // Questions about email monitoring
     if (query.includes('email') || query.includes('inbox') || query.includes('monitoring')) {
-      const emailStatus = emailMonitorService.getMonitoringStatus();
-      
-      if (emailStatus.isActive) {
+      try {
+        const emailStatus = emailMonitorService.getMonitoringStatus();
+        
+        if (emailStatus && emailStatus.isActive) {
+          return {
+            id: Date.now().toString(),
+            message: `Great news! I'm already monitoring your email inbox at ${emailStatus.config.emailAddress}. Here's what's happening:\n\n**📧 Active Monitoring**\n• Checking every ${emailStatus.config.checkInterval} minutes\n• Last checked: ${emailStatus.lastChecked ? emailStatus.lastChecked.toLocaleString() : 'Never'}\n• Auto-creating events: ${emailStatus.config.autoCreateEvents ? 'Yes' : 'No'}\n\n**🤖 What I'm Looking For**\nI scan incoming emails for:\n• Event keywords (meeting, camp, outing, etc.)\n• Dates and times\n• Location information\n• Contact details\n• Cost information\n\n**📅 Automatic Processing**\nWhen I find relevant emails, I:\n• Extract event details automatically\n• Validate locations using Google Maps\n• Verify contact information\n• Check for duplicate events\n• Create events in your system\n• Send you notifications\n\n**📊 Recent Activity**\nWant me to show you what I've processed recently? Just ask!`,
+            timestamp: new Date(),
+            type: 'info'
+          };
+        } else {
+          return {
+            id: Date.now().toString(),
+            message: `I can monitor your email inbox and automatically create events from relevant emails! Here's how it works:\n\n**📧 Email Monitoring**\nI'll connect to your email account and monitor incoming messages.\n\n**🤖 Smart Filtering**\nI analyze each email for event information - dates, locations, contact details, etc.\n\n**📅 Automatic Event Creation**\nWhen I detect relevant event information, I automatically:\n• Extract event details\n• Validate locations and contacts\n• Check for duplicates\n• Create the event in your system\n• Send you a confirmation\n\n**🔍 Intelligent Processing**\nI use the same validation capabilities as file uploads - location verification, contact validation, weather checks, etc.\n\n**📊 Audit Trail**\nEvery email processed and action taken is logged for your review.\n\nWould you like me to start monitoring your inbox now?`,
+            timestamp: new Date(),
+            type: 'info'
+          };
+        }
+      } catch (error) {
         return {
           id: Date.now().toString(),
-          message: `Great news! I'm already monitoring your email inbox at ${emailStatus.config.emailAddress}. Here's what's happening:\n\n**📧 Active Monitoring**\n• Checking every ${emailStatus.config.checkInterval} minutes\n• Last checked: ${emailStatus.lastChecked ? emailStatus.lastChecked.toLocaleString() : 'Never'}\n• Auto-creating events: ${emailStatus.config.autoCreateEvents ? 'Yes' : 'No'}\n\n**🤖 What I'm Looking For**\nI scan incoming emails for:\n• Event keywords (meeting, camp, outing, etc.)\n• Dates and times\n• Location information\n• Contact details\n• Cost information\n\n**📅 Automatic Processing**\nWhen I find relevant emails, I:\n• Extract event details automatically\n• Validate locations using Google Maps\n• Verify contact information\n• Check for duplicate events\n• Create events in your system\n• Send you notifications\n\n**📊 Recent Activity**\nWant me to show you what I've processed recently? Just ask!`,
-          timestamp: new Date(),
-          type: 'info'
-        };
-      } else {
-        return {
-          id: Date.now().toString(),
-          message: `I can monitor your email inbox at ${emailStatus.config.emailAddress} and automatically create events from relevant emails! Here's how it works:\n\n**📧 Email Monitoring**\nI'll connect to your Zoho email account and monitor incoming messages.\n\n**🤖 Smart Filtering**\nI analyze each email for event information - dates, locations, contact details, etc.\n\n**📅 Automatic Event Creation**\nWhen I detect relevant event information, I automatically:\n• Extract event details\n• Validate locations and contacts\n• Check for duplicates\n• Create the event in your system\n• Send you a confirmation\n\n**🔍 Intelligent Processing**\nI use the same validation capabilities as file uploads - location verification, contact validation, weather checks, etc.\n\n**📊 Audit Trail**\nEvery email processed and action taken is logged for your review.\n\nWould you like me to start monitoring your inbox now?`,
+          message: `I can monitor your email inbox and automatically create events from relevant emails! Here's how it works:\n\n**📧 Email Monitoring**\nI'll connect to your email account and monitor incoming messages.\n\n**🤖 Smart Filtering**\nI analyze each email for event information - dates, locations, contact details, etc.\n\n**📅 Automatic Event Creation**\nWhen I detect relevant event information, I automatically:\n• Extract event details\n• Validate locations and contacts\n• Check for duplicates\n• Create the event in your system\n• Send you a confirmation\n\n**🔍 Intelligent Processing**\nI use the same validation capabilities as file uploads - location verification, contact validation, weather checks, etc.\n\n**📊 Audit Trail**\nEvery email processed and action taken is logged for your review.\n\nWould you like me to start monitoring your inbox now?`,
           timestamp: new Date(),
           type: 'info'
         };

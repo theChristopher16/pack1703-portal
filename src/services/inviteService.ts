@@ -61,7 +61,7 @@ class InviteService {
     await setDoc(doc(db, this.COLLECTION, inviteId), {
       ...invite,
       createdAt: serverTimestamp(),
-      expiresAt: serverTimestamp()
+      expiresAt: expiresAt
     });
 
     return {

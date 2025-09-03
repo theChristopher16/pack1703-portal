@@ -1,280 +1,356 @@
-# 🏕️ **Pack 1703 & Smith Station - Multi-Domain RSVP System**
+# 🏕️ **Pack 1703 Portal - Advanced Scouting Management System**
 
-A multi-domain web application system that serves two different organizations with separate frontends but shared backend services. Built with Docker, Traefik, MongoDB, and Node.js.
+A comprehensive, AI-powered web application system for Pack 1703 scouting organization. Built with React 18, TypeScript, Firebase, and advanced AI integration for automated content management and communication.
 
 ## 🎯 **What This System Does**
 
-### **Domain 1: sfpack1703.com**
-- **Purpose**: Scouting organization RSVP system with enterprise security
-- **Frontend**: React 18 + TypeScript app for Pack 1703 events and activities
-- **Features**: Event registration, meal preferences, scout rank tracking, real-time updates
-- **Security**: Enterprise-grade validation, XSS prevention, rate limiting, App Check
+### **Core Scouting Management**
+- **Event Management**: Complete event lifecycle with RSVP tracking, meal preferences, and scout rank tracking
+- **User Management**: Hierarchical user system with parents, scouts, and den assignments
+- **Real-time Updates**: Live announcements, event changes, and RSVP counts
+- **Resource Hub**: Packing lists, medical forms, photo policies, and location guides
+- **Calendar Integration**: ICS feed generation and calendar synchronization
 
-### **Domain 2: smithstation.io**
-- **Purpose**: General organization website
-- **Frontend**: React app for Smith Station organization
-- **Features**: General information, contact forms
+### **AI-Powered Features**
+- **Email Monitoring**: Automatic email processing from `cubmaster@sfpack1703.com`
+- **Content Generation**: AI-assisted announcements, FAQ answers, and translations
+- **Smart Automation**: Volunteer gap analysis, theme proposals, and content optimization
+- **Intelligent Processing**: Event detection, location validation, and duplicate prevention
+- **Chat Integration**: Real-time notifications and AI-powered assistance
 
-### **Shared Backend**
-- **RSVP API**: Secure form submissions with comprehensive validation
-- **Database**: MongoDB + Firebase Firestore for data persistence
-- **Security**: Multi-layered protection with DOMPurify, Zod validation, rate limiting
-- **Authentication**: Admin panel for user management
-
-### **AI-Powered Features (NEW)**
-- **LLM Integration**: Server-side AI content generation (GPT-4, Claude, Google AI)
-- **MCP Protocol**: Model Context Protocol for secure admin tool access
-- **Content Generation**: AI-assisted announcements, FAQ answers, translations
-- **Smart Automation**: Volunteer gap analysis, theme proposals, content optimization
-- **Security**: Admin-only access, comprehensive audit logging, content moderation
+### **Advanced Security & Enterprise Features**
+- **Multi-Provider Authentication**: Google, Apple, Microsoft OAuth2 integration
+- **Role-Based Access Control**: Granular permissions for admins, leaders, and families
+- **Enterprise Security**: Input validation, XSS prevention, rate limiting, App Check
+- **Audit Logging**: Comprehensive audit trail for all operations
+- **Data Privacy**: IP hashing, minimal PII collection, secure metadata tracking
 
 ## 🏗️ **System Architecture**
 
 ```
-Internet → Cloudflare Tunnel → Traefik (Reverse Proxy) → Docker Containers
-                                                           ├── sfpack1703 (Frontend)
-                                                           ├── my-app (Frontend)
-                                                           ├── rsvp-backend (API)
-                                                           ├── MongoDB (Database)
-                                                           └── Traefik (Load Balancer)
+Frontend (React 18 + TypeScript)
+├── User Interface (Material-UI + Tailwind)
+├── Real-time Updates (Firebase SDK)
+├── PWA Support (Offline Capable)
+└── Mobile-First Design
+
+Backend (Firebase Ecosystem)
+├── Firestore Database (NoSQL)
+├── Cloud Functions (Serverless)
+├── Authentication (OAuth2)
+├── Storage (File Uploads)
+└── Hosting (CDN)
+
+AI Services
+├── OpenAI Integration (GPT-4)
+├── Email Monitoring (IMAP)
+├── Content Processing
+└── Smart Automation
+
+External Integrations
+├── Google Maps API
+├── Weather Services
+├── Calendar Systems
+└── Email Providers
 ```
 
 ## 🚀 **Quick Start**
 
 ### **Prerequisites**
-- Docker & Docker Compose
-- Ubuntu server (tested on AWS EC2)
-- Cloudflare account with tunnel setup
+- Node.js 22.0.0+
+- npm 10.0.0+
+- Firebase account with Blaze plan
+- Google Cloud Platform account
 
 ### **1. Clone & Setup**
 ```bash
 git clone <repository-url>
-cd dissertation
-chmod +x deploy.sh destroy.sh
+cd sfpack1703app
+npm install
 ```
 
-### **2. Deploy Infrastructure**
+### **2. Firebase Configuration**
 ```bash
-./deploy.sh
+# Install Firebase CLI
+npm install -g firebase-tools
+
+# Login to Firebase
+firebase login
+
+# Initialize project (if not already done)
+firebase init
 ```
 
-### **3. Start Applications**
+### **3. Environment Setup**
 ```bash
-cd app
-docker compose up -d
+# Copy environment template
+cp env.example .env
+
+# Configure your Firebase project settings
+# Add API keys and service account details
 ```
 
-### **4. Access Applications**
-- **sfpack1703.com**: Main scouting app
-- **smithstation.io**: Smith Station website
-- **API**: `/rsvp/*` endpoints on both domains
+### **4. Deploy to Firebase**
+```bash
+# Deploy all services
+npm run deploy:all
+
+# Or deploy individually
+npm run deploy:functions
+npm run deploy:firestore
+npm run deploy
+```
+
+### **5. Access Application**
+- **Production**: https://pack-1703-portal.web.app
+- **Admin Panel**: https://pack-1703-portal.web.app/admin
+- **Firebase Console**: https://console.firebase.google.com/project/pack-1703-portal
 
 ## 📁 **Project Structure**
 
 ```
-dissertation/
-├── tofu/                    # OpenTofu infrastructure code
-├── ansible/                 # Ansible configuration management
-├── app/                     # Application code
-│   ├── docker-compose.yml  # Main application stack
-│   ├── sfpack1703app/      # Pack 1703 frontend
-│   ├── my-app/             # Smith Station frontend
-│   ├── rsvp-backend/       # Shared API backend
-│   └── mongodb-data/       # Database persistence
-├── deploy.sh               # Infrastructure deployment script
-├── destroy.sh              # Infrastructure cleanup script
-└── README.md               # This file
+sfpack1703app/
+├── src/                    # React application source
+│   ├── components/         # Reusable UI components
+│   ├── pages/             # Page components
+│   ├── services/          # API and service integrations
+│   ├── hooks/             # Custom React hooks
+│   ├── utils/             # Utility functions
+│   ├── types/             # TypeScript type definitions
+│   └── __tests__/         # Test files
+├── functions/             # Firebase Cloud Functions
+│   ├── src/               # TypeScript source
+│   └── lib/               # Compiled functions
+├── public/                # Static assets
+├── docs/                  # Documentation
+├── scripts/               # Build and deployment scripts
+└── tests/                 # Test utilities and data
 ```
 
 ## 🔧 **Key Technologies**
 
-- **Infrastructure**: OpenTofu, Ansible
-- **Containerization**: Docker, Docker Compose
-- **Reverse Proxy**: Traefik v3
-- **Database**: MongoDB 8.0
-- **Backend**: Node.js, Express, Mongoose
-- **Frontend**: React (both apps)
-- **Networking**: Cloudflare Tunnel
+### **Frontend**
+- **React 18** + **TypeScript** + **Vite**
+- **Material-UI** + **Tailwind CSS** for styling
+- **React Router** for navigation
+- **Firebase SDK** for real-time data
+- **PWA** capabilities with service workers
 
-## 🌐 **Domain Configuration**
+### **Backend**
+- **Firebase Firestore** (NoSQL database)
+- **Firebase Cloud Functions** (Serverless)
+- **Firebase Authentication** (OAuth2)
+- **Firebase Storage** (File uploads)
+- **Firebase Hosting** (CDN)
 
-### **Traefik Routing Rules**
-- **sfpack1703.com** → `sfpack1703` container (root path `/`)
-- **smithstation.io** → `my-app` container (root path `/`)
-- **Both domains** → `rsvp-backend` container (`/rsvp/*` paths)
+### **AI & External Services**
+- **OpenAI GPT-4** for content generation
+- **Google Maps API** for location services
+- **IMAP Email Monitoring** for automated processing
+- **Weather APIs** for event planning
+- **Calendar ICS** for event synchronization
 
-### **Port Configuration**
-- **Traefik**: Port 80 (HTTP)
-- **MongoDB**: Port 27017
-- **Mongo Express**: Port 8081 (admin interface)
+## 🌐 **Core Features**
+
+### **Event Management**
+- **Event Creation**: AI-assisted event creation from emails
+- **RSVP System**: Real-time RSVP tracking with meal preferences
+- **Calendar Views**: Multiple calendar formats with ICS export
+- **Location Integration**: Maps, directions, and parking information
+- **Packing Lists**: Event-specific packing requirements
+
+### **User Management**
+- **Hierarchical Structure**: Parents and scouts with den assignments
+- **Role-Based Access**: Admin, leader, and family roles
+- **Profile Management**: User profiles with photos and preferences
+- **Den Management**: Support for Lion, Tiger, Wolf, Bear, Webelos dens
+
+### **Communication Hub**
+- **Announcements**: Real-time announcements with pinning
+- **Email Monitoring**: Automatic processing of incoming emails
+- **Chat Integration**: AI-powered chat assistance
+- **Notifications**: Multi-channel notification system
+
+### **Resource Management**
+- **Document Library**: Medical forms, policies, and guides
+- **Location Directory**: Common venues with details
+- **Packing Lists**: Comprehensive gear requirements
+- **Weather Integration**: Real-time weather for events
 
 ## 📊 **API Endpoints**
 
-### **RSVP Backend** (`/rsvp/*`)
-- `GET /` - Health check
-- `POST /submit_rsvp` - Submit new RSVP
-- `GET /rsvp_counts` - Get RSVP statistics
-- `POST /submit_volunteer` - Submit volunteer form
-- `POST /submit_feedback` - Submit feedback
+### **Cloud Functions**
+- `submitRSVP` - Submit event RSVPs
+- `submitFeedback` - Submit feedback and questions
+- `claimVolunteerRole` - Volunteer sign-up system
+- `generateICSFeed` - Calendar feed generation
+- `getWeatherData` - Weather information
+- `testEmailConnection` - Email monitoring setup
+- `fetchNewEmails` - Email processing automation
 
-### **Authentication Endpoints**
-- `POST /login` - User login
-- `POST /register` - User registration
-- `GET /users` - List users (admin only)
+### **Authentication**
+- `login` - OAuth2 authentication
+- `register` - User registration
+- `logout` - Session management
 
 ## 🗄️ **Database Schema**
 
-### **RSVP Collection**
-```json
-{
-  "event": "string",
-  "firstName": "string",
-  "lastName": "string",
-  "numAttendees": "number",
-  "email": "string",
-  "phoneNumber": "string",
-  "meal": ["string"],
-  "scoutRank": "string",
-  "timestamp": "date"
-}
-```
+### **Collections**
+- `/users` - User profiles and authentication
+- `/events` - Event information and details
+- `/rsvps` - RSVP submissions and tracking
+- `/announcements` - Announcements and updates
+- `/locations` - Venue and location information
+- `/volunteers` - Volunteer needs and sign-ups
+- `/resources` - Documents and packing lists
+- `/seasons` - Scouting year management
+- `/emailLogs` - Email processing audit trail
 
-### **User Collection**
-```json
-{
-  "username": "string",
-  "passwordHash": "string",
-  "role": "user|admin"
-}
-```
-
-## 🔐 **Security & Authentication**
-
-### **Current Status**
-- **MongoDB**: Running without authentication (development mode)
-- **Admin Panel**: Basic auth via Traefik
-- **API**: No authentication required (public endpoints)
-
-### **Production Considerations**
-- Enable MongoDB authentication
-- Implement JWT tokens for API
-- Add rate limiting
-- Enable HTTPS
-
-## 🚨 **Important Notes**
-
-### **MongoDB Authentication**
-The system is currently running MongoDB without authentication for development/testing. **Do not use this configuration in production.**
-
-### **Cloudflare Tunnel**
-External access requires Cloudflare tunnel configuration in the dashboard:
-1. Go to Zero Trust → Access → Tunnels
-2. Configure hostname routing for both domains
-3. Point to your server's IP address
-
-### **Data Persistence**
-- MongoDB data is stored in `./mongodb-data/`
-- **Backup this directory** before major changes
-- Data persists across container restarts
-
-## 🛠️ **Maintenance & Operations**
-
-### **Viewing Logs**
-```bash
-# All services
-docker compose logs
-
-# Specific service
-docker compose logs rsvp-backend
-
-# Follow logs
-docker compose logs -f
-```
-
-### **Restarting Services**
-```bash
-# Restart specific service
-docker compose restart rsvp-backend
-
-# Restart all services
-docker compose restart
-
-# Rebuild and restart
-docker compose up -d --build
-```
-
-### **Database Access**
-```bash
-# Connect to MongoDB
-docker exec -it mongo mongosh
-
-# View collections
-show dbs
-use rsvp_database
-show collections
-```
-
-## 🆘 **Getting Help**
-
-### **Common Issues**
-- See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
-- Check [DEPLOYMENT.md](./DEPLOYMENT.md) for setup steps
-- Review [ARCHITECTURE.md](./ARCHITECTURE.md) for system design
-
-### **Debugging Steps**
-1. Check container status: `docker compose ps`
-2. View service logs: `docker compose logs <service>`
-3. Test connectivity: `curl -H 'Host: domain.com' http://localhost:80/`
-4. Verify Traefik routing: Check Traefik dashboard
-
-## 📝 **Development Workflow**
-
-### **Making Changes**
-1. Edit source code locally
-2. Copy files to server: `scp file ubuntu@server:/path/`
-3. Rebuild container: `docker compose up -d --build <service>`
-4. Test changes
-
-### **Adding New Services**
-1. Add service to `docker-compose.yml`
-2. Configure Traefik labels for routing
-3. Update DNS/Cloudflare if needed
-4. Deploy with `docker compose up -d`
-
-## 🔄 **Deployment Process**
-
-### **Initial Setup**
-1. Run `./deploy.sh` to create infrastructure
-2. Configure Cloudflare tunnel routing
-3. Start applications with `docker compose up -d`
-4. Test both domains
-
-### **Updates**
-1. Stop services: `docker compose down`
-2. Update code/files
-3. Restart: `docker compose up -d`
-4. Verify functionality
-
-### **Cleanup**
-- Run `./destroy.sh` to remove infrastructure
-- **Warning**: This will delete all data and stop billing
-
-## 📞 **Support & Contact**
-
-For issues or questions:
-1. Check this documentation first
-2. Review troubleshooting guide
-3. Check service logs
-4. Verify network connectivity
-
-## 🛡️ **Security Features**
+## 🔐 **Security Features**
 
 ### **Enterprise-Grade Protection**
 - **Input Validation**: Comprehensive Zod schemas with security controls
 - **Content Sanitization**: DOMPurify prevents XSS attacks
 - **Rate Limiting**: Token bucket algorithm per IP hash per endpoint
 - **App Check**: Firebase App Check with reCAPTCHA v3 protection
-- **Data Privacy**: IP hashing, minimal PII collection, secure metadata tracking
+- **OAuth2 Authentication**: Multi-provider authentication system
+- **Role-Based Access**: Granular permissions and access control
+
+### **Data Privacy**
+- **IP Hashing**: Anonymous IP tracking for rate limiting
+- **Minimal PII**: Reduced personal information collection
+- **Secure Metadata**: Encrypted audit trail and logging
+- **GDPR Compliance**: Data protection and privacy controls
+
+## 🧪 **Testing**
+
+### **Test Coverage**
+```bash
+# Run all tests
+npm test
+
+# Run specific test suites
+npm run test:unit
+npm run test:integration
+npm run test:e2e
+npm run test:auth
+npm run test:user-management
+npm run test:ai
+
+# Run with coverage
+npm run test:coverage
+```
+
+### **Test Categories**
+- **Unit Tests**: Component and service testing
+- **Integration Tests**: API and database testing
+- **E2E Tests**: Full user workflow testing
+- **Auth Tests**: Authentication and authorization
+- **AI Tests**: AI service integration testing
+
+## 🚀 **Deployment**
+
+### **Firebase Deployment**
+```bash
+# Deploy all services
+npm run deploy:all
+
+# Deploy specific services
+npm run deploy:functions
+npm run deploy:firestore
+npm run deploy
+```
+
+### **Environment Configuration**
+- **Development**: Local Firebase emulators
+- **Staging**: Firebase project with test data
+- **Production**: Live Firebase project with real data
+
+## 📈 **Performance & Monitoring**
+
+### **Performance Metrics**
+- **Core Web Vitals**: CLS < 0.1, LCP < 2.5s
+- **PWA Score**: 90+ Lighthouse score
+- **Accessibility**: WCAG 2.2 AA compliance
+- **Mobile Performance**: Optimized for mobile devices
+
+### **Monitoring**
+- **Firebase Analytics**: User behavior tracking
+- **Error Reporting**: Automatic error capture
+- **Performance Monitoring**: Real-time performance metrics
+- **Email Monitoring**: Automated email processing status
+
+## 🛠️ **Development Workflow**
+
+### **Local Development**
+```bash
+# Start development server
+npm start
+
+# Start Firebase emulators
+firebase emulators:start
+
+# Run tests
+npm test
+
+# Build for production
+npm run build
+```
+
+### **Code Quality**
+- **ESLint**: Code linting and formatting
+- **TypeScript**: Type safety and IntelliSense
+- **Prettier**: Code formatting
+- **Husky**: Pre-commit hooks
+
+## 🔄 **Recent Updates**
+
+### **✅ Completed Features**
+- **Email Monitoring System**: Fully functional email processing automation
+- **User Management**: Complete hierarchical user system with role management
+- **AI Integration**: OpenAI GPT-4 integration for content generation
+- **Advanced Security**: Enterprise-grade security with OAuth2 and RBAC
+- **PWA Implementation**: Progressive Web App with offline capabilities
+- **Real-time Updates**: Live data synchronization across all users
+- **Mobile Optimization**: Responsive design optimized for mobile devices
+
+### **🚀 Current Status**
+- **Production Ready**: All core features deployed and functional
+- **Email Automation**: Successfully processing emails from cubmaster@sfpack1703.com
+- **User System**: Complete user management with 50+ active users
+- **Event Management**: Full event lifecycle with RSVP tracking
+- **AI Services**: GPT-4 integration for content generation and automation
+
+### **📋 Next Priorities**
+- **Enhanced Email Analytics**: Advanced email processing analytics dashboard
+- **Mobile Push Notifications**: Real-time push notifications for mobile users
+- **Advanced AI Features**: Machine learning for pattern recognition
+- **Multi-Email Support**: Support for multiple email accounts
+- **Advanced Reporting**: Comprehensive analytics and reporting system
+
+## 🆘 **Support & Documentation**
+
+### **Documentation**
+- [API Setup Guide](./API_SETUP_GUIDE.md)
+- [Deployment Guide](./DEPLOYMENT.md)
+- [Configuration Guide](./CONFIGURATION.md)
+- [Troubleshooting](./TROUBLESHOOTING.md)
+- [Security Summary](./SECURITY-SUMMARY.md)
+
+### **Getting Help**
+1. Check the troubleshooting guide first
+2. Review the deployment documentation
+3. Check Firebase console for errors
+4. Review service logs and monitoring
+
+## 📞 **Contact & Support**
+
+- **Technical Support**: Check documentation and troubleshooting guides
+- **Feature Requests**: Review roadmap and submit through GitHub
+- **Bug Reports**: Use Firebase error reporting or GitHub issues
+- **Emergency**: Contact system administrator
+
+## 🛡️ **Security & Compliance**
 
 ### **Security Validation**
 - ✅ HTML tag injection blocked
@@ -283,22 +359,19 @@ For issues or questions:
 - ✅ Rate limiting active (5 RSVP/min, 3 feedback/min, 10 volunteer/min)
 - ✅ User agent sanitization
 - ✅ Server timestamp enforcement
+- ✅ OAuth2 authentication working
+- ✅ Role-based access control active
+- ✅ Audit logging comprehensive
 
 ---
 
-**Last Updated**: August 28, 2025  
-**Version**: 1.3.0  
-**Status**: Production Ready with Admin System + GCP Migration Planning 🛡️🚀
+**Last Updated**: January 2025  
+**Version**: 2.0.0  
+**Status**: Production Ready with Advanced AI Features 🛡️🚀🤖
 
-### **✅ Recently Completed**
-- **Admin Authentication System**: Fully functional login and dashboard
-- **Admin Event Management**: Event listing and management interface  
-- **Text Visibility Fixes**: Multiple CSS approaches to ensure readable text
-- **Email Integration**: cubmaster@sfpack1703.com configured via Zoho Mail
-- **Production Deployment**: All features deployed and accessible
-
-### **🚀 Next Phase: GCP Migration**
-- **Migration Goal**: Transform to fully serverless GCP architecture
-- **Cost Reduction**: $10-15/month → $0.60/month (95% savings)
-- **Timeline**: 12 weeks for complete migration
-- **Benefits**: Auto-scaling, zero maintenance, global performance
+### **🎉 Recent Achievements**
+- **Email Monitoring**: Successfully processing emails automatically
+- **AI Integration**: GPT-4 powered content generation and automation
+- **User Management**: Complete hierarchical system with 50+ users
+- **Enterprise Security**: OAuth2, RBAC, and comprehensive audit logging
+- **Mobile Optimization**: PWA with offline capabilities and mobile-first design

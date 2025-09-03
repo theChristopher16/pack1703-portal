@@ -58,7 +58,7 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
       setLoading(true);
       setError(null);
 
-      const report = await costManagementService.getCostReport();
+      const report = await costManagementService.instance.getCostReport();
       
       setCurrentUsage(report.current);
       setHistoricalData(report.historical);
@@ -74,7 +74,7 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
 
   const acknowledgeAlert = async (alertId: string) => {
     try {
-      await costManagementService.acknowledgeAlert(alertId);
+      await costManagementService.instance.acknowledgeAlert(alertId);
       setAlerts(alerts.filter(alert => alert.id !== alertId));
     } catch (err) {
       console.error('Error acknowledging alert:', err);

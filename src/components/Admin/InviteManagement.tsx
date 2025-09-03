@@ -17,7 +17,8 @@ import {
   Crown,
   User,
   Link,
-  ExternalLink
+  ExternalLink,
+  X
 } from 'lucide-react';
 
 interface InviteManagementProps {
@@ -337,7 +338,24 @@ const InviteManagement: React.FC<InviteManagementProps> = ({ className = '' }) =
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Send Invitation</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Send Invitation</h3>
+              <button
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setFormData({
+                    email: '',
+                    role: UserRole.PARENT,
+                    message: '',
+                    denId: '',
+                    expiresInDays: 7
+                  });
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             
             <div className="space-y-4">
               <div>
@@ -420,9 +438,17 @@ const InviteManagement: React.FC<InviteManagementProps> = ({ className = '' }) =
 
       {/* Invite Link Modal */}
       {showLinkModal && selectedInvite && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
           <div className="bg-white rounded-2xl p-6 max-w-lg w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Invite Link Generated</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Invite Link Generated</h3>
+              <button
+                onClick={() => setShowLinkModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             
             <div className="space-y-4">
               <div className="bg-gray-50 rounded-lg p-4">

@@ -29,7 +29,7 @@ import {
 import { costManagementService, UsageMetrics, CostAlert } from '../../services/costManagementService';
 import { useAdmin } from '../../contexts/AdminContext';
 import systemMonitorService from '../../services/systemMonitorService';
-import { UserRole } from '../../services/authService';
+import { AdminRole } from '../../types/admin';
 
 interface CostManagementProps {
   className?: string;
@@ -48,14 +48,14 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'breakdown' | 'alerts' | 'optimization'>('overview');
 
   useEffect(() => {
-    // Load cost data for admin users (ADMIN and ROOT roles)
-    if (state.currentUser?.isAdmin || state.currentUser?.role === UserRole.ADMIN || state.currentUser?.role === UserRole.ROOT) {
+    // Load cost data for admin users (root and super-admin roles)
+    if (state.currentUser?.isAdmin || state.currentUser?.role === 'root' || state.currentUser?.role === 'super-admin') {
       loadCostData();
     }
   }, [state.currentUser]);
 
-  // Check admin access - allow access to ADMIN and ROOT roles
-  if (!state.currentUser?.isAdmin && state.currentUser?.role !== UserRole.ADMIN && state.currentUser?.role !== UserRole.ROOT) {
+  // Check admin access - allow access to root and super-admin roles
+  if (!state.currentUser?.isAdmin && state.currentUser?.role !== 'root' && state.currentUser?.role !== 'super-admin') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-gray-100/30 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

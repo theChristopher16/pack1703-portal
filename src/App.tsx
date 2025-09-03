@@ -38,6 +38,7 @@ import AdminVolunteer from './pages/AdminVolunteer';
 import AdminSeasons from './pages/AdminSeasons';
 import AdminFundraising from './pages/AdminFundraising';
 import AdminFinances from './pages/AdminFinances';
+import AdminCostManagement from './pages/AdminCostManagement';
 import MultiTenantManagement from './pages/MultiTenantManagement';
 import AdminUsers from './pages/AdminUsers';
 import ChatPage from './pages/ChatPage';
@@ -123,6 +124,7 @@ function App() {
           <Route path="/admin/seasons" element={<AdminLayout><AdminSeasons /></AdminLayout>} />
           <Route path="/admin/fundraising" element={<AdminLayout><AdminFundraising /></AdminLayout>} />
           <Route path="/admin/finances" element={<AdminLayout><AdminFinances /></AdminLayout>} />
+          <Route path="/admin/cost-management" element={<AdminLayout><AdminCostManagement /></AdminLayout>} />
           <Route path="/admin/multi-tenant" element={<AdminLayout><MultiTenantManagement /></AdminLayout>} />
           <Route path="/admin/users" element={<AdminLayout><AdminUsers /></AdminLayout>} />
           <Route path="/admin/settings" element={<AdminLayout><div className="max-w-7xl mx-auto px-4 py-8"><h1 className="text-2xl font-bold text-gray-900">Admin Settings - Coming Soon</h1></div></AdminLayout>} />

@@ -146,7 +146,6 @@ const AdminAI: React.FC = () => {
   const getQuickActions = () => [
     { label: 'Create Event', icon: Calendar, query: 'Create an event called Pack Meeting on December 15th at 6:30 PM at the Community Center' },
     { label: 'System Status', icon: Activity, query: 'Show me the current system status and health' },
-    { label: 'Cost Analysis', icon: DollarSign, query: 'What are our current costs and any optimization recommendations?' },
     { label: 'User Activity', icon: TrendingUp, query: 'How are users engaging with the platform?' },
     { label: 'Security Check', icon: Shield, query: 'What is our current security status and any concerns?' },
     { label: 'Content Health', icon: MessageSquare, query: 'How is our content performing and any recommendations?' }
@@ -511,10 +510,6 @@ const AdminAI: React.FC = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Active Users:</span>
                     <span className="font-medium">{systemMetrics.activeUsers}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Monthly Cost:</span>
-                    <span className="font-medium">${systemMetrics.estimatedMonthlyCost?.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Storage:</span>

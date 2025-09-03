@@ -18,7 +18,7 @@ export const API_KEYS = {
   // User API Keys - Limited access for regular user functions
   USER: {
     // OpenAI API Key for user functions (chat assistance, basic AI features)
-    OPENAI: process.env.REACT_APP_USER_OPENAI_API_KEY || 'demo_key',
+    OPENAI: process.env.REACT_APP_USER_OPENAI_API_KEY || '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',
     
     // Google Maps API - User access for basic location features
     GOOGLE_MAPS: process.env.REACT_APP_USER_GOOGLE_MAPS_API_KEY || 'AIzaSyC1nkEYq0YP89BwS_An_sMc3Kn4FJY2Nos',
@@ -31,7 +31,7 @@ export const API_KEYS = {
   },
   
   // Phone Validation API (NumLookupAPI) - Shared between admin and user
-  PHONE_VALIDATION: process.env.REACT_APP_PHONE_VALIDATION_API_KEY || 'demo_key',
+  PHONE_VALIDATION: process.env.REACT_APP_PHONE_VALIDATION_API_KEY || 'num_live_OmFTb2kLgKmdZOmOy3BAqcEA0yw81nWHMe92dN1P',
 };
 
 // API Configuration Settings - Separated by Admin and User permissions
@@ -130,7 +130,7 @@ export const FEATURE_FLAGS = {
   
   // Shared Features
   LOCATION_VERIFICATION: true,
-  PHONE_VALIDATION: false, // Disabled until API key is provided
+  PHONE_VALIDATION: true, // Enabled with real API key
   WEATHER_INTEGRATION: true, // Enabled with real API key
   BUSINESS_INFO_ENRICHMENT: true, // Using Google Places instead of Yelp
   PARKING_INFO: true, // Using Google Places
@@ -207,7 +207,7 @@ export const API_STATUS = {
   // User API Status
   USER: {
     OPENAI: {
-      status: 'inactive', // No user API key provided yet
+      status: 'active', // User OpenAI API key now configured
       lastCheck: new Date(),
       requestsToday: 0,
       errorsToday: 0,
@@ -234,7 +234,7 @@ export const API_STATUS = {
   
   // Shared API Status
   PHONE_VALIDATION: {
-    status: 'inactive', // No API key provided
+    status: 'active', // Phone validation API key now configured
     lastCheck: new Date(),
     requestsToday: 0,
     errorsToday: 0,

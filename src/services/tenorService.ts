@@ -1,3 +1,5 @@
+import { API_KEYS, API_CONFIG, API_STATUS } from '../config/apiKeys';
+
 export interface TenorGif {
   id: string;
   title: string;
@@ -34,15 +36,21 @@ export interface TenorTrendingResponse {
 
 class TenorService {
   private apiKey: string;
-  private baseUrl = 'https://tenor.googleapis.com/v2';
+  private baseUrl: string;
+  private config: any;
 
   constructor() {
-    // Get API key from environment or use a default one for testing
-    this.apiKey = process.env.REACT_APP_TENOR_API_KEY || 'AIzaSyCbPAw3QOuuzRJjUx1_jC0wgJPtVLYxLqY';
+    // Get API key from centralized configuration
+    this.apiKey = API_KEYS.TENOR;
+    this.config = API_CONFIG.TENOR;
+    this.baseUrl = this.config.baseUrl;
   }
 
   async getTrendingGifs(limit: number = 20): Promise<TenorGif[]> {
     try {
+      // Track API usage
+      API_STATUS.TENOR.requestsToday++;
+      
       // Try using the search endpoint with a popular term instead
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
@@ -55,6 +63,7 @@ class TenorService {
       clearTimeout(timeoutId);
       
       if (!response.ok) {
+        API_STATUS.TENOR.errorsToday++;
         throw new Error(`Tenor API error: ${response.status}`);
       }
 
@@ -68,6 +77,9 @@ class TenorService {
 
   async searchGifs(query: string, limit: number = 20): Promise<TenorGif[]> {
     try {
+      // Track API usage
+      API_STATUS.TENOR.requestsToday++;
+      
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
@@ -79,6 +91,7 @@ class TenorService {
       clearTimeout(timeoutId);
       
       if (!response.ok) {
+        API_STATUS.TENOR.errorsToday++;
         throw new Error(`Tenor API error: ${response.status}`);
       }
 

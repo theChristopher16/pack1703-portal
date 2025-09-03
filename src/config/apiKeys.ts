@@ -32,6 +32,9 @@ export const API_KEYS = {
   
   // Phone Validation API (NumLookupAPI) - Shared between admin and user
   PHONE_VALIDATION: process.env.REACT_APP_PHONE_VALIDATION_API_KEY || 'num_live_OmFTb2kLgKmdZOmOy3BAqcEA0yw81nWHMe92dN1P',
+  
+  // Tenor API (GIF Service) - Shared between admin and user
+  TENOR: process.env.REACT_APP_TENOR_API_KEY || 'AIzaSyCbPAw3QOuuzRJjUx1_jC0wgJPtVLYxLqY',
 };
 
 // API Configuration Settings - Separated by Admin and User permissions
@@ -115,6 +118,13 @@ export const API_CONFIG = {
     maxRequestsPerDay: 100, // Free tier limit
     costPerRequest: 0.01, // $0.01 per request
   },
+  TENOR: {
+    baseUrl: 'https://tenor.googleapis.com/v2',
+    searchEndpoint: '/search',
+    trendingEndpoint: '/featured',
+    maxRequestsPerDay: 1000, // Free tier limit
+    costPerRequest: 0.0005, // $0.50 per 1000 requests
+  },
 };
 
 // Feature Flags - Control which features are enabled
@@ -136,6 +146,7 @@ export const FEATURE_FLAGS = {
   PARKING_INFO: true, // Using Google Places
   COST_MONITORING: true,
   FALLBACK_MODE: true, // Enable fallback when APIs fail
+  GIF_INTEGRATION: true, // Enabled with Tenor API
 };
 
 // Fallback Behavior Configuration
@@ -235,6 +246,12 @@ export const API_STATUS = {
   // Shared API Status
   PHONE_VALIDATION: {
     status: 'active', // Phone validation API key now configured
+    lastCheck: new Date(),
+    requestsToday: 0,
+    errorsToday: 0,
+  },
+  TENOR: {
+    status: 'active', // Tenor API key now configured
     lastCheck: new Date(),
     requestsToday: 0,
     errorsToday: 0,

@@ -223,13 +223,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ]
 };
 
-// Role color configuration (Tailwind classes for UI)
-export const ROLE_COLORS: Record<UserRole, string> = {
-  [UserRole.ANONYMOUS]: 'bg-gray-100 text-gray-800 border-gray-200',
-  [UserRole.PARENT]: 'bg-blue-100 text-blue-800 border-blue-200',
-  [UserRole.VOLUNTEER]: 'bg-green-100 text-green-800 border-green-200',
-  [UserRole.ADMIN]: 'bg-purple-100 text-purple-800 border-purple-200',
-  [UserRole.ROOT]: 'bg-yellow-100 text-yellow-800 border-yellow-200'
+// Role color configuration (object format for UI components)
+export const ROLE_COLORS: Record<UserRole, { bg: string; text: string; border: string }> = {
+  [UserRole.ANONYMOUS]: { bg: '#f3f4f6', text: '#1f2937', border: '#d1d5db' },
+  [UserRole.PARENT]: { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' },
+  [UserRole.VOLUNTEER]: { bg: '#dcfce7', text: '#166534', border: '#86efac' },
+  [UserRole.ADMIN]: { bg: '#f3e8ff', text: '#7c3aed', border: '#c4b5fd' },
+  [UserRole.ROOT]: { bg: '#fef3c7', text: '#92400e', border: '#fbbf24' }
 };
 
 // Role display names
@@ -980,6 +980,11 @@ class AuthService {
   // Check if user can manage other users
   canManageUsers(): boolean {
     return this.isRoot() || this.isAdmin() || this.isDenLeader();
+  }
+
+  // Check if user can manage roles
+  canManageRoles(): boolean {
+    return this.isRoot() || this.isAdmin();
   }
 
   // Get users that current user can manage

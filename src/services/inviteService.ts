@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { UserRole } from './authService';
+import { emailService } from './emailService';
 
 export interface Invite {
   id: string;
@@ -252,22 +253,21 @@ class InviteService {
     return `${window.location.origin}/join/${inviteId}`;
   }
 
-  // Send invite email (placeholder - would integrate with email service)
+  // Send invite email using email service
   async sendInviteEmail(invite: Invite): Promise<boolean> {
     try {
-      // TODO: Integrate with email service (SendGrid, Mailgun, etc.)
       const inviteUrl = this.getInviteUrl(invite.id);
       
-      // For now, just log the invite URL and show it prominently
-      console.log(`Invite URL for ${invite.email}: ${inviteUrl}`);
+      // Use the email service to send the invitation
+      const success = await emailService.sendInviteEmail(invite.email, inviteUrl, invite);
       
-      // In production, this would send an actual email
-      // await emailService.sendInviteEmail(invite.email, inviteUrl, invite);
+      if (success) {
+        console.log(`📧 Invitation email sent successfully to ${invite.email}`);
+      } else {
+        console.error(`❌ Failed to send invitation email to ${invite.email}`);
+      }
       
-      // For development, we'll show the URL in the UI instead of sending email
-      // The UserManagement component will display this URL to the admin
-      
-      return true;
+      return success;
     } catch (error) {
       console.error('Error sending invite email:', error);
       return false;

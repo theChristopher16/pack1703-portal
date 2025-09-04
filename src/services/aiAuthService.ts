@@ -71,19 +71,10 @@ export class AIAuthService {
       // Create a unique request ID
       const requestId = crypto.randomUUID();
       
-      // Add AI-specific headers to the request
-      const headers: Record<string, string> = {
-        'x-ai-token': this.aiConfig!.secretToken,
-        'x-ai-request-id': requestId,
-        'x-ai-account-id': this.aiConfig!.accountId
-      };
-
-      // Use Firebase Functions with custom headers
+      // Use Firebase Functions with AI context in data
       const callableFunction = httpsCallable(functions, functionName);
       
-      // Note: Firebase Functions doesn't support custom headers directly
-      // We'll need to modify the cloud functions to check for AI tokens
-      // For now, we'll pass the AI context in the data
+      // Pass the AI context in the data
       const requestData = {
         ...data,
         _aiContext: {

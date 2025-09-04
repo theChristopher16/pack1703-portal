@@ -35,17 +35,17 @@ async function checkAIAuthentication(context: any): Promise<{ isAI: boolean; use
     const aiContext = context.rawRequest?.body?._aiContext;
     
     if (aiToken === process.env.AI_SECRET_TOKEN || aiRequestId || aiContext) {
-      // This is an AI request - get the AI account
-      const aiAccountQuery = await db.collection('users')
-        .where('role', '==', 'ai-assistant')
+      // This is an AI request - find a user with AI permissions
+      const aiUserQuery = await db.collection('users')
+        .where('permissions', 'array-contains', 'ai_system_integration')
         .limit(1)
         .get();
       
-      if (!aiAccountQuery.empty) {
-        const aiAccount = aiAccountQuery.docs[0];
+      if (!aiUserQuery.empty) {
+        const aiUser = aiUserQuery.docs[0];
         return {
           isAI: true,
-          userData: aiAccount.data()
+          userData: aiUser.data()
         };
       }
     }
@@ -60,7 +60,9 @@ async function checkAIAuthentication(context: any): Promise<{ isAI: boolean; use
   }
 
   const userData = userDoc.data();
-  const isAI = userData?.role === 'ai-assistant' || userData?.profile?.isAI === true;
+  const isAI = userData?.role === 'ai-assistant' || 
+               userData?.profile?.isAI === true ||
+               userData?.permissions?.includes('ai_system_integration');
   
   return {
     isAI,
@@ -1120,8 +1122,8 @@ export const adminCreateEvent = functions.https.onCall(async (data, context) => 
 
     // Log admin action
     await db.collection('adminActions').add({
-      userId: isAI ? 'ai-assistant' : context.auth.uid,
-      userEmail: isAI ? 'ai-assistant@sfpack1703.com' : (context.auth.token.email || ''),
+      userId: isAI ? userData.uid : context.auth.uid,
+      userEmail: isAI ? userData.email : (context.auth.token.email || ''),
       action: 'create',
       entityType: 'event',
       entityId: eventId,
@@ -1413,8 +1415,8 @@ export const aiGenerateContent = functions.https.onCall(async (data, context) =>
 
     // Log AI usage
     await db.collection('aiUsage').add({
-      userId: isAI ? 'ai-assistant' : context.auth.uid,
-      userEmail: isAI ? 'ai-assistant@sfpack1703.com' : (context.auth.token.email || ''),
+      userId: isAI ? userData.uid : context.auth.uid,
+      userEmail: isAI ? userData.email : (context.auth.token.email || ''),
       type: type,
       prompt: prompt,
       result: result,

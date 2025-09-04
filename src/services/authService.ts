@@ -1599,7 +1599,17 @@ class AuthService {
   // Check if user is AI
   isAI(user?: AppUser): boolean {
     const targetUser = user || this.currentUser;
-    return targetUser?.role === UserRole.AI_ASSISTANT || targetUser?.profile?.isAI === true;
+    return targetUser?.role === UserRole.AI_ASSISTANT || 
+           targetUser?.profile?.isAI === true ||
+           targetUser?.permissions?.includes(Permission.AI_SYSTEM_INTEGRATION);
+  }
+
+  // Check if user can act as AI (has AI permissions)
+  canActAsAI(user?: AppUser): boolean {
+    const targetUser = user || this.currentUser;
+    return this.isAI(targetUser) || 
+           targetUser?.role === UserRole.ROOT ||
+           targetUser?.permissions?.includes(Permission.AI_SYSTEM_INTEGRATION);
   }
 }
 

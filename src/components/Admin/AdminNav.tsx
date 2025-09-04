@@ -138,7 +138,7 @@ const AdminNav: React.FC = () => {
                 <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-xl border border-gray-200 z-50">
                   <div className="py-1">
                     {secondaryNavItems
-                      .filter(item => !item.roles || item.roles.includes(currentUser?.role))
+                      .filter(item => !item.roles || (currentUser?.role && item.roles.includes(currentUser.role)))
                       .map((item) => (
                       <Link
                         key={item.path}
@@ -194,7 +194,7 @@ const AdminNav: React.FC = () => {
               
               {/* Mobile secondary items */}
               {secondaryNavItems
-                .filter(item => !item.roles || item.roles.includes(currentUser?.role))
+                .filter(item => !item.roles || (currentUser?.role && item.roles.includes(currentUser.role)))
                 .map((item) => (
                 <Link
                   key={item.path}

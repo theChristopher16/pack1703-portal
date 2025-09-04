@@ -1,5 +1,5 @@
-// Email service using existing Zoho configuration
-// Uses the same Zoho account that's already configured in the system
+// Email service using a working email API
+// Since Zoho SMTP requires server-side implementation, we'll use a browser-compatible service
 
 interface EmailData {
   to: string;
@@ -12,18 +12,10 @@ interface EmailData {
 class EmailService {
   private readonly SENDER_EMAIL = 'cubmaster@sfpack1703.com';
   private readonly SENDER_NAME = 'Pack 1703 Cubmaster';
-  
-  // Use the same Zoho configuration from emailMonitorService
-  private readonly ZOHO_CONFIG = {
-    emailAddress: 'cubmaster@sfpack1703.com',
-    password: 'Double_Lake_Wolf33',
-    smtpServer: 'smtppro.zoho.com',
-    smtpPort: 587
-  };
 
   async sendEmail(emailData: EmailData): Promise<boolean> {
     try {
-      console.log('📧 Email Service - Sending email via Zoho:', {
+      console.log('📧 Email Service - Sending email:', {
         to: emailData.to,
         from: emailData.from,
         subject: emailData.subject,
@@ -31,66 +23,43 @@ class EmailService {
         hasText: !!emailData.text
       });
 
-      // Use Zoho SMTP to send the email
-      const success = await this.sendViaZoho(emailData);
-      
-      if (success) {
-        console.log(`✅ Email sent successfully to ${emailData.to} via Zoho`);
-        return true;
-      } else {
-        // Fallback: Log the email content for manual sending
-        console.log('📧 Email content for manual sending:', {
-          to: emailData.to,
-          subject: emailData.subject,
-          html: emailData.html.substring(0, 200) + '...',
-          text: emailData.text.substring(0, 200) + '...'
-        });
-        return false;
+      // Try multiple email services in sequence
+      const services = [
+        () => this.sendViaEmailJS(emailData),
+        () => this.sendViaResend(emailData),
+        () => this.sendViaBrevo(emailData)
+      ];
+
+      for (const service of services) {
+        try {
+          const success = await service();
+          if (success) {
+            console.log(`✅ Email sent successfully to ${emailData.to}`);
+            return true;
+          }
+        } catch (error) {
+          console.log('Service failed, trying next...');
+          continue;
+        }
       }
+
+      // If all services fail, log for manual sending
+      console.log('📧 All email services failed. Email content for manual sending:', {
+        to: emailData.to,
+        subject: emailData.subject,
+        html: emailData.html.substring(0, 200) + '...',
+        text: emailData.text.substring(0, 200) + '...'
+      });
+      return false;
     } catch (error) {
       console.error('Error sending email:', error);
       return false;
     }
   }
 
-  // Send email via Zoho SMTP
-  private async sendViaZoho(emailData: any): Promise<boolean> {
+  // EmailJS service (free tier available)
+  private async sendViaEmailJS(emailData: any): Promise<boolean> {
     try {
-      // Use the existing Zoho configuration
-      const formData = new FormData();
-      formData.append('to', emailData.to);
-      formData.append('from', emailData.from);
-      formData.append('subject', emailData.subject);
-      formData.append('html', emailData.html);
-      formData.append('text', emailData.text);
-
-      // Use Zoho's SMTP API
-      const response = await fetch(`https://${this.ZOHO_CONFIG.smtpServer}:${this.ZOHO_CONFIG.smtpPort}/api/v1/send`, {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Basic ' + btoa(`${this.ZOHO_CONFIG.emailAddress}:${this.ZOHO_CONFIG.password}`),
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          to: emailData.to,
-          from: emailData.from,
-          subject: emailData.subject,
-          html: emailData.html,
-          text: emailData.text
-        })
-      });
-
-      return response.ok;
-    } catch (error) {
-      console.log('Zoho SMTP failed, trying alternative method...');
-      return await this.sendViaAlternativeMethod(emailData);
-    }
-  }
-
-  // Alternative method using a different approach
-  private async sendViaAlternativeMethod(emailData: any): Promise<boolean> {
-    try {
-      // Try using a simple email service as fallback
       const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
         method: 'POST',
         headers: {
@@ -99,7 +68,7 @@ class EmailService {
         body: JSON.stringify({
           service_id: 'pack1703_email',
           template_id: 'invitation_template',
-          user_id: 'your_user_id',
+          user_id: 'your_user_id', // This needs to be configured
           template_params: {
             to_email: emailData.to,
             to_name: emailData.to.split('@')[0],
@@ -113,7 +82,75 @@ class EmailService {
 
       return response.ok;
     } catch (error) {
-      console.log('Alternative method failed, using manual fallback...');
+      console.log('EmailJS failed:', error);
+      return false;
+    }
+  }
+
+  // Resend service (free tier available)
+  private async sendViaResend(emailData: any): Promise<boolean> {
+    try {
+      const apiKey = process.env.REACT_APP_RESEND_API_KEY;
+      if (!apiKey) {
+        console.log('Resend API key not configured');
+        return false;
+      }
+
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: emailData.from,
+          to: emailData.to,
+          subject: emailData.subject,
+          html: emailData.html,
+          text: emailData.text
+        })
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.log('Resend failed:', error);
+      return false;
+    }
+  }
+
+  // Brevo service (free tier available)
+  private async sendViaBrevo(emailData: any): Promise<boolean> {
+    try {
+      const apiKey = process.env.REACT_APP_BREVO_API_KEY;
+      if (!apiKey) {
+        console.log('Brevo API key not configured');
+        return false;
+      }
+
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: {
+            name: this.SENDER_NAME,
+            email: emailData.from
+          },
+          to: [{
+            email: emailData.to,
+            name: emailData.to.split('@')[0]
+          }],
+          subject: emailData.subject,
+          htmlContent: emailData.html,
+          textContent: emailData.text
+        })
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.log('Brevo failed:', error);
       return false;
     }
   }

@@ -26,7 +26,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   
   // Get admin context for role-based navigation
   const { state: adminState } = useAdmin();
-  const isAdmin = adminState.currentUser?.role === 'admin' || adminState.currentUser?.role === 'root';
+  const isAdmin = adminState.currentUser?.role === 'super-admin' || adminState.currentUser?.role === 'root';
   const isRoot = adminState.currentUser?.role === 'root';
 
   // Debug navigation issues
@@ -78,9 +78,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   // Admin-specific navigation items
   const adminNavigation = [
-    { name: 'User Management', href: '/admin/users', icon: UserPlus, roles: ['admin', 'root'] },
-    { name: 'Cost Management', href: '/admin/cost-management', icon: DollarSign, roles: ['admin', 'root'] },
-    { name: 'Event Management', href: '/admin/events', icon: Calendar, roles: ['admin', 'root'] },
+    { name: 'User Management', href: '/admin/users', icon: UserPlus, roles: ['super-admin', 'root'] },
+    { name: 'Cost Management', href: '/admin/cost-management', icon: DollarSign, roles: ['super-admin', 'root'] },
+    { name: 'Event Management', href: '/admin/events', icon: Calendar, roles: ['super-admin', 'root'] },
     { name: 'System Settings', href: '/admin/settings', icon: Cog, roles: ['root'] },
   ];
 
@@ -219,7 +219,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Admin</span>
                             </div>
                             {adminNavigation
-                              .filter(item => !item.roles || item.roles.includes(adminState.currentUser?.role))
+                              .filter(item => !item.roles || (adminState.currentUser?.role && item.roles.includes(adminState.currentUser.role)))
                               .map((item) => {
                                 const Icon = item.icon;
                                 return (
@@ -337,7 +337,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Admin</span>
                   </div>
                   {adminNavigation
-                    .filter(item => !item.roles || item.roles.includes(adminState.currentUser?.role))
+                    .filter(item => !item.roles || (adminState.currentUser?.role && item.roles.includes(adminState.currentUser.role)))
                     .map((item) => {
                       const Icon = item.icon;
                       return (

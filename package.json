@@ -29,7 +29,7 @@
     "crypto-browserify": "^3.12.1",
     "dompurify": "^3.2.6",
     "firebase": "^12.1.0",
-    "firebase-admin": "^13.4.0",
+    "firebase-admin": "^13.5.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.542.0",
     "moment": "^2.30.1",

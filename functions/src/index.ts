@@ -23,6 +23,61 @@ function getTimestamp(): any {
   }
 }
 
+// Helper function to check AI authentication
+async function checkAIAuthentication(context: any): Promise<{ isAI: boolean; userData: any }> {
+  // Check if this is an AI request (no auth context but with AI token)
+  if (!context.auth) {
+    // Check for AI-specific headers or tokens
+    const aiToken = context.rawRequest?.headers?.['x-ai-token'];
+    const aiRequestId = context.rawRequest?.headers?.['x-ai-request-id'];
+    
+    // Also check for AI context in the data
+    const aiContext = context.rawRequest?.body?._aiContext;
+    
+    if (aiToken === process.env.AI_SECRET_TOKEN || aiRequestId || aiContext) {
+      // This is an AI request - get the AI account
+      const aiAccountQuery = await db.collection('users')
+        .where('role', '==', 'ai-assistant')
+        .limit(1)
+        .get();
+      
+      if (!aiAccountQuery.empty) {
+        const aiAccount = aiAccountQuery.docs[0];
+        return {
+          isAI: true,
+          userData: aiAccount.data()
+        };
+      }
+    }
+    
+    throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
+  }
+
+  // Regular user authentication
+  const userDoc = await db.collection('users').doc(context.auth.uid).get();
+  if (!userDoc.exists) {
+    throw new functions.https.HttpsError('permission-denied', 'User not found');
+  }
+
+  const userData = userDoc.data();
+  const isAI = userData?.role === 'ai-assistant' || userData?.profile?.isAI === true;
+  
+  return {
+    isAI,
+    userData
+  };
+}
+
+// Helper function to check admin or AI permissions
+function hasAdminOrAIPermission(userData: any): boolean {
+  return userData?.isAdmin || 
+         userData?.isDenLeader || 
+         userData?.isCubmaster || 
+         userData?.role === 'root' ||
+         userData?.role === 'ai-assistant' ||
+         userData?.profile?.isAI === true;
+}
+
 // Types for our data
 interface RSVPSubmission {
   eventId: string;
@@ -991,19 +1046,11 @@ export const webSearch = functions.https.onCall(async (data, context) => {
 // Admin Cloud Functions for Event Management
 export const adminCreateEvent = functions.https.onCall(async (data, context) => {
   try {
-    // Check authentication
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-    }
-
-    // Check if user has admin privileges
-    const userDoc = await db.collection('users').doc(context.auth.uid).get();
-    if (!userDoc.exists) {
-      throw new functions.https.HttpsError('permission-denied', 'User not found');
-    }
-
-    const userData = userDoc.data();
-    if (!userData?.isAdmin && !userData?.isDenLeader && !userData?.isCubmaster) {
+    // Check authentication (supports both regular users and AI)
+    const { isAI, userData } = await checkAIAuthentication(context);
+    
+    // Check if user has admin privileges or is AI
+    if (!hasAdminOrAIPermission(userData)) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to create events');
     }
 
@@ -1073,8 +1120,8 @@ export const adminCreateEvent = functions.https.onCall(async (data, context) => 
 
     // Log admin action
     await db.collection('adminActions').add({
-      userId: context.auth.uid,
-      userEmail: context.auth.token.email || '',
+      userId: isAI ? 'ai-assistant' : context.auth.uid,
+      userEmail: isAI ? 'ai-assistant@sfpack1703.com' : (context.auth.token.email || ''),
       action: 'create',
       entityType: 'event',
       entityId: eventId,
@@ -1083,7 +1130,8 @@ export const adminCreateEvent = functions.https.onCall(async (data, context) => 
       timestamp: getTimestamp(),
       ipAddress: context.rawRequest.ip || 'unknown',
       userAgent: context.rawRequest.headers['user-agent'] || 'unknown',
-      success: true
+      success: true,
+      isAI: isAI
     });
 
     // Send notification to chat if enabled
@@ -1126,19 +1174,11 @@ export const adminCreateEvent = functions.https.onCall(async (data, context) => 
 
 export const adminUpdateEvent = functions.https.onCall(async (data, context) => {
   try {
-    // Check authentication
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-    }
-
-    // Check if user has admin privileges
-    const userDoc = await db.collection('users').doc(context.auth.uid).get();
-    if (!userDoc.exists) {
-      throw new functions.https.HttpsError('permission-denied', 'User not found');
-    }
-
-    const userData = userDoc.data();
-    if (!userData?.isAdmin && !userData?.isDenLeader && !userData?.isCubmaster) {
+    // Check authentication (supports both regular users and AI)
+    const { isAI, userData } = await checkAIAuthentication(context);
+    
+    // Check if user has admin privileges or is AI
+    if (!hasAdminOrAIPermission(userData)) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update events');
     }
 
@@ -1242,19 +1282,11 @@ export const adminUpdateEvent = functions.https.onCall(async (data, context) => 
 
 export const adminDeleteEvent = functions.https.onCall(async (data, context) => {
   try {
-    // Check authentication
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-    }
-
-    // Check if user has admin privileges
-    const userDoc = await db.collection('users').doc(context.auth.uid).get();
-    if (!userDoc.exists) {
-      throw new functions.https.HttpsError('permission-denied', 'User not found');
-    }
-
-    const userData = userDoc.data();
-    if (!userData?.isAdmin && !userData?.isDenLeader && !userData?.isCubmaster) {
+    // Check authentication (supports both regular users and AI)
+    const { isAI, userData } = await checkAIAuthentication(context);
+    
+    // Check if user has admin privileges or is AI
+    if (!hasAdminOrAIPermission(userData)) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to delete events');
     }
 
@@ -1320,19 +1352,11 @@ import OpenAIService from './openaiService';
 
 export const aiGenerateContent = functions.https.onCall(async (data, context) => {
   try {
-    // Check authentication
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-    }
-
-    // Check if user has admin privileges
-    const userDoc = await db.collection('users').doc(context.auth.uid).get();
-    if (!userDoc.exists) {
-      throw new functions.https.HttpsError('permission-denied', 'User not found');
-    }
-
-    const userData = userDoc.data();
-    if (!userData?.isAdmin && !userData?.isDenLeader && !userData?.isCubmaster) {
+    // Check authentication (supports both regular users and AI)
+    const { isAI, userData } = await checkAIAuthentication(context);
+    
+    // Check if user has admin privileges or is AI
+    if (!hasAdminOrAIPermission(userData)) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to use AI features');
     }
 
@@ -1389,15 +1413,16 @@ export const aiGenerateContent = functions.https.onCall(async (data, context) =>
 
     // Log AI usage
     await db.collection('aiUsage').add({
-      userId: context.auth.uid,
-      userEmail: context.auth.token.email || '',
+      userId: isAI ? 'ai-assistant' : context.auth.uid,
+      userEmail: isAI ? 'ai-assistant@sfpack1703.com' : (context.auth.token.email || ''),
       type: type,
       prompt: prompt,
       result: result,
       timestamp: getTimestamp(),
       model: openaiService.getModelInfo().model,
       ipAddress: context.rawRequest.ip || 'unknown',
-      userAgent: context.rawRequest.headers['user-agent'] || 'unknown'
+      userAgent: context.rawRequest.headers['user-agent'] || 'unknown',
+      isAI: isAI
     });
 
     return {
@@ -1420,19 +1445,11 @@ export const aiGenerateContent = functions.https.onCall(async (data, context) =>
 // Test GPT-5 Connection Function
 export const testAIConnection = functions.https.onCall(async (data, context) => {
   try {
-    // Check authentication
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-    }
-
-    // Check if user has admin privileges
-    const userDoc = await db.collection('users').doc(context.auth.uid).get();
-    if (!userDoc.exists) {
-      throw new functions.https.HttpsError('permission-denied', 'User not found');
-    }
-
-    const userData = userDoc.data();
-    if (!userData?.isAdmin && !userData?.isDenLeader && !userData?.isCubmaster) {
+    // Check authentication (supports both regular users and AI)
+    const { isAI, userData } = await checkAIAuthentication(context);
+    
+    // Check if user has admin privileges or is AI
+    if (!hasAdminOrAIPermission(userData)) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to test AI connection');
     }
 
@@ -1469,20 +1486,12 @@ export const testAIConnection = functions.https.onCall(async (data, context) => 
 // System Command Function for Root Users
 export const systemCommand = functions.https.onCall(async (data, context) => {
   try {
-    // Check authentication
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-    }
-
-    // Check if user is root
-    const userDoc = await db.collection('users').doc(context.auth.uid).get();
-    if (!userDoc.exists) {
-      throw new functions.https.HttpsError('permission-denied', 'User not found');
-    }
-
-    const userData = userDoc.data();
-    if (userData?.role !== 'root') {
-      throw new functions.https.HttpsError('permission-denied', 'Only root users can execute system commands');
+    // Check authentication (supports both regular users and AI)
+    const { isAI, userData } = await checkAIAuthentication(context);
+    
+    // Check if user is root or AI
+    if (userData?.role !== 'root' && !isAI) {
+      throw new functions.https.HttpsError('permission-denied', 'Only root users and AI can execute system commands');
     }
 
     const { command } = data;
@@ -1491,7 +1500,7 @@ export const systemCommand = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError('invalid-argument', 'Command is required');
     }
 
-    console.log(`🔧 Root user ${context.auth.token.email || context.auth.uid} executing system command: ${command}`);
+    console.log(`🔧 ${isAI ? 'AI Assistant' : 'Root user'} ${isAI ? 'ai-assistant@sfpack1703.com' : (context.auth.token.email || context.auth.uid)} executing system command: ${command}`);
 
     let result: any = {};
 

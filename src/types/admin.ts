@@ -12,7 +12,7 @@ export interface AdminUser {
   isActive: boolean;
 }
 
-export type AdminRole = 'root' | 'super-admin' | 'content-admin' | 'moderator' | 'viewer';
+export type AdminRole = 'root' | 'super-admin' | 'content-admin' | 'moderator' | 'viewer' | 'ai-assistant';
 
 export type AdminPermission = 
   // Season permissions
@@ -32,7 +32,9 @@ export type AdminPermission =
   // System permissions
   | 'system:read' | 'system:update' | 'system:delete'
   // Cost management permissions
-  | 'cost:read' | 'cost:manage' | 'cost:analytics';
+  | 'cost:read' | 'cost:manage' | 'cost:analytics'
+  // AI-specific permissions
+  | 'ai:content_generation' | 'ai:data_analysis' | 'ai:automation' | 'ai:system_integration';
 
 export interface AdminAction {
   id: string;

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, MessageCircle, ChevronDown, BarChart3, Settings } from 'lucide-react';
+import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, MessageCircle, ChevronDown, BarChart3, Settings, Shield, DollarSign, UserPlus, Cog } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { usePackNameConfig, useContactConfigs } from '../../hooks/useConfig';
+import { useAdmin } from '../../contexts/AdminContext';
 import OfflineBanner from './OfflineBanner';
 import PWAInstallPrompt from '../PWAInstallPrompt/PWAInstallPrompt';
 
@@ -22,6 +23,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Load configuration values
   const { value: packName } = usePackNameConfig();
   const { primaryEmail, supportEmail, loading: contactLoading } = useContactConfigs();
+  
+  // Get admin context for role-based navigation
+  const { state: adminState } = useAdmin();
+  const isAdmin = adminState.currentUser?.role === 'admin' || adminState.currentUser?.role === 'root';
+  const isRoot = adminState.currentUser?.role === 'root';
 
   // Debug navigation issues
   useEffect(() => {
@@ -68,6 +74,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Volunteer', href: '/volunteer', icon: Users }, // Participation
     { name: 'Feedback', href: '/feedback', icon: MessageSquare }, // Input
     { name: 'Analytics', href: '/analytics', icon: BarChart3 }, // Admin/advanced
+  ];
+
+  // Admin-specific navigation items
+  const adminNavigation = [
+    { name: 'User Management', href: '/admin/users', icon: UserPlus, roles: ['admin', 'root'] },
+    { name: 'Cost Management', href: '/admin/cost-management', icon: DollarSign, roles: ['admin', 'root'] },
+    { name: 'Event Management', href: '/admin/events', icon: Calendar, roles: ['admin', 'root'] },
+    { name: 'System Settings', href: '/admin/settings', icon: Cog, roles: ['root'] },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -197,6 +211,40 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         );
                       })}
                       
+                      {/* Admin Navigation Items */}
+                      {isAdmin && (
+                        <>
+                          <div className="border-t border-gray-200 mt-2 pt-2">
+                            <div className="px-4 py-2">
+                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Admin</span>
+                            </div>
+                            {adminNavigation
+                              .filter(item => !item.roles || item.roles.includes(adminState.currentUser?.role))
+                              .map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                  <button
+                                    key={item.name}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      window.location.href = item.href;
+                                    }}
+                                    className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                                      isActive(item.href)
+                                        ? 'text-blue-600 bg-blue-50'
+                                        : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50/50'
+                                    }`}
+                                  >
+                                    <Icon className="w-4 h-4" />
+                                    <span>{item.name}</span>
+                                  </button>
+                                );
+                              })}
+                          </div>
+                        </>
+                      )}
+                      
                       {/* Admin Link */}
                       <div className="border-t border-gray-200 mt-2 pt-2">
                         <button
@@ -281,6 +329,37 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <span>Admin Portal</span>
                 </button>
               </div>
+              
+              {/* Admin Navigation Items for Mobile */}
+              {isAdmin && (
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <div className="px-3 py-2">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Admin</span>
+                  </div>
+                  {adminNavigation
+                    .filter(item => !item.roles || item.roles.includes(adminState.currentUser?.role))
+                    .map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={item.name}
+                          onClick={() => {
+                            handleNavigation(item.href);
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl font-medium transition-all duration-300 ${
+                            isActive(item.href)
+                              ? 'text-blue-600 bg-blue-50'
+                              : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50/50'
+                          }`}
+                        >
+                          <Icon className="w-5 h-5" />
+                          <span>{item.name}</span>
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -83,7 +83,7 @@ class EmailService {
   }
 
   private generateInviteEmailHTML(invite: any, inviteUrl: string): string {
-    const roleDisplay = invite.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const roleDisplay = invite.role.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
     const expiresDate = invite.expiresAt.toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
@@ -156,7 +156,7 @@ class EmailService {
   }
 
   private generateInviteEmailText(invite: any, inviteUrl: string): string {
-    const roleDisplay = invite.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const roleDisplay = invite.role.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
     const expiresDate = invite.expiresAt.toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 

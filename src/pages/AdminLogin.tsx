@@ -89,7 +89,7 @@ const AdminLogin: React.FC = () => {
         navigate('/admin');
       } else if (user.role === 'admin') {
         navigate('/admin');
-      } else if (user.role === 'den_leader') {
+      } else if (user.role === 'volunteer') {
         navigate('/admin');
       } else {
         navigate('/');
@@ -113,7 +113,7 @@ const AdminLogin: React.FC = () => {
       navigate('/admin');
     } else if (user.role === 'admin') {
       navigate('/admin');
-    } else if (user.role === 'den_leader' || user.role === 'cubmaster') {
+    } else if (user.role === 'volunteer') {
       navigate('/admin');
     } else {
       navigate('/');

@@ -40,7 +40,6 @@ import AdminFundraising from './pages/AdminFundraising';
 import AdminFinances from './pages/AdminFinances';
 import AdminCostManagement from './pages/AdminCostManagement';
 import MultiTenantManagement from './pages/MultiTenantManagement';
-import AdminUsers from './pages/AdminUsers';
 import UserManagement from './components/Admin/UserManagement';
 import ChatPage from './pages/ChatPage';
 import JoinPage from './pages/JoinPage';

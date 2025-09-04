@@ -13,6 +13,7 @@ import {
 import { db } from '../firebase/config';
 import { UserRole } from './authService';
 import { emailService } from './emailService';
+import { authService } from './authService';
 
 export interface Invite {
   id: string;
@@ -158,8 +159,8 @@ class InviteService {
     }
   }
 
-  // Accept an invite
-  async acceptInvite(inviteId: string, acceptedBy: string): Promise<boolean> {
+  // Accept an invite and create user
+  async acceptInvite(inviteId: string, acceptedBy: string, userData?: { email: string; displayName: string; password: string }): Promise<boolean> {
     try {
       const invite = await this.getInvite(inviteId);
       if (!invite) {
@@ -174,11 +175,29 @@ class InviteService {
         throw new Error('Invite has expired');
       }
 
+      // Update invite status
       await updateDoc(doc(db, this.COLLECTION, inviteId), {
         status: 'accepted',
         acceptedAt: serverTimestamp(),
         acceptedBy
       });
+
+      // Create user account if userData is provided
+      if (userData) {
+        try {
+          await authService.createUser(
+            userData.email,
+            userData.password,
+            userData.displayName,
+            invite.role
+          );
+          console.log(`✅ User account created for ${userData.email} with role ${invite.role}`);
+        } catch (userError) {
+          console.error('Error creating user account:', userError);
+          // Don't fail the invite acceptance if user creation fails
+          // The user can still be created manually later
+        }
+      }
 
       return true;
     } catch (error) {

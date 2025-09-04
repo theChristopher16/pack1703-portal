@@ -52,12 +52,16 @@ const JoinPage: React.FC = () => {
     }
   };
 
-  const handleSocialLoginSuccess = async (user: any) => {
+  const handleLoginSuccess = async (user: any) => {
     if (!inviteId) return;
 
     try {
-      // Accept the invite
-      await inviteService.acceptInvite(inviteId, user.uid);
+      // Accept the invite with user data
+      await inviteService.acceptInvite(inviteId, user.uid, {
+        email: user.email,
+        displayName: user.displayName || user.email.split('@')[0],
+        password: '' // Password handled by auth service
+      });
       
       // Redirect based on user role
       if (user.role === 'root') {
@@ -226,7 +230,7 @@ const JoinPage: React.FC = () => {
             </div>
 
             <SocialLogin 
-              onSuccess={handleSocialLoginSuccess}
+              onSuccess={handleLoginSuccess}
               onError={handleSocialLoginError}
               showEmailOption={true}
               inviteEmail={invite.email}

@@ -3,6 +3,13 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, ChevronDown } from 'lucide-react';
 import { useAdmin } from '../../contexts/AdminContext';
 
+interface NavItem {
+  path: string;
+  label: string;
+  icon: string;
+  roles?: string[];
+}
+
 const AdminNav: React.FC = () => {
   const { state } = useAdmin();
   const { currentUser } = state;
@@ -48,7 +55,7 @@ const AdminNav: React.FC = () => {
   }, []);
 
   // Prioritize most important admin functions - limit to 5 items for desktop to prevent overflow
-  const primaryNavItems = [
+  const primaryNavItems: NavItem[] = [
     { path: '/admin', label: 'Dashboard', icon: '🏠' },
     { path: '/admin/ai', label: 'Solyn', icon: '🤖' },
     { path: '/admin/events', label: 'Events', icon: '📅' },
@@ -57,17 +64,18 @@ const AdminNav: React.FC = () => {
   ];
 
   // Add SOC Console for root users only
-  const socNavItem = { path: '/admin/soc', label: 'SOC Console', icon: '🖥️' };
+  const socNavItem: NavItem = { path: '/admin/soc', label: 'SOC Console', icon: '🖥️' };
   
   // Show SOC Console in primary nav for root users (but limit to 5 total)
   const navItems = currentUser?.role === 'root' 
     ? [...primaryNavItems.slice(0, 4), socNavItem] // Limit to 5 items total
     : primaryNavItems;
 
-  const secondaryNavItems = [
+  const secondaryNavItems: NavItem[] = [
     { path: '/admin/locations', label: 'Locations', icon: '📍' },
     { path: '/admin/fundraising', label: 'Fundraising', icon: '🎯' },
     { path: '/admin/finances', label: 'Finances', icon: '💰' },
+    { path: '/admin/cost-management', label: 'Cost Management', icon: '📊', roles: ['admin', 'root'] },
     { path: '/admin/multi-tenant', label: 'Multi-Tenant', icon: '🏢' },
     { path: '/admin/lists', label: 'Lists', icon: '📋' },
     { path: '/admin/volunteer', label: 'Volunteer', icon: '🤝' },
@@ -129,7 +137,9 @@ const AdminNav: React.FC = () => {
               {dropdownOpen && (
                 <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-xl border border-gray-200 z-50">
                   <div className="py-1">
-                    {secondaryNavItems.map((item) => (
+                    {secondaryNavItems
+                      .filter(item => !item.roles || item.roles.includes(currentUser?.role))
+                      .map((item) => (
                       <Link
                         key={item.path}
                         to={item.path}
@@ -183,7 +193,9 @@ const AdminNav: React.FC = () => {
               ))}
               
               {/* Mobile secondary items */}
-              {secondaryNavItems.map((item) => (
+              {secondaryNavItems
+                .filter(item => !item.roles || item.roles.includes(currentUser?.role))
+                .map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}

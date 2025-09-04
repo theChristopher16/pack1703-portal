@@ -33,10 +33,17 @@ import {
   Heart,
   ShieldCheck,
   UserCheck,
-  Settings
+  Settings,
+  Plus,
+  Copy,
+  RefreshCw,
+  XCircle,
+  Link,
+  ExternalLink
 } from 'lucide-react';
 import { useAdmin } from '../../contexts/AdminContext';
 import { authService, AppUser, UserRole, Permission, ROLE_PERMISSIONS } from '../../services/authService';
+import { inviteService, Invite } from '../../services/inviteService';
 
 interface UserWithChildren extends AppUser {
   children?: UserWithChildren[];
@@ -86,6 +93,20 @@ const UserManagement: React.FC = () => {
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
   
+  // Invitation states
+  const [invites, setInvites] = useState<Invite[]>([]);
+  const [showCreateInviteModal, setShowCreateInviteModal] = useState(false);
+  const [showInviteLinkModal, setShowInviteLinkModal] = useState(false);
+  const [selectedInvite, setSelectedInvite] = useState<Invite | null>(null);
+  const [copySuccess, setCopySuccess] = useState<string | null>(null);
+  const [inviteFormData, setInviteFormData] = useState({
+    email: '',
+    role: UserRole.PARENT,
+    message: '',
+    denId: '',
+    expiresInDays: 7
+  });
+  
   // Selected user for operations
   const [selectedUser, setSelectedUser] = useState<UserWithChildren | null>(null);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
@@ -122,6 +143,7 @@ const UserManagement: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [sortBy, setSortBy] = useState<'name' | 'role' | 'den' | 'lastLogin'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [activeTab, setActiveTab] = useState<'users' | 'invitations'>('users');
 
   // Available dens for assignment
   const availableDens = [
@@ -136,6 +158,10 @@ const UserManagement: React.FC = () => {
 
   useEffect(() => {
     loadUsers();
+  }, []);
+
+  useEffect(() => {
+    loadInvites();
   }, []);
 
   useEffect(() => {
@@ -155,6 +181,15 @@ const UserManagement: React.FC = () => {
       await addNotification('error', 'Error', 'Failed to load users');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadInvites = async () => {
+    try {
+      const pendingInvites = await inviteService.getPendingInvites();
+      setInvites(pendingInvites);
+    } catch (error: any) {
+      await addNotification('error', 'Error', 'Failed to load invitations');
     }
   };
 
@@ -179,8 +214,8 @@ const UserManagement: React.FC = () => {
         const potentialParent = users.find(u => 
           u.uid !== user.uid && 
           (u.profile?.den === user.profile?.den || 
-           u.role === UserRole.VOLUNTEER ||
-           u.role === UserRole.ADMIN)
+           u.role === UserRole.ADMIN ||
+           u.role === UserRole.VOLUNTEER)
         );
         
         if (potentialParent) {
@@ -273,7 +308,7 @@ const UserManagement: React.FC = () => {
       password: '',
       confirmPassword: '',
       displayName: '',
-      role: UserRole.PARENT,
+      role: UserRole.SCOUT,
       phone: '',
       den: '',
       scoutRank: '',
@@ -396,9 +431,10 @@ const UserManagement: React.FC = () => {
     switch (role) {
       case UserRole.ROOT: return <Crown className="w-4 h-4 text-yellow-600" />;
       case UserRole.ADMIN: return <Shield className="w-4 h-4 text-red-600" />;
-      case UserRole.VOLUNTEER: return <Star className="w-4 h-4 text-green-600" />;
+      case UserRole.DEN_LEADER: return <Star className="w-4 h-4 text-green-600" />;
       case UserRole.PARENT: return <Heart className="w-4 h-4 text-purple-600" />;
-      case UserRole.ANONYMOUS: return <UserCheck className="w-4 h-4 text-gray-400" />;
+      case UserRole.SCOUT: return <User className="w-4 h-4 text-gray-600" />;
+      case UserRole.GUEST: return <UserCheck className="w-4 h-4 text-gray-400" />;
       default: return <User className="w-4 h-4" />;
     }
   };
@@ -407,9 +443,10 @@ const UserManagement: React.FC = () => {
     switch (role) {
       case UserRole.ROOT: return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case UserRole.ADMIN: return 'bg-red-100 text-red-800 border-red-200';
-      case UserRole.VOLUNTEER: return 'bg-green-100 text-green-800 border-green-200';
+      case UserRole.DEN_LEADER: return 'bg-green-100 text-green-800 border-green-200';
       case UserRole.PARENT: return 'bg-purple-100 text-purple-800 border-purple-200';
-      case UserRole.ANONYMOUS: return 'bg-gray-50 text-gray-600 border-gray-100';
+      case UserRole.SCOUT: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case UserRole.GUEST: return 'bg-gray-50 text-gray-600 border-gray-100';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
@@ -525,6 +562,32 @@ const UserManagement: React.FC = () => {
             <option value="lastLogin-asc">Last Login (Oldest)</option>
           </select>
         </div>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex space-x-1 bg-white/90 backdrop-blur-sm rounded-2xl p-1 mb-8 border border-white/50">
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+            activeTab === 'users'
+              ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-glow-primary/50'
+              : 'text-gray-600 hover:text-primary-600 hover:bg-primary-50/50'
+          }`}
+        >
+          <Users className="w-4 h-4 inline mr-2" />
+          Users
+        </button>
+        <button
+          onClick={() => setActiveTab('invitations')}
+          className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+            activeTab === 'invitations'
+              ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-glow-primary/50'
+              : 'text-gray-600 hover:text-primary-600 hover:bg-primary-50/50'
+          }`}
+        >
+          <Mail className="w-4 h-4 inline mr-2" />
+          Invitations
+        </button>
       </div>
 
       {/* User List */}

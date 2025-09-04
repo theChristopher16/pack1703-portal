@@ -1127,6 +1127,61 @@ class AuthService {
     }
   }
 
+  // Create user with email (for invited users)
+  async createUserWithEmail(email: string, password: string, displayName: string): Promise<AppUser> {
+    try {
+      // Create Firebase user
+      const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
+      const firebaseUser = userCredential.user;
+
+      // Create user document in Firestore with default role
+      const userData: Omit<AppUser, 'uid' | 'createdAt' | 'updatedAt'> = {
+        email: firebaseUser.email!,
+        displayName,
+        role: UserRole.PARENT, // Default role for invited users
+        permissions: ROLE_PERMISSIONS[UserRole.PARENT],
+        isActive: true,
+        profile: {}
+      };
+
+      await setDoc(doc(db, 'users', firebaseUser.uid), {
+        ...userData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      // Update Firebase profile
+      await updateProfile(firebaseUser, { displayName });
+
+      // Return the created user
+      const appUser: AppUser = {
+        uid: firebaseUser.uid,
+        ...userData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      // Set current user and notify listeners
+      this.currentUser = appUser;
+      this.notifyAuthStateListeners(appUser);
+
+      return appUser;
+    } catch (error: any) {
+      console.error('Error creating user with email:', error);
+      
+      // Provide more specific error messages
+      if (error.code === 'auth/email-already-in-use') {
+        throw new Error('An account with this email already exists. Please use a different email or sign in with the existing account.');
+      } else if (error.code === 'auth/weak-password') {
+        throw new Error('Password is too weak. Please use a stronger password (at least 6 characters).');
+      } else if (error.code === 'auth/invalid-email') {
+        throw new Error('Invalid email address. Please enter a valid email.');
+      } else {
+        throw new Error(`Failed to create account: ${error.message || 'Unknown error occurred'}`);
+      }
+    }
+  }
+
   // Update user role (root only)
   async updateUserRole(uid: string, newRole: UserRole): Promise<void> {
     if (!this.isRoot()) {

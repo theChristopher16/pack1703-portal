@@ -229,6 +229,7 @@ const JoinPage: React.FC = () => {
               onSuccess={handleSocialLoginSuccess}
               onError={handleSocialLoginError}
               showEmailOption={true}
+              inviteEmail={invite.email}
               className="mb-6"
             />
           </div>

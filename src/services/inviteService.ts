@@ -258,11 +258,14 @@ class InviteService {
       // TODO: Integrate with email service (SendGrid, Mailgun, etc.)
       const inviteUrl = this.getInviteUrl(invite.id);
       
-      // For now, just log the invite URL
+      // For now, just log the invite URL and show it prominently
       console.log(`Invite URL for ${invite.email}: ${inviteUrl}`);
       
       // In production, this would send an actual email
       // await emailService.sendInviteEmail(invite.email, inviteUrl, invite);
+      
+      // For development, we'll show the URL in the UI instead of sending email
+      // The UserManagement component will display this URL to the admin
       
       return true;
     } catch (error) {

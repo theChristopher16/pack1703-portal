@@ -66,16 +66,21 @@ class EmailService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          service_id: 'pack1703_email',
-          template_id: 'invitation_template',
-          user_id: 'your_user_id', // This needs to be configured
+          service_id: 'service_uh9s99n',
+          template_id: 'template_3b7j7qg', // Your actual template ID
+          user_id: 'zrC6Dk8TxiDkjrDLqzcTm', // Your private key
           template_params: {
             to_email: emailData.to,
             to_name: emailData.to.split('@')[0],
             from_email: emailData.from,
             subject: emailData.subject,
-            message_html: emailData.html,
-            message_text: emailData.text
+            role_display: emailData.roleDisplay || 'Member',
+            message: emailData.message || '',
+            invited_by_name: emailData.invitedByName || 'Pack Leadership',
+            expires_date: emailData.expiresDate || '',
+            invite_url: emailData.inviteUrl || '',
+            html_content: emailData.html,
+            text_content: emailData.text
           }
         })
       });

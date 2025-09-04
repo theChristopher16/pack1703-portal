@@ -548,13 +548,6 @@ const UserManagement: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
           <p className="text-gray-600">Manage pack members, roles, and permissions</p>
         </div>
-        <button
-          onClick={handleCreateUser}
-          className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-        >
-          <UserPlus className="w-4 h-4 mr-2" />
-          Add User
-        </button>
       </div>
 
       {/* Filters and Search */}
@@ -1287,6 +1280,194 @@ const UserManagement: React.FC = () => {
                 ) : (
                   'Delete User'
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Invite Modal */}
+      {showCreateInviteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">Send Invitation</h3>
+              <button
+                onClick={() => setShowCreateInviteModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="px-6 py-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Address *
+                </label>
+                <input
+                  type="email"
+                  value={inviteFormData.email}
+                  onChange={(e) => setInviteFormData({...inviteFormData, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="user@example.com"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Role
+                </label>
+                <select
+                  value={inviteFormData.role}
+                  onChange={(e) => setInviteFormData({...inviteFormData, role: e.target.value as UserRole})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value={UserRole.PARENT}>Parent</option>
+                  <option value={UserRole.VOLUNTEER}>Volunteer</option>
+                  <option value={UserRole.ADMIN}>Admin</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Den (Optional)
+                </label>
+                <select
+                  value={inviteFormData.denId}
+                  onChange={(e) => setInviteFormData({...inviteFormData, denId: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="">Select a den</option>
+                  {availableDens.map(den => (
+                    <option key={den} value={den}>{den}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Expires In
+                </label>
+                <select
+                  value={inviteFormData.expiresInDays}
+                  onChange={(e) => setInviteFormData({...inviteFormData, expiresInDays: parseInt(e.target.value)})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value={1}>1 day</option>
+                  <option value={3}>3 days</option>
+                  <option value={7}>7 days</option>
+                  <option value={14}>14 days</option>
+                  <option value={30}>30 days</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Personal Message (Optional)
+                </label>
+                <textarea
+                  value={inviteFormData.message}
+                  onChange={(e) => setInviteFormData({...inviteFormData, message: e.target.value})}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Add a personal message to the invitation..."
+                />
+              </div>
+            </div>
+            
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowCreateInviteModal(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateInvite}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              >
+                Send Invitation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invite Link Modal */}
+      {showInviteLinkModal && selectedInvite && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">Invitation Link</h3>
+              <button
+                onClick={() => setShowInviteLinkModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="px-6 py-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Invitation Details
+                </label>
+                <div className="bg-gray-50 p-3 rounded-lg space-y-2">
+                  <div className="text-sm">
+                    <span className="font-medium">Email:</span> {selectedInvite.email}
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-medium">Role:</span> {selectedInvite.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-medium">Expires:</span> {new Date(selectedInvite.expiresAt).toLocaleDateString()}
+                  </div>
+                  {selectedInvite.message && (
+                    <div className="text-sm">
+                      <span className="font-medium">Message:</span> "{selectedInvite.message}"
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Invitation Link
+                </label>
+                <div className="flex">
+                  <input
+                    type="text"
+                    value={inviteService.getInviteUrl(selectedInvite.id)}
+                    readOnly
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg bg-gray-50 text-sm"
+                  />
+                  <button
+                    onClick={() => copyInviteUrl(selectedInvite.id)}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-r-lg hover:bg-primary-700 transition-colors"
+                    title="Copy to clipboard"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+                {copySuccess && (
+                  <p className="text-sm text-green-600 mt-1">{copySuccess}</p>
+                )}
+              </div>
+              
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  Share this link with the invited user. They can use it to join the pack and set up their account.
+                </p>
+              </div>
+            </div>
+            
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowInviteLinkModal(false)}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              >
+                Done
               </button>
             </div>
           </div>

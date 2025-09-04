@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/functions/node_modules
 /.pnp
 .pnp.js
 
@@ -26,6 +27,7 @@ yarn-error.log*
 .firebase/
 firestore-debug.log
 firestore-debug.*.log
+functions/firebase-debug.log
 
 # Terraform
 *.tfstate

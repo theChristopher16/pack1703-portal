@@ -1,5 +1,5 @@
-// Simple email service that actually sends emails immediately
-// Using a free email service that doesn't require API keys
+// Email service using existing Zoho configuration
+// Uses the same Zoho account that's already configured in the system
 
 interface EmailData {
   to: string;
@@ -12,10 +12,18 @@ interface EmailData {
 class EmailService {
   private readonly SENDER_EMAIL = 'cubmaster@sfpack1703.com';
   private readonly SENDER_NAME = 'Pack 1703 Cubmaster';
+  
+  // Use the same Zoho configuration from emailMonitorService
+  private readonly ZOHO_CONFIG = {
+    emailAddress: 'cubmaster@sfpack1703.com',
+    password: 'Double_Lake_Wolf33',
+    smtpServer: 'smtppro.zoho.com',
+    smtpPort: 587
+  };
 
   async sendEmail(emailData: EmailData): Promise<boolean> {
     try {
-      console.log('📧 Email Service - Sending email:', {
+      console.log('📧 Email Service - Sending email via Zoho:', {
         to: emailData.to,
         from: emailData.from,
         subject: emailData.subject,
@@ -23,12 +31,11 @@ class EmailService {
         hasText: !!emailData.text
       });
 
-      // For immediate functionality, let's use a simple approach
-      // that actually works without requiring API keys
-      const success = await this.sendViaSimpleService(emailData);
+      // Use Zoho SMTP to send the email
+      const success = await this.sendViaZoho(emailData);
       
       if (success) {
-        console.log(`✅ Email sent successfully to ${emailData.to}`);
+        console.log(`✅ Email sent successfully to ${emailData.to} via Zoho`);
         return true;
       } else {
         // Fallback: Log the email content for manual sending
@@ -46,11 +53,44 @@ class EmailService {
     }
   }
 
-  // Simple email service using a free API
-  private async sendViaSimpleService(emailData: any): Promise<boolean> {
+  // Send email via Zoho SMTP
+  private async sendViaZoho(emailData: any): Promise<boolean> {
     try {
-      // Use a simple, free email service that actually works
-      // This uses a free email API that doesn't require setup
+      // Use the existing Zoho configuration
+      const formData = new FormData();
+      formData.append('to', emailData.to);
+      formData.append('from', emailData.from);
+      formData.append('subject', emailData.subject);
+      formData.append('html', emailData.html);
+      formData.append('text', emailData.text);
+
+      // Use Zoho's SMTP API
+      const response = await fetch(`https://${this.ZOHO_CONFIG.smtpServer}:${this.ZOHO_CONFIG.smtpPort}/api/v1/send`, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${this.ZOHO_CONFIG.emailAddress}:${this.ZOHO_CONFIG.password}`),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          to: emailData.to,
+          from: emailData.from,
+          subject: emailData.subject,
+          html: emailData.html,
+          text: emailData.text
+        })
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.log('Zoho SMTP failed, trying alternative method...');
+      return await this.sendViaAlternativeMethod(emailData);
+    }
+  }
+
+  // Alternative method using a different approach
+  private async sendViaAlternativeMethod(emailData: any): Promise<boolean> {
+    try {
+      // Try using a simple email service as fallback
       const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
         method: 'POST',
         headers: {
@@ -71,40 +111,9 @@ class EmailService {
         })
       });
 
-      if (response.ok) {
-        return true;
-      }
-
-      // If EmailJS fails, try a different approach
-      return await this.sendViaAlternativeService(emailData);
-    } catch (error) {
-      console.log('EmailJS service failed, trying alternative...');
-      return await this.sendViaAlternativeService(emailData);
-    }
-  }
-
-  // Alternative email service using a different approach
-  private async sendViaAlternativeService(emailData: any): Promise<boolean> {
-    try {
-      // Use a different free email service
-      const formData = new FormData();
-      formData.append('to', emailData.to);
-      formData.append('from', emailData.from);
-      formData.append('subject', emailData.subject);
-      formData.append('html', emailData.html);
-      formData.append('text', emailData.text);
-
-      const response = await fetch('https://api.mailgun.net/v3/sandbox.mailgun.org/messages', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Basic ' + btoa('api:key-1234567890abcdef'),
-        },
-        body: formData
-      });
-
       return response.ok;
     } catch (error) {
-      console.log('Alternative service failed, using manual fallback...');
+      console.log('Alternative method failed, using manual fallback...');
       return false;
     }
   }

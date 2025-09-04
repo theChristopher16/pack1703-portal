@@ -29,7 +29,8 @@ import {
   getDocs,
   serverTimestamp,
   deleteDoc,
-  writeBatch
+  writeBatch,
+  addDoc
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
@@ -39,7 +40,8 @@ export enum UserRole {
   PARENT = 'parent',          // Family account (default after signup)
   VOLUNTEER = 'volunteer',    // Active volunteers
   ADMIN = 'admin',            // Pack administrators
-  ROOT = 'root'               // System owner (you)
+  ROOT = 'root',              // System owner (you)
+  AI_ASSISTANT = 'ai-assistant' // AI system account
 }
 
 // Role hierarchy - each role inherits permissions from roles below it
@@ -48,7 +50,8 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
   [UserRole.PARENT]: 1,
   [UserRole.VOLUNTEER]: 2,
   [UserRole.ADMIN]: 3,
-  [UserRole.ROOT]: 4
+  [UserRole.ROOT]: 4,
+  [UserRole.AI_ASSISTANT]: 5  // AI has highest level access
 };
 
 export enum Permission {
@@ -98,8 +101,16 @@ export enum Permission {
   
   // Cost management permissions
   COST_MANAGEMENT = 'cost_management',
-  COST_ANALYTICS = 'cost_analytics',
-  COST_ALERTS = 'cost_alerts'
+  
+  // AI-specific permissions
+  AI_CONTENT_GENERATION = 'ai_content_generation',
+  AI_DATA_ANALYSIS = 'ai_data_analysis',
+  AI_AUTOMATION = 'ai_automation',
+  AI_SYSTEM_INTEGRATION = 'ai_system_integration',
+  AI_EVENT_CREATION = 'ai_event_creation',
+  AI_ANNOUNCEMENT_CREATION = 'ai_announcement_creation',
+  AI_EMAIL_MONITORING = 'ai_email_monitoring',
+  AI_SYSTEM_COMMANDS = 'ai_system_commands'
 }
 
 // Social login providers
@@ -327,6 +338,13 @@ export interface AppUser {
       accountLocked?: boolean;
       lockoutUntil?: Date;
     };
+
+    // AI specific flags
+    isAI?: boolean;
+    isDenLeader?: boolean;
+    isCubmaster?: boolean;
+    isAdmin?: boolean;
+    isRoot?: boolean;
   };
 }
 
@@ -941,7 +959,17 @@ class AuthService {
       // Cost management permissions
       [Permission.COST_MANAGEMENT]: UserRole.ADMIN,
       [Permission.COST_ANALYTICS]: UserRole.ADMIN,
-      [Permission.COST_ALERTS]: UserRole.ADMIN
+      [Permission.COST_ALERTS]: UserRole.ADMIN,
+
+      // AI-specific permissions
+      [Permission.AI_CONTENT_GENERATION]: UserRole.AI_ASSISTANT,
+      [Permission.AI_DATA_ANALYSIS]: UserRole.AI_ASSISTANT,
+      [Permission.AI_AUTOMATION]: UserRole.AI_ASSISTANT,
+      [Permission.AI_SYSTEM_INTEGRATION]: UserRole.AI_ASSISTANT,
+      [Permission.AI_EVENT_CREATION]: UserRole.AI_ASSISTANT,
+      [Permission.AI_ANNOUNCEMENT_CREATION]: UserRole.AI_ASSISTANT,
+      [Permission.AI_EMAIL_MONITORING]: UserRole.AI_ASSISTANT,
+      [Permission.AI_SYSTEM_COMMANDS]: UserRole.AI_ASSISTANT
     };
     
     const requiredRoleLevel = ROLE_HIERARCHY[permissionRoleMap[permission]];
@@ -1443,6 +1471,145 @@ class AuthService {
       console.error('Error unlinking account:', error);
       throw error;
     }
+  }
+
+  // Create AI Assistant Account
+  async createAIAccount(): Promise<AppUser> {
+    try {
+      const currentUser = this.getCurrentUser();
+      if (!currentUser || currentUser.role !== UserRole.ROOT) {
+        throw new Error('Only root users can create AI accounts');
+      }
+
+      // Check if AI account already exists
+      const aiAccountQuery = query(
+        collection(db, 'users'),
+        where('role', '==', UserRole.AI_ASSISTANT)
+      );
+      const aiAccountSnapshot = await getDocs(aiAccountQuery);
+      
+      if (!aiAccountSnapshot.empty) {
+        throw new Error('AI account already exists');
+      }
+
+      // Create AI account data
+      const aiAccountData: Omit<AppUser, 'uid'> = {
+        email: 'ai-assistant@sfpack1703.com',
+        displayName: 'AI Assistant',
+        role: UserRole.AI_ASSISTANT,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        profile: {
+          firstName: 'AI',
+          lastName: 'Assistant',
+          phone: null,
+          address: null,
+          emergencyContact: null,
+          medicalInfo: null,
+          den: null,
+          rank: null,
+          isAdult: true,
+          isScout: false,
+          isDenLeader: false,
+          isCubmaster: false,
+          isAdmin: true,
+          isRoot: false,
+          isAI: true
+        },
+        permissions: [
+          Permission.AI_CONTENT_GENERATION,
+          Permission.AI_DATA_ANALYSIS,
+          Permission.AI_AUTOMATION,
+          Permission.AI_SYSTEM_INTEGRATION,
+          Permission.AI_EVENT_CREATION,
+          Permission.AI_ANNOUNCEMENT_CREATION,
+          Permission.AI_EMAIL_MONITORING,
+          Permission.AI_SYSTEM_COMMANDS,
+          Permission.READ_CONTENT,
+          Permission.CREATE_CONTENT,
+          Permission.UPDATE_CONTENT,
+          Permission.DELETE_CONTENT,
+          Permission.EVENT_MANAGEMENT,
+          Permission.ANNOUNCEMENT_MANAGEMENT,
+          Permission.SYSTEM_ADMIN
+        ],
+        lastLogin: new Date(),
+        isEmailVerified: true,
+        isPhoneVerified: false,
+        linkedAccounts: [],
+        preferences: {
+          theme: 'light',
+          notifications: {
+            email: true,
+            push: true,
+            sms: false
+          },
+          privacy: {
+            profileVisibility: 'private',
+            contactVisibility: 'private'
+          }
+        }
+      };
+
+      // Add AI account to Firestore
+      const aiAccountRef = await addDoc(collection(db, 'users'), aiAccountData);
+      
+      // Create the AI account object
+      const aiAccount: AppUser = {
+        uid: aiAccountRef.id,
+        ...aiAccountData
+      };
+
+      console.log('✅ AI Assistant account created successfully:', aiAccount.uid);
+      
+      return aiAccount;
+    } catch (error) {
+      console.error('Error creating AI account:', error);
+      throw error;
+    }
+  }
+
+  // Get AI Account
+  async getAIAccount(): Promise<AppUser | null> {
+    try {
+      const aiAccountQuery = query(
+        collection(db, 'users'),
+        where('role', '==', UserRole.AI_ASSISTANT)
+      );
+      const aiAccountSnapshot = await getDocs(aiAccountQuery);
+      
+      if (aiAccountSnapshot.empty) {
+        return null;
+      }
+
+      const aiAccountDoc = aiAccountSnapshot.docs[0];
+      const aiAccountData = aiAccountDoc.data();
+      
+      return {
+        uid: aiAccountDoc.id,
+        ...aiAccountData
+      } as AppUser;
+    } catch (error) {
+      console.error('Error getting AI account:', error);
+      return null;
+    }
+  }
+
+  // Check if user is AI
+  isAI(user?: AppUser): boolean {
+    const targetUser = user || this.currentUser;
+    return targetUser?.role === UserRole.AI_ASSISTANT || 
+           targetUser?.profile?.isAI === true ||
+           targetUser?.permissions?.includes(Permission.AI_SYSTEM_INTEGRATION);
+  }
+
+  // Check if user can act as AI (has AI permissions)
+  canActAsAI(user?: AppUser): boolean {
+    const targetUser = user || this.currentUser;
+    return this.isAI(targetUser) || 
+           targetUser?.role === UserRole.ROOT ||
+           targetUser?.permissions?.includes(Permission.AI_SYSTEM_INTEGRATION);
   }
 }
 

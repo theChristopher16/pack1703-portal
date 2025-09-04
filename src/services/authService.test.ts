@@ -76,7 +76,7 @@ describe('AuthService - Enhanced User Management', () => {
       email: 'test@example.com',
       displayName: 'Test User',
       photoURL: 'https://example.com/photo.jpg',
-      role: UserRole.PARENT,
+      role: UserRole.SCOUT,
       permissions: [
         Permission.READ_CONTENT, 
         Permission.CREATE_CONTENT,

@@ -62,7 +62,7 @@ const JoinPage: React.FC = () => {
       // Redirect based on user role
       if (user.role === 'root') {
         navigate('/admin');
-      } else if (user.role === 'admin' || user.role === 'volunteer') {
+      } else if (user.role === 'admin' || user.role === 'den_leader') {
         navigate('/admin');
       } else {
         navigate('/');
@@ -82,7 +82,7 @@ const JoinPage: React.FC = () => {
         return <Crown className="w-6 h-6 text-yellow-500" />;
       case 'admin':
         return <Shield className="w-6 h-6 text-blue-500" />;
-      case 'volunteer':
+      case 'den_leader':
         return <User className="w-6 h-6 text-green-500" />;
       case 'parent':
         return <User className="w-6 h-6 text-purple-500" />;
@@ -97,7 +97,7 @@ const JoinPage: React.FC = () => {
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'admin':
         return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'volunteer':
+      case 'den_leader':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'parent':
         return 'bg-purple-100 text-purple-800 border-purple-200';

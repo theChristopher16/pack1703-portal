@@ -224,7 +224,7 @@ class InviteService {
       expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
       await updateDoc(doc(db, this.COLLECTION, inviteId), {
-        expiresAt: serverTimestamp(),
+        expiresAt: expiresAt,
         status: 'pending'
       });
 

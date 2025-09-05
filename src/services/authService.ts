@@ -39,7 +39,8 @@ export enum UserRole {
   PARENT = 'parent',          // Family account (default after signup)
   VOLUNTEER = 'volunteer',    // Active volunteers
   ADMIN = 'admin',            // Pack administrators
-  ROOT = 'root'               // System owner (you)
+  ROOT = 'root',              // System owner (you)
+  AI_ASSISTANT = 'ai_assistant' // AI assistant role
 }
 
 // Role hierarchy - each role inherits permissions from roles below it
@@ -48,7 +49,8 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
   [UserRole.PARENT]: 1,
   [UserRole.VOLUNTEER]: 2,
   [UserRole.ADMIN]: 3,
-  [UserRole.ROOT]: 4
+  [UserRole.ROOT]: 4,
+  [UserRole.AI_ASSISTANT]: 2.5 // AI assistant has volunteer-level access
 };
 
 export enum Permission {
@@ -153,6 +155,22 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.CHAT_WRITE,
     Permission.CHAT_MANAGEMENT
   ],
+  [UserRole.AI_ASSISTANT]: [
+    Permission.READ_CONTENT,
+    Permission.CREATE_CONTENT,
+    Permission.UPDATE_CONTENT,
+    Permission.EVENT_MANAGEMENT,
+    Permission.ANNOUNCEMENT_MANAGEMENT,
+    Permission.SCOUT_CONTENT,
+    Permission.SCOUT_EVENTS,
+    Permission.SCOUT_CHAT,
+    Permission.CHAT_READ,
+    Permission.CHAT_WRITE,
+    Permission.CHAT_MANAGEMENT,
+    Permission.COST_MANAGEMENT,
+    Permission.COST_ANALYTICS,
+    Permission.COST_ALERTS
+  ],
   [UserRole.ADMIN]: [
     Permission.SYSTEM_ADMIN,
     Permission.USER_MANAGEMENT,
@@ -228,6 +246,7 @@ export const ROLE_COLORS: Record<UserRole, { bg: string; text: string; border: s
   [UserRole.ANONYMOUS]: { bg: '#f3f4f6', text: '#1f2937', border: '#d1d5db' },
   [UserRole.PARENT]: { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' },
   [UserRole.VOLUNTEER]: { bg: '#dcfce7', text: '#166534', border: '#86efac' },
+  [UserRole.AI_ASSISTANT]: { bg: '#e0f2fe', text: '#0c4a6e', border: '#7dd3fc' },
   [UserRole.ADMIN]: { bg: '#f3e8ff', text: '#7c3aed', border: '#c4b5fd' },
   [UserRole.ROOT]: { bg: '#fef3c7', text: '#92400e', border: '#fbbf24' }
 };
@@ -237,6 +256,7 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   [UserRole.ANONYMOUS]: 'Anonymous',
   [UserRole.PARENT]: 'Parent',
   [UserRole.VOLUNTEER]: 'Volunteer',
+  [UserRole.AI_ASSISTANT]: 'AI Assistant',
   [UserRole.ADMIN]: 'Admin',
   [UserRole.ROOT]: 'Root'
 };
@@ -246,6 +266,7 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   [UserRole.ANONYMOUS]: 'No account - limited access',
   [UserRole.PARENT]: 'Family account - manage family events and RSVPs',
   [UserRole.VOLUNTEER]: 'Active volunteer - den-specific management',
+  [UserRole.AI_ASSISTANT]: 'AI assistant - event management and content creation',
   [UserRole.ADMIN]: 'Pack administrator - full pack management',
   [UserRole.ROOT]: 'System owner - complete system access'
 };

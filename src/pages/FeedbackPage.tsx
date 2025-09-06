@@ -6,6 +6,7 @@ import {
   AlertCircle, 
   Search
 } from 'lucide-react';
+import { authService } from '../services/authService';
 
 interface FeedbackSubmission {
   id: string;
@@ -26,7 +27,23 @@ interface FeedbackSubmission {
 }
 
 const FeedbackPage: React.FC = () => {
+  const [user, setUser] = useState(authService.getCurrentUser());
   const [activeTab, setActiveTab] = useState<'submit' | 'history'>('submit');
+  
+  // Listen for auth state changes
+  useEffect(() => {
+    const unsubscribe = authService.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+    });
+    return unsubscribe;
+  }, []);
+  
+  // Redirect to submit tab if user is not logged in and tries to access history
+  useEffect(() => {
+    if (!user && activeTab === 'history') {
+      setActiveTab('submit');
+    }
+  }, [user, activeTab]);
   const [formData, setFormData] = useState({
     category: 'general' as FeedbackSubmission['category'],
     priority: 'medium' as FeedbackSubmission['priority'],
@@ -236,16 +253,18 @@ const FeedbackPage: React.FC = () => {
             >
               Submit Feedback
             </button>
-            <button
-              onClick={() => setActiveTab('history')}
-              className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
-                activeTab === 'history'
-                  ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-lg'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
-              }`}
-            >
-              My Submissions
-            </button>
+            {user && (
+              <button
+                onClick={() => setActiveTab('history')}
+                className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+                  activeTab === 'history'
+                    ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-lg'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
+                }`}
+              >
+                My Submissions
+              </button>
+            )}
           </div>
         </div>
 
@@ -424,7 +443,7 @@ const FeedbackPage: React.FC = () => {
         )}
 
         {/* My Submissions Tab */}
-        {activeTab === 'history' && (
+        {activeTab === 'history' && user && (
           <div className="space-y-6">
             {/* Search and Filters */}
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-soft">

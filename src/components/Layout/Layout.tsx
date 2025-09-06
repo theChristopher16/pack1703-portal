@@ -129,6 +129,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const navigation = getNavigationForRole(userRole);
 
+  // Debug navigation
+  useEffect(() => {
+    console.log('Layout: Navigation updated', {
+      userRole,
+      currentUser: currentUser?.email || 'No user',
+      navigationItems: navigation.map(item => item.name),
+      navigationLength: navigation.length
+    });
+  }, [userRole, currentUser, navigation]);
+
   // Admin-specific navigation items
   const adminOnlyNavigation = [
     { name: 'User Management', href: '/admin/users', icon: UserPlus, roles: ['super-admin', 'root'] },
@@ -240,7 +250,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     }}
                   >
                     <div className="py-2">
-                      {navigation.slice(5).map((item) => {
+                      {/* Show additional navigation items beyond the first 4 */}
+                      {navigation.length > 4 && navigation.slice(4).map((item) => {
                         const Icon = item.icon;
                         return (
                           <button
@@ -298,7 +309,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         </>
                       )}
                       
-                      {/* Admin Link */}
+                      {/* Login/Admin Link */}
                       <div className="border-t border-gray-200 mt-2 pt-2">
                         <button
                           onClick={(e) => {
@@ -315,7 +326,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           }`}
                         >
                           <Settings className="w-4 h-4" />
-                          <span>Admin Portal</span>
+                          <span>{currentUser ? 'Admin Portal' : 'Login'}</span>
                         </button>
                       </div>
                     </div>
@@ -365,7 +376,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 );
               })}
               
-              {/* Admin Link */}
+              {/* Login/Admin Link */}
               <div className="border-t border-gray-200 pt-2 mt-2">
                 <button
                   onClick={() => {
@@ -379,7 +390,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   }`}
                 >
                   <Settings className="w-5 h-5" />
-                  <span>Admin Portal</span>
+                  <span>{currentUser ? 'Admin Portal' : 'Login'}</span>
                 </button>
               </div>
               

@@ -24,7 +24,7 @@ export const useConfig = (
   key: string, 
   options: UseConfigOptions = {}
 ): UseConfigReturn => {
-  const { defaultValue = null, cacheKey = key, refreshInterval } = options;
+  const { defaultValue = null, refreshInterval } = options;
   const [value, setValue] = useState<any>(defaultValue);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

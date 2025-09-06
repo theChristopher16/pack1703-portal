@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import configService from './services/configService';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './contexts/ToastContext';
+import ScrollToTop from './components/ScrollToTop';
 
 // Components
 import Layout from './components/Layout/Layout';
@@ -87,6 +88,7 @@ function App() {
         <AdminProvider>
           <MultiTenantProvider>
             <Router>
+              <ScrollToTop />
           <Routes>
           {/* Public Routes with Layout */}
           <Route path="/" element={<Layout><HomePage /></Layout>} />

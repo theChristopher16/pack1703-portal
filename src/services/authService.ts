@@ -464,10 +464,34 @@ class AuthService {
     const userData: Omit<AppUser, 'uid' | 'createdAt' | 'updatedAt'> = {
       email: firebaseUser.email!,
       displayName: firebaseUser.displayName || 'User',
+      photoURL: firebaseUser.photoURL || undefined, // Include profile picture from social login
       role: UserRole.ROOT,
       permissions: ROLE_PERMISSIONS[UserRole.ROOT],
       isActive: true,
-      profile: {}
+      authProvider: authProvider,
+      profile: {
+        socialData: {
+          google: firebaseUser.providerData.find(p => p.providerId === 'google.com') ? {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || undefined,
+            name: firebaseUser.displayName || undefined,
+            picture: firebaseUser.photoURL || undefined,
+            verifiedEmail: firebaseUser.emailVerified
+          } : undefined,
+          apple: firebaseUser.providerData.find(p => p.providerId === 'apple.com') ? {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || undefined,
+            name: firebaseUser.displayName || undefined,
+            picture: firebaseUser.photoURL || undefined
+          } : undefined,
+          facebook: firebaseUser.providerData.find(p => p.providerId === 'facebook.com') ? {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || undefined,
+            name: firebaseUser.displayName || undefined,
+            picture: firebaseUser.photoURL || undefined
+          } : undefined
+        }
+      }
     };
 
     await setDoc(doc(db, 'users', firebaseUser.uid), {

@@ -8,6 +8,7 @@ import chatService, { ChatUser, ChatMessage, ChatChannel } from '../services/cha
 import tenorService, { TenorGif } from '../services/tenorService';
 import { useToast } from '../contexts/ToastContext';
 import { authService, UserRole } from '../services/authService';
+import ProfilePicture from '../components/ui/ProfilePicture';
 
 // Rich text formatting utilities
 const FORMATTING_PATTERNS = {
@@ -1058,9 +1059,13 @@ const ChatPage: React.FC = () => {
             {currentUser && (
               <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white flex-shrink-0">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5" />
-                  </div>
+                  <ProfilePicture 
+                    src={currentUser.photoURL}
+                    alt={currentUser.name}
+                    size="lg"
+                    className="bg-white bg-opacity-20"
+                    fallbackIcon={<User className="w-5 h-5" />}
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{currentUser.name}</p>
                     <p className="text-sm text-blue-100 truncate">
@@ -1262,21 +1267,27 @@ const ChatPage: React.FC = () => {
                       >
                         <div className="flex items-start space-x-3">
                           <div className="flex-shrink-0">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                              message.isSystem 
-                                ? 'bg-yellow-200 text-yellow-800' 
-                                : message.isAdmin 
-                                  ? 'bg-blue-200 text-blue-800' 
-                                  : 'bg-gray-200 text-gray-800'
-                            }`}>
-                              {message.isSystem ? (
+                            {message.isSystem ? (
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-yellow-200 text-yellow-800">
                                 <Settings className="w-4 h-4" />
-                              ) : (
-                                <span className="text-sm font-medium">
-                                  {message.userName.charAt(0).toUpperCase()}
-                                </span>
-                              )}
-                            </div>
+                              </div>
+                            ) : (
+                              <ProfilePicture 
+                                src={users.find(u => u.name === message.userName)?.photoURL}
+                                alt={message.userName}
+                                size="md"
+                                className={`${
+                                  message.isAdmin 
+                                    ? 'bg-blue-200 text-blue-800' 
+                                    : 'bg-gray-200 text-gray-800'
+                                }`}
+                                fallbackIcon={
+                                  <span className="text-sm font-medium">
+                                    {message.userName.charAt(0).toUpperCase()}
+                                  </span>
+                                }
+                              />
+                            )}
                           </div>
                           
                           <div className="flex-1 min-w-0">

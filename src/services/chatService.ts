@@ -31,6 +31,8 @@ export interface ChatUser {
   sessionId: string;
   userAgent: string;
   ipHash?: string;
+  // Profile picture support
+  photoURL?: string;
   // Admin management fields
   isBanned?: boolean;
   banReason?: string;
@@ -154,7 +156,7 @@ class SessionManager {
     }
   }
 
-  static createNewUser(name: string, den?: string): ChatUser {
+  static createNewUser(name: string, den?: string, photoURL?: string): ChatUser {
     const userId = this.generateUserId();
     const sessionId = this.generateSessionId();
     const ipHash = this.generateIPHash();
@@ -168,7 +170,8 @@ class SessionManager {
       den: den as any,
       sessionId,
       userAgent: navigator.userAgent,
-      ipHash
+      ipHash,
+      photoURL: photoURL // Include profile picture
     };
 
     this.saveUserToStorage(user);
@@ -180,7 +183,7 @@ class SessionManager {
     const authenticatedUser = authService.getCurrentUser();
     
     if (authenticatedUser) {
-      // User is authenticated - use their real name
+      // User is authenticated - use their real name and profile picture
       const existingUser = this.getUserFromStorage();
       
       if (existingUser && existingUser.id && existingUser.name) {
@@ -188,6 +191,7 @@ class SessionManager {
         const updatedUser: ChatUser = {
           ...existingUser as ChatUser,
           name: authenticatedUser.displayName || authenticatedUser.email || 'Authenticated User',
+          photoURL: authenticatedUser.photoURL, // Include profile picture
           isOnline: true,
           lastSeen: new Date(),
           sessionId: this.generateSessionId(),
@@ -200,7 +204,7 @@ class SessionManager {
       } else {
         // Create new authenticated user
         const realName = authenticatedUser.displayName || authenticatedUser.email || 'Authenticated User';
-        return this.createNewUser(realName);
+        return this.createNewUser(realName, undefined, authenticatedUser.photoURL);
       }
     }
     

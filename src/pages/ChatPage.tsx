@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Send, MessageCircle, Settings, User, Search, Smile, Share2, 
   Bold, Italic, Underline, Loader2, Camera, Palette, Type, 
-  List, Code, Quote, Link, Image, AtSign, Hash, Star
+  List, Code, Quote, Link, Image, AtSign, Hash, Star, Lock
 } from 'lucide-react';
 import chatService, { ChatUser, ChatMessage, ChatChannel } from '../services/chatService';
 import tenorService, { TenorGif } from '../services/tenorService';
 import { useToast } from '../contexts/ToastContext';
+import { authService, UserRole } from '../services/authService';
 
 // Rich text formatting utilities
 const FORMATTING_PATTERNS = {
@@ -63,6 +64,11 @@ const ChatPage: React.FC = () => {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [messageListRef, setMessageListRef] = useState<HTMLDivElement | null>(null);
   const [hasNewMessages, setHasNewMessages] = useState(false);
+  
+  // Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState<UserRole>(UserRole.ANONYMOUS);
+  const [authLoading, setAuthLoading] = useState(true);
   
   // Rich text state
   const [richTextState, setRichTextState] = useState<RichTextState>({
@@ -682,11 +688,49 @@ const ChatPage: React.FC = () => {
     return currentMessage.userName !== nextMessage.userName || timeDiff > fiveMinutes;
   };
 
-  // Initialize chat (only once)
+  // Check authentication first
   useEffect(() => {
+    const checkAuth = () => {
+      const user = authService.getCurrentUser();
+      if (user) {
+        setIsAuthenticated(true);
+        setUserRole(user.role);
+      } else {
+        setIsAuthenticated(false);
+        setUserRole(UserRole.ANONYMOUS);
+      }
+      setAuthLoading(false);
+    };
+
+    checkAuth();
+    
+    // Listen for auth changes
+    const unsubscribe = authService.onAuthStateChanged((user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        setUserRole(user.role);
+      } else {
+        setIsAuthenticated(false);
+        setUserRole(UserRole.ANONYMOUS);
+      }
+      setAuthLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Initialize chat (only for authenticated users)
+  useEffect(() => {
+    if (authLoading) return; // Wait for auth check to complete
+    
+    if (!isAuthenticated) {
+      setIsLoading(false);
+      return; // Don't initialize chat for anonymous users
+    }
+
     const initializeChat = async () => {
       try {
-        console.log('Initializing chat...');
+        console.log('Initializing chat for authenticated user...');
         setIsLoading(true);
         setError(null);
         
@@ -704,7 +748,7 @@ const ChatPage: React.FC = () => {
         console.log('Current user initialized:', user);
         setCurrentUser(user);
         
-        // Load channels
+        // Load channels (filtered by user permissions)
         console.log('Loading channels...');
         const channelData = await chatService.getChannels();
         console.log('Channels loaded:', channelData);
@@ -895,6 +939,64 @@ const ChatPage: React.FC = () => {
       console.log('Channels loaded:', channels.length, 'unique:', uniqueIds.size);
     }
   }, [channels]);
+
+  // Show authentication required message for anonymous users
+  if (!authLoading && !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="mb-6">
+            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-primary-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h1>
+            <p className="text-gray-600">
+              Chat is only available to registered pack members. Please sign in to access the chat system.
+            </p>
+          </div>
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => window.location.href = '/admin/login'}
+              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => window.location.href = '/'}
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-lg transition-colors"
+            >
+              Back to Home
+            </button>
+          </div>
+          
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+            <h3 className="text-sm font-semibold text-blue-900 mb-2">Why is authentication required?</h3>
+            <ul className="text-xs text-blue-800 text-left space-y-1">
+              <li>• Protects family privacy and conversations</li>
+              <li>• Ensures only pack members can participate</li>
+              <li>• Maintains appropriate content standards</li>
+              <li>• Allows den-specific channel access</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state while checking authentication or initializing chat
+  if (authLoading || isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">
+            {authLoading ? 'Checking authentication...' : 'Connecting to chat...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Removed loading animation for faster page transitions
 

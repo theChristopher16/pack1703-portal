@@ -94,7 +94,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     // Additional features for authenticated parents
     const parentNavigation = [
       ...essentialNavigation,
-      { name: 'Chat', href: '/chat', icon: MessageCircle }, // Communication
+      { name: 'Chat', href: '/chat', icon: MessageCircle }, // Communication - authenticated only
       { name: 'Resources', href: '/resources', icon: FileText }, // Reference materials
       { name: 'Feedback', href: '/feedback', icon: MessageSquare }, // Input
     ];

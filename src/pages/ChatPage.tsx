@@ -8,6 +8,7 @@ import chatService, { ChatUser, ChatMessage, ChatChannel } from '../services/cha
 import tenorService, { TenorGif } from '../services/tenorService';
 import { useToast } from '../contexts/ToastContext';
 import { authService, UserRole } from '../services/authService';
+import analyticsService from '../services/analyticsService';
 import ProfilePicture from '../components/ui/ProfilePicture';
 
 // Rich text formatting utilities
@@ -921,6 +922,15 @@ const ChatPage: React.FC = () => {
       
       const formattedMessage = newMessage; // Rich text formatting is handled by renderFormattedText
       await chatService.sendMessage(selectedChannel, formattedMessage);
+      
+      // Track chat usage analytics
+      await analyticsService.trackChatUsage('message_sent', {
+        channel: selectedChannel,
+        messageLength: formattedMessage.length,
+        hasImages: uploadedImages.length > 0,
+        imageCount: uploadedImages.length
+      });
+      
       console.log('Message sent successfully');
       
       // Reset everything
@@ -1190,7 +1200,14 @@ const ChatPage: React.FC = () => {
                           {denChannels.map(channel => (
                             <button
                               key={`channel-${channel.id}`}
-                              onClick={() => setSelectedChannel(channel.id)}
+                              onClick={async () => {
+                                setSelectedChannel(channel.id);
+                                await analyticsService.trackChatUsage('channel_selected', {
+                                  channelId: channel.id,
+                                  channelName: channel.name,
+                                  denType: denType
+                                });
+                              }}
                               className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                                 selectedChannel === channel.id
                                   ? 'bg-blue-100 text-blue-700 font-medium shadow-sm'

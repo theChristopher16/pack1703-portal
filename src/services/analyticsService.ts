@@ -65,7 +65,43 @@ class AnalyticsService {
     await this.trackEvent({
       type: 'feature_usage',
       feature: featureName,
-      metadata
+      metadata: {
+        ...metadata,
+        timestamp: new Date().toISOString(),
+        page: window.location.pathname
+      }
+    });
+  }
+
+  // Track specific features with enhanced metadata
+  async trackChatUsage(action: string, metadata?: any): Promise<void> {
+    await this.trackFeatureUsage('chat', {
+      action,
+      ...metadata
+    });
+  }
+
+  async trackEventInteraction(action: string, eventId?: string, metadata?: any): Promise<void> {
+    await this.trackFeatureUsage('events', {
+      action,
+      eventId,
+      ...metadata
+    });
+  }
+
+  async trackLocationInteraction(action: string, locationId?: string, metadata?: any): Promise<void> {
+    await this.trackFeatureUsage('locations', {
+      action,
+      locationId,
+      ...metadata
+    });
+  }
+
+  async trackAdminAction(action: string, target?: string, metadata?: any): Promise<void> {
+    await this.trackFeatureUsage('admin', {
+      action,
+      target,
+      ...metadata
     });
   }
 

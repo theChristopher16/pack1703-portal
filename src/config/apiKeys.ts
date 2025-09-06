@@ -1,45 +1,84 @@
-// API Keys Configuration - Separated by Admin and User permissions for security
+// API Keys Configuration - SECURE: All keys must be provided via environment variables
+// ⚠️  SECURITY WARNING: Never hardcode API keys in source code!
+// All keys must be set via environment variables or Google Secret Manager
+
 export const API_KEYS = {
   // Admin API Keys - Full access for administrative functions
   ADMIN: {
     // OpenAI API Key for admin functions (AI collaboration, system monitoring, etc.)
-    OPENAI: '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',
+    OPENAI: process.env.REACT_APP_ADMIN_OPENAI_API_KEY || (() => {
+      console.error('❌ SECURITY ERROR: REACT_APP_ADMIN_OPENAI_API_KEY not set!');
+      throw new Error('Admin OpenAI API key is required but not configured');
+    })(),
     
     // Google Maps API - Admin access for location management
-    GOOGLE_MAPS: 'AIzaSyC1nkEYq0YP89BwS_An_sMc3Kn4FJY2Nos',
+    GOOGLE_MAPS: process.env.REACT_APP_ADMIN_GOOGLE_MAPS_API_KEY || (() => {
+      console.error('❌ SECURITY ERROR: REACT_APP_ADMIN_GOOGLE_MAPS_API_KEY not set!');
+      throw new Error('Admin Google Maps API key is required but not configured');
+    })(),
     
     // OpenWeather API - Admin access for weather monitoring
-    OPENWEATHER: 'a769d61ef03910861ff1734bb254f87c',
+    OPENWEATHER: process.env.REACT_APP_ADMIN_OPENWEATHER_API_KEY || (() => {
+      console.error('❌ SECURITY ERROR: REACT_APP_ADMIN_OPENWEATHER_API_KEY not set!');
+      throw new Error('Admin OpenWeather API key is required but not configured');
+    })(),
     
     // Google Places API - Admin access for business information
-    GOOGLE_PLACES: 'AIzaSyC1nkEYq0YP89BwS_An_sMc3Kn4FJY2Nos', // Same as Google Maps
+    GOOGLE_PLACES: process.env.REACT_APP_ADMIN_GOOGLE_PLACES_API_KEY || (() => {
+      console.error('❌ SECURITY ERROR: REACT_APP_ADMIN_GOOGLE_PLACES_API_KEY not set!');
+      throw new Error('Admin Google Places API key is required but not configured');
+    })(),
   },
   
   // User API Keys - Limited access for regular user functions
   USER: {
     // OpenAI API Key for user functions (chat assistance, basic AI features)
-    OPENAI: process.env.REACT_APP_USER_OPENAI_API_KEY || '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',
+    OPENAI: process.env.REACT_APP_USER_OPENAI_API_KEY || (() => {
+      console.error('❌ SECURITY ERROR: REACT_APP_USER_OPENAI_API_KEY not set!');
+      throw new Error('User OpenAI API key is required but not configured');
+    })(),
     
     // Google Maps API - User access for basic location features
-    GOOGLE_MAPS: process.env.REACT_APP_USER_GOOGLE_MAPS_API_KEY || 'AIzaSyC1nkEYq0YP89BwS_An_sMc3Kn4FJY2Nos',
+    GOOGLE_MAPS: process.env.REACT_APP_USER_GOOGLE_MAPS_API_KEY || (() => {
+      console.error('❌ SECURITY ERROR: REACT_APP_USER_GOOGLE_MAPS_API_KEY not set!');
+      throw new Error('User Google Maps API key is required but not configured');
+    })(),
     
     // OpenWeather API - User access for basic weather features
-    OPENWEATHER: process.env.REACT_APP_USER_OPENWEATHER_API_KEY || 'a769d61ef03910861ff1734bb254f87c',
+    OPENWEATHER: process.env.REACT_APP_USER_OPENWEATHER_API_KEY || (() => {
+      console.error('❌ SECURITY ERROR: REACT_APP_USER_OPENWEATHER_API_KEY not set!');
+      throw new Error('User OpenWeather API key is required but not configured');
+    })(),
     
     // Google Places API - User access for basic business info
-    GOOGLE_PLACES: process.env.REACT_APP_USER_GOOGLE_PLACES_API_KEY || 'AIzaSyC1nkEYq0YP89BwS_An_sMc3Kn4FJY2Nos',
+    GOOGLE_PLACES: process.env.REACT_APP_USER_GOOGLE_PLACES_API_KEY || (() => {
+      console.error('❌ SECURITY ERROR: REACT_APP_USER_GOOGLE_PLACES_API_KEY not set!');
+      throw new Error('User Google Places API key is required but not configured');
+    })(),
   },
   
   // Phone Validation API (NumLookupAPI) - Shared between admin and user
-  PHONE_VALIDATION: process.env.REACT_APP_PHONE_VALIDATION_API_KEY || 'num_live_OmFTb2kLgKmdZOmOy3BAqcEA0yw81nWHMe92dN1P',
+  PHONE_VALIDATION: process.env.REACT_APP_PHONE_VALIDATION_API_KEY || (() => {
+    console.error('❌ SECURITY ERROR: REACT_APP_PHONE_VALIDATION_API_KEY not set!');
+    throw new Error('Phone validation API key is required but not configured');
+  })(),
   
   // Tenor API (GIF Service) - Shared between admin and user
-  TENOR: process.env.REACT_APP_TENOR_API_KEY || 'AIzaSyCbPAw3QOuuzRJjUx1_jC0wgJPtVLYxLqY',
+  TENOR: process.env.REACT_APP_TENOR_API_KEY || (() => {
+    console.error('❌ SECURITY ERROR: REACT_APP_TENOR_API_KEY not set!');
+    throw new Error('Tenor API key is required but not configured');
+  })(),
   
   // reCAPTCHA v3 - Shared between admin and user
   RECAPTCHA: {
-    SITE_KEY: process.env.REACT_APP_RECAPTCHA_V3_SITE_KEY || '6LcDK7wrAAAAAJ52gvpmjYx5abUzCIKmg-APPKmz',
-    SECRET_KEY: process.env.REACT_APP_RECAPTCHA_V3_SECRET_KEY || '6LcDK7wrAAAAAMXRAymx4JRKz-tDzwzfBlibjnDr',
+    SITE_KEY: process.env.REACT_APP_RECAPTCHA_V3_SITE_KEY || (() => {
+      console.error('❌ SECURITY ERROR: REACT_APP_RECAPTCHA_V3_SITE_KEY not set!');
+      throw new Error('reCAPTCHA v3 site key is required but not configured');
+    })(),
+    SECRET_KEY: process.env.REACT_APP_RECAPTCHA_V3_SECRET_KEY || (() => {
+      console.error('❌ SECURITY ERROR: REACT_APP_RECAPTCHA_V3_SECRET_KEY not set!');
+      throw new Error('reCAPTCHA v3 secret key is required but not configured');
+    })(),
   },
 };
 

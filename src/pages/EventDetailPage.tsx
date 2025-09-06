@@ -16,44 +16,6 @@ import { Event, Location } from '../types';
 import { LoadingSpinner } from '../components/Loading';
 import RSVPForm from '../components/Forms/RSVPForm';
 
-// Mock data for development - replace with actual Firestore queries
-const mockEvent: Event = {
-  id: 'event-1',
-  seasonId: 'season-2025',
-  title: 'Pack 1703 Fall Campout',
-  category: 'campout',
-  start: { toDate: () => new Date('2025-10-15T18:00:00') } as any,
-  end: { toDate: () => new Date('2025-10-17T12:00:00') } as any,
-  locationId: 'location-1',
-  description: 'Join us for our annual fall campout! This is a great opportunity for families to bond, learn outdoor skills, and have fun together. We\'ll have activities for all ages including nature walks, campfire cooking, and stargazing.',
-  packingList: ['tent', 'sleeping bag', 'warm clothes', 'walking shoes'],
-  attachments: [
-    { name: 'Campout Schedule.pdf', url: '#', type: 'application/pdf' },
-    { name: 'Packing List.pdf', url: '#', type: 'application/pdf' }
-  ],
-  rsvpEnabled: true,
-  capacity: 50,
-  visibility: 'public',
-  denTags: ['Wolf', 'Bear', 'Webelos'],
-  updatedAt: { toDate: () => new Date() } as any,
-  createdAt: { toDate: () => new Date() } as any
-};
-
-const mockLocation: Location = {
-  id: 'location-1',
-  name: 'Camp Arrowhead',
-  address: '1234 Camp Road, Houston, TX 77001',
-  geo: { lat: 29.7604, lng: -95.3698 },
-  notesPublic: 'Beautiful campground with nature trails and lake access. Perfect for families with children of all ages.',
-  notesPrivate: 'Gate code: 1234, Contact: Ranger Smith (555) 123-4567',
-  parking: {
-    text: 'Parking available in main lot. Overflow parking in field.',
-    instructions: 'Follow signs to Pack 1703 area'
-  },
-  createdAt: { toDate: () => new Date() } as any,
-  updatedAt: { toDate: () => new Date() } as any
-};
-
 const EventDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [event, setEvent] = useState<Event | null>(null);
@@ -70,59 +32,43 @@ const EventDetailPage: React.FC = () => {
   }, [searchParams]);
 
   useEffect(() => {
-    // Load event data based on the ID from URL
-    const loadEventData = () => {
-      // For now, use mock data but match the ID from URL
-      // TODO: Replace with actual Firestore query
-      if (id === 'event-001') {
-        // Match the event from EventsPage
-        const eventData: Event = {
-          id: 'event-001',
-          seasonId: 'season-2025',
-          title: 'Pack 1703 Fall Campout',
-          category: 'campout',
-          start: { toDate: () => new Date('2024-10-15T14:00:00') } as any,
-          end: { toDate: () => new Date('2024-10-15T16:00:00') } as any,
-          locationId: 'location-1',
-          description: 'Join us for our annual fall campout! This is a great opportunity for families to bond, learn outdoor skills, and enjoy nature together.',
-          packingList: ['Tent and sleeping bags', 'Warm clothing', 'Flashlight', 'Water bottle'],
-          attachments: [
-            { name: 'Campout Schedule.pdf', url: '#', type: 'application/pdf' },
-            { name: 'Packing List.pdf', url: '#', type: 'application/pdf' }
-          ],
-          rsvpEnabled: true,
-          capacity: 50,
-          visibility: 'public',
-          denTags: ['Lions', 'Tigers', 'Wolves', 'Bears', 'Webelos', 'AOL'],
-          updatedAt: { toDate: () => new Date() } as any,
-          createdAt: { toDate: () => new Date() } as any
-        };
-        
-        const locationData: Location = {
-          id: 'location-1',
-          name: 'Camp Wokanda',
-          address: '1234 Scout Road, Peoria, IL 61614',
-          geo: { lat: 40.7103, lng: -89.6144 },
-          notesPublic: 'Beautiful campground with nature trails and lake access. Perfect for families with children of all ages.',
-          notesPrivate: 'Gate code: 1234, Contact: Ranger Smith (555) 123-4567',
-          parking: {
-            text: 'Parking available in main lot. Overflow parking in field.',
-            instructions: 'Follow signs to Pack 1703 area'
-          },
-          createdAt: { toDate: () => new Date() } as any,
-          updatedAt: { toDate: () => new Date() } as any
-        };
-        
-        setEvent(eventData);
-        setLocation(locationData);
-      } else {
-        // Fallback to default mock data
-        setEvent(mockEvent);
-        setLocation(mockLocation);
+    const loadEventData = async () => {
+      if (!id) {
+        setIsLoading(false);
+        return;
       }
-      setIsLoading(false);
+
+      try {
+        // Import Firebase functions
+        const { doc, getDoc } = await import('firebase/firestore');
+        const { db } = await import('../firebase/config');
+        
+        // Load event data
+        const eventRef = doc(db, 'events', id);
+        const eventSnap = await getDoc(eventRef);
+        
+        if (eventSnap.exists()) {
+          const eventData = { id: eventSnap.id, ...eventSnap.data() } as Event;
+          setEvent(eventData);
+          
+          // Load location data if event has locationId
+          if (eventData.locationId) {
+            const locationRef = doc(db, 'locations', eventData.locationId);
+            const locationSnap = await getDoc(locationRef);
+            
+            if (locationSnap.exists()) {
+              const locationData = { id: locationSnap.id, ...locationSnap.data() } as Location;
+              setLocation(locationData);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading event:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    
+
     loadEventData();
   }, [id]);
 

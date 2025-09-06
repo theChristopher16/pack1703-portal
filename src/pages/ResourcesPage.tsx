@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FileText, 
   Download, 
@@ -27,120 +27,43 @@ const ResourcesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock resources data - will be replaced with Firebase calls
-  const resources: Resource[] = [
-    {
-      id: '1',
-      title: 'Camping Packing List',
-      description: 'Complete checklist for overnight camping trips including tent, sleeping gear, clothing, and personal items.',
-      category: 'packing-list',
-      tags: ['camping', 'overnight', 'gear', 'checklist'],
-      url: '/resources/camping-packing-list.pdf',
-      fileType: 'pdf',
-      lastUpdated: '2024-01-15',
-      isActive: true
-    },
-    {
-      id: '2',
-      title: 'Day Trip Packing List',
-      description: 'Essential items for day trips and activities including water, snacks, first aid, and weather protection.',
-      category: 'packing-list',
-      tags: ['day-trip', 'essentials', 'weather', 'safety'],
-      url: '/resources/day-trip-packing-list.pdf',
-      fileType: 'pdf',
-      lastUpdated: '2024-01-15',
-      isActive: true
-    },
-    {
-      id: '3',
-      title: 'Medical Form A',
-      description: 'Required medical form for all scouts participating in activities. Must be completed annually.',
-      category: 'medical',
-      tags: ['medical', 'required', 'annual', 'health'],
-      url: '/resources/medical-form-a.pdf',
-      fileType: 'pdf',
-      lastUpdated: '2024-01-01',
-      isActive: true
-    },
-    {
-      id: '4',
-      title: 'Photo Release Form',
-      description: 'Permission form for using photos of scouts in pack communications and social media.',
-      category: 'form',
-      tags: ['photo', 'permission', 'media', 'privacy'],
-      url: '/resources/photo-release-form.pdf',
-      fileType: 'pdf',
-      lastUpdated: '2024-01-01',
-      isActive: true
-    },
-    {
-      id: '5',
-      title: 'Pack 1703 Photo Policy',
-      description: 'Guidelines for taking and sharing photos during pack activities and events.',
-      category: 'policy',
-      tags: ['photo', 'policy', 'guidelines', 'safety'],
-      url: '/resources/photo-policy.pdf',
-      fileType: 'pdf',
-      lastUpdated: '2024-01-01',
-      isActive: true
-    },
-    {
-      id: '6',
-      title: 'Scout Oath and Law',
-      description: 'The Scout Oath and Law - fundamental principles that guide all scouting activities.',
-      category: 'reference',
-      tags: ['oath', 'law', 'principles', 'scouting'],
-      url: '/resources/scout-oath-law.pdf',
-      fileType: 'pdf',
-      lastUpdated: '2024-01-01',
-      isActive: true
-    },
-    {
-      id: '7',
-      title: 'What to Expect: Camping Trip',
-      description: 'Guide for families new to camping, covering what to bring, what to expect, and safety tips.',
-      category: 'guide',
-      tags: ['camping', 'new-families', 'safety', 'expectations'],
-      url: '/resources/camping-guide.pdf',
-      fileType: 'pdf',
-      lastUpdated: '2024-01-15',
-      isActive: true
-    },
-    {
-      id: '8',
-      title: 'What to Expect: Pinewood Derby',
-      description: 'Complete guide to the Pinewood Derby including rules, car specifications, and race day information.',
-      category: 'guide',
-      tags: ['pinewood-derby', 'competition', 'rules', 'specifications'],
-      url: '/resources/pinewood-derby-guide.pdf',
-      fileType: 'pdf',
-      lastUpdated: '2024-02-01',
-      isActive: true
-    },
-    {
-      id: '9',
-      title: 'Emergency Contact Information',
-      description: 'Important phone numbers and contact information for pack leadership and emergency situations.',
-      category: 'reference',
-      tags: ['emergency', 'contacts', 'leadership', 'safety'],
-      url: '/resources/emergency-contacts.pdf',
-      fileType: 'pdf',
-      lastUpdated: '2024-01-01',
-      isActive: true
-    },
-    {
-      id: '10',
-      title: 'Uniform Guidelines',
-      description: 'Proper uniform requirements for different events and activities, including placement of patches and insignia.',
-      category: 'guide',
-      tags: ['uniform', 'patches', 'insignia', 'requirements'],
-      url: '/resources/uniform-guidelines.pdf',
-      fileType: 'pdf',
-      lastUpdated: '2024-01-01',
-      isActive: true
-    }
-  ];
+  // Load resources from Firebase
+  useEffect(() => {
+    const loadResources = async () => {
+      try {
+        // Import Firebase functions
+        const { collection, query, where, getDocs, orderBy } = await import('firebase/firestore');
+        const { db } = await import('../firebase/config');
+        
+        // Query resources
+        const resourcesRef = collection(db, 'resources');
+        const q = query(
+          resourcesRef, 
+          where('isActive', '==', true),
+          orderBy('lastUpdated', 'desc')
+        );
+        
+        const snapshot = await getDocs(q);
+        const resourcesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Resource[];
+        
+        setResources(resourcesData);
+      } catch (error) {
+        console.error('Error loading resources:', error);
+        // Fallback to empty array if error
+        setResources([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadResources();
+  }, []);
 
   const categories = [
     { id: 'all', name: 'All Resources', icon: BookOpen, color: 'bg-gray-100 text-gray-800' },
@@ -224,241 +147,144 @@ const ResourcesPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-soft border border-gray-200/50 p-8 mb-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Search */}
-            <div>
-              <label htmlFor="search" className="block text-sm font-display font-semibold text-gray-900 mb-3">
-                Search Resources
-              </label>
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  id="search"
-                  placeholder="Search by title, description, or tags..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white/80 backdrop-blur-sm"
-                />
-              </div>
-            </div>
-
-            {/* Category Filter */}
-            <div>
-              <label htmlFor="category" className="block text-sm font-display font-semibold text-gray-900 mb-3">
-                Category
-              </label>
-              <select
-                id="category"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 bg-white/80 backdrop-blur-sm"
-              >
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Tag Filter */}
-            <div>
-              <label className="block text-sm font-display font-semibold text-gray-900 mb-3">
-                Popular Tags
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {allTags.slice(0, 6).map(tag => (
-                  <button
-                    key={tag}
-                    onClick={() => handleTagToggle(tag)}
-                    className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
-                      selectedTags.includes(tag)
-                        ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-glow-primary'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-soft'
-                    }`}
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            </div>
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading resources...</p>
           </div>
-
-          {/* Active Tag Filters */}
-          {selectedTags.length > 0 && (
-            <div className="mt-6 pt-6 border-t border-gray-200/50">
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-display font-semibold text-gray-900">Active filters:</span>
-                {selectedTags.map(tag => (
-                  <button
-                    key={tag}
-                    onClick={() => handleTagToggle(tag)}
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium bg-gradient-to-r from-primary-100 to-secondary-100 text-primary-700 rounded-xl hover:from-primary-200 hover:to-secondary-200 transition-all duration-200"
-                  >
-                    {tag}
-                    <span className="ml-2 text-primary-600 font-bold">×</span>
-                  </button>
-                ))}
-                <button
-                  onClick={() => setSelectedTags([])}
-                  className="text-sm text-primary-600 hover:text-primary-700 font-display font-semibold transition-colors duration-200"
-                >
-                  Clear all
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Resources Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredResources.map((resource) => (
-            <div key={resource.id} className="group bg-white/90 backdrop-blur-md rounded-2xl shadow-soft border border-gray-200/50 overflow-hidden hover:shadow-glow-primary transition-all duration-300 transform hover:-translate-y-1">
-              <div className="p-8">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-6">
-                  <div className="flex items-center flex-1">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center mr-4 shadow-glow">
-                      {React.createElement(getCategoryIcon(resource.category), { 
-                        className: "h-6 w-6 text-white" 
-                      })}
-                    </div>
-                    <h3 className="text-xl font-display font-semibold text-gray-900 flex-1 group-hover:text-gradient transition-all duration-300">{resource.title}</h3>
+        ) : (
+          <>
+            {/* Search and Filters */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 mb-8 shadow-soft border border-white/50">
+              <div className="flex flex-col lg:flex-row gap-4">
+                {/* Search */}
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <input
+                      type="text"
+                      placeholder="Search resources..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+                    />
                   </div>
-                  {resource.fileType && (
-                    <div className="ml-3">
-                      {getFileTypeIcon(resource.fileType)}
+                </div>
+
+                {/* Category Filter */}
+                <div className="lg:w-64">
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+                  >
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Tags */}
+              {allTags.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm text-gray-600 mb-2">Filter by tags:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {allTags.map(tag => (
+                      <button
+                        key={tag}
+                        onClick={() => handleTagToggle(tag)}
+                        className={`px-3 py-1 rounded-full text-sm transition-all duration-200 ${
+                          selectedTags.includes(tag)
+                            ? 'bg-primary-500 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Resources Grid */}
+            {filteredResources.length === 0 ? (
+              <div className="text-center py-12">
+                <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">No resources found</h3>
+                <p className="text-gray-500">
+                  {searchTerm || selectedCategory !== 'all' || selectedTags.length > 0
+                    ? 'Try adjusting your search criteria'
+                    : 'No resources are available at the moment'
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredResources.map(resource => {
+                  const CategoryIcon = getCategoryIcon(resource.category);
+                  return (
+                    <div
+                      key={resource.id}
+                      className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-soft border border-white/50 hover:shadow-glow transition-all duration-300 group"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className={`p-3 rounded-xl ${getCategoryColor(resource.category)}`}>
+                          <CategoryIcon className="h-6 w-6" />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {getFileTypeIcon(resource.fileType)}
+                          {resource.url && (
+                            <button
+                              onClick={() => handleDownload(resource)}
+                              className="p-2 text-gray-400 hover:text-primary-600 transition-colors duration-200"
+                            >
+                              <Download className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors duration-200">
+                        {resource.title}
+                      </h3>
+
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                        {resource.description}
+                      </p>
+
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {resource.tags.slice(0, 3).map(tag => (
+                          <span
+                            key={tag}
+                            className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {resource.tags.length > 3 && (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                            +{resource.tags.length - 3} more
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>Updated {new Date(resource.lastUpdated).toLocaleDateString()}</span>
+                        {resource.url && (
+                          <ExternalLink className="h-3 w-3" />
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-
-                {/* Description */}
-                <p className="text-gray-600 mb-6 leading-relaxed">{resource.description}</p>
-
-                {/* Category Badge */}
-                <div className="mb-6">
-                  <span className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-medium ${getCategoryColor(resource.category)}`}>
-                    {categories.find(c => c.id === resource.category)?.name}
-                  </span>
-                </div>
-
-                {/* Tags */}
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {resource.tags.map(tag => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center px-3 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-lg"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Last Updated */}
-                <div className="text-sm text-gray-500 mb-6">
-                  Last updated: {new Date(resource.lastUpdated).toLocaleDateString()}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex space-x-3">
-                  {resource.url ? (
-                    <button
-                      onClick={() => handleDownload(resource)}
-                      className="flex-1 inline-flex items-center justify-center px-6 py-3 border border-transparent text-sm font-display font-semibold rounded-xl text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 focus:outline-none focus:ring-4 focus:ring-primary-300/50 transition-all duration-200 transform hover:scale-105 shadow-glow-primary"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download
-                    </button>
-                  ) : (
-                    <button
-                      disabled
-                      className="flex-1 inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-sm font-display font-semibold rounded-xl text-gray-400 bg-gray-100 cursor-not-allowed"
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      View
-                    </button>
-                  )}
-                  
-                  {resource.url && (
-                    <button
-                      onClick={() => window.open(resource.url, '_blank')}
-                      className="inline-flex items-center justify-center px-4 py-3 border-2 border-gray-200 text-sm font-display font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 hover:border-primary-300 focus:outline-none focus:ring-4 focus:ring-primary-300/50 transition-all duration-200"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
+                  );
+                })}
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* No Results */}
-        {filteredResources.length === 0 && (
-          <div className="text-center py-16">
-            <div className="w-24 h-24 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-soft">
-              <FileText className="h-12 w-12 text-gray-400" />
-            </div>
-            <h3 className="text-xl font-display font-semibold text-gray-900 mb-3">No resources found</h3>
-            <p className="text-gray-600 max-w-md mx-auto">
-              {searchTerm || selectedCategory !== 'all' || selectedTags.length > 0
-                ? 'Try adjusting your search or filters to find what you\'re looking for.'
-                : 'No resources are currently available. Check back soon!'}
-            </p>
-          </div>
+            )}
+          </>
         )}
-
-        {/* Quick Access Section */}
-        <div className="mt-16 bg-gradient-to-r from-primary-50 via-secondary-50 to-accent-50 rounded-3xl p-12 relative overflow-hidden">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 bg-gradient-mesh opacity-10"></div>
-          
-          {/* Floating Elements */}
-          <div className="absolute top-8 left-8 w-16 h-16 bg-white/20 rounded-full animate-float"></div>
-          <div className="absolute bottom-8 right-8 w-12 h-12 bg-white/20 rounded-full animate-float" style={{ animationDelay: '3s' }}></div>
-          
-          <div className="relative z-10">
-            <h2 className="text-3xl font-display font-bold text-gray-900 mb-8 text-center">
-              Quick <span className="text-gradient">Access</span>
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              <div className="text-center group">
-                <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 w-20 h-20 mx-auto mb-4 flex items-center justify-center shadow-soft group-hover:shadow-glow-primary transition-all duration-300 transform group-hover:scale-110">
-                  <Calendar className="h-10 w-10 text-primary-600" />
-                </div>
-                <h3 className="font-display font-semibold text-gray-900 mb-2">Event Calendar</h3>
-                <p className="text-sm text-gray-600">View upcoming pack events and activities</p>
-              </div>
-              
-              <div className="text-center group">
-                <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 w-20 h-20 mx-auto mb-4 flex items-center justify-center shadow-soft group-hover:shadow-glow-primary transition-all duration-300 transform group-hover:scale-110">
-                  <MapPin className="h-10 w-10 text-secondary-600" />
-                </div>
-                <h3 className="font-display font-semibold text-gray-900 mb-2">Locations</h3>
-                <p className="text-sm text-gray-600">Find meeting places and event venues</p>
-              </div>
-              
-              <div className="text-center group">
-                <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 w-20 h-20 mx-auto mb-4 flex items-center justify-center shadow-soft group-hover:shadow-glow-primary transition-all duration-300 transform group-hover:scale-110">
-                  <Users className="h-10 w-10 text-accent-600" />
-                </div>
-                <h3 className="font-display font-semibold text-gray-900 mb-2">Volunteer</h3>
-                <p className="text-sm text-gray-600">Sign up for volunteer opportunities</p>
-              </div>
-              
-              <div className="text-center group">
-                <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 w-20 h-20 mx-auto mb-4 flex items-center justify-center shadow-soft group-hover:shadow-glow-primary transition-all duration-300 transform group-hover:scale-110">
-                  <Shield className="h-10 w-10 text-red-600" />
-                </div>
-                <h3 className="font-display font-semibold text-gray-900 mb-2">Safety</h3>
-                <p className="text-sm text-gray-600">Safety guidelines and emergency info</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

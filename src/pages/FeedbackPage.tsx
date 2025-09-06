@@ -62,56 +62,40 @@ const FeedbackPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
 
-  // Mock user submissions - will be replaced with Firebase calls
-  const mockSubmissions: FeedbackSubmission[] = [
-    {
-      id: '1',
-      category: 'suggestion',
-      priority: 'medium',
-      title: 'Add more camping opportunities',
-      message: 'Our family really enjoyed the fall campout and would love to see more camping events throughout the year. Maybe we could add a spring camping trip as well?',
-      familyName: 'Smith Family',
-      email: 'smith@example.com',
-      status: 'in-progress',
-      adminResponse: 'Great suggestion! We\'re already planning a spring camping trip for April. We\'ll announce the details soon.',
-      adminResponseDate: '2024-01-20T00:00:00',
-      createdAt: '2024-01-15T00:00:00',
-      updatedAt: '2024-01-20T00:00:00'
-    },
-    {
-      id: '2',
-      category: 'question',
-      priority: 'low',
-      title: 'Uniform requirements for new scouts',
-      message: 'My son just joined Pack 1703. What are the uniform requirements for new scouts? Do we need to buy everything at once?',
-      familyName: 'Johnson Family',
-      email: 'johnson@example.com',
-      status: 'resolved',
-      adminResponse: 'Welcome to Pack 1703! For new scouts, we recommend starting with the basic uniform (shirt, neckerchief, and slide). You can find the complete uniform guide in our Resources section.',
-      adminResponseDate: '2024-01-10T00:00:00',
-      createdAt: '2024-01-08T00:00:00',
-      updatedAt: '2024-01-10T00:00:00'
-    },
-    {
-      id: '3',
-      category: 'praise',
-      priority: 'low',
-      title: 'Amazing Pinewood Derby experience',
-      message: 'The Pinewood Derby was absolutely fantastic! The organization, the excitement, and the way all the scouts were included made it a memorable experience. Thank you to all the volunteers!',
-      familyName: 'Davis Family',
-      email: 'davis@example.com',
-      status: 'closed',
-      adminResponse: 'Thank you for the kind words! We\'re so glad your family enjoyed the Pinewood Derby. Our volunteers work hard to make these events special.',
-      adminResponseDate: '2024-02-15T00:00:00',
-      createdAt: '2024-02-12T00:00:00',
-      updatedAt: '2024-02-15T00:00:00'
-    }
-  ];
-
-  // Set initial user submissions
+  // Load user submissions from Firebase
   useEffect(() => {
-    setUserSubmissions(mockSubmissions);
-  }, []); // mockSubmissions is constant, so no dependency needed
+    const loadUserSubmissions = async () => {
+      if (!user) return;
+      
+      try {
+        // Import Firebase functions
+        const { collection, query, where, getDocs, orderBy } = await import('firebase/firestore');
+        const { db } = await import('../firebase/config');
+        
+        // Query user's feedback submissions
+        const feedbackRef = collection(db, 'feedback');
+        const q = query(
+          feedbackRef, 
+          where('userId', '==', user.uid),
+          orderBy('createdAt', 'desc')
+        );
+        
+        const snapshot = await getDocs(q);
+        const submissions = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as FeedbackSubmission[];
+        
+        setUserSubmissions(submissions);
+      } catch (error) {
+        console.error('Error loading user submissions:', error);
+        // Fallback to empty array if error
+        setUserSubmissions([]);
+      }
+    };
+
+    loadUserSubmissions();
+  }, [user]);
 
   const categories = [
     { id: 'suggestion', name: 'Suggestion', color: 'bg-blue-100 text-blue-800', icon: '💡' },
@@ -149,40 +133,58 @@ const FeedbackPage: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // TODO: Implement actual submission logic with Firebase
-    console.log('Submitting feedback:', formData);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Add to user submissions
-    const newSubmission: FeedbackSubmission = {
-      id: Date.now().toString(),
-      ...formData,
-      status: 'submitted',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    setUserSubmissions(prev => [newSubmission, ...prev]);
-    setSubmissionSuccess(true);
-    setIsSubmitting(false);
-    
-    // Reset form
-    setFormData({
-      category: 'general',
-      priority: 'medium',
-      title: '',
-      message: '',
-      familyName: '',
-      email: '',
-      phone: '',
-      eventId: '',
-      eventTitle: ''
-    });
-    
-    // Hide success message after 5 seconds
-    setTimeout(() => setSubmissionSuccess(false), 5000);
+    try {
+      // Import Firebase functions
+      const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+      const { db } = await import('../firebase/config');
+      
+      // Create feedback submission
+      const feedbackData = {
+        ...formData,
+        userId: user?.uid || 'anonymous',
+        status: 'submitted',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      
+      // Add to Firebase
+      const feedbackRef = collection(db, 'feedback');
+      const docRef = await addDoc(feedbackRef, feedbackData);
+      
+      // Add to local state for immediate UI update
+      const newSubmission: FeedbackSubmission = {
+        id: docRef.id,
+        ...formData,
+        status: 'submitted',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      setUserSubmissions(prev => [newSubmission, ...prev]);
+      setSubmissionSuccess(true);
+      
+      // Reset form
+      setFormData({
+        category: 'general',
+        priority: 'medium',
+        title: '',
+        message: '',
+        familyName: '',
+        email: '',
+        phone: '',
+        eventId: '',
+        eventTitle: ''
+      });
+      
+      // Hide success message after 5 seconds
+      setTimeout(() => setSubmissionSuccess(false), 5000);
+      
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      // TODO: Show error message to user
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const filteredSubmissions = userSubmissions.filter(submission => {

@@ -118,7 +118,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
                 console.warn(`Failed to create marker for location ${location.name}:`, error);
               }
             } else {
-              console.warn(`Invalid coordinates for location ${location.name}:`, location.geo);
+              console.warn(`Location ${location.name} has no valid coordinates - skipping marker creation`);
             }
           });
           markersRef.current = markers;

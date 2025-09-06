@@ -222,8 +222,51 @@ export function AdminProvider({ children }: AdminProviderProps) {
 
   // Connect to authService for authentication state
   useEffect(() => {
+    console.log('AdminContext: Setting up auth state listener');
+    
+    // Set a timeout to prevent infinite loading (especially on mobile)
+    const loadingTimeout = setTimeout(() => {
+      console.log('AdminContext: Auth state timeout reached, setting loading to false');
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }, 5000); // 5 second timeout
+    
+    // Also check current auth state immediately as a fallback
+    const checkCurrentAuthState = async () => {
+      try {
+        const currentUser = await authService.getCurrentUser();
+        console.log('AdminContext: Current auth state check:', currentUser ? `User ${currentUser.email}` : 'No user');
+        
+        if (currentUser) {
+          const adminUser: AdminUser = {
+            uid: currentUser.uid,
+            email: currentUser.email,
+            displayName: currentUser.displayName || null,
+            photoURL: currentUser.photoURL || null,
+            isAdmin: currentUser.role === 'root' || currentUser.role === 'admin' || currentUser.role === 'volunteer',
+            role: currentUser.role as unknown as AdminRole,
+            permissions: currentUser.permissions as unknown as AdminPermission[],
+            lastLogin: currentUser.lastLoginAt || new Date(),
+            isActive: currentUser.isActive,
+          };
+          dispatch({ type: 'SET_CURRENT_USER', payload: adminUser });
+        } else {
+          dispatch({ type: 'SET_CURRENT_USER', payload: null });
+        }
+        dispatch({ type: 'SET_LOADING', payload: false });
+        clearTimeout(loadingTimeout);
+      } catch (error) {
+        console.error('AdminContext: Error checking current auth state:', error);
+      }
+    };
+    
+    // Check immediately
+    checkCurrentAuthState();
     
     const unsubscribe = authService.onAuthStateChanged((user) => {
+      console.log('AdminContext: Auth state changed:', user ? `User ${user.email}` : 'No user');
+      
+      // Clear the timeout since we got a response
+      clearTimeout(loadingTimeout);
       
       if (user) {
         // Convert AppUser to AdminUser
@@ -247,6 +290,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
     });
 
     return () => {
+      clearTimeout(loadingTimeout);
       unsubscribe();
     };
   }, []);

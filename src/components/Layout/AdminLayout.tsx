@@ -12,9 +12,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { state } = useAdmin();
   const navigate = useNavigate();
 
+  // Debug logging
+  useEffect(() => {
+    console.log('AdminLayout: State changed:', {
+      isLoading: state.isLoading,
+      isAuthenticated: state.isAuthenticated,
+      currentUser: state.currentUser?.email || 'No user'
+    });
+  }, [state.isLoading, state.isAuthenticated, state.currentUser]);
+
   // If not authenticated, redirect to login
   useEffect(() => {
     if (!state.isLoading && !state.isAuthenticated) {
+      console.log('AdminLayout: Redirecting to login - not authenticated');
       navigate('/admin/login', { replace: true });
     }
   }, [state.isAuthenticated, state.isLoading, navigate]);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, Pin, TrendingUp, MessageSquare, Clock, Calendar } from 'lucide-react';
 import { firestoreService } from '../services/firestore';
+import { userAnnouncementService } from '../services/userAnnouncementService';
 import { AnnouncementCard, AnnouncementFeed } from '../components/Announcements';
 import { Announcement } from '../types/firestore';
 
@@ -17,7 +18,8 @@ const AnnouncementsPage: React.FC = () => {
         // setLoading(true);
         setError(null);
         setUsingFallbackData(false);
-        const fetchedAnnouncements = await firestoreService.getAnnouncements();
+        // Use the new service that includes user-specific pin status
+        const fetchedAnnouncements = await userAnnouncementService.getAnnouncementsWithPinStatus();
         setAnnouncements(fetchedAnnouncements);
       } catch (err) {
         console.error('Failed to fetch announcements from Firebase:', err);
@@ -51,8 +53,12 @@ const AnnouncementsPage: React.FC = () => {
         )
       );
       
-      // Update in Firestore
-      await firestoreService.updateAnnouncement(announcementId, { pinned });
+      // Use the new user-specific pinning service
+      if (pinned) {
+        await userAnnouncementService.pinAnnouncement(announcementId);
+      } else {
+        await userAnnouncementService.unpinAnnouncement(announcementId);
+      }
       
       console.log(`Successfully ${pinned ? 'pinned' : 'unpinned'} announcement ${announcementId}`);
     } catch (error) {

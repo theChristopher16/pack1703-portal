@@ -8,11 +8,19 @@ const HomePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [contentLoaded, setContentLoaded] = useState(false);
   const [isDownloadingAudit, setIsDownloadingAudit] = useState(false);
+  const [animationsTriggered, setAnimationsTriggered] = useState(false);
 
   useEffect(() => {
     // Remove artificial loading delays for better performance
     setIsLoading(false);
     setContentLoaded(true);
+    
+    // Trigger animations only once after initial load
+    const timer = setTimeout(() => {
+      setAnimationsTriggered(true);
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   const handleDownloadAudit = async () => {
@@ -166,23 +174,24 @@ const HomePage: React.FC = () => {
 
           {/* Main Hero Content */}
           <div className="relative z-10">
-            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-100 to-secondary-100 text-primary-700 rounded-full text-sm font-medium mb-6 animate-fade-in">
+            <div className={`inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-100 to-secondary-100 text-primary-700 rounded-full text-sm font-medium mb-6 ${animationsTriggered ? "animate-fade-in" : ""}`}>
               <span className="text-2xl mr-2">🏕️</span>
               Welcome to the Future of Scouting
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-display font-bold mb-6 animate-slide-up">
+            <h1 className={`text-5xl md:text-7xl font-display font-bold mb-6 ${animationsTriggered ? "animate-slide-up" : ""}`}>
               <span className="text-gradient">Scout</span>
               <br />
               <span className="text-gray-900">Families Portal</span>
             </h1>
             
-            <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed animate-slide-up" style={{ animationDelay: '200ms' }}>
+            <p className={`text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed ${animationsTriggered ? "animate-slide-up" : ""}`} style={{ animationDelay: '200ms' }}>
               Where technology meets tradition, and every family becomes part of an 
               <span className="text-gradient font-semibold"> adventure</span> that shapes the future.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center animate-slide-up" style={{ animationDelay: '400ms' }}>
+            <div className={`flex flex-col sm:flex-row gap-6 justify-center items-center ${animationsTriggered ? "animate-slide-up" : ""}`} 
+                 style={{ animationDelay: '400ms' }}>
               <Link
                 to="/events"
                 className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold text-lg rounded-2xl shadow-glow-primary hover:shadow-glow-primary/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-primary-300/50"
@@ -205,7 +214,7 @@ const HomePage: React.FC = () => {
 
         {/* Quick Actions with Enhanced Cards */}
         <div className="mb-20">
-          <h2 className="text-4xl font-display font-bold text-gray-900 mb-12 text-center animate-fade-in">
+          <h2 className={`text-4xl font-display font-bold text-gray-900 mb-12 text-center ${animationsTriggered ? "animate-fade-in" : ""}`}>
             <span className="text-gradient">Quick Actions</span>
           </h2>
 
@@ -223,7 +232,7 @@ const HomePage: React.FC = () => {
                   <Link
                     key={action.name}
                     to={action.href}
-                    className="group block animate-scale-in"
+                    className={`group block ${animationsTriggered ? "animate-scale-in" : ""}`}
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
                     <div className="card-hover bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-white/50 overflow-hidden relative">
@@ -262,7 +271,7 @@ const HomePage: React.FC = () => {
 
         {/* Scouting Features Section */}
         <div className="mb-20">
-          <h2 className="text-4xl font-display font-bold text-gray-900 mb-12 text-center animate-fade-in">
+          <h2 className={`text-4xl font-display font-bold text-gray-900 mb-12 text-center ${animationsTriggered ? "animate-fade-in" : ""}`}>
             Why Choose <span className="text-gradient">Our Scout Pack</span>?
           </h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto text-center mb-12 leading-relaxed">
@@ -274,7 +283,7 @@ const HomePage: React.FC = () => {
             {scoutingFeatures.map((feature, index) => (
               <div
                 key={feature.title}
-                className="text-center animate-fade-in"
+                className={`text-center ${animationsTriggered ? "animate-fade-in" : ""}`}
                 style={{ animationDelay: `${index * 200}ms` }}
               >
                 <div className="w-16 h-16 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center shadow-glow mx-auto mb-6">
@@ -295,7 +304,7 @@ const HomePage: React.FC = () => {
 
         {/* Technology Features Section */}
         <div className="mb-20">
-          <h2 className="text-4xl font-display font-bold text-gray-900 mb-12 text-center animate-fade-in">
+          <h2 className={`text-4xl font-display font-bold text-gray-900 mb-12 text-center ${animationsTriggered ? "animate-fade-in" : ""}`}>
             How Our <span className="text-gradient">System Works</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto text-center mb-12 leading-relaxed">
@@ -307,7 +316,7 @@ const HomePage: React.FC = () => {
             {techFeatures.map((feature, index) => (
               <div
                 key={feature.title}
-                className="text-center animate-fade-in"
+                className={`text-center ${animationsTriggered ? "animate-fade-in" : ""}`}
                 style={{ animationDelay: `${index * 200}ms` }}
               >
                 <div className="w-16 h-16 bg-gradient-to-br from-accent-400 to-purple-500 rounded-xl flex items-center justify-center shadow-glow mx-auto mb-6">
@@ -348,7 +357,7 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* CTA Section with Enhanced Visual Appeal */}
-        <div className="text-center animate-fade-in" style={{ animationDelay: '600ms' }}>
+        <div className={`text-center ${animationsTriggered ? "animate-fade-in" : ""}`} style={{ animationDelay: '600ms' }}>
           <div className="bg-gradient-to-r from-primary-500 via-secondary-500 to-accent-500 rounded-3xl p-12 relative overflow-hidden">
             {/* Background Pattern */}
             <div className="absolute inset-0 bg-gradient-mesh opacity-10"></div>

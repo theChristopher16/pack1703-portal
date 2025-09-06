@@ -1,17 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { Shield, Eye, EyeOff, Lock, Unlock, AlertTriangle, CheckCircle, XCircle, Database, FileText, Calendar, Users, Settings, Activity } from 'lucide-react';
-
-interface PermissionAudit {
-  service: string;
-  accessLevel: 'read' | 'write' | 'admin';
-  description: string;
-  securityLevel: 'high' | 'medium' | 'low';
-  lastAudit: Date;
-  status: 'active' | 'review' | 'restricted';
-  dataTypes: string[];
-  restrictions: string[];
-}
+import { permissionsAuditService, PermissionAudit } from '../services/permissionsAuditService';
 
 const AdminPermissionsAudit: React.FC = () => {
   const { state } = useAdmin();
@@ -19,86 +9,17 @@ const AdminPermissionsAudit: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading audit data
     const loadAuditData = async () => {
       setIsLoading(true);
-      
-      // Mock audit data - in real implementation, this would come from the database
-      const mockAuditData: PermissionAudit[] = [
-        {
-          service: 'System Monitor',
-          accessLevel: 'read',
-          description: 'Real-time system metrics and performance data',
-          securityLevel: 'high',
-          lastAudit: new Date(),
-          status: 'active',
-          dataTypes: ['metrics', 'performance', 'costs', 'usage'],
-          restrictions: ['No user data access', 'Read-only operations']
-        },
-        {
-          service: 'Chat System',
-          accessLevel: 'read',
-          description: 'Chat messages and channel management',
-          securityLevel: 'medium',
-          lastAudit: new Date(),
-          status: 'active',
-          dataTypes: ['messages', 'channels', 'reactions'],
-          restrictions: ['No user personal data', 'No message deletion']
-        },
-        {
-          service: 'Events Management',
-          accessLevel: 'write',
-          description: 'Create and manage events with validation',
-          securityLevel: 'high',
-          lastAudit: new Date(),
-          status: 'active',
-          dataTypes: ['events', 'locations', 'schedules'],
-          restrictions: ['Requires confirmation', 'Location validation required', 'Duplicate checking']
-        },
-        {
-          service: 'User Management',
-          accessLevel: 'read',
-          description: 'User activity and engagement data',
-          securityLevel: 'high',
-          lastAudit: new Date(),
-          status: 'restricted',
-          dataTypes: ['activity', 'engagement', 'analytics'],
-          restrictions: ['No personal information', 'Aggregated data only', 'No individual user access']
-        },
-        {
-          service: 'Configuration',
-          accessLevel: 'read',
-          description: 'System configuration and settings',
-          securityLevel: 'medium',
-          lastAudit: new Date(),
-          status: 'active',
-          dataTypes: ['settings', 'configurations', 'preferences'],
-          restrictions: ['Read-only access', 'No sensitive settings']
-        },
-        {
-          service: 'Analytics',
-          accessLevel: 'read',
-          description: 'Analytics and insights data',
-          securityLevel: 'medium',
-          lastAudit: new Date(),
-          status: 'active',
-          dataTypes: ['analytics', 'insights', 'trends'],
-          restrictions: ['Aggregated data only', 'No individual tracking']
-        },
-        {
-          service: 'Security Audit',
-          accessLevel: 'read',
-          description: 'Security status and audit reports',
-          securityLevel: 'high',
-          lastAudit: new Date(),
-          status: 'active',
-          dataTypes: ['security', 'audits', 'permissions'],
-          restrictions: ['Read-only access', 'No security bypass']
-        }
-      ];
-
-      setAuditData(mockAuditData);
-      setIsLoading(false);
+      try {
+        const data = await permissionsAuditService.getPermissionsAudit();
+        setAuditData(data);
+      } catch (error) {
+        console.error('Error loading audit data:', error);
+        setAuditData([]);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     loadAuditData();

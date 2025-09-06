@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { Users, Clock, UserCheck, Search, AlertCircle, CheckCircle, Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { volunteerService } from '../services/volunteerService';
 
 interface VolunteerNeed {
   id: string;
   eventId: string;
   eventTitle: string;
+  eventDate: string;
   role: string;
   description: string;
   needed: number;
   claimed: number;
-  category: 'setup' | 'food' | 'activity' | 'supervision' | 'transportation' | 'other';
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  category: 'setup' | 'food' | 'activities' | 'cleanup' | 'transportation' | 'supervision' | 'other';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   isActive: boolean;
+  skills?: string[];
+  ageRequirement?: string;
+  physicalRequirements?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -48,86 +53,33 @@ const AdminVolunteer: React.FC = () => {
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  // Mock data for now - will be replaced with Firebase calls
+  // Load volunteer data from Firebase
   useEffect(() => {
-    const mockNeeds: VolunteerNeed[] = [
-      {
-        id: '1',
-        eventId: 'event-1',
-        eventTitle: 'Fall Campout 2025',
-        role: 'Check-in Coordinator',
-        description: 'Help families check in upon arrival, distribute materials, and answer questions.',
-        needed: 2,
-        claimed: 1,
-        category: 'setup',
-        priority: 'high',
-        isActive: true,
-        createdAt: '2024-01-01T00:00:00',
-        updatedAt: '2024-01-01T00:00:00'
-      },
-      {
-        id: '2',
-        eventId: 'event-1',
-        eventTitle: 'Fall Campout 2025',
-        role: 'Food Coordinator',
-        description: 'Organize meal preparation, coordinate with families bringing food, and ensure dietary needs are met.',
-        needed: 1,
-        claimed: 0,
-        category: 'food',
-        priority: 'high',
-        isActive: true,
-        createdAt: '2024-01-15T00:00:00',
-        updatedAt: '2024-01-15T00:00:00'
-      },
-      {
-        id: '3',
-        eventId: 'event-2',
-        eventTitle: 'Pinewood Derby 2026',
-        role: 'Race Official',
-        description: 'Help run the races, record times, and ensure fair competition.',
-        needed: 2,
-        claimed: 0,
-        category: 'supervision',
-        priority: 'critical',
-        isActive: true,
-        createdAt: '2024-02-01T00:00:00',
-        updatedAt: '2024-02-01T00:00:00'
+    const loadVolunteerData = async () => {
+      try {
+        setLoading(true);
+        
+        // Load volunteer needs and signups using the volunteer service
+        const [needs, signups] = await Promise.all([
+          volunteerService.getVolunteerNeeds(),
+          volunteerService.getVolunteerSignups()
+        ]);
+        
+        setVolunteerNeeds(needs);
+        setVolunteerSignups(signups);
+      } catch (error) {
+        console.error('Error loading volunteer data:', error);
+        addNotification('error', 'Error', 'Failed to load volunteer data');
+        // Fallback to empty arrays
+        setVolunteerNeeds([]);
+        setVolunteerSignups([]);
+      } finally {
+        setLoading(false);
       }
-    ];
+    };
 
-    const mockSignups: VolunteerSignup[] = [
-      {
-        id: '1',
-        needId: '1',
-        eventId: 'event-1',
-        eventTitle: 'Fall Campout 2025',
-        role: 'Check-in Coordinator',
-        volunteerName: 'John Smith',
-        volunteerEmail: 'john.smith@email.com',
-        volunteerPhone: '555-0123',
-        status: 'confirmed',
-        notes: 'Available all day Saturday',
-        createdAt: '2024-01-05T00:00:00',
-        updatedAt: '2024-01-05T00:00:00'
-      },
-      {
-        id: '2',
-        needId: '2',
-        eventId: 'event-1',
-        eventTitle: 'Fall Campout 2025',
-        role: 'Food Coordinator',
-        volunteerName: 'Sarah Johnson',
-        volunteerEmail: 'sarah.j@email.com',
-        status: 'pending',
-        createdAt: '2024-01-20T00:00:00',
-        updatedAt: '2024-01-20T00:00:00'
-      }
-    ];
-
-    setVolunteerNeeds(mockNeeds);
-    setVolunteerSignups(mockSignups);
-    setLoading(false);
-  }, []);
+    loadVolunteerData();
+  }, [addNotification]);
 
   const handleCreateNeed = () => {
     setModalMode('create');
@@ -144,10 +96,11 @@ const AdminVolunteer: React.FC = () => {
   const handleDeleteNeed = async (needId: string) => {
     if (window.confirm('Are you sure you want to delete this volunteer need? This action cannot be undone.')) {
       try {
-        // TODO: Replace with actual Firebase call
+        await volunteerService.deleteVolunteerNeed(needId);
         setVolunteerNeeds(prev => prev.filter(need => need.id !== needId));
         addNotification('success', 'Success', 'Volunteer need deleted successfully');
       } catch (error) {
+        console.error('Error deleting volunteer need:', error);
         addNotification('error', 'Error', 'Failed to delete volunteer need');
       }
     }
@@ -156,41 +109,43 @@ const AdminVolunteer: React.FC = () => {
   const handleSaveNeed = async (needData: Omit<VolunteerNeed, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       if (modalMode === 'create') {
-        // TODO: Replace with actual Firebase call
+        const newNeedId = await volunteerService.createVolunteerNeed(needData);
         const newNeed: VolunteerNeed = {
+          id: newNeedId,
           ...needData,
-          id: Date.now().toString(),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
         setVolunteerNeeds(prev => [...prev, newNeed]);
         addNotification('success', 'Success', 'Volunteer need created successfully');
       } else {
-        // TODO: Replace with actual Firebase call
+        await volunteerService.updateVolunteerNeed(selectedNeed!.id, needData);
         setVolunteerNeeds(prev => prev.map(need => 
           need.id === selectedNeed?.id 
             ? { ...need, ...needData, updatedAt: new Date().toISOString() }
             : need
         ));
-        await addNotification('success', 'Success', 'Volunteer need updated successfully');
+        addNotification('success', 'Success', 'Volunteer need updated successfully');
       }
       setIsNeedModalOpen(false);
     } catch (error) {
-      await addNotification('error', 'Error', `Failed to ${modalMode} volunteer need`);
+      console.error(`Error ${modalMode === 'create' ? 'creating' : 'updating'} volunteer need:`, error);
+      addNotification('error', 'Error', `Failed to ${modalMode} volunteer need`);
     }
   };
 
   const handleUpdateSignupStatus = async (signupId: string, status: 'pending' | 'confirmed' | 'cancelled') => {
     try {
-      // TODO: Replace with actual Firebase call
+      await volunteerService.updateVolunteerSignupStatus(signupId, status);
       setVolunteerSignups(prev => prev.map(signup => 
         signup.id === signupId 
           ? { ...signup, status, updatedAt: new Date().toISOString() }
           : signup
       ));
-      await addNotification('success', 'Success', 'Signup status updated successfully');
+      addNotification('success', 'Success', 'Signup status updated successfully');
     } catch (error) {
-      await addNotification('error', 'Error', 'Failed to update signup status');
+      console.error('Error updating signup status:', error);
+      addNotification('error', 'Error', 'Failed to update signup status');
     }
   };
 
@@ -215,9 +170,10 @@ const AdminVolunteer: React.FC = () => {
     switch (category) {
       case 'setup': return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'food': return 'bg-green-100 text-green-700 border-green-200';
-      case 'activity': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'activities': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
       case 'supervision': return 'bg-purple-100 text-purple-700 border-purple-200';
       case 'transportation': return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'cleanup': return 'bg-red-100 text-red-700 border-red-200';
       default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
@@ -227,7 +183,7 @@ const AdminVolunteer: React.FC = () => {
       case 'low': return 'bg-gray-100 text-gray-700';
       case 'medium': return 'bg-yellow-100 text-yellow-700';
       case 'high': return 'bg-orange-100 text-orange-700';
-      case 'critical': return 'bg-red-100 text-red-700';
+      case 'urgent': return 'bg-red-100 text-red-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -245,9 +201,10 @@ const AdminVolunteer: React.FC = () => {
     switch (category) {
       case 'setup': return '🔧';
       case 'food': return '🍽️';
-      case 'activity': return '🎯';
+      case 'activities': return '🎯';
       case 'supervision': return '👁️';
       case 'transportation': return '🚗';
+      case 'cleanup': return '🧹';
       default: return '📋';
     }
   };
@@ -618,6 +575,7 @@ const VolunteerNeedModal: React.FC<VolunteerNeedModalProps> = ({ mode, need, onS
   const [formData, setFormData] = useState({
     eventId: need?.eventId || '',
     eventTitle: need?.eventTitle || '',
+    eventDate: need?.eventDate || '',
     role: need?.role || '',
     description: need?.description || '',
     needed: need?.needed || 1,
@@ -675,6 +633,19 @@ const VolunteerNeedModal: React.FC<VolunteerNeedModalProps> = ({ mode, need, onS
                 onChange={(e) => setFormData(prev => ({ ...prev, eventTitle: e.target.value }))}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="Fall Campout 2025"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Event Date *
+              </label>
+              <input
+                type="date"
+                required
+                value={formData.eventDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, eventDate: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
           </div>

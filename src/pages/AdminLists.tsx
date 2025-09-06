@@ -24,53 +24,43 @@ const AdminLists: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
 
-  // Mock data for now - will be replaced with Firebase calls
+  // Load pack lists from Firebase
   useEffect(() => {
-    const mockLists: PackList[] = [
-      {
-        id: '1',
-        name: 'Tent & Sleeping Gear',
-        category: 'camping',
-        description: 'Essential items for comfortable camping',
-        items: ['Tent', 'Sleeping bag', 'Sleeping pad', 'Pillow', 'Ground cloth', 'Tent stakes', 'Mallet'],
-        isActive: true,
-        createdAt: '2024-01-01T00:00:00',
-        updatedAt: '2024-01-01T00:00:00'
-      },
-      {
-        id: '2',
-        name: 'Warm Clothing',
-        category: 'other',
-        description: 'Clothing for cold weather camping',
-        items: ['Warm jacket', 'Thermal underwear', 'Wool socks', 'Hat', 'Gloves', 'Scarf', 'Waterproof boots'],
-        isActive: true,
-        createdAt: '2024-01-15T00:00:00',
-        updatedAt: '2024-01-15T00:00:00'
-      },
-      {
-        id: '3',
-        name: 'First Aid Kit',
-        category: 'safety',
-        description: 'Basic first aid supplies for outdoor activities',
-        items: ['Bandages', 'Antiseptic wipes', 'Pain relievers', 'Tweezers', 'Medical tape', 'Emergency contact info'],
-        isActive: true,
-        createdAt: '2024-02-01T00:00:00',
-        updatedAt: '2024-02-01T00:00:00'
-      },
-      {
-        id: '4',
-        name: 'Day Trip Essentials',
-        category: 'day-trip',
-        description: 'Items needed for day trips and activities',
-        items: ['Water bottle', 'Snacks', 'Sunscreen', 'Hat', 'Comfortable shoes', 'Small first aid kit'],
-        isActive: true,
-        createdAt: '2024-02-15T00:00:00',
-        updatedAt: '2024-02-15T00:00:00'
+    const loadPackLists = async () => {
+      try {
+        setLoading(true);
+        
+        // Import Firebase functions
+        const { collection, query, where, getDocs, orderBy } = await import('firebase/firestore');
+        const { db } = await import('../firebase/config');
+        
+        // Query pack lists
+        const listsRef = collection(db, 'packLists');
+        const q = query(
+          listsRef, 
+          where('isActive', '==', true),
+          orderBy('updatedAt', 'desc')
+        );
+        
+        const snapshot = await getDocs(q);
+        const listsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as PackList[];
+        
+        setLists(listsData);
+      } catch (error) {
+        console.error('Error loading pack lists:', error);
+        addNotification('error', 'Error', 'Failed to load pack lists');
+        // Fallback to empty array
+        setLists([]);
+      } finally {
+        setLoading(false);
       }
-    ];
-    setLists(mockLists);
-    setLoading(false);
-  }, []);
+    };
+
+    loadPackLists();
+  }, [addNotification]);
 
   const handleCreateList = () => {
     setModalMode('create');
@@ -87,10 +77,18 @@ const AdminLists: React.FC = () => {
   const handleDeleteList = async (listId: string) => {
     if (window.confirm('Are you sure you want to delete this list? This action cannot be undone.')) {
       try {
-        // TODO: Replace with actual Firebase call
+        // Import Firebase functions
+        const { doc, updateDoc } = await import('firebase/firestore');
+        const { db } = await import('../firebase/config');
+        
+        // Soft delete by setting isActive to false
+        const listRef = doc(db, 'packLists', listId);
+        await updateDoc(listRef, { isActive: false, updatedAt: new Date().toISOString() });
+        
         setLists(prev => prev.filter(list => list.id !== listId));
         addNotification('success', 'Success', 'List deleted successfully');
       } catch (error) {
+        console.error('Error deleting list:', error);
         addNotification('error', 'Error', 'Failed to delete list');
       }
     }
@@ -98,18 +96,34 @@ const AdminLists: React.FC = () => {
 
   const handleSaveList = async (listData: Omit<PackList, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
+      // Import Firebase functions
+      const { collection, addDoc, doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
+      const { db } = await import('../firebase/config');
+      
       if (modalMode === 'create') {
-        // TODO: Replace with actual Firebase call
-        const newList: PackList = {
+        const newListData = {
           ...listData,
-          id: Date.now().toString(),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        };
+        
+        const docRef = await addDoc(collection(db, 'packLists'), newListData);
+        const newList: PackList = {
+          id: docRef.id,
+          ...listData,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
-        setLists(prev => [...prev, newList]);
+        
+        setLists(prev => [newList, ...prev]);
         addNotification('success', 'Success', 'List created successfully');
       } else {
-        // TODO: Replace with actual Firebase call
+        const listRef = doc(db, 'packLists', selectedList!.id);
+        await updateDoc(listRef, {
+          ...listData,
+          updatedAt: serverTimestamp()
+        });
+        
         setLists(prev => prev.map(list => 
           list.id === selectedList?.id 
             ? { ...list, ...listData, updatedAt: new Date().toISOString() }
@@ -119,7 +133,8 @@ const AdminLists: React.FC = () => {
       }
       setIsModalOpen(false);
     } catch (error) {
-              addNotification('error', 'Error', `Failed to ${modalMode} list`);
+      console.error(`Error ${modalMode === 'create' ? 'creating' : 'updating'} list:`, error);
+      addNotification('error', 'Error', `Failed to ${modalMode} list`);
     }
   };
 

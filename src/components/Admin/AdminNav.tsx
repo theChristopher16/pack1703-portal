@@ -96,7 +96,7 @@ const AdminNav: React.FC = () => {
   
   // Show SOC Console in primary nav for root users (but limit to 5 total)
   const navItems = currentUser?.role === 'root' 
-    ? [...primaryNavItems.slice(0, 4), socNavItem] // Limit to 5 items total
+    ? [primaryNavItems[0], primaryNavItems[1], primaryNavItems[2], primaryNavItems[3], primaryNavItems[4], socNavItem] // Dashboard, Solyn, Events, News, Chat, SOC Console
     : primaryNavItems;
 
   const secondaryNavItems: NavItem[] = [

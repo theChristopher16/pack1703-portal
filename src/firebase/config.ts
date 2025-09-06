@@ -51,6 +51,8 @@ try {
   }
 } catch (error) {
   console.warn('App Check initialization failed:', error);
+  // Continue without App Check if initialization fails
+  console.log('Continuing without App Check enforcement');
 }
 
 // Initialize Firestore

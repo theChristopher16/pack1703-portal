@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminNav from '../Admin/AdminNav';
+import BackToTop from '../BackToTop/BackToTop';
 import { useAdmin } from '../../contexts/AdminContext';
 
 interface AdminLayoutProps {
@@ -41,6 +42,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       <main className="py-6">
         {children}
       </main>
+      <BackToTop />
     </div>
   );
 };

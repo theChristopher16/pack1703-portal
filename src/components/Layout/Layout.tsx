@@ -6,6 +6,7 @@ import { usePackNameConfig } from '../../hooks/useConfig';
 import { useAdmin } from '../../contexts/AdminContext';
 import OfflineBanner from './OfflineBanner';
 import PWAInstallPrompt from '../PWAInstallPrompt/PWAInstallPrompt';
+import BackToTop from '../BackToTop/BackToTop';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -436,6 +437,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       
       {/* PWA Install Prompt */}
       <PWAInstallPrompt />
+      
+      {/* Back to Top Button */}
+      <BackToTop />
     </div>
   );
 };

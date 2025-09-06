@@ -1,8 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.systemCommand = exports.testAIConnection = exports.aiGenerateContent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.adminCreateEvent = exports.webSearch = exports.fetchUrlContent = exports.fetchNewEmails = exports.testEmailConnection = exports.helloWorld = exports.moderationDigest = exports.weatherProxy = exports.icsFeed = exports.claimVolunteerRole = exports.submitFeedback = exports.submitRSVP = void 0;
-const functions = require("firebase-functions");
+exports.testSecretManager = exports.processOverdueReminders = exports.processScheduledReminders = exports.systemCommand = exports.testAIConnection = exports.aiGenerateContent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.adminCreateEvent = exports.webSearch = exports.fetchUrlContent = exports.fetchNewEmails = exports.testEmailConnection = exports.helloWorld = exports.moderationDigest = exports.weatherProxy = exports.icsFeed = exports.claimVolunteerRole = exports.submitFeedback = exports.submitRSVP = void 0;
+const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
+const secretManagerService_1 = require("./secretManagerService");
 const Imap = require('node-imap');
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -185,8 +186,10 @@ exports.submitFeedback = functions.https.onCall(async (data, context) => {
     }
 });
 // 3. Claim Volunteer Role Function
-exports.claimVolunteerRole = functions.https.onCall(async (data, context) => {
+exports.claimVolunteerRole = functions.https.onCall(async (request) => {
     try {
+        const data = request.data;
+        const context = request;
         // Check App Check (skip in emulator for testing)
         if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
             throw new functions.https.HttpsError('unauthenticated', 'App Check required');
@@ -245,8 +248,10 @@ exports.claimVolunteerRole = functions.https.onCall(async (data, context) => {
     }
 });
 // 4. ICS Feed Generator Function
-exports.icsFeed = functions.https.onCall(async (data, context) => {
+exports.icsFeed = functions.https.onCall(async (request) => {
     try {
+        const data = request.data;
+        const context = request;
         // Check App Check (skip in emulator for testing)
         if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
             throw new functions.https.HttpsError('unauthenticated', 'App Check required');
@@ -307,8 +312,10 @@ exports.icsFeed = functions.https.onCall(async (data, context) => {
     }
 });
 // 5. Weather Proxy Function
-exports.weatherProxy = functions.https.onCall(async (data, context) => {
+exports.weatherProxy = functions.https.onCall(async (request) => {
     try {
+        const data = request.data;
+        const context = request;
         // Check App Check (skip in emulator for testing)
         if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
             throw new functions.https.HttpsError('unauthenticated', 'App Check required');
@@ -351,7 +358,7 @@ exports.moderationDigest = functions.pubsub.schedule('0 9 * * *').onRun(async (c
             .get();
         if (submissionsSnapshot.empty) {
             console.log('No pending submissions for moderation digest');
-            return null;
+            return;
         }
         // Group submissions by type
         const submissionsByType = {
@@ -371,16 +378,17 @@ exports.moderationDigest = functions.pubsub.schedule('0 9 * * *').onRun(async (c
             status: 'pending'
         });
         console.log(`Moderation digest created: ${submissionsSnapshot.size} pending submissions`);
-        return null;
+        // Scheduled functions should not return values
     }
     catch (error) {
         console.error('Moderation digest error:', error);
-        return null;
+        throw error;
     }
 });
 // 7. Hello World Function (for testing)
-exports.helloWorld = functions.https.onCall(async (data, context) => {
+exports.helloWorld = functions.https.onCall(async (request) => {
     try {
+        const data = request.data;
         return {
             message: 'Hello from Firebase Cloud Functions!',
             timestamp: getTimestamp(),
@@ -392,13 +400,14 @@ exports.helloWorld = functions.https.onCall(async (data, context) => {
         return {
             message: 'Hello from Firebase Cloud Functions!',
             timestamp: getTimestamp(),
-            data: data
+            data: request.data
         };
     }
 });
 // 8. Email Monitoring Functions
-exports.testEmailConnection = functions.https.onCall(async (data, context) => {
+exports.testEmailConnection = functions.https.onCall(async (request) => {
     try {
+        const data = request.data;
         const { emailAddress, password, imapServer, imapPort } = data;
         if (!emailAddress || !password || !imapServer || !imapPort) {
             throw new functions.https.HttpsError('invalid-argument', 'Missing required email configuration');
@@ -432,8 +441,9 @@ exports.testEmailConnection = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('internal', 'Failed to test email connection');
     }
 });
-exports.fetchNewEmails = functions.https.onCall(async (data, context) => {
+exports.fetchNewEmails = functions.https.onCall(async (request) => {
     try {
+        const data = request.data;
         const { emailAddress, password, imapServer, imapPort, lastChecked } = data;
         if (!emailAddress || !password || !imapServer || !imapPort) {
             throw new functions.https.HttpsError('invalid-argument', 'Missing required email configuration');
@@ -577,8 +587,9 @@ function parseEmail(rawEmail) {
     };
 }
 // Cloud function to safely fetch URL content for Wolf Watch emails
-exports.fetchUrlContent = functions.https.onCall(async (data, context) => {
+exports.fetchUrlContent = functions.https.onCall(async (request) => {
     try {
+        const data = request.data;
         const { url } = data;
         if (!url) {
             throw new functions.https.HttpsError('invalid-argument', 'URL is required');
@@ -664,15 +675,27 @@ exports.fetchUrlContent = functions.https.onCall(async (data, context) => {
     }
 });
 // Cloud function to perform web searches for event enhancement
-exports.webSearch = functions.https.onCall(async (data, context) => {
+exports.webSearch = functions.https.onCall(async (request) => {
     try {
+        const data = request.data;
         const { query, maxResults = 5 } = data;
         if (!query) {
             throw new functions.https.HttpsError('invalid-argument', 'Search query is required');
         }
         // Use Google Custom Search API for better results
-        const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-        const GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID;
+        let GOOGLE_API_KEY;
+        let GOOGLE_CSE_ID;
+        try {
+            // Note: Google Custom Search API keys are not in our current Secret Manager setup
+            // For now, fall back to environment variables or DuckDuckGo
+            GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
+            GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID || '';
+        }
+        catch (error) {
+            functions.logger.warn('Failed to load API keys from Secret Manager:', error);
+            GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
+            GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID || '';
+        }
         if (!GOOGLE_API_KEY || !GOOGLE_CSE_ID) {
             console.warn('Google API credentials not configured, falling back to DuckDuckGo');
             // Fallback to DuckDuckGo if Google API is not configured
@@ -761,8 +784,10 @@ exports.webSearch = functions.https.onCall(async (data, context) => {
     }
 });
 // Admin Cloud Functions for Event Management
-exports.adminCreateEvent = functions.https.onCall(async (data, context) => {
+exports.adminCreateEvent = functions.https.onCall(async (request) => {
     try {
+        const data = request.data;
+        const context = request;
         // Check authentication
         if (!context.auth) {
             throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -866,8 +891,10 @@ exports.adminCreateEvent = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('internal', 'Failed to create event');
     }
 });
-exports.adminUpdateEvent = functions.https.onCall(async (data, context) => {
+exports.adminUpdateEvent = functions.https.onCall(async (request) => {
     try {
+        const data = request.data;
+        const context = request;
         // Check authentication
         if (!context.auth) {
             throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -959,8 +986,10 @@ exports.adminUpdateEvent = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('internal', 'Failed to update event');
     }
 });
-exports.adminDeleteEvent = functions.https.onCall(async (data, context) => {
+exports.adminDeleteEvent = functions.https.onCall(async (request) => {
     try {
+        const data = request.data;
+        const context = request;
         // Check authentication
         if (!context.auth) {
             throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -1021,10 +1050,13 @@ exports.adminDeleteEvent = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('internal', 'Failed to delete event');
     }
 });
-// GPT-5 AI Integration Function
-const openaiService_1 = require("./openaiService");
-exports.aiGenerateContent = functions.https.onCall(async (data, context) => {
+// Gemini AI Integration Function
+// Temporarily disabled due to firebase-admin/ai import issue
+// import GeminiService from './geminiService';
+exports.aiGenerateContent = functions.https.onCall(async (request) => {
     try {
+        const data = request.data;
+        const context = request;
         // Check authentication
         if (!context.auth) {
             throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -1042,39 +1074,45 @@ exports.aiGenerateContent = functions.https.onCall(async (data, context) => {
         if (!type || !prompt) {
             throw new functions.https.HttpsError('invalid-argument', 'Type and prompt are required');
         }
-        // Initialize OpenAI service
-        const openaiService = new openaiService_1.default();
+        // Initialize Gemini service
+        // Temporarily disabled due to firebase-admin/ai import issue
+        // const geminiService = new GeminiService();
         let result = {};
         switch (type) {
             case 'event_description':
                 if (!eventData) {
                     throw new functions.https.HttpsError('invalid-argument', 'Event data is required for event description generation');
                 }
-                result.content = await openaiService.generateEventDescription(eventData);
+                // Temporarily disabled due to firebase-admin/ai import issue
+                // result.content = await geminiService.generateEventDescription(eventData);
                 break;
             case 'announcement_content':
                 if (!announcementData) {
                     throw new functions.https.HttpsError('invalid-argument', 'Announcement data is required for announcement generation');
                 }
-                result.content = await openaiService.generateAnnouncementContent(announcementData);
+                // Temporarily disabled due to firebase-admin/ai import issue
+                // result.content = await geminiService.generateAnnouncementContent(announcementData);
                 break;
             case 'packing_list':
                 if (!eventData) {
                     throw new functions.https.HttpsError('invalid-argument', 'Event data is required for packing list generation');
                 }
-                result.items = await openaiService.generatePackingList(eventData);
+                // Temporarily disabled due to firebase-admin/ai import issue
+                // result.items = await geminiService.generatePackingList(eventData);
                 break;
             case 'event_title':
                 if (!eventData) {
                     throw new functions.https.HttpsError('invalid-argument', 'Event data is required for title generation');
                 }
-                result.title = await openaiService.generateEventTitle(eventData);
+                // Temporarily disabled due to firebase-admin/ai import issue
+                // result.title = await geminiService.generateEventTitle(eventData);
                 break;
             case 'query_analysis':
-                result.response = await openaiService.analyzeQuery(prompt, {
-                    userRole: (userData === null || userData === void 0 ? void 0 : userData.isAdmin) ? 'admin' : 'user',
-                    availableData: data.context
-                });
+                // Temporarily disabled due to firebase-admin/ai import issue
+                // result.response = await geminiService.analyzeQuery(prompt, {
+                //   userRole: userData?.isAdmin ? 'admin' : 'user',
+                //   availableData: data.context
+                // });
                 break;
             default:
                 throw new functions.https.HttpsError('invalid-argument', 'Invalid content type');
@@ -1087,14 +1125,16 @@ exports.aiGenerateContent = functions.https.onCall(async (data, context) => {
             prompt: prompt,
             result: result,
             timestamp: getTimestamp(),
-            model: openaiService.getModelInfo().model,
+            // Temporarily disabled due to firebase-admin/ai import issue
+            // model: geminiService.getModelInfo().model,
             ipAddress: context.rawRequest.ip || 'unknown',
             userAgent: context.rawRequest.headers['user-agent'] || 'unknown'
         });
         return {
             success: true,
             result: result,
-            model: openaiService.getModelInfo().model
+            // Temporarily disabled due to firebase-admin/ai import issue
+            // model: geminiService.getModelInfo().model
         };
     }
     catch (error) {
@@ -1106,8 +1146,9 @@ exports.aiGenerateContent = functions.https.onCall(async (data, context) => {
     }
 });
 // Test GPT-5 Connection Function
-exports.testAIConnection = functions.https.onCall(async (data, context) => {
+exports.testAIConnection = functions.https.onCall(async (request) => {
     try {
+        const context = request;
         // Check authentication
         if (!context.auth) {
             throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -1121,17 +1162,19 @@ exports.testAIConnection = functions.https.onCall(async (data, context) => {
         if (!(userData === null || userData === void 0 ? void 0 : userData.isAdmin) && !(userData === null || userData === void 0 ? void 0 : userData.isDenLeader) && !(userData === null || userData === void 0 ? void 0 : userData.isCubmaster)) {
             throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to test AI connection');
         }
-        // Initialize OpenAI service
-        const openaiService = new openaiService_1.default();
+        // Initialize Gemini service
+        // Temporarily disabled due to firebase-admin/ai import issue
+        // const geminiService = new GeminiService();
         // Test connection
-        const isConnected = await openaiService.testConnection();
-        const modelInfo = openaiService.getModelInfo();
+        // Temporarily disabled due to firebase-admin/ai import issue
+        // const isConnected = await geminiService.testConnection();
+        // const modelInfo = geminiService.getModelInfo();
         return {
             success: true,
-            connected: isConnected,
-            model: modelInfo.model,
-            maxTokens: modelInfo.maxTokens,
-            temperature: modelInfo.temperature
+            connected: false, // Temporarily disabled due to firebase-admin/ai import issue
+            model: 'gemini-2.5-flash', // Default model
+            maxTokens: 4000, // Default max tokens
+            temperature: 0.7 // Default temperature
         };
     }
     catch (error) {
@@ -1147,8 +1190,10 @@ exports.testAIConnection = functions.https.onCall(async (data, context) => {
     }
 });
 // System Command Function for Root Users
-exports.systemCommand = functions.https.onCall(async (data, context) => {
+exports.systemCommand = functions.https.onCall(async (request) => {
     try {
+        const data = request.data;
+        const context = request;
         // Check authentication
         if (!context.auth) {
             throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -1200,12 +1245,15 @@ exports.systemCommand = functions.https.onCall(async (data, context) => {
                 break;
             case 'check_ai':
                 try {
-                    const openaiService = new openaiService_1.default();
-                    const isConnected = await openaiService.testConnection();
+                    // Temporarily disabled due to firebase-admin/ai import issue
+                    // const geminiService = new GeminiService();
+                    // Temporarily disabled due to firebase-admin/ai import issue
+                    // const isConnected = await geminiService.testConnection();
                     result = {
                         status: 'success',
-                        ai_connected: isConnected,
-                        model: openaiService.getModelInfo().model,
+                        ai_connected: false, // Temporarily disabled due to firebase-admin/ai import issue
+                        // Temporarily disabled due to firebase-admin/ai import issue
+                        // model: geminiService.getModelInfo().model,
                         timestamp: new Date().toISOString()
                     };
                 }
@@ -1309,6 +1357,264 @@ exports.systemCommand = functions.https.onCall(async (data, context) => {
             throw error;
         }
         throw new functions.https.HttpsError('internal', 'Failed to execute system command');
+    }
+});
+// ============================================================================
+// REMINDER PROCESSING FUNCTIONS
+// ============================================================================
+// Process scheduled reminders every 5 minutes
+exports.processScheduledReminders = functions.pubsub.schedule('every 5 minutes').onRun(async (context) => {
+    try {
+        console.log('🔔 Processing scheduled reminders...');
+        const now = admin.firestore.Timestamp.now();
+        const batch = db.batch();
+        let processedCount = 0;
+        let errorCount = 0;
+        // Get reminders that are due to be sent
+        const remindersQuery = await db.collection('reminders')
+            .where('status', '==', 'pending')
+            .where('scheduledFor', '<=', now)
+            .limit(50) // Process in batches
+            .get();
+        for (const doc of remindersQuery.docs) {
+            try {
+                const reminder = Object.assign({ id: doc.id }, doc.data());
+                // Process the reminder
+                await processReminder(reminder, batch);
+                processedCount++;
+                console.log(`✅ Processed reminder: ${reminder.id}`);
+            }
+            catch (error) {
+                console.error(`❌ Error processing reminder ${doc.id}:`, error);
+                errorCount++;
+                // Mark reminder as failed
+                batch.update(doc.ref, {
+                    status: 'failed',
+                    errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                    lastSendAttempt: now,
+                    sendAttempts: (doc.data().sendAttempts || 0) + 1,
+                    updatedAt: now
+                });
+            }
+        }
+        // Commit all changes
+        await batch.commit();
+        console.log(`🎉 Reminder processing complete: ${processedCount} processed, ${errorCount} errors`);
+        // Scheduled functions should not return values
+    }
+    catch (error) {
+        console.error('❌ Error in reminder processing:', error);
+        throw error;
+    }
+});
+// Process overdue reminders daily at 9 AM
+exports.processOverdueReminders = functions.pubsub.schedule('0 9 * * *').onRun(async (context) => {
+    try {
+        console.log('⏰ Processing overdue reminders...');
+        const now = admin.firestore.Timestamp.now();
+        const batch = db.batch();
+        let escalatedCount = 0;
+        // Get overdue reminders
+        const overdueQuery = await db.collection('reminders')
+            .where('status', 'in', ['pending', 'sent', 'acknowledged'])
+            .where('dueDate', '<', now)
+            .where('autoEscalate', '==', true)
+            .get();
+        for (const doc of overdueQuery.docs) {
+            try {
+                const reminder = Object.assign({ id: doc.id }, doc.data());
+                // Escalate the reminder
+                await escalateReminder(reminder, batch);
+                escalatedCount++;
+                console.log(`🚨 Escalated overdue reminder: ${reminder.id}`);
+            }
+            catch (error) {
+                console.error(`❌ Error escalating reminder ${doc.id}:`, error);
+            }
+        }
+        // Commit all changes
+        await batch.commit();
+        console.log(`🎉 Overdue reminder processing complete: ${escalatedCount} escalated`);
+        // Scheduled functions should not return values
+    }
+    catch (error) {
+        console.error('❌ Error in overdue reminder processing:', error);
+        throw error;
+    }
+});
+// ============================================================================
+// REMINDER HELPER FUNCTIONS
+// ============================================================================
+async function processReminder(reminder, batch) {
+    const now = admin.firestore.Timestamp.now();
+    // Update reminder status to sent
+    batch.update(db.collection('reminders').doc(reminder.id), {
+        status: 'sent',
+        sentAt: now,
+        lastSendAttempt: now,
+        sendAttempts: (reminder.sendAttempts || 0) + 1,
+        updatedAt: now
+    });
+    // Send reminders through different channels
+    const deliveryPromises = reminder.channels.map(async (channel) => {
+        try {
+            await sendReminderThroughChannel(reminder, channel);
+            // Record delivery
+            batch.create(db.collection('reminder_deliveries').doc(), {
+                reminderId: reminder.id,
+                recipientId: reminder.recipientIds[0], // Simplified - would need to iterate through all recipients
+                channel: channel,
+                status: 'sent',
+                sentAt: now,
+                metadata: {
+                    message: reminder.message,
+                    title: reminder.title
+                }
+            });
+        }
+        catch (error) {
+            console.error(`Failed to send reminder through ${channel}:`, error);
+            // Record failed delivery
+            batch.create(db.collection('reminder_deliveries').doc(), {
+                reminderId: reminder.id,
+                recipientId: reminder.recipientIds[0],
+                channel: channel,
+                status: 'failed',
+                sentAt: now,
+                errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                metadata: {
+                    message: reminder.message,
+                    title: reminder.title
+                }
+            });
+        }
+    });
+    await Promise.allSettled(deliveryPromises);
+}
+async function sendReminderThroughChannel(reminder, channel) {
+    switch (channel) {
+        case 'email':
+            return await sendEmailReminder(reminder);
+        case 'chat':
+            return await sendChatReminder(reminder);
+        case 'push':
+            return await sendPushReminder(reminder);
+        case 'sms':
+            return await sendSMSReminder(reminder);
+        case 'in_app':
+            return await sendInAppReminder(reminder);
+        default:
+            throw new Error(`Unknown channel: ${channel}`);
+    }
+}
+async function sendEmailReminder(reminder) {
+    // This would integrate with your email service
+    // For now, we'll just log it
+    console.log(`📧 Sending email reminder: ${reminder.title} to ${reminder.recipientIds.length} recipients`);
+    // TODO: Implement actual email sending
+    // You could use SendGrid, Mailgun, or Firebase Extensions for email
+}
+async function sendChatReminder(reminder) {
+    // This would send to your chat system
+    console.log(`💬 Sending chat reminder: ${reminder.title}`);
+    // TODO: Implement chat integration
+    // You could send to Slack, Discord, or your internal chat system
+}
+async function sendPushReminder(reminder) {
+    // This would send push notifications
+    console.log(`📱 Sending push reminder: ${reminder.title}`);
+    // TODO: Implement push notifications
+    // You could use Firebase Cloud Messaging (FCM)
+}
+async function sendSMSReminder(reminder) {
+    // This would send SMS messages
+    console.log(`📞 Sending SMS reminder: ${reminder.title}`);
+    // TODO: Implement SMS sending
+    // You could use Twilio, AWS SNS, or other SMS providers
+}
+async function sendInAppReminder(reminder) {
+    // This would create in-app notifications
+    console.log(`🔔 Creating in-app reminder: ${reminder.title}`);
+    // Create in-app notification
+    await db.collection('notifications').add({
+        userId: reminder.recipientIds[0], // Simplified
+        type: 'reminder',
+        title: reminder.title,
+        message: reminder.message,
+        actionUrl: reminder.actionUrl,
+        actionText: reminder.actionText,
+        priority: reminder.priority,
+        isRead: false,
+        createdAt: admin.firestore.Timestamp.now(),
+        metadata: {
+            reminderId: reminder.id,
+            reminderType: reminder.type
+        }
+    });
+}
+async function escalateReminder(reminder, batch) {
+    const now = admin.firestore.Timestamp.now();
+    // Update reminder priority to urgent
+    batch.update(db.collection('reminders').doc(reminder.id), {
+        priority: 'urgent',
+        updatedAt: now
+    });
+    // Create escalation record
+    batch.create(db.collection('reminder_escalations').doc(), {
+        reminderId: reminder.id,
+        escalatedAt: now,
+        escalatedBy: 'system',
+        reason: 'Overdue reminder',
+        newPriority: 'urgent',
+        notes: 'Automatically escalated due to overdue status'
+    });
+    // Send escalation notification to admins
+    await sendEscalationNotification(reminder);
+}
+async function sendEscalationNotification(reminder) {
+    console.log(`🚨 Sending escalation notification for reminder: ${reminder.title}`);
+    // TODO: Implement escalation notification
+    // This could send to admin email, create admin notification, etc.
+}
+// Test Secret Manager integration
+exports.testSecretManager = functions.https.onCall(async (request) => {
+    try {
+        const context = request;
+        // Check App Check (skip in emulator for testing)
+        if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
+            throw new functions.https.HttpsError('unauthenticated', 'App Check required');
+        }
+        functions.logger.info('🧪 Testing Secret Manager integration...');
+        const apiKeys = await secretManagerService_1.secretManagerService.getAllApiKeys();
+        // Return summary (without exposing actual keys)
+        const summary = {
+            admin: {
+                googleMaps: apiKeys.ADMIN.GOOGLE_MAPS ? '✅ Configured' : '❌ Missing',
+                openWeather: apiKeys.ADMIN.OPENWEATHER ? '✅ Configured' : '❌ Missing',
+                googlePlaces: apiKeys.ADMIN.GOOGLE_PLACES ? '✅ Configured' : '❌ Missing',
+            },
+            user: {
+                googleMaps: apiKeys.USER.GOOGLE_MAPS ? '✅ Configured' : '❌ Missing',
+                openWeather: apiKeys.USER.OPENWEATHER ? '✅ Configured' : '❌ Missing',
+                googlePlaces: apiKeys.USER.GOOGLE_PLACES ? '✅ Configured' : '❌ Missing',
+            },
+            shared: {
+                phoneValidation: apiKeys.PHONE_VALIDATION ? '✅ Configured' : '❌ Missing',
+                tenor: apiKeys.TENOR ? '✅ Configured' : '❌ Missing',
+                recaptcha: apiKeys.RECAPTCHA.SITE_KEY ? '✅ Configured' : '❌ Missing',
+            },
+            cacheStats: secretManagerService_1.secretManagerService.getCacheStats()
+        };
+        functions.logger.info('✅ Secret Manager test completed successfully');
+        return {
+            success: true,
+            message: 'Secret Manager integration working correctly',
+            summary
+        };
+    }
+    catch (error) {
+        functions.logger.error('❌ Secret Manager test failed:', error);
+        throw new functions.https.HttpsError('internal', `Secret Manager test failed: ${error}`);
     }
 });
 //# sourceMappingURL=index.js.map

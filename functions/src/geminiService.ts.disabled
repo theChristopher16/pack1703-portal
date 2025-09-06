@@ -1,5 +1,4 @@
-// Temporarily disabled due to firebase-admin/ai import issue
-// import { initializeApp, getApps } from 'firebase-admin/app';
+import { initializeApp, getApps } from 'firebase-admin/app';
 // Temporarily disabled due to firebase-admin/ai import issue
 // import { getAI, getGenerativeModel, GoogleAIBackend } from 'firebase-admin/ai';
 
@@ -55,20 +54,18 @@ interface QueryContext {
 }
 
 class GeminiService {
-  // Temporarily disabled due to firebase-admin/ai import issue
-  // private app: any;
-  // private ai: any;
+  private app: any;
+  private ai: any;
   private model: any;
   private config: GeminiConfig;
 
   constructor() {
     // Initialize Firebase Admin if not already initialized
-    // Temporarily disabled due to firebase-admin/ai import issue
-    // if (getApps().length === 0) {
-    //   this.app = initializeApp();
-    // } else {
-    //   this.app = getApps()[0];
-    // }
+    if (getApps().length === 0) {
+      this.app = initializeApp();
+    } else {
+      this.app = getApps()[0];
+    }
 
     this.config = {
       model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',

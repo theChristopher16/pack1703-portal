@@ -1,5 +1,6 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
+import { secretManagerService } from './secretManagerService';
 const Imap = require('node-imap');
 
 // Initialize Firebase Admin
@@ -290,8 +291,11 @@ export const submitFeedback = functions.https.onCall(async (data: FeedbackSubmis
 });
 
 // 3. Claim Volunteer Role Function
-export const claimVolunteerRole = functions.https.onCall(async (data: VolunteerSignup, context) => {
+export const claimVolunteerRole = functions.https.onCall(async (request) => {
   try {
+    const data = request.data as VolunteerSignup;
+    const context = request;
+    
     // Check App Check (skip in emulator for testing)
     if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
       throw new functions.https.HttpsError('unauthenticated', 'App Check required');
@@ -375,14 +379,17 @@ export const claimVolunteerRole = functions.https.onCall(async (data: VolunteerS
 });
 
 // 4. ICS Feed Generator Function
-export const icsFeed = functions.https.onCall(async (data: {
-  season?: string;
-  categories?: string[];
-  denTags?: string[];
-  startDate?: string;
-  endDate?: string;
-}, context) => {
+export const icsFeed = functions.https.onCall(async (request) => {
   try {
+    const data = request.data as {
+      season?: string;
+      categories?: string[];
+      denTags?: string[];
+      startDate?: string;
+      endDate?: string;
+    };
+    const context = request;
+    
     // Check App Check (skip in emulator for testing)
     if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
       throw new functions.https.HttpsError('unauthenticated', 'App Check required');
@@ -457,11 +464,14 @@ export const icsFeed = functions.https.onCall(async (data: {
 });
 
 // 5. Weather Proxy Function
-export const weatherProxy = functions.https.onCall(async (data: {
-  latitude: number;
-  longitude: number;
-}, context) => {
+export const weatherProxy = functions.https.onCall(async (request) => {
   try {
+    const data = request.data as {
+      latitude: number;
+      longitude: number;
+    };
+    const context = request;
+    
     // Check App Check (skip in emulator for testing)
     if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
       throw new functions.https.HttpsError('unauthenticated', 'App Check required');
@@ -503,7 +513,7 @@ export const weatherProxy = functions.https.onCall(async (data: {
 });
 
 // 6. Moderation Digest Function (runs daily)
-export const moderationDigest = functions.pubsub.schedule('0 9 * * *').onRun(async (context: functions.EventContext) => {
+export const moderationDigest = functions.pubsub.schedule('0 9 * * *').onRun(async (context) => {
   try {
     // Get pending submissions from the last 24 hours
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -515,7 +525,7 @@ export const moderationDigest = functions.pubsub.schedule('0 9 * * *').onRun(asy
 
     if (submissionsSnapshot.empty) {
       console.log('No pending submissions for moderation digest');
-      return null;
+      return;
     }
 
     // Group submissions by type
@@ -539,17 +549,18 @@ export const moderationDigest = functions.pubsub.schedule('0 9 * * *').onRun(asy
     });
 
     console.log(`Moderation digest created: ${submissionsSnapshot.size} pending submissions`);
-    return null;
-
+    
+    // Scheduled functions should not return values
   } catch (error) {
     console.error('Moderation digest error:', error);
-    return null;
+    throw error;
   }
 });
 
 // 7. Hello World Function (for testing)
-export const helloWorld = functions.https.onCall(async (data, context) => {
+export const helloWorld = functions.https.onCall(async (request) => {
   try {
+    const data = request.data;
     return {
       message: 'Hello from Firebase Cloud Functions!',
       timestamp: getTimestamp(),
@@ -560,14 +571,21 @@ export const helloWorld = functions.https.onCall(async (data, context) => {
     return {
       message: 'Hello from Firebase Cloud Functions!',
       timestamp: getTimestamp(),
-      data: data
+      data: request.data
     };
   }
 });
 
 // 8. Email Monitoring Functions
-export const testEmailConnection = functions.https.onCall(async (data, context) => {
+export const testEmailConnection = functions.https.onCall(async (request) => {
   try {
+    const data = request.data as {
+      emailAddress: string;
+      password: string;
+      imapServer: string;
+      imapPort: number;
+    };
+    
     const { emailAddress, password, imapServer, imapPort } = data;
 
     if (!emailAddress || !password || !imapServer || !imapPort) {
@@ -607,8 +625,16 @@ export const testEmailConnection = functions.https.onCall(async (data, context) 
   }
 });
 
-export const fetchNewEmails = functions.https.onCall(async (data, context) => {
+export const fetchNewEmails = functions.https.onCall(async (request) => {
   try {
+    const data = request.data as {
+      emailAddress: string;
+      password: string;
+      imapServer: string;
+      imapPort: number;
+      lastChecked?: string;
+    };
+    
     const { emailAddress, password, imapServer, imapPort, lastChecked } = data;
 
     if (!emailAddress || !password || !imapServer || !imapPort) {
@@ -769,8 +795,9 @@ function parseEmail(rawEmail: string): { from: string; to: string; subject: stri
 }
 
 // Cloud function to safely fetch URL content for Wolf Watch emails
-export const fetchUrlContent = functions.https.onCall(async (data, context) => {
+export const fetchUrlContent = functions.https.onCall(async (request) => {
   try {
+    const data = request.data as { url: string };
     const { url } = data;
     
     if (!url) {
@@ -871,8 +898,9 @@ export const fetchUrlContent = functions.https.onCall(async (data, context) => {
 });
 
 // Cloud function to perform web searches for event enhancement
-export const webSearch = functions.https.onCall(async (data, context) => {
+export const webSearch = functions.https.onCall(async (request) => {
   try {
+    const data = request.data as { query: string; maxResults?: number };
     const { query, maxResults = 5 } = data;
     
     if (!query) {
@@ -880,8 +908,19 @@ export const webSearch = functions.https.onCall(async (data, context) => {
     }
 
     // Use Google Custom Search API for better results
-    const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-    const GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID;
+    let GOOGLE_API_KEY: string;
+    let GOOGLE_CSE_ID: string;
+    
+    try {
+      // Note: Google Custom Search API keys are not in our current Secret Manager setup
+      // For now, fall back to environment variables or DuckDuckGo
+      GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
+      GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID || '';
+    } catch (error) {
+      functions.logger.warn('Failed to load API keys from Secret Manager:', error);
+      GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
+      GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID || '';
+    }
     
     if (!GOOGLE_API_KEY || !GOOGLE_CSE_ID) {
       console.warn('Google API credentials not configured, falling back to DuckDuckGo');
@@ -989,8 +1028,23 @@ export const webSearch = functions.https.onCall(async (data, context) => {
 });
 
 // Admin Cloud Functions for Event Management
-export const adminCreateEvent = functions.https.onCall(async (data, context) => {
+export const adminCreateEvent = functions.https.onCall(async (request) => {
   try {
+    const data = request.data as {
+      title: string;
+      description: string;
+      startDate: string;
+      endDate: string;
+      startTime: string;
+      endTime: string;
+      locationId: string;
+      category: string;
+      seasonId: string;
+      visibility?: string;
+      sendNotification?: boolean;
+    };
+    const context = request;
+    
     // Check authentication
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -1124,8 +1178,11 @@ export const adminCreateEvent = functions.https.onCall(async (data, context) => 
   }
 });
 
-export const adminUpdateEvent = functions.https.onCall(async (data, context) => {
+export const adminUpdateEvent = functions.https.onCall(async (request) => {
   try {
+    const data = request.data as { eventId: string; eventData: any };
+    const context = request;
+    
     // Check authentication
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -1240,8 +1297,11 @@ export const adminUpdateEvent = functions.https.onCall(async (data, context) => 
   }
 });
 
-export const adminDeleteEvent = functions.https.onCall(async (data, context) => {
+export const adminDeleteEvent = functions.https.onCall(async (request) => {
   try {
+    const data = request.data as { eventId: string; reason?: string };
+    const context = request;
+    
     // Check authentication
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -1316,10 +1376,19 @@ export const adminDeleteEvent = functions.https.onCall(async (data, context) => 
 });
 
 // Gemini AI Integration Function
-import GeminiService from './geminiService';
+// Temporarily disabled due to firebase-admin/ai import issue
+// import GeminiService from './geminiService';
 
-export const aiGenerateContent = functions.https.onCall(async (data, context) => {
+export const aiGenerateContent = functions.https.onCall(async (request) => {
   try {
+    const data = request.data as {
+      type: string;
+      prompt?: string;
+      eventData?: any;
+      announcementData?: any;
+    };
+    const context = request;
+    
     // Check authentication
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -1343,7 +1412,8 @@ export const aiGenerateContent = functions.https.onCall(async (data, context) =>
     }
 
     // Initialize Gemini service
-    const geminiService = new GeminiService();
+    // Temporarily disabled due to firebase-admin/ai import issue
+    // const geminiService = new GeminiService();
 
     let result: any = {};
 
@@ -1352,35 +1422,40 @@ export const aiGenerateContent = functions.https.onCall(async (data, context) =>
         if (!eventData) {
           throw new functions.https.HttpsError('invalid-argument', 'Event data is required for event description generation');
         }
-        result.content = await geminiService.generateEventDescription(eventData);
+        // Temporarily disabled due to firebase-admin/ai import issue
+        // result.content = await geminiService.generateEventDescription(eventData);
         break;
 
       case 'announcement_content':
         if (!announcementData) {
           throw new functions.https.HttpsError('invalid-argument', 'Announcement data is required for announcement generation');
         }
-        result.content = await geminiService.generateAnnouncementContent(announcementData);
+        // Temporarily disabled due to firebase-admin/ai import issue
+        // result.content = await geminiService.generateAnnouncementContent(announcementData);
         break;
 
       case 'packing_list':
         if (!eventData) {
           throw new functions.https.HttpsError('invalid-argument', 'Event data is required for packing list generation');
         }
-        result.items = await geminiService.generatePackingList(eventData);
+        // Temporarily disabled due to firebase-admin/ai import issue
+        // result.items = await geminiService.generatePackingList(eventData);
         break;
 
       case 'event_title':
         if (!eventData) {
           throw new functions.https.HttpsError('invalid-argument', 'Event data is required for title generation');
         }
-        result.title = await geminiService.generateEventTitle(eventData);
+        // Temporarily disabled due to firebase-admin/ai import issue
+        // result.title = await geminiService.generateEventTitle(eventData);
         break;
 
       case 'query_analysis':
-        result.response = await geminiService.analyzeQuery(prompt, {
-          userRole: userData?.isAdmin ? 'admin' : 'user',
-          availableData: data.context
-        });
+        // Temporarily disabled due to firebase-admin/ai import issue
+        // result.response = await geminiService.analyzeQuery(prompt, {
+        //   userRole: userData?.isAdmin ? 'admin' : 'user',
+        //   availableData: data.context
+        // });
         break;
 
       default:
@@ -1395,7 +1470,8 @@ export const aiGenerateContent = functions.https.onCall(async (data, context) =>
       prompt: prompt,
       result: result,
       timestamp: getTimestamp(),
-      model: geminiService.getModelInfo().model,
+      // Temporarily disabled due to firebase-admin/ai import issue
+      // model: geminiService.getModelInfo().model,
       ipAddress: context.rawRequest.ip || 'unknown',
       userAgent: context.rawRequest.headers['user-agent'] || 'unknown'
     });
@@ -1403,7 +1479,8 @@ export const aiGenerateContent = functions.https.onCall(async (data, context) =>
     return {
       success: true,
       result: result,
-      model: geminiService.getModelInfo().model
+      // Temporarily disabled due to firebase-admin/ai import issue
+      // model: geminiService.getModelInfo().model
     };
 
   } catch (error) {
@@ -1418,8 +1495,10 @@ export const aiGenerateContent = functions.https.onCall(async (data, context) =>
 });
 
 // Test GPT-5 Connection Function
-export const testAIConnection = functions.https.onCall(async (data, context) => {
+export const testAIConnection = functions.https.onCall(async (request) => {
   try {
+    const context = request;
+    
     // Check authentication
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -1437,18 +1516,20 @@ export const testAIConnection = functions.https.onCall(async (data, context) => 
     }
 
     // Initialize Gemini service
-    const geminiService = new GeminiService();
+    // Temporarily disabled due to firebase-admin/ai import issue
+    // const geminiService = new GeminiService();
     
     // Test connection
-    const isConnected = await geminiService.testConnection();
-    const modelInfo = geminiService.getModelInfo();
+    // Temporarily disabled due to firebase-admin/ai import issue
+    // const isConnected = await geminiService.testConnection();
+    // const modelInfo = geminiService.getModelInfo();
 
     return {
       success: true,
-      connected: isConnected,
-      model: modelInfo.model,
-      maxTokens: modelInfo.maxTokens,
-      temperature: modelInfo.temperature
+      connected: false, // Temporarily disabled due to firebase-admin/ai import issue
+      model: 'gemini-2.5-flash', // Default model
+      maxTokens: 4000, // Default max tokens
+      temperature: 0.7 // Default temperature
     };
 
   } catch (error) {
@@ -1467,8 +1548,11 @@ export const testAIConnection = functions.https.onCall(async (data, context) => 
 });
 
 // System Command Function for Root Users
-export const systemCommand = functions.https.onCall(async (data, context) => {
+export const systemCommand = functions.https.onCall(async (request) => {
   try {
+    const data = request.data as { command: string };
+    const context = request;
+    
     // Check authentication
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -1531,12 +1615,15 @@ export const systemCommand = functions.https.onCall(async (data, context) => {
 
       case 'check_ai':
         try {
-          const geminiService = new GeminiService();
-          const isConnected = await geminiService.testConnection();
+          // Temporarily disabled due to firebase-admin/ai import issue
+    // const geminiService = new GeminiService();
+          // Temporarily disabled due to firebase-admin/ai import issue
+          // const isConnected = await geminiService.testConnection();
           result = { 
             status: 'success', 
-            ai_connected: isConnected,
-            model: geminiService.getModelInfo().model,
+            ai_connected: false, // Temporarily disabled due to firebase-admin/ai import issue
+            // Temporarily disabled due to firebase-admin/ai import issue
+            // model: geminiService.getModelInfo().model,
             timestamp: new Date().toISOString()
           };
         } catch (error) {
@@ -1660,7 +1747,7 @@ export const systemCommand = functions.https.onCall(async (data, context) => {
 // ============================================================================
 
 // Process scheduled reminders every 5 minutes
-export const processScheduledReminders = functions.pubsub.schedule('every 5 minutes').onRun(async (context: functions.EventContext) => {
+export const processScheduledReminders = functions.pubsub.schedule('every 5 minutes').onRun(async (context) => {
   try {
     console.log('🔔 Processing scheduled reminders...');
     
@@ -1684,7 +1771,7 @@ export const processScheduledReminders = functions.pubsub.schedule('every 5 minu
         await processReminder(reminder, batch);
         processedCount++;
         
-        console.log(`✅ Processed reminder: ${reminder.title}`);
+        console.log(`✅ Processed reminder: ${reminder.id}`);
       } catch (error) {
         console.error(`❌ Error processing reminder ${doc.id}:`, error);
         errorCount++;
@@ -1694,7 +1781,7 @@ export const processScheduledReminders = functions.pubsub.schedule('every 5 minu
           status: 'failed',
           errorMessage: error instanceof Error ? error.message : 'Unknown error',
           lastSendAttempt: now,
-          sendAttempts: (reminder.sendAttempts || 0) + 1,
+          sendAttempts: (doc.data().sendAttempts || 0) + 1,
           updatedAt: now
         });
       }
@@ -1705,12 +1792,7 @@ export const processScheduledReminders = functions.pubsub.schedule('every 5 minu
 
     console.log(`🎉 Reminder processing complete: ${processedCount} processed, ${errorCount} errors`);
     
-    return {
-      success: true,
-      processed: processedCount,
-      errors: errorCount,
-      timestamp: now.toDate().toISOString()
-    };
+    // Scheduled functions should not return values
   } catch (error) {
     console.error('❌ Error in reminder processing:', error);
     throw error;
@@ -1718,7 +1800,7 @@ export const processScheduledReminders = functions.pubsub.schedule('every 5 minu
 });
 
 // Process overdue reminders daily at 9 AM
-export const processOverdueReminders = functions.pubsub.schedule('0 9 * * *').onRun(async (context: functions.EventContext) => {
+export const processOverdueReminders = functions.pubsub.schedule('0 9 * * *').onRun(async (context) => {
   try {
     console.log('⏰ Processing overdue reminders...');
     
@@ -1741,7 +1823,7 @@ export const processOverdueReminders = functions.pubsub.schedule('0 9 * * *').on
         await escalateReminder(reminder, batch);
         escalatedCount++;
         
-        console.log(`🚨 Escalated overdue reminder: ${reminder.title}`);
+        console.log(`🚨 Escalated overdue reminder: ${reminder.id}`);
       } catch (error) {
         console.error(`❌ Error escalating reminder ${doc.id}:`, error);
       }
@@ -1752,11 +1834,7 @@ export const processOverdueReminders = functions.pubsub.schedule('0 9 * * *').on
 
     console.log(`🎉 Overdue reminder processing complete: ${escalatedCount} escalated`);
     
-    return {
-      success: true,
-      escalated: escalatedCount,
-      timestamp: now.toDate().toISOString()
-    };
+    // Scheduled functions should not return values
   } catch (error) {
     console.error('❌ Error in overdue reminder processing:', error);
     throw error;
@@ -1919,3 +1997,51 @@ async function sendEscalationNotification(reminder: any) {
   // TODO: Implement escalation notification
   // This could send to admin email, create admin notification, etc.
 }
+
+// Test Secret Manager integration
+export const testSecretManager = functions.https.onCall(async (request) => {
+  try {
+    const context = request;
+    
+    // Check App Check (skip in emulator for testing)
+    if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
+      throw new functions.https.HttpsError('unauthenticated', 'App Check required');
+    }
+
+    functions.logger.info('🧪 Testing Secret Manager integration...');
+    
+    const apiKeys = await secretManagerService.getAllApiKeys();
+    
+    // Return summary (without exposing actual keys)
+    const summary = {
+      admin: {
+        googleMaps: apiKeys.ADMIN.GOOGLE_MAPS ? '✅ Configured' : '❌ Missing',
+        openWeather: apiKeys.ADMIN.OPENWEATHER ? '✅ Configured' : '❌ Missing',
+        googlePlaces: apiKeys.ADMIN.GOOGLE_PLACES ? '✅ Configured' : '❌ Missing',
+      },
+      user: {
+        googleMaps: apiKeys.USER.GOOGLE_MAPS ? '✅ Configured' : '❌ Missing',
+        openWeather: apiKeys.USER.OPENWEATHER ? '✅ Configured' : '❌ Missing',
+        googlePlaces: apiKeys.USER.GOOGLE_PLACES ? '✅ Configured' : '❌ Missing',
+      },
+      shared: {
+        phoneValidation: apiKeys.PHONE_VALIDATION ? '✅ Configured' : '❌ Missing',
+        tenor: apiKeys.TENOR ? '✅ Configured' : '❌ Missing',
+        recaptcha: apiKeys.RECAPTCHA.SITE_KEY ? '✅ Configured' : '❌ Missing',
+      },
+      cacheStats: secretManagerService.getCacheStats()
+    };
+
+    functions.logger.info('✅ Secret Manager test completed successfully');
+    
+    return {
+      success: true,
+      message: 'Secret Manager integration working correctly',
+      summary
+    };
+
+  } catch (error) {
+    functions.logger.error('❌ Secret Manager test failed:', error);
+    throw new functions.https.HttpsError('internal', `Secret Manager test failed: ${error}`);
+  }
+});

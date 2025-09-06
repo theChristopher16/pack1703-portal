@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { MapPin, Navigation, Phone, Mail, Clock } from 'lucide-react';
+import React, { useEffect, useRef, useCallback } from 'react';
+import { MapPin, Navigation } from 'lucide-react';
 import { Location } from '../../types/firestore';
 import CyclingScoutIcon from '../ui/CyclingScoutIcon';
 
@@ -22,6 +22,33 @@ const LocationMap: React.FC<LocationMapProps> = ({
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const leafletRef = useRef<any>(null); // Store Leaflet instance
+
+  const createPopupContent = useCallback((location: Location) => {
+    return `
+      <div class="location-popup">
+        <h3 class="font-semibold text-lg mb-2">${location.name}</h3>
+        <p class="text-gray-600 mb-2">${location.address}</p>
+        <div class="flex items-center space-x-2 text-sm text-gray-500">
+          <span class="inline-flex items-center px-2 py-1 bg-gray-100 rounded-full">
+            ${getCategoryIcon(location.category)}
+            ${location.category}
+          </span>
+          ${location.isImportant ? '<span class="text-yellow-500">⭐ Important</span>' : ''}
+        </div>
+      </div>
+    `;
+  }, []);
+
+  const getCategoryIcon = (category?: string) => {
+    switch (category?.toLowerCase()) {
+      case 'park': return '🌳';
+      case 'school': return '🏫';
+      case 'church': return '⛪';
+      case 'campground': return '🏕️';
+      case 'community center': return '🏢';
+      default: return '📍';
+    }
+  };
 
   useEffect(() => {
     // Dynamically import Leaflet to avoid SSR issues
@@ -146,7 +173,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
         mapInstanceRef.current = null;
       }
     };
-  }, [locations, onLocationSelect]);
+  }, [locations, onLocationSelect, createPopupContent]);
 
   // Update selected location marker
   useEffect(() => {
@@ -178,33 +205,6 @@ const LocationMap: React.FC<LocationMapProps> = ({
       }
     }
   }, [selectedLocation]);
-
-  const createPopupContent = (location: Location) => {
-    return `
-      <div class="location-popup">
-        <h3 class="font-semibold text-lg mb-2">${location.name}</h3>
-        <p class="text-gray-600 mb-2">${location.address}</p>
-        <div class="flex items-center space-x-2 text-sm text-gray-500">
-          <span class="inline-flex items-center px-2 py-1 bg-gray-100 rounded-full">
-            ${getCategoryIcon(location.category)}
-            ${location.category}
-          </span>
-          ${location.isImportant ? '<span class="text-yellow-500">⭐ Important</span>' : ''}
-        </div>
-      </div>
-    `;
-  };
-
-  const getCategoryIcon = (category?: string) => {
-    switch (category?.toLowerCase()) {
-      case 'park': return '🌳';
-      case 'school': return '🏫';
-      case 'church': return '⛪';
-      case 'campground': return '🏕️';
-      case 'community center': return '🏢';
-      default: return '📍';
-    }
-  };
 
   const showStaticMap = () => {
     if (mapRef.current) {

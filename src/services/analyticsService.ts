@@ -1,4 +1,4 @@
-import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, serverTimestamp, query, getDocs, orderBy, limit } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 interface AnalyticsEvent {
@@ -95,51 +95,46 @@ class AnalyticsService {
       const daysAgo = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
       const startDate = new Date(now.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
 
-      // Get page views
-      const pageViewsQuery = query(
+      // Get all analytics data and filter in memory to avoid composite index requirements
+      const analyticsQuery = query(
         collection(this.db, 'analytics'),
-        where('timestamp', '>=', startDate),
-        where('type', '==', 'page_view')
+        orderBy('timestamp', 'desc'),
+        limit(1000) // Limit to recent data to avoid performance issues
       );
-      const pageViewsSnapshot = await getDocs(pageViewsQuery);
+      const analyticsSnapshot = await getDocs(analyticsQuery);
 
-      // Get feature usage
-      const featureQuery = query(
-        collection(this.db, 'analytics'),
-        where('timestamp', '>=', startDate),
-        where('type', '==', 'feature_usage')
-      );
-      const featureSnapshot = await getDocs(featureQuery);
+      // Filter data in memory
+      const allData = analyticsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })).filter(item => {
+        const itemDate = (item as any).timestamp?.toDate ? (item as any).timestamp.toDate() : new Date((item as any).timestamp);
+        return itemDate >= startDate;
+      });
 
-      // Get session data
-      const sessionQuery = query(
-        collection(this.db, 'analytics'),
-        where('timestamp', '>=', startDate),
-        where('type', '==', 'session_end')
-      );
-      const sessionSnapshot = await getDocs(sessionQuery);
+      // Separate by type
+      const pageViews = allData.filter(item => (item as any).type === 'page_view');
+      const featureUsage = allData.filter(item => (item as any).type === 'feature_usage');
+      const sessions = allData.filter(item => (item as any).type === 'session_end');
 
       // Process page views
       const pageCounts: { [key: string]: number } = {};
-      pageViewsSnapshot.docs.forEach(doc => {
-        const data = doc.data();
-        const pageName = data.page || 'Unknown';
+      pageViews.forEach(item => {
+        const pageName = (item as any).page || 'Unknown';
         pageCounts[pageName] = (pageCounts[pageName] || 0) + 1;
       });
 
       // Process feature usage
       const featureCounts: { [key: string]: number } = {};
-      featureSnapshot.docs.forEach(doc => {
-        const data = doc.data();
-        const featureName = data.feature || 'Unknown';
+      featureUsage.forEach(item => {
+        const featureName = (item as any).feature || 'Unknown';
         featureCounts[featureName] = (featureCounts[featureName] || 0) + 1;
       });
 
       // Process device types
       const deviceCounts: { [key: string]: number } = {};
-      pageViewsSnapshot.docs.forEach(doc => {
-        const data = doc.data();
-        const userAgent = data.userAgent || '';
+      pageViews.forEach(item => {
+        const userAgent = (item as any).userAgent || '';
         let deviceType = 'Desktop';
         if (userAgent.includes('Mobile')) deviceType = 'Mobile';
         else if (userAgent.includes('Tablet')) deviceType = 'Tablet';
@@ -147,13 +142,13 @@ class AnalyticsService {
       });
 
       // Calculate session duration
-      const sessionDurations = sessionSnapshot.docs.map(doc => doc.data().duration || 0);
+      const sessionDurations = sessions.map(item => (item as any).duration || 0);
       const averageSessionDuration = sessionDurations.length > 0 
         ? Math.floor(sessionDurations.reduce((a, b) => a + b, 0) / sessionDurations.length)
         : 0;
 
       return {
-        pageViews: pageViewsSnapshot.size,
+        pageViews: pageViews.length,
         topPages: Object.entries(pageCounts)
           .map(([name, views]) => ({ name, views }))
           .sort((a, b) => b.views - a.views)

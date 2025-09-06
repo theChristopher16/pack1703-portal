@@ -43,14 +43,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     
     // Add a small delay to ensure dropdown closes before navigation
     setTimeout(() => {
-      // Force navigation even if there are issues
+      // Use React Router navigation
       try {
         // console.log('Executing navigation to:', href);
         navigate(href);
       } catch (error) {
-        console.error('Navigation error, forcing redirect:', error);
-        // Fallback to window.location if React Router fails
-        window.location.href = href;
+        console.error('Navigation error:', error);
+        // Try again with replace to avoid history issues
+        navigate(href, { replace: true });
       }
     }, 100);
   };

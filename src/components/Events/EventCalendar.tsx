@@ -63,8 +63,7 @@ const EventCalendar: React.FC<EventCalendarProps> = ({
   
 
 
-  // 🔒 AGENT WORKING: FullCalendar Integration - [2025-01-28]
-  // Real calendar data with proper Event type handling
+// FullCalendar integration with real event data
   const [filteredEvents, setFilteredEvents] = useState<Event[]>(events);
 
   useEffect(() => {
@@ -186,10 +185,8 @@ const EventCalendar: React.FC<EventCalendarProps> = ({
     }
   };
 
-  // 🔒 AGENT WORKING: FullCalendar Integration - [2025-01-28]
-  // Real FullCalendar implementation replacing mock calendar
+  // Real FullCalendar implementation
   const renderCalendarView = () => {
-    console.log('🔍 EventCalendar Debug:', { currentView, filteredEventsCount: filteredEvents.length });
     
     if (currentView === 'list') {
       return (
@@ -249,15 +246,7 @@ const EventCalendar: React.FC<EventCalendarProps> = ({
 
 
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        {/* 🔒 AGENT WORKING: FullCalendar Integration - [2025-01-28] */}
-        {/* ✅ FullCalendar is now fully integrated and working! */}
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-sm text-green-700">
-            🎉 <strong>FullCalendar Integration Complete!</strong> Real calendar views are now working.
-          </p>
-        </div>
-        
+      <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6 shadow-sm">
         <div className="fc-custom">
           <FullCalendar
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -273,7 +262,6 @@ const EventCalendar: React.FC<EventCalendarProps> = ({
               onEventClick(info.event.id);
             }}
             eventDidMount={(info) => {
-              // 🔒 AGENT WORKING: FullCalendar Integration - [2025-01-28]
               // Add custom styling and tooltips
               const eventEl = info.el;
               const locationName = info.event.extendedProps.locationName;
@@ -285,8 +273,34 @@ const EventCalendar: React.FC<EventCalendarProps> = ({
             selectable={false}
             editable={false}
             droppable={false}
+            // Mobile responsiveness improvements
+            aspectRatio={1.8}
+            dayMaxEventRows={3}
+            moreLinkText="more"
+            // Professional styling
+            dayHeaderFormat={{ weekday: 'short' }}
+            slotMinTime="06:00:00"
+            slotMaxTime="22:00:00"
+            slotDuration="01:00:00"
+            slotLabelInterval="01:00:00"
+            // Mobile-specific configurations
+            views={{
+              dayGridMonth: {
+                dayMaxEvents: 2,
+                moreLinkClick: 'popover'
+              },
+              timeGridWeek: {
+                dayMaxEvents: 3,
+                slotMinTime: '06:00:00',
+                slotMaxTime: '22:00:00'
+              },
+              timeGridDay: {
+                dayMaxEvents: 6,
+                slotMinTime: '06:00:00',
+                slotMaxTime: '22:00:00'
+              }
+            }}
             viewDidMount={(viewInfo) => {
-              // 🔒 AGENT WORKING: FullCalendar Integration - [2025-01-28]
               // Handle view changes and ensure proper rendering
               console.log('Calendar view mounted:', viewInfo.view.type);
             }}

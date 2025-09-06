@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, FileText, Users, ArrowRight, Compass, MessageSquare, Download } from 'lucide-react';
+import { Calendar, MapPin, FileText, Users, ArrowRight, Compass, MessageSquare, Download, BarChart3, Shield, MessageCircle } from 'lucide-react';
 import { LoadingSpinner, SkeletonLoader } from '../components/Loading';
 import { SecurityAuditService } from '../services/securityAuditService';
+import { authService, UserRole } from '../services/authService';
+import { heroButtonService, HeroButtonConfig } from '../services/heroButtonService';
+import { usageTrackingService } from '../services/usageTrackingService';
 
 const HomePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [contentLoaded, setContentLoaded] = useState(false);
   const [isDownloadingAudit, setIsDownloadingAudit] = useState(false);
   const [animationsTriggered, setAnimationsTriggered] = useState(false);
+  const [heroButtons, setHeroButtons] = useState<HeroButtonConfig[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<UserRole>(UserRole.ANONYMOUS);
 
   useEffect(() => {
     // Remove artificial loading delays for better performance
@@ -23,6 +29,68 @@ const HomePage: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Listen for authentication changes and load hero buttons
+  useEffect(() => {
+    const unsubscribe = authService.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      const role = user?.role || UserRole.ANONYMOUS;
+      setUserRole(role);
+      
+      // Load personalized hero buttons
+      loadHeroButtons(user?.uid || 'anonymous', role);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Track homepage visit
+  useEffect(() => {
+    if (currentUser) {
+      usageTrackingService.trackComponentUsage('homepage', 'Homepage', '/');
+    }
+  }, [currentUser]);
+
+  const loadHeroButtons = async (userId: string, role: UserRole) => {
+    try {
+      const buttons = await heroButtonService.getHeroButtons(userId, role);
+      setHeroButtons(buttons);
+    } catch (error) {
+      console.error('Error loading hero buttons:', error);
+      // Fallback to default buttons
+      const fallbackButtons = await heroButtonService.getHeroButtons('anonymous', UserRole.ANONYMOUS);
+      setHeroButtons(fallbackButtons);
+    }
+  };
+
+  // Track hero button clicks for analytics
+  const trackHeroButtonClick = async (buttonConfig: HeroButtonConfig) => {
+    try {
+      const componentId = buttonConfig.href.replace('/', '') || 'homepage';
+      await usageTrackingService.trackComponentUsage(
+        componentId, 
+        buttonConfig.name, 
+        buttonConfig.href
+      );
+    } catch (error) {
+      console.error('Error tracking hero button click:', error);
+    }
+  };
+
+  // Map icon names to actual icon components
+  const getIconComponent = (iconName: string) => {
+    const iconMap: { [key: string]: any } = {
+      Calendar,
+      MapPin,
+      MessageSquare,
+      Users,
+      MessageCircle,
+      FileText,
+      BarChart3,
+      Shield
+    };
+    return iconMap[iconName] || Calendar; // Default to Calendar if icon not found
+  };
+
   const handleDownloadAudit = async () => {
     try {
       setIsDownloadingAudit(true);
@@ -35,48 +103,15 @@ const HomePage: React.FC = () => {
     }
   };
 
-  const quickActions = [
-    {
-      name: 'View Events',
-      description: 'Explore upcoming pack activities and Houston-area adventures',
-      href: '/events',
-      icon: Calendar,
-      color: 'bg-gradient-to-br from-primary-400 to-primary-500',
-      delay: 'animate-delay-100'
-    },
-    {
-      name: 'Find Locations',
-      description: 'Discover Houston-area meeting spots and adventure destinations',
-      href: '/locations',
-      icon: MapPin,
-      color: 'bg-gradient-to-br from-secondary-400 to-secondary-500',
-      delay: 'animate-delay-200'
-    },
-    {
-      name: 'Announcements',
-      description: 'Stay updated with latest news and important updates',
-      href: '/announcements',
-      icon: MessageSquare,
-      color: 'bg-gradient-to-br from-accent-400 to-accent-500',
-      delay: 'animate-delay-300'
-    },
-    {
-      name: 'Resources',
-      description: 'Access packing lists and helpful guides',
-      href: '/resources',
-      icon: FileText,
-      color: 'bg-gradient-to-br from-primary-500 to-secondary-500',
-      delay: 'animate-delay-400'
-    },
-    {
-      name: 'Volunteer',
-      description: 'Join our community and make a difference',
-      href: '/volunteer',
-      icon: Users,
-      color: 'bg-gradient-to-br from-secondary-500 to-accent-500',
-      delay: 'animate-delay-500'
-    }
-  ];
+  // Get available components for the current user's role
+  const quickActions = heroButtonService.getAvailableComponents(userRole).map((config, index) => ({
+    name: config.name,
+    description: config.description,
+    href: config.href,
+    icon: getIconComponent(config.icon),
+    color: config.color,
+    delay: `animate-delay-${(index + 1) * 100}`
+  }));
 
   const scoutingFeatures = [
     {
@@ -192,22 +227,52 @@ const HomePage: React.FC = () => {
             
             <div className={`flex flex-col sm:flex-row gap-6 justify-center items-center ${animationsTriggered ? "animate-slide-up" : ""}`} 
                  style={{ animationDelay: '400ms' }}>
-              <Link
-                to="/events"
-                className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold text-lg rounded-2xl shadow-glow-primary hover:shadow-glow-primary/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-primary-300/50"
-              >
-                <Calendar className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-200" />
-                Explore Events
-                <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform duration-200" />
-              </Link>
-              
-              <Link
-                to="/locations"
-                className="group relative inline-flex items-center justify-center px-8 py-4 bg-white/90 backdrop-blur-sm border-2 border-primary-300 text-primary-600 hover:bg-primary-50 hover:border-primary-400 font-semibold text-lg rounded-2xl shadow-soft hover:shadow-glow-primary/50 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-primary-300/50"
-              >
-                <Compass className="w-5 h-5 mr-3 group-hover:rotate-12 transition-transform duration-200" />
-                Discover Locations
-              </Link>
+              {heroButtons.length >= 2 ? (
+                <>
+                  <Link
+                    to={heroButtons[0].href}
+                    className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold text-lg rounded-2xl shadow-glow-primary hover:shadow-glow-primary/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-primary-300/50"
+                    onClick={() => trackHeroButtonClick(heroButtons[0])}
+                  >
+                    {React.createElement(getIconComponent(heroButtons[0].icon), { 
+                      className: "w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-200" 
+                    })}
+                    {heroButtons[0].name}
+                    <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform duration-200" />
+                  </Link>
+                  
+                  <Link
+                    to={heroButtons[1].href}
+                    className="group relative inline-flex items-center justify-center px-8 py-4 bg-white/90 backdrop-blur-sm border-2 border-primary-300 text-primary-600 hover:bg-primary-50 hover:border-primary-400 font-semibold text-lg rounded-2xl shadow-soft hover:shadow-glow-primary/50 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-primary-300/50"
+                    onClick={() => trackHeroButtonClick(heroButtons[1])}
+                  >
+                    {React.createElement(getIconComponent(heroButtons[1].icon), { 
+                      className: "w-5 h-5 mr-3 group-hover:rotate-12 transition-transform duration-200" 
+                    })}
+                    {heroButtons[1].name}
+                  </Link>
+                </>
+              ) : (
+                // Fallback buttons while loading
+                <>
+                  <Link
+                    to="/events"
+                    className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold text-lg rounded-2xl shadow-glow-primary hover:shadow-glow-primary/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-primary-300/50"
+                  >
+                    <Calendar className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-200" />
+                    Explore Events
+                    <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform duration-200" />
+                  </Link>
+                  
+                  <Link
+                    to="/locations"
+                    className="group relative inline-flex items-center justify-center px-8 py-4 bg-white/90 backdrop-blur-sm border-2 border-primary-300 text-primary-600 hover:bg-primary-50 hover:border-primary-400 font-semibold text-lg rounded-2xl shadow-soft hover:shadow-glow-primary/50 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-primary-300/50"
+                  >
+                    <Compass className="w-5 h-5 mr-3 group-hover:rotate-12 transition-transform duration-200" />
+                    Discover Locations
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

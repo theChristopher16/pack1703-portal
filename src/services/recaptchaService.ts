@@ -17,14 +17,32 @@ export interface RecaptchaVerificationResult {
 }
 
 class RecaptchaService {
-  private siteKey: string;
-  private secretKey: string;
+  private siteKey: string | null = null;
+  private secretKey: string | null = null;
   private config: any;
 
   constructor() {
-    this.siteKey = API_KEYS.RECAPTCHA.SITE_KEY;
-    this.secretKey = API_KEYS.RECAPTCHA.SECRET_KEY;
     this.config = API_CONFIG.RECAPTCHA;
+  }
+
+  /**
+   * Get reCAPTCHA site key (lazy loading)
+   */
+  private getSiteKey(): string {
+    if (this.siteKey === null) {
+      this.siteKey = API_KEYS.RECAPTCHA?.SITE_KEY || '';
+    }
+    return this.siteKey || '';
+  }
+
+  /**
+   * Get reCAPTCHA secret key (lazy loading)
+   */
+  private getSecretKey(): string {
+    if (this.secretKey === null) {
+      this.secretKey = API_KEYS.RECAPTCHA?.SECRET_KEY || '';
+    }
+    return this.secretKey || '';
   }
 
   /**
@@ -32,6 +50,12 @@ class RecaptchaService {
    */
   loadRecaptchaScript(): Promise<void> {
     return new Promise((resolve, reject) => {
+      const siteKey = this.getSiteKey();
+      if (!siteKey) {
+        reject(new Error('reCAPTCHA site key not configured'));
+        return;
+      }
+
       // Check if script is already loaded
       if (window.grecaptcha) {
         resolve();
@@ -40,7 +64,7 @@ class RecaptchaService {
 
       // Create script element
       const script = document.createElement('script');
-      script.src = `https://www.google.com/recaptcha/api.js?render=${this.siteKey}`;
+      script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
       script.async = true;
       script.defer = true;
 
@@ -69,6 +93,11 @@ class RecaptchaService {
    */
   async executeRecaptcha(action: string = 'submit'): Promise<string> {
     try {
+      const siteKey = this.getSiteKey();
+      if (!siteKey) {
+        throw new Error('reCAPTCHA site key not configured');
+      }
+
       // Track API usage
       API_STATUS.RECAPTCHA.requestsToday++;
 
@@ -76,7 +105,7 @@ class RecaptchaService {
       await this.loadRecaptchaScript();
 
       // Execute reCAPTCHA
-      const token = await window.grecaptcha.execute(this.siteKey, { action });
+      const token = await window.grecaptcha.execute(siteKey, { action });
       
       return token;
     } catch (error) {
@@ -93,6 +122,11 @@ class RecaptchaService {
    */
   async verifyToken(token: string, action: string = 'submit'): Promise<RecaptchaVerificationResult> {
     try {
+      const secretKey = this.getSecretKey();
+      if (!secretKey) {
+        throw new Error('reCAPTCHA secret key not configured');
+      }
+
       // In a real implementation, this would be a server-side call
       // For now, we'll simulate the verification
       const response = await fetch(this.config.siteVerifyEndpoint, {
@@ -101,7 +135,7 @@ class RecaptchaService {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          secret: this.secretKey,
+          secret: secretKey,
           response: token,
         }),
       });
@@ -152,9 +186,10 @@ class RecaptchaService {
    * Get reCAPTCHA status
    */
   getStatus() {
+    const siteKey = this.getSiteKey();
     return {
-      isEnabled: true,
-      siteKey: this.siteKey,
+      isEnabled: Boolean(siteKey),
+      siteKey: siteKey,
       minScore: this.config.minScore,
       requestsToday: API_STATUS.RECAPTCHA.requestsToday,
       errorsToday: API_STATUS.RECAPTCHA.errorsToday,

@@ -35,15 +35,23 @@ export interface TenorTrendingResponse {
 }
 
 class TenorService {
-  private apiKey: string;
+  private apiKey: string | null = null;
   private baseUrl: string;
   private config: any;
 
   constructor() {
-    // Get API key from centralized configuration
-    this.apiKey = API_KEYS.TENOR;
     this.config = API_CONFIG.TENOR;
     this.baseUrl = this.config.baseUrl;
+  }
+
+  /**
+   * Get Tenor API key (lazy loading)
+   */
+  private getApiKey(): string {
+    if (this.apiKey === null) {
+      this.apiKey = API_KEYS.TENOR || '';
+    }
+    return this.apiKey || '';
   }
 
   async getTrendingGifs(limit: number = 20): Promise<TenorGif[]> {
@@ -64,7 +72,7 @@ class TenorService {
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
       const response = await fetch(
-        `${this.baseUrl}/search?q=funny&key=${this.apiKey}&limit=${limit}&media_filter=gif`,
+        `${this.baseUrl}/search?q=funny&key=${this.getApiKey()}&limit=${limit}&media_filter=gif`,
         { signal: controller.signal }
       );
       
@@ -100,7 +108,7 @@ class TenorService {
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
       const response = await fetch(
-        `${this.baseUrl}/search?q=${encodeURIComponent(query)}&key=${this.apiKey}&limit=${limit}&media_filter=gif`,
+        `${this.baseUrl}/search?q=${encodeURIComponent(query)}&key=${this.getApiKey()}&limit=${limit}&media_filter=gif`,
         { signal: controller.signal }
       );
       
@@ -203,7 +211,7 @@ class TenorService {
   }
 
   isApiConfigured(): boolean {
-    return Boolean(this.apiKey && this.apiKey !== 'AIzaSyCJqXqXqXqXqXqXqXqXqXqXqXqXqXqXqXq');
+    return Boolean(this.getApiKey() && this.getApiKey() !== 'AIzaSyCJqXqXqXqXqXqXqXqXqXqXqXqXqXqXqXq');
   }
 
   getApiStatus(): string {

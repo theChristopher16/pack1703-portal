@@ -39,28 +39,45 @@ export interface UserBusinessInfo {
 }
 
 class UserApiService {
-  private userGoogleMapsKey: string;
-  private userOpenWeatherKey: string;
-  private userOpenAIKey: string;
+  private userGoogleMapsKey: string | null = null;
+  private userOpenWeatherKey: string | null = null;
 
   constructor() {
-    // Use user API keys for user functions
-    this.userGoogleMapsKey = API_KEYS.USER.GOOGLE_MAPS;
-    this.userOpenWeatherKey = API_KEYS.USER.OPENWEATHER;
-    this.userOpenAIKey = API_KEYS.USER.OPENAI;
+    // Keys will be loaded lazily when needed
+  }
+
+  /**
+   * Get User Google Maps API key (lazy loading)
+   */
+  private getUserGoogleMapsKey(): string {
+    if (this.userGoogleMapsKey === null) {
+      this.userGoogleMapsKey = API_KEYS.USER?.GOOGLE_MAPS || '';
+    }
+    return this.userGoogleMapsKey || '';
+  }
+
+  /**
+   * Get User OpenWeather API key (lazy loading)
+   */
+  private getUserOpenWeatherKey(): string {
+    if (this.userOpenWeatherKey === null) {
+      this.userOpenWeatherKey = API_KEYS.USER?.OPENWEATHER || '';
+    }
+    return this.userOpenWeatherKey || '';
   }
 
   /**
    * Verify location using Google Maps Geocoding API (User version)
    */
   async verifyLocation(address: string): Promise<UserLocationData> {
-    if (!FEATURE_FLAGS.LOCATION_VERIFICATION || !this.userGoogleMapsKey) {
+    const userGoogleMapsKey = this.getUserGoogleMapsKey();
+    if (!FEATURE_FLAGS.LOCATION_VERIFICATION || !userGoogleMapsKey) {
       return this.getFallbackLocationData();
     }
 
     try {
       const response = await fetch(
-        `${API_CONFIG.USER.GOOGLE_MAPS.baseUrl}${API_CONFIG.USER.GOOGLE_MAPS.geocodingEndpoint}?address=${encodeURIComponent(address)}&key=${this.userGoogleMapsKey}`
+        `${API_CONFIG.USER.GOOGLE_MAPS.baseUrl}${API_CONFIG.USER.GOOGLE_MAPS.geocodingEndpoint}?address=${encodeURIComponent(address)}&key=${userGoogleMapsKey}`
       );
 
       if (!response.ok) {
@@ -100,13 +117,14 @@ class UserApiService {
    * Get weather forecast using OpenWeather API (User version)
    */
   async getWeatherForecast(lat: number, lng: number): Promise<UserWeatherData | null> {
-    if (!FEATURE_FLAGS.WEATHER_INTEGRATION || !this.userOpenWeatherKey) {
+    const userOpenWeatherKey = this.getUserOpenWeatherKey();
+    if (!FEATURE_FLAGS.WEATHER_INTEGRATION || !userOpenWeatherKey) {
       return null;
     }
 
     try {
       const response = await fetch(
-        `${API_CONFIG.USER.OPENWEATHER.baseUrl}${API_CONFIG.USER.OPENWEATHER.currentEndpoint}?lat=${lat}&lon=${lng}&appid=${this.userOpenWeatherKey}&units=imperial`
+        `${API_CONFIG.USER.OPENWEATHER.baseUrl}${API_CONFIG.USER.OPENWEATHER.currentEndpoint}?lat=${lat}&lon=${lng}&appid=${userOpenWeatherKey}&units=imperial`
       );
 
       if (!response.ok) {
@@ -135,7 +153,8 @@ class UserApiService {
    * Get business information using Google Places API (User version)
    */
   async getBusinessInfo(lat: number, lng: number, query?: string): Promise<UserBusinessInfo | null> {
-    if (!FEATURE_FLAGS.BUSINESS_INFO_ENRICHMENT || !this.userGoogleMapsKey) {
+    const userGoogleMapsKey = this.getUserGoogleMapsKey();
+    if (!FEATURE_FLAGS.BUSINESS_INFO_ENRICHMENT || !userGoogleMapsKey) {
       return null;
     }
 
@@ -144,10 +163,10 @@ class UserApiService {
       
       if (query) {
         // Use text search for better results with business names
-        url = `${API_CONFIG.USER.GOOGLE_PLACES.baseUrl}${API_CONFIG.USER.GOOGLE_PLACES.textSearchEndpoint}?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=1000&key=${this.userGoogleMapsKey}`;
+        url = `${API_CONFIG.USER.GOOGLE_PLACES.baseUrl}${API_CONFIG.USER.GOOGLE_PLACES.textSearchEndpoint}?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=1000&key=${userGoogleMapsKey}`;
       } else {
         // Use nearby search
-        url = `${API_CONFIG.USER.GOOGLE_PLACES.baseUrl}${API_CONFIG.USER.GOOGLE_PLACES.nearbySearchEndpoint}?location=${lat},${lng}&radius=1000&key=${this.userGoogleMapsKey}`;
+        url = `${API_CONFIG.USER.GOOGLE_PLACES.baseUrl}${API_CONFIG.USER.GOOGLE_PLACES.nearbySearchEndpoint}?location=${lat},${lng}&radius=1000&key=${userGoogleMapsKey}`;
       }
 
       const response = await fetch(url);
@@ -187,13 +206,14 @@ class UserApiService {
    * Get address suggestions for autocomplete (User version)
    */
   async getAddressSuggestions(query: string): Promise<string[]> {
-    if (!this.userGoogleMapsKey) {
+    const userGoogleMapsKey = this.getUserGoogleMapsKey();
+    if (!userGoogleMapsKey) {
       return [];
     }
 
     try {
       const response = await fetch(
-        `${API_CONFIG.USER.GOOGLE_PLACES.baseUrl}/place/autocomplete/json?input=${encodeURIComponent(query)}&types=establishment&key=${this.userGoogleMapsKey}`
+        `${API_CONFIG.USER.GOOGLE_PLACES.baseUrl}/place/autocomplete/json?input=${encodeURIComponent(query)}&types=establishment&key=${userGoogleMapsKey}`
       );
 
       if (!response.ok) {

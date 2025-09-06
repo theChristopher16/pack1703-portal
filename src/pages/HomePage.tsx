@@ -73,7 +73,7 @@ const HomePage: React.FC = () => {
   const scoutingFeatures = [
     {
       emoji: '🏕️',
-      title: 'Solar-Punk Spirit',
+      title: 'Solarpunk Spirit',
       description: 'Embracing sustainable technology and nature connection for the next generation of scouts.',
       color: 'text-primary-500',
       bgColor: 'bg-primary-50'

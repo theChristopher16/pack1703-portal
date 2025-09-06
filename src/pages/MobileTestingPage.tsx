@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Smartphone, Tablet, Monitor, RefreshCw, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
-import MobileTestSuite from '../Testing/MobileTestSuite';
+import MobileTestSuite from '../components/Testing/MobileTestSuite';
 
 interface TestResults {
   navigation: boolean;

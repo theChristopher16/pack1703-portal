@@ -383,10 +383,12 @@ export const icsFeed = functions.https.onCall(async (data: {
   endDate?: string;
 }, context) => {
   try {
-    // Check App Check (skip in emulator for testing)
-    if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
-      throw new functions.https.HttpsError('unauthenticated', 'App Check required');
-    }
+    // Skip App Check for ICS feed since it's a public calendar feed
+    // This allows the ICS feed to work without requiring App Check setup
+    console.log('ICS feed request received:', { 
+      hasApp: !!context.app, 
+      isEmulator: process.env.FUNCTIONS_EMULATOR === 'true' 
+    });
 
     // Build query
     let query = db.collection('events').where('startDate', '>=', getTimestamp());

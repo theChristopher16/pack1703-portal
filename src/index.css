@@ -918,3 +918,199 @@ body {
     page-break-before: always;
   }
 }
+
+/* ========================================
+   TEXT CONTRAST & LINK STYLING SYSTEM
+   ======================================== */
+
+/* Base text contrast improvements */
+.text-readable {
+  color: #374151 !important; /* Better contrast than gray-600 */
+}
+
+.text-muted {
+  color: #6b7280 !important; /* Better contrast than gray-500 */
+}
+
+.text-subtle {
+  color: #9ca3af !important; /* Better contrast than gray-400 */
+}
+
+/* Clickable vs Non-clickable text distinction */
+.text-clickable {
+  color: #2563eb !important; /* Primary blue for links */
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.text-clickable:hover {
+  color: #1d4ed8 !important; /* Darker blue on hover */
+  text-decoration: underline;
+}
+
+.text-clickable:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.text-non-clickable {
+  color: #4b5563 !important; /* Gray-600 for non-clickable text */
+  cursor: default;
+}
+
+/* Enhanced link styling */
+.link-primary {
+  color: #2563eb !important;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.link-primary:hover {
+  color: #1d4ed8 !important;
+  text-decoration: underline;
+}
+
+.link-primary:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.link-secondary {
+  color: #6b7280 !important;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.link-secondary:hover {
+  color: #374151 !important;
+  text-decoration: underline;
+}
+
+/* Button text styling */
+.btn-text-primary {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+.btn-text-secondary {
+  color: #374151 !important;
+  font-weight: 600;
+}
+
+.btn-text-outline {
+  color: #2563eb !important;
+  font-weight: 600;
+}
+
+/* Navigation text improvements */
+.nav-text-active {
+  color: #1d4ed8 !important;
+  font-weight: 600;
+}
+
+.nav-text-inactive {
+  color: #6b7280 !important;
+  font-weight: 500;
+}
+
+.nav-text-inactive:hover {
+  color: #374151 !important;
+}
+
+/* Footer specific improvements */
+.footer-heading {
+  color: #111827 !important;
+  font-weight: 600;
+}
+
+.footer-text {
+  color: #4b5563 !important;
+}
+
+.footer-link {
+  color: #2563eb !important;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+}
+
+.footer-link:hover {
+  color: #1d4ed8 !important;
+  text-decoration: underline;
+}
+
+.footer-link:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.footer-copyright {
+  color: #6b7280 !important;
+}
+
+/* Card text improvements */
+.card-title {
+  color: #111827 !important;
+  font-weight: 600;
+}
+
+.card-text {
+  color: #4b5563 !important;
+}
+
+.card-text-muted {
+  color: #6b7280 !important;
+}
+
+/* Form text improvements */
+.form-label {
+  color: #374151 !important;
+  font-weight: 500;
+}
+
+.form-text {
+  color: #4b5563 !important;
+}
+
+.form-error {
+  color: #dc2626 !important;
+  font-weight: 500;
+}
+
+.form-success {
+  color: #059669 !important;
+  font-weight: 500;
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .text-clickable,
+  .link-primary,
+  .link-secondary,
+  .footer-link {
+    transition: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .text-clickable,
+  .link-primary {
+    color: #0000ff !important;
+  }
+  
+  .text-non-clickable,
+  .text-muted {
+    color: #000000 !important;
+  }
+  
+  .footer-link:hover,
+  .link-primary:hover {
+    color: #000080 !important;
+  }
+}

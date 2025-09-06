@@ -107,78 +107,98 @@ const LocationMap: React.FC<LocationMapProps> = ({
 
         // Wait for map to be ready and tiles to load before adding markers
         map.whenReady(() => {
-          // Additional delay to ensure tiles are loaded
+          // Wait for map panes to be fully initialized
           setTimeout(() => {
-            try {
-              // Add markers for each location
-              const markers: any[] = [];
-              locations.forEach((location) => {
-                if (location.geo?.lat && location.geo?.lng && 
-                    typeof location.geo.lat === 'number' && 
-                    typeof location.geo.lng === 'number' &&
-                    location.geo.lat >= -90 && location.geo.lat <= 90 &&
-                    location.geo.lng >= -180 && location.geo.lng <= 180) {
-                  try {
-                    const marker = L.marker([location.geo.lat, location.geo.lng], {
-                      title: location.name,
-                      alt: location.name
-                    })
-                      .addTo(map)
-                      .bindPopup(createPopupContent(location))
-                      .on('click', () => onLocationSelect(location));
-
-                    markers.push(marker);
-                  } catch (error) {
-                    console.warn(`Failed to create marker for location ${location.name}:`, error);
-                  }
-                } else {
-                  console.warn(`Location ${location.name} has no valid coordinates - skipping marker creation`);
-                }
-              });
-              markersRef.current = markers;
-
-              // Fit map to show all markers with better error handling
-              if (markers.length > 0) {
-                setTimeout(() => {
-                  try {
-                    // Ensure all markers are properly initialized
-                    const validMarkers = markers.filter(marker => {
-                      try {
-                        const pos = marker.getLatLng();
-                        return pos && typeof pos.lat === 'number' && typeof pos.lng === 'number';
-                      } catch (e) {
-                        return false;
-                      }
-                    });
-                    
-                    if (validMarkers.length > 0) {
-                      const group = new (L as any).featureGroup(validMarkers);
-                      const bounds = group.getBounds();
-                      if (bounds && bounds.isValid()) {
-                        // Use invalidateSize to ensure map is properly sized
-                        map.invalidateSize();
-                        map.fitBounds(bounds.pad(0.1));
-                      } else {
-                        // Fallback: center on first valid marker
-                        const firstMarker = validMarkers[0];
-                        const pos = firstMarker.getLatLng();
-                        map.invalidateSize();
-                        map.setView([pos.lat, pos.lng], 12);
-                      }
-                    }
-                  } catch (error) {
-                    console.warn('Failed to fit map bounds:', error);
-                    // Fallback: center on default location
-                    map.invalidateSize();
-                    map.setView([40.7103, -89.6144], 11);
-                  }
-                }, 1500); // Increased delay to ensure everything is ready
-              }
-            } catch (error) {
-              console.error('Error adding markers:', error);
+            // Ensure map panes exist before creating markers
+            if (!map.getPane('markerPane')) {
+              console.warn('Map panes not ready, retrying marker creation');
+              setTimeout(() => {
+                addMarkersToMap(map, L);
+              }, 500);
+              return;
             }
-          }, 500); // Wait for tiles to load
+            
+            addMarkersToMap(map, L);
+          }, 1000); // Increased delay to ensure map is fully ready
         });
+        
+        // Function to add markers with proper error handling
+        const addMarkersToMap = (map: any, L: any) => {
+          try {
+            // Add markers for each location
+            const markers: any[] = [];
+            locations.forEach((location) => {
+              if (location.geo?.lat && location.geo?.lng && 
+                  typeof location.geo.lat === 'number' && 
+                  typeof location.geo.lng === 'number' &&
+                  location.geo.lat >= -90 && location.geo.lat <= 90 &&
+                  location.geo.lng >= -180 && location.geo.lng <= 180) {
+                try {
+                  // Ensure map panes exist before creating marker
+                  if (!map.getPane('markerPane')) {
+                    console.warn(`Map panes not ready for ${location.name}, skipping marker`);
+                    return;
+                  }
+                  
+                  const marker = L.marker([location.geo.lat, location.geo.lng], {
+                    title: location.name,
+                    alt: location.name
+                  })
+                    .addTo(map)
+                    .bindPopup(createPopupContent(location))
+                    .on('click', () => onLocationSelect(location));
+
+                  markers.push(marker);
+                } catch (error) {
+                  console.warn(`Failed to create marker for location ${location.name}:`, error);
+                }
+              } else {
+                console.warn(`Location ${location.name} has no valid coordinates - skipping marker creation`);
+              }
+            });
+            markersRef.current = markers;
+
+            // Fit map to show all markers with better error handling
+            if (markers.length > 0) {
+              setTimeout(() => {
+                try {
+                  // Ensure all markers are properly initialized
+                  const validMarkers = markers.filter(marker => {
+                    try {
+                      const pos = marker.getLatLng();
+                      return pos && typeof pos.lat === 'number' && typeof pos.lng === 'number';
+                    } catch (e) {
+                      return false;
+                    }
+                  });
+                  
+                  if (validMarkers.length > 0) {
+                    const group = new (L as any).featureGroup(validMarkers);
+                    const bounds = group.getBounds();
+                    if (bounds && bounds.isValid()) {
+                      // Use invalidateSize to ensure map is properly sized
+                      map.invalidateSize();
+                      map.fitBounds(bounds.pad(0.1));
+                    } else {
+                      // Fallback: center on first valid marker
+                      const firstMarker = validMarkers[0];
+                      const pos = firstMarker.getLatLng();
+                      map.invalidateSize();
+                      map.setView([pos.lat, pos.lng], 12);
+                    }
+                  }
+                } catch (error) {
+                  console.warn('Failed to fit map bounds:', error);
+                  // Fallback: center on default location
+                  map.invalidateSize();
+                  map.setView([40.7103, -89.6144], 11);
+                }
+              }, 1500); // Increased delay to ensure everything is ready
+            }
+          } catch (error) {
+            console.error('Error adding markers:', error);
+          }
+        };
 
         // Handle map resize events
         const handleResize = () => {

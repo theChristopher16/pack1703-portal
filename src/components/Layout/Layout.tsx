@@ -154,7 +154,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <h1 className="text-lg sm:text-xl font-display font-bold text-gradient">
                   {packName || 'Cub Scout Pack 1703'}
                 </h1>
-                <p className="text-xs text-gray-600">Families Portal</p>
+                <p className="text-xs footer-text">Families Portal</p>
               </div>
             </div>
 
@@ -171,8 +171,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     }}
                     className={`px-3 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
                       isActive(item.href)
-                        ? 'text-primary-600 bg-primary-50 shadow-soft'
-                        : 'text-gray-600 hover:text-primary-600 hover:bg-primary-50/50'
+                        ? 'nav-text-active bg-primary-50 shadow-soft'
+                        : 'nav-text-inactive hover:nav-text-active hover:bg-primary-50/50'
                     }`}
                   >
                     <div className="flex items-center justify-center space-x-2">
@@ -200,8 +200,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     }}
                     className={`px-3 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
                       isActive(item.href)
-                        ? 'text-primary-600 bg-primary-50 shadow-soft'
-                        : 'text-gray-600 hover:text-primary-600 hover:bg-primary-50/50'
+                        ? 'nav-text-active bg-primary-50 shadow-soft'
+                        : 'nav-text-inactive hover:nav-text-active hover:bg-primary-50/50'
                     }`}
                   >
                     <div className="flex items-center justify-center space-x-2">
@@ -224,7 +224,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     console.log('More button clicked, current state:', isDropdownOpen);
                     setIsDropdownOpen(!isDropdownOpen);
                   }}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-xl font-medium text-gray-600 hover:text-primary-600 hover:bg-primary-50/50 transition-all duration-300"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-xl font-medium nav-text-inactive hover:nav-text-active hover:bg-primary-50/50 transition-all duration-300"
                 >
                   <span className="text-sm">More</span>
                   <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
@@ -255,7 +255,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
                               isActive(item.href)
                                 ? 'text-primary-600 bg-primary-50'
-                                : 'text-gray-600 hover:text-primary-600 hover:bg-primary-50/50'
+                                : 'nav-text-inactive hover:nav-text-active hover:bg-primary-50/50'
                             }`}
                           >
                             <Icon className="w-4 h-4" />
@@ -328,7 +328,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="md:hidden">
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 rounded-xl text-gray-600 hover:text-primary-600 hover:bg-primary-50/50 transition-all duration-300"
+                className="p-2 rounded-xl nav-text-inactive hover:nav-text-active hover:bg-primary-50/50 transition-all duration-300"
               >
                 {isMobileMenuOpen ? (
                   <X className="w-6 h-6" />
@@ -356,7 +356,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl font-medium transition-all duration-300 ${
                       isActive(item.href)
                         ? 'text-primary-600 bg-primary-50'
-                        : 'text-gray-600 hover:text-primary-600 hover:bg-primary-50/50'
+                        : 'nav-text-inactive hover:nav-text-active hover:bg-primary-50/50'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -429,23 +429,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Contact Info */}
             <div>
-              <h3 className="text-lg font-display font-semibold text-gray-900 mb-4">Contact Us</h3>
-              <div className="space-y-2 text-gray-600">
-                <p className="font-medium">{packName}</p>
-                <p>Houston, TX</p>
-                <p>Email: <a href="mailto:cubmaster@sfpack1703.com" className="text-primary-600 hover:text-primary-700 font-medium transition-colors duration-200">cubmaster@sfpack1703.com</a></p>
+              <h3 className="text-lg font-display font-semibold footer-heading mb-4">Contact Us</h3>
+              <div className="space-y-2">
+                <p className="footer-text font-medium">{packName}</p>
+                <p className="footer-text">Houston, TX</p>
+                <p className="footer-text">
+                  Email: <a 
+                    href="mailto:cubmaster@sfpack1703.com" 
+                    className="footer-link"
+                  >
+                    cubmaster@sfpack1703.com
+                  </a>
+                </p>
               </div>
             </div>
 
             {/* Quick Links */}
             <div>
-              <h3 className="text-lg font-display font-semibold text-gray-900 mb-4">Quick Links</h3>
+              <h3 className="text-lg font-display font-semibold footer-heading mb-4">Quick Links</h3>
               <div className="space-y-2">
                 {navigation.slice(0, 4).map((item) => (
                   <button
                     key={item.name}
                     onClick={() => handleNavigation(item.href)}
-                    className="block text-gray-600 hover:text-primary-600 font-medium transition-colors duration-200"
+                    className="block footer-link text-left"
                   >
                     {item.name}
                   </button>
@@ -455,23 +462,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Resources */}
             <div>
-              <h3 className="text-lg font-display font-semibold text-gray-900 mb-4">Resources</h3>
+              <h3 className="text-lg font-display font-semibold footer-heading mb-4">Resources</h3>
               <div className="space-y-2">
                 <button
                   onClick={() => handleNavigation('/resources')}
-                  className="block text-gray-600 hover:text-primary-600 font-medium transition-colors duration-200"
+                  className="block footer-link text-left"
                 >
                   Pack Resources
                 </button>
                 <button
                   onClick={() => handleNavigation('/feedback')}
-                  className="block text-gray-600 hover:text-primary-600 font-medium transition-colors duration-200"
+                  className="block footer-link text-left"
                 >
                   Feedback
                 </button>
                 <button
                   onClick={() => handleNavigation('/privacy')}
-                  className="block text-gray-600 hover:text-primary-600 font-medium transition-colors duration-200"
+                  className="block footer-link text-left"
                 >
                   Privacy Policy
                 </button>
@@ -479,8 +486,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
           </div>
 
-          <div className="mt-8 pt-8 border-t border-gray-200 text-center text-gray-500">
-            <p>&copy; 2024 {packName}. All rights reserved.</p>
+          <div className="mt-8 pt-8 border-t border-gray-200 text-center">
+            <p className="footer-copyright">&copy; 2024 {packName}. All rights reserved.</p>
           </div>
         </div>
       </footer>

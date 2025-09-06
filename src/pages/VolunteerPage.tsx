@@ -9,34 +9,8 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
-
-interface VolunteerNeed {
-  id: string;
-  eventId: string;
-  eventTitle: string;
-  eventDate: string;
-  role: string;
-  description: string;
-  needed: number;
-  claimed: number;
-  category: 'setup' | 'cleanup' | 'food' | 'activity' | 'transportation' | 'supervision' | 'other';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface VolunteerSignup {
-  id: string;
-  needId: string;
-  familyName: string;
-  email?: string;
-  phone?: string;
-  count: number;
-  notes?: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
-  createdAt: string;
-}
+import { volunteerService, VolunteerNeed, VolunteerSignup } from '../services/volunteerService';
+import { authService } from '../services/authService';
 
 const VolunteerPage: React.FC = () => {
   const [volunteerNeeds, setVolunteerNeeds] = useState<VolunteerNeed[]>([]);
@@ -46,126 +20,39 @@ const VolunteerPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedPriority, setSelectedPriority] = useState('all');
   const [showOnlyAvailable, setShowOnlyAvailable] = useState(false);
+  const [currentUser, setCurrentUser] = useState(authService.getCurrentUser());
 
-  // Mock data for now - will be replaced with Firebase calls
+  // Load volunteer needs and user signups
   useEffect(() => {
-    const mockVolunteerNeeds: VolunteerNeed[] = [
-      {
-        id: '1',
-        eventId: 'event-001',
-        eventTitle: 'Pack 1703 Fall Campout',
-        eventDate: '2024-10-15',
-        role: 'Check-in Coordinator',
-        description: 'Help families check in upon arrival, distribute materials, and answer questions.',
-        needed: 2,
-        claimed: 1,
-        category: 'setup',
-        priority: 'high',
-        isActive: true,
-        createdAt: '2024-01-01T00:00:00',
-        updatedAt: '2024-01-01T00:00:00'
-      },
-      {
-        id: '2',
-        eventId: 'event-001',
-        eventTitle: 'Pack 1703 Fall Campout',
-        eventDate: '2024-10-15',
-        role: 'Food Coordinator',
-        description: 'Organize meal preparation, coordinate with families bringing food, and ensure dietary needs are met.',
-        needed: 1,
-        claimed: 0,
-        category: 'food',
-        priority: 'high',
-        isActive: true,
-        createdAt: '2024-01-01T00:00:00',
-        updatedAt: '2024-01-01T00:00:00'
-      },
-      {
-        id: '3',
-        eventId: 'event-001',
-        eventTitle: 'Pack 1703 Fall Campout',
-        eventDate: '2024-10-15',
-        role: 'Activity Leader',
-        description: 'Lead organized activities and games for scouts during free time.',
-        needed: 3,
-        claimed: 2,
-        category: 'activity',
-        priority: 'medium',
-        isActive: true,
-        createdAt: '2024-01-01T00:00:00',
-        updatedAt: '2024-01-01T00:00:00'
-      },
-      {
-        id: '4',
-        eventId: 'event-002',
-        eventTitle: 'Pinewood Derby',
-        eventDate: '2024-02-10',
-        role: 'Race Official',
-        description: 'Help run the race, record times, and ensure fair competition.',
-        needed: 4,
-        claimed: 3,
-        category: 'supervision',
-        priority: 'high',
-        isActive: true,
-        createdAt: '2024-01-15T00:00:00',
-        updatedAt: '2024-01-15T00:00:00'
-      },
-      {
-        id: '5',
-        eventId: 'event-002',
-        eventTitle: 'Pinewood Derby',
-        eventDate: '2024-02-10',
-        role: 'Setup Crew',
-        description: 'Help set up the race track, tables, and decorations before the event.',
-        needed: 2,
-        claimed: 0,
-        category: 'setup',
-        priority: 'medium',
-        isActive: true,
-        createdAt: '2024-01-15T00:00:00',
-        updatedAt: '2024-01-15T00:00:00'
-      },
-      {
-        id: '6',
-        eventId: 'event-003',
-        eventTitle: 'Community Service Project',
-        eventDate: '2024-03-15',
-        role: 'Project Coordinator',
-        description: 'Lead the service project, coordinate with community partners, and ensure safety.',
-        needed: 1,
-        claimed: 0,
-        category: 'supervision',
-        priority: 'urgent',
-        isActive: true,
-        createdAt: '2024-02-01T00:00:00',
-        updatedAt: '2024-02-01T00:00:00'
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        
+        // Load volunteer needs
+        const needs = await volunteerService.getVolunteerNeeds();
+        setVolunteerNeeds(needs);
+        
+        // Load user signups if logged in
+        if (currentUser) {
+          const signups = await volunteerService.getUserVolunteerSignups();
+          setUserSignups(signups);
+        }
+      } catch (error) {
+        console.error('Error loading volunteer data:', error);
+      } finally {
+        setLoading(false);
       }
-    ];
+    };
 
-    const mockUserSignups: VolunteerSignup[] = [
-      {
-        id: '1',
-        needId: '1',
-        familyName: 'Smith Family',
-        email: 'smith@example.com',
-        count: 1,
-        status: 'confirmed',
-        createdAt: '2024-01-05T00:00:00'
-      },
-      {
-        id: '2',
-        needId: '3',
-        familyName: 'Johnson Family',
-        email: 'johnson@example.com',
-        count: 1,
-        status: 'confirmed',
-        createdAt: '2024-01-10T00:00:00'
-      }
-    ];
+    loadData();
+  }, [currentUser]);
 
-    setVolunteerNeeds(mockVolunteerNeeds);
-    setUserSignups(mockUserSignups);
-    setLoading(false);
+  // Listen for auth state changes
+  useEffect(() => {
+    const unsubscribe = authService.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+    });
+    return unsubscribe;
   }, []);
 
   const categories = [
@@ -223,16 +110,56 @@ const VolunteerPage: React.FC = () => {
     return Math.min((claimed / needed) * 100, 100);
   };
 
-  const handleSignup = (need: VolunteerNeed) => {
-    // TODO: Implement actual signup logic with Firebase
-    console.log(`Signing up for: ${need.role}`);
-    
-    // For now, just show a success message
-    alert(`Thank you for volunteering! You've been signed up for ${need.role} at ${need.eventTitle}.`);
+  const handleSignup = async (need: VolunteerNeed) => {
+    try {
+      if (!currentUser) {
+        alert('Please log in to volunteer for events.');
+        return;
+      }
+
+      // Check if user is already signed up
+      const existingSignup = await volunteerService.isUserSignedUpForNeed(need.id);
+      if (existingSignup) {
+        alert('You are already signed up for this volunteer role.');
+        return;
+      }
+
+      // Check if there are still spots available
+      if (need.claimed >= need.needed) {
+        alert('This volunteer role is full.');
+        return;
+      }
+
+      // Get user information for signup
+      const volunteerName = currentUser.displayName || currentUser.email || 'Anonymous';
+      const volunteerEmail = currentUser.email || '';
+      
+      const signupData = {
+        needId: need.id,
+        volunteerName,
+        volunteerEmail,
+        count: 1, // Default to 1 person
+        notes: ''
+      };
+
+      await volunteerService.signUpForVolunteerNeed(signupData);
+      
+      // Refresh the data
+      const needs = await volunteerService.getVolunteerNeeds();
+      setVolunteerNeeds(needs);
+      
+      const signups = await volunteerService.getUserVolunteerSignups();
+      setUserSignups(signups);
+      
+      alert(`Thank you for volunteering! You've been signed up for ${need.role} at ${need.eventTitle}.`);
+    } catch (error) {
+      console.error('Error signing up for volunteer need:', error);
+      alert(`Error signing up: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const getUserSignupForNeed = (needId: string) => {
-    return userSignups.find(signup => signup.needId === needId);
+    return userSignups.find(signup => signup.needId === needId && signup.status !== 'cancelled');
   };
 
   if (loading) {
@@ -413,6 +340,21 @@ const VolunteerPage: React.FC = () => {
                       <p className="text-xs text-green-600 mt-1">
                         Status: {userSignup.status} • Count: {userSignup.count}
                       </p>
+                    </div>
+                  )}
+
+                  {/* Show who is signed up (for non-signed-up users) */}
+                  {!isUserSignedUp && need.claimed > 0 && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                      <div className="flex items-center mb-2">
+                        <Users className="h-4 w-4 text-blue-600 mr-2" />
+                        <span className="text-sm font-medium text-blue-800">
+                          Current Volunteers:
+                        </span>
+                      </div>
+                      <div className="text-xs text-blue-600">
+                        {need.claimed} volunteer{need.claimed !== 1 ? 's' : ''} signed up
+                      </div>
                     </div>
                   )}
 

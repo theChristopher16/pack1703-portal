@@ -32,7 +32,7 @@ try {
     // For production, use reCAPTCHA v3
     // The reCAPTCHA site key should be set as an environment variable
     const recaptchaSiteKey = process.env.REACT_APP_RECAPTCHA_V3_SITE_KEY;
-    if (recaptchaSiteKey && recaptchaSiteKey !== '6LfYourSiteKeyHere') {
+    if (recaptchaSiteKey && recaptchaSiteKey.startsWith('6L')) {
       initializeAppCheck(app, {
         provider: new ReCaptchaV3Provider(recaptchaSiteKey),
         isTokenAutoRefreshEnabled: true
@@ -40,7 +40,8 @@ try {
       console.log('App Check initialized with reCAPTCHA v3 for production');
     } else {
       // Fallback: Use debug token if no reCAPTCHA key is configured
-      console.warn('App Check using debug token: REACT_APP_RECAPTCHA_V3_SITE_KEY not configured');
+      console.warn('App Check using debug token: REACT_APP_RECAPTCHA_V3_SITE_KEY not configured or invalid');
+      console.warn('Please set REACT_APP_RECAPTCHA_V3_SITE_KEY environment variable with a valid reCAPTCHA v3 site key');
       (globalThis as any).FIREBASE_APPCHECK_DEBUG_TOKEN = '8EC4C83B-FA44-453B-9EDB-DC063C36FCA8';
       initializeAppCheck(app, {
         provider: new ReCaptchaV3Provider('8EC4C83B-FA44-453B-9EDB-DC063C36FCA8'),

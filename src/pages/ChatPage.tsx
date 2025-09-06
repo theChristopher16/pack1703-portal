@@ -4,6 +4,8 @@ import {
   Bold, Italic, Underline, Loader2, Camera, Palette, Type, 
   List, Code, Quote, Link, Image, AtSign, Hash, Star
 } from 'lucide-react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../firebase/config';
 import chatService, { ChatUser, ChatMessage, ChatChannel } from '../services/chatService';
 import tenorService, { TenorGif } from '../services/tenorService';
 import { useToast } from '../contexts/ToastContext';
@@ -750,6 +752,35 @@ const ChatPage: React.FC = () => {
     
     return () => clearTimeout(fallbackTimeout);
   }, []); // Empty dependency array - only run once
+
+  // Listen for authentication state changes and refresh user
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser && currentUser) {
+        // User signed in or changed - refresh chat user
+        try {
+          console.log('Auth state changed, refreshing chat user...');
+          const refreshedUser = await chatService.refreshUser();
+          setCurrentUser(refreshedUser);
+          console.log('Chat user refreshed:', refreshedUser);
+        } catch (error) {
+          console.error('Failed to refresh chat user:', error);
+        }
+      } else if (!firebaseUser && currentUser) {
+        // User signed out - refresh chat user (will use random name)
+        try {
+          console.log('User signed out, refreshing chat user...');
+          const refreshedUser = await chatService.refreshUser();
+          setCurrentUser(refreshedUser);
+          console.log('Chat user refreshed after sign out:', refreshedUser);
+        } catch (error) {
+          console.error('Failed to refresh chat user after sign out:', error);
+        }
+      }
+    });
+
+    return () => unsubscribeAuth();
+  }, [currentUser]); // Depend on currentUser to avoid infinite loops
 
   // Handle channel switching (separate effect)
   useEffect(() => {

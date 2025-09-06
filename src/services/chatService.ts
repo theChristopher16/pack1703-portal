@@ -15,6 +15,7 @@ import {
   onSnapshot,
   serverTimestamp
 } from 'firebase/firestore';
+import { auth } from '../firebase/config';
 import { db } from '../firebase/config';
 
 // User session management
@@ -177,8 +178,35 @@ class SessionManager {
   static getOrCreateUser(): ChatUser {
     const existingUser = this.getUserFromStorage();
     
+    // Check if there's an authenticated Firebase user
+    const firebaseUser = auth.currentUser;
+    
+    if (firebaseUser) {
+      // Use Firebase user's display name or email as the chat name
+      const displayName = firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User';
+      
+      if (existingUser && existingUser.id) {
+        // Update existing user with Firebase info
+        const updatedUser: ChatUser = {
+          ...existingUser as ChatUser,
+          name: displayName, // Use Firebase display name
+          isOnline: true,
+          lastSeen: new Date(),
+          sessionId: this.generateSessionId(),
+          isAdmin: existingUser.isAdmin || false,
+          userAgent: existingUser.userAgent || navigator.userAgent,
+          ipHash: existingUser.ipHash || this.generateIPHash()
+        };
+        this.saveUserToStorage(updatedUser);
+        return updatedUser;
+      } else {
+        // Create new user with Firebase info
+        return this.createNewUser(displayName);
+      }
+    }
+    
     if (existingUser && existingUser.id && existingUser.name) {
-      // Update last seen and session
+      // Update last seen and session for non-authenticated user
       const updatedUser: ChatUser = {
         ...existingUser as ChatUser,
         isOnline: true,
@@ -192,7 +220,7 @@ class SessionManager {
       return updatedUser;
     }
 
-    // Create new user with automatic scout-themed name
+    // Create new user with automatic scout-themed name (only for non-authenticated users)
     const scoutAdjectives = [
       'Brave', 'Swift', 'Wise', 'Noble', 'Bright', 'Wild', 'Free', 'Bold', 'Calm', 'True',
       'Quick', 'Sharp', 'Clear', 'Strong', 'Fair', 'Kind', 'Good', 'Pure', 'Fresh', 'New',
@@ -276,6 +304,22 @@ class ChatService {
     return this.currentUser;
   }
 
+  // Method to refresh user when authentication state changes
+  async refreshUser(): Promise<ChatUser> {
+    if (this.currentUser) {
+      // Re-initialize with current auth state
+      this.currentUser = SessionManager.getOrCreateUser();
+      
+      // Update user in Firestore
+      await this.createOrUpdateUserInFirestore(this.currentUser);
+      
+      return this.currentUser;
+    }
+    
+    // If no current user, initialize normally
+    return await this.initialize();
+  }
+
   async updateUserProfile(name: string, den?: string): Promise<void> {
     if (!this.currentUser) return;
 
@@ -284,6 +328,22 @@ class ChatService {
     
     SessionManager.saveUserToStorage(this.currentUser);
     await this.updateUserInFirestore(this.currentUser);
+  }
+
+  // Method to update chat user name from profile changes
+  async updateChatUserName(newName: string): Promise<void> {
+    if (!this.currentUser) return;
+
+    // Update the current user's name
+    this.currentUser.name = newName;
+    
+    // Save to localStorage
+    SessionManager.saveUserToStorage(this.currentUser);
+    
+    // Update in Firestore
+    await this.updateUserInFirestore(this.currentUser);
+    
+    console.log('Chat user name updated to:', newName);
   }
 
   async getChannels(): Promise<ChatChannel[]> {

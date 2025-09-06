@@ -31,6 +31,7 @@ import {
   Minus
 } from 'lucide-react';
 import { authService, AppUser, UserRole, Permission, SocialProvider } from '../../services/authService';
+import chatService from '../../services/chatService';
 // import { useAuth } from '../../contexts/AuthContext';
 
 interface UserProfileManagerProps {
@@ -232,6 +233,16 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
 
       // Update user profile
       await authService.updateUserProfile(user.uid, updates);
+
+      // Update chat user name if display name changed
+      if (formData.displayName && formData.displayName !== user.displayName) {
+        try {
+          await chatService.updateChatUserName(formData.displayName);
+        } catch (chatError) {
+          console.warn('Failed to update chat user name:', chatError);
+          // Don't fail the entire save operation if chat update fails
+        }
+      }
 
       // Update local state
       const updatedUser = { ...user, ...updates };

@@ -4,6 +4,8 @@ import {
   getDocs, 
   getDoc, 
   addDoc, 
+  updateDoc,
+  deleteDoc,
   query, 
   where, 
   orderBy, 
@@ -210,6 +212,29 @@ export const firestoreService = {
       return { id: docRef.id, ...announcementData };
     } catch (error) {
       console.error('Failed to create announcement in Firestore:', error);
+      throw error;
+    }
+  },
+
+  async updateAnnouncement(announcementId: string, updateData: any): Promise<void> {
+    try {
+      const announcementRef = doc(db, 'announcements', announcementId);
+      await updateDoc(announcementRef, {
+        ...updateData,
+        updatedAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Failed to update announcement in Firestore:', error);
+      throw error;
+    }
+  },
+
+  async deleteAnnouncement(announcementId: string): Promise<void> {
+    try {
+      const announcementRef = doc(db, 'announcements', announcementId);
+      await deleteDoc(announcementRef);
+    } catch (error) {
+      console.error('Failed to delete announcement in Firestore:', error);
       throw error;
     }
   },

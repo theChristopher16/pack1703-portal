@@ -41,21 +41,33 @@ const AnnouncementsPage: React.FC = () => {
     setSelectedAnnouncement(announcement);
   };
 
-  const handlePinToggle = (announcementId: string, pinned: boolean) => {
-    // Update the local state immediately for responsive UI
-    setAnnouncements(prev => 
-      prev.map(announcement => 
-        announcement.id === announcementId 
-          ? { ...announcement, pinned } 
-          : announcement
-      )
-    );
-    
-    // TODO: In a real app, this would update the database
-    console.log(`Toggling pin for announcement ${announcementId} to ${pinned}`);
-    
-    // If you want to persist to Firestore, you would call:
-    // firestoreService.updateAnnouncement(announcementId, { pinned });
+  const handlePinToggle = async (announcementId: string, pinned: boolean) => {
+    try {
+      // Update the local state immediately for responsive UI
+      setAnnouncements(prev => 
+        prev.map(announcement => 
+          announcement.id === announcementId 
+            ? { ...announcement, pinned } 
+            : announcement
+        )
+      );
+      
+      // Update in Firestore
+      await firestoreService.updateAnnouncement(announcementId, { pinned });
+      
+      console.log(`Successfully ${pinned ? 'pinned' : 'unpinned'} announcement ${announcementId}`);
+    } catch (error) {
+      console.error('Failed to toggle pin:', error);
+      
+      // Revert local state on error
+      setAnnouncements(prev => 
+        prev.map(announcement => 
+          announcement.id === announcementId 
+            ? { ...announcement, pinned: !pinned } 
+            : announcement
+        )
+      );
+    }
   };
 
   const pinnedCount = announcements.filter(a => a.pinned).length;

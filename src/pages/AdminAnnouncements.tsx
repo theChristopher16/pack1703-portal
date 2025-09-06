@@ -68,10 +68,14 @@ const AdminAnnouncements: React.FC = () => {
   const handleDeleteAnnouncement = async (announcementId: string) => {
     if (window.confirm('Are you sure you want to delete this announcement?')) {
       try {
-        // TODO: Implement Firebase delete
+        // Delete from Firestore
+        await firestoreService.deleteAnnouncement(announcementId);
+        
+        // Update local state
         setAnnouncements(prev => prev.filter(ann => ann.id !== announcementId));
         addNotification('success', 'Announcement Deleted', 'Announcement has been successfully deleted.');
       } catch (error) {
+        console.error('Failed to delete announcement:', error);
         addNotification('error', 'Delete Failed', 'Failed to delete announcement. Please try again.');
       }
     }
@@ -79,14 +83,30 @@ const AdminAnnouncements: React.FC = () => {
 
   const handleTogglePin = async (announcementId: string) => {
     try {
-      // TODO: Implement Firebase update
+      // Find the current announcement to get its current pinned state
+      const currentAnnouncement = announcements.find(ann => ann.id === announcementId);
+      if (!currentAnnouncement) {
+        addNotification('error', 'Update Failed', 'Announcement not found.');
+        return;
+      }
+
+      const newPinnedState = !currentAnnouncement.pinned;
+
+      // Update in Firestore
+      await firestoreService.updateAnnouncement(announcementId, { 
+        pinned: newPinnedState 
+      });
+
+      // Update local state
       setAnnouncements(prev => prev.map(ann => 
         ann.id === announcementId 
-          ? { ...ann, pinned: !ann.pinned, updatedAt: new Date().toISOString() }
+          ? { ...ann, pinned: newPinnedState, updatedAt: new Date().toISOString() }
           : ann
       ));
-      addNotification('success', 'Pin Updated', 'Announcement pin status has been updated.');
+
+      addNotification('success', 'Pin Updated', `Announcement ${newPinnedState ? 'pinned' : 'unpinned'} successfully.`);
     } catch (error) {
+      console.error('Failed to toggle pin:', error);
       addNotification('error', 'Update Failed', 'Failed to update pin status. Please try again.');
     }
   };
@@ -94,17 +114,28 @@ const AdminAnnouncements: React.FC = () => {
   const handleSaveAnnouncement = async (announcementData: Partial<Announcement>) => {
     try {
       if (modalMode === 'create') {
-        // TODO: Implement Firebase create
-        const newAnnouncement: Announcement = {
+        // Create in Firestore
+        const newAnnouncement = await firestoreService.createAnnouncement({
+          ...announcementData,
+          pinned: false, // Default to unpinned
+          isActive: true,
+          priority: announcementData.priority || 'medium',
+          category: announcementData.category || 'general'
+        });
+        
+        // Update local state with the returned announcement (includes Firestore ID)
+        setAnnouncements(prev => [...prev, {
           ...announcementData as Announcement,
-          id: Date.now().toString(),
+          id: newAnnouncement.id,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
-        };
-        setAnnouncements(prev => [...prev, newAnnouncement]);
+        }]);
         addNotification('success', 'Announcement Created', 'New announcement has been successfully created.');
       } else {
-        // TODO: Implement Firebase update
+        // Update in Firestore
+        await firestoreService.updateAnnouncement(selectedAnnouncement!.id, announcementData);
+        
+        // Update local state
         setAnnouncements(prev => prev.map(ann => 
           ann.id === selectedAnnouncement?.id 
             ? { ...ann, ...announcementData, updatedAt: new Date().toISOString() }
@@ -114,6 +145,7 @@ const AdminAnnouncements: React.FC = () => {
       }
       setIsModalOpen(false);
     } catch (error) {
+      console.error('Failed to save announcement:', error);
       addNotification('error', 'Save Failed', 'Failed to save announcement. Please try again.');
     }
   };

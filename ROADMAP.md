@@ -33,7 +33,7 @@
 
 ## 🎨 Visual/UX Theme
 ### Aesthetic
-- **"Solar-punk-ish"** (optimistic nature + tech): warm yellows/greens, subtle gradients, rounded cards, light shadows
+- **"Solarpunk-ish"** (optimistic nature + tech): warm yellows/greens, subtle gradients, rounded cards, light shadows
 
 ### Design Tokens
 - **Primary**: #FFD166 (sun)

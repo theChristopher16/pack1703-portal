@@ -230,23 +230,27 @@ const HackerTab: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-lime-300">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
       {/* Header */}
-      <div className="bg-slate-800 border-b-2 border-lime-400 p-4 shadow-lg">
+      <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 border-b-2 border-yellow-400 p-4 shadow-2xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-3xl font-bold text-lime-300 drop-shadow-lg">🖥️ SOC CONSOLE</h1>
-            <span className="text-sm text-lime-200 bg-lime-900 px-3 py-1 rounded-full font-semibold">ROOT ACCESS GRANTED</span>
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-300 drop-shadow-lg animate-pulse">
+              🖥️ SOC CONSOLE
+            </h1>
+            <span className="text-sm text-yellow-200 bg-gradient-to-r from-yellow-600 to-yellow-700 px-3 py-1 rounded-full font-semibold shadow-lg border border-yellow-400">
+              ROOT ACCESS GRANTED
+            </span>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-lime-200 bg-slate-700 px-3 py-1 rounded">User: {currentUser?.email}</span>
-            <span className="text-sm text-lime-200 bg-slate-700 px-3 py-1 rounded">Role: ROOT</span>
+            <span className="text-sm text-yellow-200 bg-slate-700 px-3 py-1 rounded border border-yellow-400">User: {currentUser?.email}</span>
+            <span className="text-sm text-yellow-200 bg-slate-700 px-3 py-1 rounded border border-yellow-400">Role: ROOT</span>
             <button
               onClick={() => setDebugMode(!debugMode)}
-              className={`px-4 py-2 rounded text-sm font-semibold transition-all ${
+              className={`px-4 py-2 rounded text-sm font-semibold transition-all duration-300 ${
                 debugMode 
-                  ? 'bg-lime-500 text-slate-900 shadow-lg' 
-                  : 'bg-slate-700 text-lime-300 hover:bg-slate-600'
+                  ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-slate-900 shadow-lg border border-yellow-300' 
+                  : 'bg-slate-700 text-yellow-300 hover:bg-slate-600 border border-yellow-400'
               }`}
             >
               DEBUG: {debugMode ? 'ON' : 'OFF'}
@@ -256,16 +260,16 @@ const HackerTab: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <div className="bg-slate-800 border-b-2 border-lime-400 p-3 shadow-md">
+      <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 border-b-2 border-yellow-400 p-3 shadow-lg">
         <div className="flex flex-wrap gap-2">
           {['overview', 'system', 'security', 'ai', 'debug', 'emergency', 'logs', 'performance'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
                 activeTab === tab 
-                  ? 'bg-lime-500 text-slate-900 shadow-lg transform scale-105' 
-                  : 'text-lime-300 hover:bg-slate-700 hover:text-lime-200'
+                  ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-slate-900 shadow-lg transform scale-105 border border-yellow-300' 
+                  : 'text-yellow-200 bg-slate-700 hover:bg-slate-600 hover:text-yellow-100 border border-yellow-500 hover:border-yellow-400 hover:shadow-md'
               }`}
             >
               {tab.toUpperCase()}
@@ -275,18 +279,18 @@ const HackerTab: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="p-6 bg-slate-800 min-h-screen">
+      <div className="p-6 bg-gradient-to-br from-slate-800 via-slate-700 to-slate-800 min-h-screen">
         {loading && (
-          <div className="mb-6 p-4 bg-amber-900 border-2 border-amber-400 rounded-lg shadow-lg">
+          <div className="mb-6 p-4 bg-gradient-to-r from-yellow-900 to-yellow-800 border-2 border-yellow-400 rounded-lg shadow-lg">
             <div className="flex items-center space-x-3">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-amber-300"></div>
-              <span className="text-amber-200 font-semibold">Executing system command...</span>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-300"></div>
+              <span className="text-yellow-200 font-semibold">Executing system command...</span>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="mb-6 p-4 bg-red-900 border-2 border-red-400 rounded-lg shadow-lg">
+          <div className="mb-6 p-4 bg-gradient-to-r from-red-900 to-red-800 border-2 border-red-400 rounded-lg shadow-lg">
             <span className="text-red-200 font-semibold">ERROR: {error}</span>
           </div>
         )}
@@ -295,123 +299,123 @@ const HackerTab: React.FC = () => {
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* System Status Banner */}
-            <div className="bg-slate-700 border-2 border-lime-400 p-6 rounded-lg shadow-lg">
+            <div className="bg-gradient-to-r from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-lime-300 mb-2">🖥️ System Status</h2>
-                  <p className="text-lime-200">All systems operational - Last updated: {new Date().toLocaleTimeString()}</p>
+                  <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400 mb-2">🖥️ System Status</h2>
+                  <p className="text-yellow-200">All systems operational - Last updated: {new Date().toLocaleTimeString()}</p>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl text-lime-400">🟢</div>
-                  <div className="text-sm text-lime-200">ONLINE</div>
+                  <div className="text-3xl text-yellow-400 animate-pulse">🟢</div>
+                  <div className="text-sm text-yellow-200 font-semibold">ONLINE</div>
                 </div>
               </div>
             </div>
 
             {/* Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-slate-700 border-2 border-lime-400 p-6 rounded-lg shadow-lg">
-                <h3 className="text-lg font-bold mb-4 text-lime-300">📊 System Metrics</h3>
+              <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg hover:shadow-yellow-400/25 transition-all duration-300">
+                <h3 className="text-lg font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">📊 System Metrics</h3>
                 {systemMetrics ? (
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Users:</span>
-                      <span className="text-lime-300 font-semibold">{systemMetrics.totalUsers} / {systemMetrics.activeUsers} active</span>
+                      <span className="text-yellow-200">Users:</span>
+                      <span className="text-yellow-300 font-semibold">{systemMetrics.totalUsers} / {systemMetrics.activeUsers} active</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Events:</span>
-                      <span className="text-lime-300 font-semibold">{systemMetrics.totalEvents}</span>
+                      <span className="text-yellow-200">Events:</span>
+                      <span className="text-yellow-300 font-semibold">{systemMetrics.totalEvents}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-lime-200">RSVPs:</span>
-                      <span className="text-lime-300 font-semibold">{systemMetrics.totalRSVPs}</span>
+                      <span className="text-yellow-200">RSVPs:</span>
+                      <span className="text-yellow-300 font-semibold">{systemMetrics.totalRSVPs}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Storage:</span>
-                      <span className="text-lime-300 font-semibold">{systemMetrics.storageUsed}GB / {systemMetrics.storageLimit}GB</span>
+                      <span className="text-yellow-200">Storage:</span>
+                      <span className="text-yellow-300 font-semibold">{systemMetrics.storageUsed}GB / {systemMetrics.storageLimit}GB</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Functions:</span>
-                      <span className="text-lime-300 font-semibold">{systemMetrics.functionsExecutions} executions</span>
+                      <span className="text-yellow-200">Functions:</span>
+                      <span className="text-yellow-300 font-semibold">{systemMetrics.functionsExecutions} executions</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Database:</span>
-                      <span className="text-lime-300 font-semibold">{systemMetrics.databaseReads} reads, {systemMetrics.databaseWrites} writes</span>
+                      <span className="text-yellow-200">Database:</span>
+                      <span className="text-yellow-300 font-semibold">{systemMetrics.databaseReads} reads, {systemMetrics.databaseWrites} writes</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-lime-400">Loading...</div>
+                  <div className="text-yellow-400">Loading...</div>
                 )}
               </div>
 
-              <div className="bg-slate-700 border-2 border-lime-400 p-6 rounded-lg shadow-lg">
-                <h3 className="text-lg font-bold mb-4 text-lime-300">🤖 AI Status</h3>
+              <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg hover:shadow-yellow-400/25 transition-all duration-300">
+                <h3 className="text-lg font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">🤖 AI Status</h3>
                 {systemStatus ? (
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Model:</span>
-                      <span className="text-lime-300 font-semibold">{systemStatus.model}</span>
+                      <span className="text-yellow-200">Model:</span>
+                      <span className="text-yellow-300 font-semibold">{systemStatus.model}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Connected:</span>
-                      <span className="text-lime-300 font-semibold">{systemStatus.connected ? '✅' : '❌'}</span>
+                      <span className="text-yellow-200">Connected:</span>
+                      <span className="text-yellow-300 font-semibold">{systemStatus.connected ? '✅' : '❌'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Max Tokens:</span>
-                      <span className="text-lime-300 font-semibold">{systemStatus.maxTokens}</span>
+                      <span className="text-yellow-200">Max Tokens:</span>
+                      <span className="text-yellow-300 font-semibold">{systemStatus.maxTokens}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Temperature:</span>
-                      <span className="text-lime-300 font-semibold">{systemStatus.temperature}</span>
+                      <span className="text-yellow-200">Temperature:</span>
+                      <span className="text-yellow-300 font-semibold">{systemStatus.temperature}</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-lime-400">Checking...</div>
+                  <div className="text-yellow-400">Checking...</div>
                 )}
               </div>
 
-              <div className="bg-slate-700 border-2 border-lime-400 p-6 rounded-lg shadow-lg">
-                <h3 className="text-lg font-bold mb-4 text-lime-300">🔧 Quick Actions</h3>
+              <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg hover:shadow-yellow-400/25 transition-all duration-300">
+                <h3 className="text-lg font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">🔧 Quick Actions</h3>
                 <div className="space-y-3">
                   <button
                     onClick={clearSystemCache}
-                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-semibold text-white transition-all"
+                    className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg text-sm font-semibold text-white transition-all duration-300 shadow-lg hover:shadow-blue-500/25"
                   >
                     Clear Cache
                   </button>
                   <button
                     onClick={checkSystemStatus}
-                    className="w-full px-4 py-2 bg-lime-600 hover:bg-lime-700 rounded-lg text-sm font-semibold text-white transition-all"
+                    className="w-full px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 rounded-lg text-sm font-semibold text-white transition-all duration-300 shadow-lg hover:shadow-yellow-500/25"
                   >
                     Refresh Status
                   </button>
                   <button
                     onClick={() => setActiveTab('debug')}
-                    className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-semibold text-white transition-all"
+                    className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 rounded-lg text-sm font-semibold text-white transition-all duration-300 shadow-lg hover:shadow-purple-500/25"
                   >
                     Debug Console
                   </button>
                 </div>
               </div>
 
-              <div className="bg-slate-700 border-2 border-lime-400 p-6 rounded-lg shadow-lg">
-                <h3 className="text-lg font-bold mb-4 text-lime-300">⚡ Performance</h3>
+              <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg hover:shadow-yellow-400/25 transition-all duration-300">
+                <h3 className="text-lg font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">⚡ Performance</h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-lime-200">Uptime:</span>
-                    <span className="text-lime-300 font-semibold">99.9%</span>
+                    <span className="text-yellow-200">Uptime:</span>
+                    <span className="text-yellow-300 font-semibold">99.9%</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-lime-200">Response Time:</span>
-                    <span className="text-lime-300 font-semibold">45ms</span>
+                    <span className="text-yellow-200">Response Time:</span>
+                    <span className="text-yellow-300 font-semibold">45ms</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-lime-200">Memory Usage:</span>
-                    <span className="text-lime-300 font-semibold">68%</span>
+                    <span className="text-yellow-200">Memory Usage:</span>
+                    <span className="text-yellow-300 font-semibold">68%</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-lime-200">CPU Usage:</span>
-                    <span className="text-lime-300 font-semibold">23%</span>
+                    <span className="text-yellow-200">CPU Usage:</span>
+                    <span className="text-yellow-300 font-semibold">23%</span>
                   </div>
                 </div>
               </div>
@@ -422,49 +426,49 @@ const HackerTab: React.FC = () => {
         {/* System Tab */}
         {activeTab === 'system' && (
           <div className="space-y-6">
-            <div className="bg-black border border-green-500 p-4 rounded">
-              <h3 className="text-lg font-bold mb-4">⚙️ System Configuration</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg">
+              <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">⚙️ System Configuration</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="font-bold mb-2">Environment Variables</h4>
-                  <div className="space-y-1 text-sm">
-                    <div>OPENAI_MODEL: gpt-5</div>
-                    <div>OPENAI_MAX_TOKENS: 4000</div>
-                    <div>OPENAI_TEMPERATURE: 0.7</div>
-                    <div>MCP_SERVER_PORT: 3001</div>
-                    <div>LLM_RATE_LIMIT_ENABLED: true</div>
+                  <h4 className="font-bold mb-4 text-yellow-300">Environment Variables</h4>
+                  <div className="space-y-2 text-sm bg-slate-800 p-4 rounded border border-yellow-400">
+                    <div className="text-yellow-200">OPENAI_MODEL: <span className="text-yellow-300">gpt-5</span></div>
+                    <div className="text-yellow-200">OPENAI_MAX_TOKENS: <span className="text-yellow-300">4000</span></div>
+                    <div className="text-yellow-200">OPENAI_TEMPERATURE: <span className="text-yellow-300">0.7</span></div>
+                    <div className="text-yellow-200">MCP_SERVER_PORT: <span className="text-yellow-300">3001</span></div>
+                    <div className="text-yellow-200">LLM_RATE_LIMIT_ENABLED: <span className="text-yellow-300">true</span></div>
                   </div>
                 </div>
                 <div>
-                  <h4 className="font-bold mb-2">System Settings</h4>
-                  <div className="space-y-1 text-sm">
-                    <div>Debug Mode: {debugMode ? 'Enabled' : 'Disabled'}</div>
-                    <div>Log Level: INFO</div>
-                    <div>Cache TTL: 3600s</div>
-                    <div>Rate Limit: 100/min</div>
+                  <h4 className="font-bold mb-4 text-yellow-300">System Settings</h4>
+                  <div className="space-y-2 text-sm bg-slate-800 p-4 rounded border border-yellow-400">
+                    <div className="text-yellow-200">Debug Mode: <span className="text-yellow-300">{debugMode ? 'Enabled' : 'Disabled'}</span></div>
+                    <div className="text-yellow-200">Log Level: <span className="text-yellow-300">INFO</span></div>
+                    <div className="text-yellow-200">Cache TTL: <span className="text-yellow-300">3600s</span></div>
+                    <div className="text-yellow-200">Rate Limit: <span className="text-yellow-300">100/min</span></div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-black border border-green-500 p-4 rounded">
-              <h3 className="text-lg font-bold mb-4">🛠️ System Maintenance</h3>
+            <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg">
+              <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">🛠️ System Maintenance</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <button
                   onClick={clearSystemCache}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded"
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-blue-500/25"
                 >
                   Clear Cache
                 </button>
                 <button
                   onClick={resetSystemSettings}
-                  className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded"
+                  className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 rounded-lg text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-yellow-500/25"
                 >
                   Reset Settings
                 </button>
                 <button
                   onClick={() => executeSystemCommand('optimize_database')}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded"
+                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-lg text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-green-500/25"
                 >
                   Optimize Database
                 </button>
@@ -476,27 +480,27 @@ const HackerTab: React.FC = () => {
         {/* Security Tab */}
         {activeTab === 'security' && (
           <div className="space-y-6">
-            <div className="bg-black border border-green-500 p-4 rounded">
-              <h3 className="text-lg font-bold mb-4">🔒 Security Logs</h3>
-              <div className="max-h-96 overflow-y-auto">
+            <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg">
+              <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">🔒 Security Logs</h3>
+              <div className="max-h-96 overflow-y-auto bg-slate-800 border border-yellow-400 rounded p-4">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-green-500">
-                      <th className="text-left p-2">Time</th>
-                      <th className="text-left p-2">Action</th>
-                      <th className="text-left p-2">User</th>
-                      <th className="text-left p-2">IP</th>
-                      <th className="text-left p-2">Status</th>
+                    <tr className="border-b border-yellow-400">
+                      <th className="text-left p-2 text-yellow-300">Time</th>
+                      <th className="text-left p-2 text-yellow-300">Action</th>
+                      <th className="text-left p-2 text-yellow-300">User</th>
+                      <th className="text-left p-2 text-yellow-300">IP</th>
+                      <th className="text-left p-2 text-yellow-300">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {securityLogs.map((log) => (
-                      <tr key={log.id} className="border-b border-gray-700">
-                        <td className="p-2">{log.timestamp.toLocaleString()}</td>
-                        <td className="p-2">{log.action}</td>
-                        <td className="p-2">{log.userEmail}</td>
-                        <td className="p-2">{log.ipAddress}</td>
-                        <td className="p-2">{log.success ? '✅' : '❌'}</td>
+                      <tr key={log.id} className="border-b border-slate-600">
+                        <td className="p-2 text-yellow-200">{log.timestamp.toLocaleString()}</td>
+                        <td className="p-2 text-yellow-200">{log.action}</td>
+                        <td className="p-2 text-yellow-200">{log.userEmail}</td>
+                        <td className="p-2 text-yellow-200">{log.ipAddress}</td>
+                        <td className="p-2 text-yellow-200">{log.success ? '✅' : '❌'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -509,29 +513,29 @@ const HackerTab: React.FC = () => {
         {/* AI Tab */}
         {activeTab === 'ai' && (
           <div className="space-y-6">
-            <div className="bg-black border border-green-500 p-4 rounded">
-              <h3 className="text-lg font-bold mb-4">🤖 AI Usage Logs</h3>
-              <div className="max-h-96 overflow-y-auto">
+            <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg">
+              <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">🤖 AI Usage Logs</h3>
+              <div className="max-h-96 overflow-y-auto bg-slate-800 border border-yellow-400 rounded p-4">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-green-500">
-                      <th className="text-left p-2">Time</th>
-                      <th className="text-left p-2">User</th>
-                      <th className="text-left p-2">Type</th>
-                      <th className="text-left p-2">Model</th>
-                      <th className="text-left p-2">Tokens</th>
-                      <th className="text-left p-2">Cost</th>
+                    <tr className="border-b border-yellow-400">
+                      <th className="text-left p-2 text-yellow-300">Time</th>
+                      <th className="text-left p-2 text-yellow-300">User</th>
+                      <th className="text-left p-2 text-yellow-300">Type</th>
+                      <th className="text-left p-2 text-yellow-300">Model</th>
+                      <th className="text-left p-2 text-yellow-300">Tokens</th>
+                      <th className="text-left p-2 text-yellow-300">Cost</th>
                     </tr>
                   </thead>
                   <tbody>
                     {aiLogs.map((log) => (
-                      <tr key={log.id} className="border-b border-gray-700">
-                        <td className="p-2">{log.timestamp.toLocaleString()}</td>
-                        <td className="p-2">{log.userEmail}</td>
-                        <td className="p-2">{log.type}</td>
-                        <td className="p-2">{log.model}</td>
-                        <td className="p-2">{log.tokensUsed}</td>
-                        <td className="p-2">${log.cost.toFixed(4)}</td>
+                      <tr key={log.id} className="border-b border-slate-600">
+                        <td className="p-2 text-yellow-200">{log.timestamp.toLocaleString()}</td>
+                        <td className="p-2 text-yellow-200">{log.userEmail}</td>
+                        <td className="p-2 text-yellow-200">{log.type}</td>
+                        <td className="p-2 text-yellow-200">{log.model}</td>
+                        <td className="p-2 text-yellow-200">{log.tokensUsed}</td>
+                        <td className="p-2 text-yellow-200">${log.cost.toFixed(4)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -544,15 +548,15 @@ const HackerTab: React.FC = () => {
         {/* Debug Tab */}
         {activeTab === 'debug' && (
           <div className="space-y-6">
-            <div className="bg-black border border-green-500 p-4 rounded">
-              <h3 className="text-lg font-bold mb-4">🐛 Debug Console</h3>
-              <div className="space-y-4">
+            <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg">
+              <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">🐛 Debug Console</h3>
+              <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-bold mb-2">System Command:</label>
+                  <label className="block text-sm font-bold mb-2 text-yellow-300">System Command:</label>
                   <input
                     type="text"
                     placeholder="Enter system command..."
-                    className="w-full p-2 bg-gray-800 border border-green-500 rounded text-green-400"
+                    className="w-full p-3 bg-slate-800 border-2 border-yellow-400 rounded text-yellow-200 placeholder-yellow-400 focus:border-yellow-300 focus:outline-none"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
                         const target = e.target as HTMLInputElement;
@@ -563,8 +567,8 @@ const HackerTab: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <h4 className="font-bold mb-2">Quick Commands:</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <h4 className="font-bold mb-4 text-yellow-300">Quick Commands:</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {[
                       'ping',
                       'status',
@@ -578,7 +582,7 @@ const HackerTab: React.FC = () => {
                       <button
                         key={cmd}
                         onClick={() => executeSystemCommand(cmd)}
-                        className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+                        className="px-4 py-2 bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 rounded text-xs text-yellow-200 border border-yellow-400 hover:border-yellow-300 transition-all duration-300"
                       >
                         {cmd}
                       </button>
@@ -593,33 +597,33 @@ const HackerTab: React.FC = () => {
         {/* Emergency Tab */}
         {activeTab === 'emergency' && (
           <div className="space-y-6">
-            <div className="bg-red-900 border-2 border-red-400 p-6 rounded-lg shadow-lg">
-              <h3 className="text-2xl font-bold mb-4 text-red-200">🚨 EMERGENCY CONTROLS</h3>
+            <div className="bg-gradient-to-r from-red-900 to-red-800 border-2 border-red-400 p-6 rounded-lg shadow-lg">
+              <h3 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-red-200 to-red-300">🚨 EMERGENCY CONTROLS</h3>
               <p className="text-red-200 mb-6 text-lg">
                 These actions can significantly impact system operation. Use with extreme caution.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
                   onClick={emergencyShutdown}
-                  className="px-8 py-4 bg-red-600 hover:bg-red-700 rounded-lg font-bold text-lg transition-all transform hover:scale-105"
+                  className="px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg font-bold text-lg transition-all transform hover:scale-105 shadow-lg hover:shadow-red-500/25"
                 >
                   🚨 EMERGENCY SHUTDOWN
                 </button>
                 <button
                   onClick={() => executeSystemCommand('disable_ai')}
-                  className="px-8 py-4 bg-orange-600 hover:bg-orange-700 rounded-lg font-semibold transition-all"
+                  className="px-8 py-4 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 rounded-lg font-semibold transition-all shadow-lg hover:shadow-orange-500/25"
                 >
                   Disable AI Services
                 </button>
                 <button
                   onClick={() => executeSystemCommand('disable_auth')}
-                  className="px-8 py-4 bg-orange-600 hover:bg-orange-700 rounded-lg font-semibold transition-all"
+                  className="px-8 py-4 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 rounded-lg font-semibold transition-all shadow-lg hover:shadow-orange-500/25"
                 >
                   Disable Authentication
                 </button>
                 <button
                   onClick={() => executeSystemCommand('maintenance_mode')}
-                  className="px-8 py-4 bg-yellow-600 hover:bg-yellow-700 rounded-lg font-semibold transition-all"
+                  className="px-8 py-4 bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 rounded-lg font-semibold transition-all shadow-lg hover:shadow-yellow-500/25"
                 >
                   Enable Maintenance Mode
                 </button>
@@ -631,51 +635,51 @@ const HackerTab: React.FC = () => {
         {/* Logs Tab */}
         {activeTab === 'logs' && (
           <div className="space-y-6">
-            <div className="bg-slate-700 border-2 border-lime-400 p-6 rounded-lg shadow-lg">
-              <h3 className="text-2xl font-bold mb-6 text-lime-300">📋 System Logs</h3>
+            <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg">
+              <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">📋 System Logs</h3>
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="text-lg font-semibold mb-4 text-lime-200">🔒 Security Logs</h4>
-                  <div className="max-h-96 overflow-y-auto bg-slate-800 border border-lime-400 rounded p-4">
+                  <h4 className="text-lg font-semibold mb-4 text-yellow-300">🔒 Security Logs</h4>
+                  <div className="max-h-96 overflow-y-auto bg-slate-800 border border-yellow-400 rounded p-4">
                     <div className="space-y-2 text-sm">
                       {securityLogs.length > 0 ? (
                         securityLogs.map((log) => (
                           <div key={log.id} className="border-b border-slate-600 pb-2">
                             <div className="flex justify-between items-start">
-                              <span className="text-lime-300 font-semibold">{log.action}</span>
-                              <span className="text-lime-400 text-xs">{log.timestamp.toLocaleString()}</span>
+                              <span className="text-yellow-300 font-semibold">{log.action}</span>
+                              <span className="text-yellow-400 text-xs">{log.timestamp.toLocaleString()}</span>
                             </div>
-                            <div className="text-lime-200 text-xs mt-1">
+                            <div className="text-yellow-200 text-xs mt-1">
                               {log.userEmail} • {log.ipAddress} • {log.success ? '✅' : '❌'}
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div className="text-lime-400">No security logs available</div>
+                        <div className="text-yellow-400">No security logs available</div>
                       )}
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-lg font-semibold mb-4 text-lime-200">🤖 AI Usage Logs</h4>
-                  <div className="max-h-96 overflow-y-auto bg-slate-800 border border-lime-400 rounded p-4">
+                  <h4 className="text-lg font-semibold mb-4 text-yellow-300">🤖 AI Usage Logs</h4>
+                  <div className="max-h-96 overflow-y-auto bg-slate-800 border border-yellow-400 rounded p-4">
                     <div className="space-y-2 text-sm">
                       {aiLogs.length > 0 ? (
                         aiLogs.map((log) => (
                           <div key={log.id} className="border-b border-slate-600 pb-2">
                             <div className="flex justify-between items-start">
-                              <span className="text-lime-300 font-semibold">{log.type}</span>
-                              <span className="text-lime-400 text-xs">{log.timestamp.toLocaleString()}</span>
+                              <span className="text-yellow-300 font-semibold">{log.type}</span>
+                              <span className="text-yellow-400 text-xs">{log.timestamp.toLocaleString()}</span>
                             </div>
-                            <div className="text-lime-200 text-xs mt-1">
+                            <div className="text-yellow-200 text-xs mt-1">
                               {log.userEmail} • {log.model} • {log.tokensUsed} tokens • ${log.cost.toFixed(4)}
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div className="text-lime-400">No AI logs available</div>
+                        <div className="text-yellow-400">No AI logs available</div>
                       )}
                     </div>
                   </div>
@@ -688,83 +692,83 @@ const HackerTab: React.FC = () => {
         {/* Performance Tab */}
         {activeTab === 'performance' && (
           <div className="space-y-6">
-            <div className="bg-slate-700 border-2 border-lime-400 p-6 rounded-lg shadow-lg">
-              <h3 className="text-2xl font-bold mb-6 text-lime-300">⚡ Performance Metrics</h3>
+            <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg">
+              <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">⚡ Performance Metrics</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="bg-slate-800 border border-lime-400 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold mb-4 text-lime-200">🖥️ System Resources</h4>
+                <div className="bg-gradient-to-br from-slate-800 to-slate-700 border border-yellow-400 p-4 rounded-lg">
+                  <h4 className="text-lg font-semibold mb-4 text-yellow-300">🖥️ System Resources</h4>
                   <div className="space-y-3">
                     <div>
                       <div className="flex justify-between mb-1">
-                        <span className="text-lime-200">CPU Usage</span>
-                        <span className="text-lime-300">23%</span>
+                        <span className="text-yellow-200">CPU Usage</span>
+                        <span className="text-yellow-300">23%</span>
                       </div>
                       <div className="w-full bg-slate-700 rounded-full h-2">
-                        <div className="bg-lime-400 h-2 rounded-full" style={{width: '23%'}}></div>
+                        <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 h-2 rounded-full" style={{width: '23%'}}></div>
                       </div>
                     </div>
                     <div>
                       <div className="flex justify-between mb-1">
-                        <span className="text-lime-200">Memory Usage</span>
-                        <span className="text-lime-300">68%</span>
+                        <span className="text-yellow-200">Memory Usage</span>
+                        <span className="text-yellow-300">68%</span>
                       </div>
                       <div className="w-full bg-slate-700 rounded-full h-2">
-                        <div className="bg-lime-400 h-2 rounded-full" style={{width: '68%'}}></div>
+                        <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 h-2 rounded-full" style={{width: '68%'}}></div>
                       </div>
                     </div>
                     <div>
                       <div className="flex justify-between mb-1">
-                        <span className="text-lime-200">Storage Usage</span>
-                        <span className="text-lime-300">42%</span>
+                        <span className="text-yellow-200">Storage Usage</span>
+                        <span className="text-yellow-300">42%</span>
                       </div>
                       <div className="w-full bg-slate-700 rounded-full h-2">
-                        <div className="bg-lime-400 h-2 rounded-full" style={{width: '42%'}}></div>
+                        <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 h-2 rounded-full" style={{width: '42%'}}></div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-slate-800 border border-lime-400 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold mb-4 text-lime-200">🌐 Network Performance</h4>
+                <div className="bg-gradient-to-br from-slate-800 to-slate-700 border border-yellow-400 p-4 rounded-lg">
+                  <h4 className="text-lg font-semibold mb-4 text-yellow-300">🌐 Network Performance</h4>
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Response Time:</span>
-                      <span className="text-lime-300 font-semibold">45ms</span>
+                      <span className="text-yellow-200">Response Time:</span>
+                      <span className="text-yellow-300 font-semibold">45ms</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Throughput:</span>
-                      <span className="text-lime-300 font-semibold">1.2 GB/s</span>
+                      <span className="text-yellow-200">Throughput:</span>
+                      <span className="text-yellow-300 font-semibold">1.2 GB/s</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Active Connections:</span>
-                      <span className="text-lime-300 font-semibold">127</span>
+                      <span className="text-yellow-200">Active Connections:</span>
+                      <span className="text-yellow-300 font-semibold">127</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Uptime:</span>
-                      <span className="text-lime-300 font-semibold">99.9%</span>
+                      <span className="text-yellow-200">Uptime:</span>
+                      <span className="text-yellow-300 font-semibold">99.9%</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-slate-800 border border-lime-400 p-4 rounded-lg">
-                  <h4 className="text-lg font-semibold mb-4 text-lime-200">📊 Database Performance</h4>
+                <div className="bg-gradient-to-br from-slate-800 to-slate-700 border border-yellow-400 p-4 rounded-lg">
+                  <h4 className="text-lg font-semibold mb-4 text-yellow-300">📊 Database Performance</h4>
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Read Operations:</span>
-                      <span className="text-lime-300 font-semibold">{systemMetrics?.databaseReads || 0}</span>
+                      <span className="text-yellow-200">Read Operations:</span>
+                      <span className="text-yellow-300 font-semibold">{systemMetrics?.databaseReads || 0}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Write Operations:</span>
-                      <span className="text-lime-300 font-semibold">{systemMetrics?.databaseWrites || 0}</span>
+                      <span className="text-yellow-200">Write Operations:</span>
+                      <span className="text-yellow-300 font-semibold">{systemMetrics?.databaseWrites || 0}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Query Time:</span>
-                      <span className="text-lime-300 font-semibold">12ms avg</span>
+                      <span className="text-yellow-200">Query Time:</span>
+                      <span className="text-yellow-300 font-semibold">12ms avg</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-lime-200">Connection Pool:</span>
-                      <span className="text-lime-300 font-semibold">45/100</span>
+                      <span className="text-yellow-200">Connection Pool:</span>
+                      <span className="text-yellow-300 font-semibold">45/100</span>
                     </div>
                   </div>
                 </div>

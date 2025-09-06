@@ -1,4 +1,4 @@
-import { API_KEYS, API_CONFIG, API_STATUS } from '../config/apiKeys';
+import { getApiKeys, API_CONFIG, API_STATUS } from '../config/apiKeys';
 
 export interface TenorGif {
   id: string;
@@ -47,9 +47,10 @@ class TenorService {
   /**
    * Get Tenor API key (lazy loading)
    */
-  private getApiKey(): string {
+  private async getApiKey(): Promise<string> {
     if (this.apiKey === null) {
-      this.apiKey = API_KEYS.TENOR || '';
+      const apiKeys = await getApiKeys();
+      this.apiKey = apiKeys.TENOR || '';
     }
     return this.apiKey || '';
   }
@@ -72,7 +73,7 @@ class TenorService {
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
       const response = await fetch(
-        `${this.baseUrl}/search?q=funny&key=${this.getApiKey()}&limit=${limit}&media_filter=gif`,
+        `${this.baseUrl}/search?q=funny&key=${await this.getApiKey()}&limit=${limit}&media_filter=gif`,
         { signal: controller.signal }
       );
       
@@ -108,7 +109,7 @@ class TenorService {
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
       const response = await fetch(
-        `${this.baseUrl}/search?q=${encodeURIComponent(query)}&key=${this.getApiKey()}&limit=${limit}&media_filter=gif`,
+        `${this.baseUrl}/search?q=${encodeURIComponent(query)}&key=${await this.getApiKey()}&limit=${limit}&media_filter=gif`,
         { signal: controller.signal }
       );
       
@@ -210,12 +211,14 @@ class TenorService {
     ];
   }
 
-  isApiConfigured(): boolean {
-    return Boolean(this.getApiKey() && this.getApiKey() !== 'AIzaSyCJqXqXqXqXqXqXqXqXqXqXqXqXqXqXqXq');
+  async isApiConfigured(): Promise<boolean> {
+    const apiKey = await this.getApiKey();
+    return Boolean(apiKey && apiKey !== 'AIzaSyCJqXqXqXqXqXqXqXqXqXqXqXqXqXqXqXq');
   }
 
-  getApiStatus(): string {
-    return this.isApiConfigured() ? 'Configured' : 'Using fallback GIFs';
+  async getApiStatus(): Promise<string> {
+    const isConfigured = await this.isApiConfigured();
+    return isConfigured ? 'Configured' : 'Using fallback GIFs';
   }
 }
 

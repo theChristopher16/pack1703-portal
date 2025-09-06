@@ -1,4 +1,4 @@
-import { API_KEYS, API_CONFIG, API_STATUS } from '../config/apiKeys';
+import { getApiKeys, API_CONFIG, API_STATUS } from '../config/apiKeys';
 
 export interface RecaptchaResponse {
   success: boolean;
@@ -28,9 +28,10 @@ class RecaptchaService {
   /**
    * Get reCAPTCHA site key (lazy loading)
    */
-  private getSiteKey(): string {
+  private async getSiteKey(): Promise<string> {
     if (this.siteKey === null) {
-      this.siteKey = API_KEYS.RECAPTCHA?.SITE_KEY || '';
+      const apiKeys = await getApiKeys();
+      this.siteKey = apiKeys.RECAPTCHA?.SITE_KEY || '';
     }
     return this.siteKey || '';
   }
@@ -38,9 +39,10 @@ class RecaptchaService {
   /**
    * Get reCAPTCHA secret key (lazy loading)
    */
-  private getSecretKey(): string {
+  private async getSecretKey(): Promise<string> {
     if (this.secretKey === null) {
-      this.secretKey = API_KEYS.RECAPTCHA?.SECRET_KEY || '';
+      const apiKeys = await getApiKeys();
+      this.secretKey = apiKeys.RECAPTCHA?.SECRET_KEY || '';
     }
     return this.secretKey || '';
   }
@@ -48,9 +50,9 @@ class RecaptchaService {
   /**
    * Load reCAPTCHA script dynamically
    */
-  loadRecaptchaScript(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const siteKey = this.getSiteKey();
+  async loadRecaptchaScript(): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      const siteKey = await this.getSiteKey();
       if (!siteKey) {
         reject(new Error('reCAPTCHA site key not configured'));
         return;
@@ -93,7 +95,7 @@ class RecaptchaService {
    */
   async executeRecaptcha(action: string = 'submit'): Promise<string> {
     try {
-      const siteKey = this.getSiteKey();
+      const siteKey = await this.getSiteKey();
       if (!siteKey) {
         throw new Error('reCAPTCHA site key not configured');
       }
@@ -122,7 +124,7 @@ class RecaptchaService {
    */
   async verifyToken(token: string, action: string = 'submit'): Promise<RecaptchaVerificationResult> {
     try {
-      const secretKey = this.getSecretKey();
+      const secretKey = await this.getSecretKey();
       if (!secretKey) {
         throw new Error('reCAPTCHA secret key not configured');
       }
@@ -185,8 +187,8 @@ class RecaptchaService {
   /**
    * Get reCAPTCHA status
    */
-  getStatus() {
-    const siteKey = this.getSiteKey();
+  async getStatus() {
+    const siteKey = await this.getSiteKey();
     return {
       isEnabled: Boolean(siteKey),
       siteKey: siteKey,

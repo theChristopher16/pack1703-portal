@@ -1,4 +1,4 @@
-import { API_KEYS, API_CONFIG, FEATURE_FLAGS, FALLBACK_BEHAVIOR } from '../config/apiKeys';
+import { getApiKeys, API_CONFIG, FEATURE_FLAGS, FALLBACK_BEHAVIOR } from '../config/apiKeys';
 import { apiKeyService } from './apiKeyService';
 
 // Interfaces for API responses
@@ -64,9 +64,10 @@ class ExternalApiService {
   /**
    * Get Google Maps API key (lazy loading)
    */
-  private getGoogleMapsKey(): string {
+  private async getGoogleMapsKey(): Promise<string> {
     if (this.googleMapsKey === null) {
-      this.googleMapsKey = API_KEYS.ADMIN?.GOOGLE_MAPS || '';
+      const apiKeys = await getApiKeys();
+      this.googleMapsKey = apiKeys.ADMIN?.GOOGLE_MAPS || '';
     }
     return this.googleMapsKey || '';
   }
@@ -74,9 +75,10 @@ class ExternalApiService {
   /**
    * Get Phone Validation API key (lazy loading)
    */
-  private getPhoneValidationKey(): string {
+  private async getPhoneValidationKey(): Promise<string> {
     if (this.phoneValidationKey === null) {
-      this.phoneValidationKey = API_KEYS.PHONE_VALIDATION || '';
+      const apiKeys = await getApiKeys();
+      this.phoneValidationKey = apiKeys.PHONE_VALIDATION || '';
     }
     return this.phoneValidationKey || '';
   }
@@ -84,9 +86,10 @@ class ExternalApiService {
   /**
    * Get OpenWeather API key (lazy loading)
    */
-  private getOpenWeatherKey(): string {
+  private async getOpenWeatherKey(): Promise<string> {
     if (this.openWeatherKey === null) {
-      this.openWeatherKey = API_KEYS.ADMIN?.OPENWEATHER || '';
+      const apiKeys = await getApiKeys();
+      this.openWeatherKey = apiKeys.ADMIN?.OPENWEATHER || '';
     }
     return this.openWeatherKey || '';
   }
@@ -95,7 +98,7 @@ class ExternalApiService {
    * Verify location using Google Maps Geocoding API
    */
   async verifyLocation(address: string): Promise<LocationData> {
-    const googleMapsKey = this.getGoogleMapsKey();
+    const googleMapsKey = await this.getGoogleMapsKey();
     if (!FEATURE_FLAGS.LOCATION_VERIFICATION || !googleMapsKey) {
       return this.getFallbackLocationData();
     }
@@ -153,7 +156,7 @@ class ExternalApiService {
    * Get place details using Google Places API
    */
   async getPlaceDetails(placeId: string): Promise<BusinessInfo | null> {
-    const googleMapsKey = this.getGoogleMapsKey();
+    const googleMapsKey = await this.getGoogleMapsKey();
     if (!FEATURE_FLAGS.BUSINESS_INFO_ENRICHMENT || !googleMapsKey) {
       return null;
     }
@@ -193,7 +196,7 @@ class ExternalApiService {
    * Get business information using Google Places Nearby Search
    */
   async getBusinessInfo(lat: number, lng: number, query?: string): Promise<BusinessInfo | null> {
-    const googleMapsKey = this.getGoogleMapsKey();
+    const googleMapsKey = await this.getGoogleMapsKey();
     if (!FEATURE_FLAGS.BUSINESS_INFO_ENRICHMENT || !googleMapsKey) {
       return null;
     }
@@ -248,7 +251,7 @@ class ExternalApiService {
    * Get parking information using Google Places API
    */
   async getParkingInfo(lat: number, lng: number): Promise<ParkingInfo | null> {
-    const googleMapsKey = this.getGoogleMapsKey();
+    const googleMapsKey = await this.getGoogleMapsKey();
     if (!FEATURE_FLAGS.PARKING_INFO || !googleMapsKey) {
       return null;
     }
@@ -325,7 +328,7 @@ class ExternalApiService {
    * Validate phone number using NumLookupAPI
    */
   async validatePhoneNumber(phone: string): Promise<PhoneValidationResult> {
-    const phoneValidationKey = this.getPhoneValidationKey();
+    const phoneValidationKey = await this.getPhoneValidationKey();
     if (!FEATURE_FLAGS.PHONE_VALIDATION || !phoneValidationKey || phoneValidationKey === 'demo_key') {
       return this.getFallbackPhoneValidation();
     }
@@ -373,7 +376,7 @@ class ExternalApiService {
    * Get weather forecast using OpenWeather API
    */
   async getWeatherForecast(lat: number, lng: number): Promise<WeatherData | null> {
-    const openWeatherKey = this.getOpenWeatherKey();
+    const openWeatherKey = await this.getOpenWeatherKey();
     if (!FEATURE_FLAGS.WEATHER_INTEGRATION || !openWeatherKey || openWeatherKey === 'demo_key') {
       return null;
     }
@@ -433,7 +436,10 @@ class ExternalApiService {
   /**
    * Get API usage statistics
    */
-  getApiUsageStats() {
+  async getApiUsageStats() {
+    const phoneValidationKey = await this.getPhoneValidationKey();
+    const openWeatherKey = await this.getOpenWeatherKey();
+    
     return {
       googleMaps: {
         requestsToday: 0, // Would be tracked in a real implementation
@@ -443,12 +449,12 @@ class ExternalApiService {
       phoneValidation: {
         requestsToday: 0,
         costEstimate: 0,
-        status: this.getPhoneValidationKey() === 'demo_key' ? 'inactive' : 'active',
+        status: phoneValidationKey === 'demo_key' ? 'inactive' : 'active',
       },
       openWeather: {
         requestsToday: 0,
         costEstimate: 0,
-        status: this.getOpenWeatherKey() === 'demo_key' ? 'inactive' : 'active',
+        status: openWeatherKey === 'demo_key' ? 'inactive' : 'active',
       },
       googlePlaces: {
         requestsToday: 0,
@@ -497,7 +503,7 @@ class ExternalApiService {
    * Get address suggestions for autocomplete
    */
   async getAddressSuggestions(query: string): Promise<string[]> {
-    const googleMapsKey = this.getGoogleMapsKey();
+    const googleMapsKey = await this.getGoogleMapsKey();
     if (!googleMapsKey) {
       return [];
     }

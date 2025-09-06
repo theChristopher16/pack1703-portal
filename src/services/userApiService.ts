@@ -1,5 +1,5 @@
 import { 
-  API_KEYS, 
+  getApiKeys, 
   API_CONFIG, 
   FEATURE_FLAGS
 } from '../config/apiKeys';
@@ -49,9 +49,10 @@ class UserApiService {
   /**
    * Get User Google Maps API key (lazy loading)
    */
-  private getUserGoogleMapsKey(): string {
+  private async getUserGoogleMapsKey(): Promise<string> {
     if (this.userGoogleMapsKey === null) {
-      this.userGoogleMapsKey = API_KEYS.USER?.GOOGLE_MAPS || '';
+      const apiKeys = await getApiKeys();
+      this.userGoogleMapsKey = apiKeys.USER?.GOOGLE_MAPS || '';
     }
     return this.userGoogleMapsKey || '';
   }
@@ -59,9 +60,10 @@ class UserApiService {
   /**
    * Get User OpenWeather API key (lazy loading)
    */
-  private getUserOpenWeatherKey(): string {
+  private async getUserOpenWeatherKey(): Promise<string> {
     if (this.userOpenWeatherKey === null) {
-      this.userOpenWeatherKey = API_KEYS.USER?.OPENWEATHER || '';
+      const apiKeys = await getApiKeys();
+      this.userOpenWeatherKey = apiKeys.USER?.OPENWEATHER || '';
     }
     return this.userOpenWeatherKey || '';
   }
@@ -70,7 +72,7 @@ class UserApiService {
    * Verify location using Google Maps Geocoding API (User version)
    */
   async verifyLocation(address: string): Promise<UserLocationData> {
-    const userGoogleMapsKey = this.getUserGoogleMapsKey();
+    const userGoogleMapsKey = await this.getUserGoogleMapsKey();
     if (!FEATURE_FLAGS.LOCATION_VERIFICATION || !userGoogleMapsKey) {
       return this.getFallbackLocationData();
     }
@@ -117,7 +119,7 @@ class UserApiService {
    * Get weather forecast using OpenWeather API (User version)
    */
   async getWeatherForecast(lat: number, lng: number): Promise<UserWeatherData | null> {
-    const userOpenWeatherKey = this.getUserOpenWeatherKey();
+    const userOpenWeatherKey = await this.getUserOpenWeatherKey();
     if (!FEATURE_FLAGS.WEATHER_INTEGRATION || !userOpenWeatherKey) {
       return null;
     }
@@ -153,7 +155,7 @@ class UserApiService {
    * Get business information using Google Places API (User version)
    */
   async getBusinessInfo(lat: number, lng: number, query?: string): Promise<UserBusinessInfo | null> {
-    const userGoogleMapsKey = this.getUserGoogleMapsKey();
+    const userGoogleMapsKey = await this.getUserGoogleMapsKey();
     if (!FEATURE_FLAGS.BUSINESS_INFO_ENRICHMENT || !userGoogleMapsKey) {
       return null;
     }
@@ -206,7 +208,7 @@ class UserApiService {
    * Get address suggestions for autocomplete (User version)
    */
   async getAddressSuggestions(query: string): Promise<string[]> {
-    const userGoogleMapsKey = this.getUserGoogleMapsKey();
+    const userGoogleMapsKey = await this.getUserGoogleMapsKey();
     if (!userGoogleMapsKey) {
       return [];
     }

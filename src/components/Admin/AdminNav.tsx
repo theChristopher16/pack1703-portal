@@ -38,7 +38,11 @@ const AdminNav: React.FC = () => {
 
     if (dropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside);
+      };
     }
   }, [dropdownOpen]);
 
@@ -101,6 +105,9 @@ const AdminNav: React.FC = () => {
               <Link
                 key={item.path}
                 to={item.path}
+                onClick={() => {
+                  console.log('Navigation clicked:', item.path, item.label);
+                }}
                 className={`flex-shrink-0 inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                   location.pathname === item.path
                     ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
@@ -145,6 +152,7 @@ const AdminNav: React.FC = () => {
                         to={item.path}
                         onClick={(e) => {
                           e.stopPropagation();
+                          console.log('Dropdown navigation clicked:', item.path, item.label);
                           setDropdownOpen(false);
                         }}
                         className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors ${
@@ -180,7 +188,10 @@ const AdminNav: React.FC = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  onClick={() => setDropdownOpen(false)}
+                  onClick={() => {
+                    console.log('Mobile navigation clicked:', item.path, item.label);
+                    setDropdownOpen(false);
+                  }}
                   className={`block px-3 py-2 rounded-md text-base font-medium ${
                     location.pathname === item.path
                       ? 'bg-blue-100 text-blue-700'
@@ -199,7 +210,10 @@ const AdminNav: React.FC = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  onClick={() => setDropdownOpen(false)}
+                  onClick={() => {
+                    console.log('Mobile secondary navigation clicked:', item.path, item.label);
+                    setDropdownOpen(false);
+                  }}
                   className={`block px-3 py-2 rounded-md text-base font-medium ${
                     location.pathname === item.path
                       ? 'bg-blue-100 text-blue-700'

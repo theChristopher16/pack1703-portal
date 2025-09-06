@@ -36,9 +36,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const unsubscribe = authService.onAuthStateChanged((user) => {
       setCurrentUser(user);
       if (user) {
-        // Get user role from the current user
-        const appUser = authService.getCurrentUser();
-        setUserRole(appUser?.role || UserRole.PARENT);
+        // Use the user's role directly from the auth state change
+        setUserRole(user.role || UserRole.PARENT);
       } else {
         setUserRole(UserRole.ANONYMOUS);
       }

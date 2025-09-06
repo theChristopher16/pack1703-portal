@@ -70,14 +70,14 @@ const EventDetailPage: React.FC = () => {
         denTags: ['Lions', 'Tigers', 'Wolves', 'Bears', 'Webelos', 'AOL'],
         maxCapacity: 50,
         currentRSVPs: 23,
-        description: 'Join us for our annual fall campout! This is a great opportunity for families to bond, learn outdoor skills, and enjoy nature together. We\'ll have activities for all ages including hiking, crafts, campfire songs, and more.',
+        description: 'Join us for our annual fall campout! This is a great opportunity for families to bond, learn outdoor skills, and enjoy nature together. We\'ll have activities for all ages including nature walks, crafts, campfire songs, and more.',
         packingList: [
           'Tent and sleeping bags',
           'Warm clothing and rain gear',
           'Personal hygiene items',
           'Flashlight or headlamp',
           'Water bottle',
-          'Comfortable hiking shoes',
+          'Comfortable walking shoes',
           'Camp chair (optional)',
           'Personal medications'
         ],

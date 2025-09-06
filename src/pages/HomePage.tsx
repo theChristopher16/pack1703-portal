@@ -30,7 +30,7 @@ const HomePage: React.FC = () => {
   const quickActions = [
     {
       name: 'View Events',
-      description: 'Explore upcoming pack activities and adventures',
+      description: 'Explore upcoming pack activities and Houston-area adventures',
       href: '/events',
       icon: Calendar,
       color: 'bg-gradient-to-br from-primary-400 to-primary-500',
@@ -38,7 +38,7 @@ const HomePage: React.FC = () => {
     },
     {
       name: 'Find Locations',
-      description: 'Discover meeting spots and adventure destinations',
+      description: 'Discover Houston-area meeting spots and adventure destinations',
       href: '/locations',
       icon: MapPin,
       color: 'bg-gradient-to-br from-secondary-400 to-secondary-500',
@@ -79,9 +79,9 @@ const HomePage: React.FC = () => {
       bgColor: 'bg-primary-50'
     },
     {
-      emoji: '🏔️',
+      emoji: '🌊',
       title: 'Adventure Awaits',
-      description: 'From mountain hikes to stargazing nights, every event is an opportunity for discovery.',
+      description: 'From bayou explorations to stargazing nights, every event is an opportunity for discovery.',
       color: 'text-secondary-500',
       bgColor: 'bg-secondary-50'
     },

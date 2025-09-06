@@ -25,8 +25,8 @@ const mockEvent: Event = {
   start: { toDate: () => new Date('2025-10-15T18:00:00') } as any,
   end: { toDate: () => new Date('2025-10-17T12:00:00') } as any,
   locationId: 'location-1',
-  description: 'Join us for our annual fall campout! This is a great opportunity for families to bond, learn outdoor skills, and have fun together. We\'ll have activities for all ages including hiking, campfire cooking, and stargazing.',
-  packingList: ['tent', 'sleeping bag', 'warm clothes', 'hiking boots'],
+  description: 'Join us for our annual fall campout! This is a great opportunity for families to bond, learn outdoor skills, and have fun together. We\'ll have activities for all ages including nature walks, campfire cooking, and stargazing.',
+  packingList: ['tent', 'sleeping bag', 'warm clothes', 'walking shoes'],
   attachments: [
     { name: 'Campout Schedule.pdf', url: '#', type: 'application/pdf' },
     { name: 'Packing List.pdf', url: '#', type: 'application/pdf' }
@@ -42,9 +42,9 @@ const mockEvent: Event = {
 const mockLocation: Location = {
   id: 'location-1',
   name: 'Camp Arrowhead',
-  address: '1234 Camp Road, Pine Valley, CA 91962',
-  geo: { lat: 32.7157, lng: -117.1611 },
-  notesPublic: 'Beautiful campground with hiking trails and lake access. Perfect for families with children of all ages.',
+  address: '1234 Camp Road, Houston, TX 77001',
+  geo: { lat: 29.7604, lng: -95.3698 },
+  notesPublic: 'Beautiful campground with nature trails and lake access. Perfect for families with children of all ages.',
   notesPrivate: 'Gate code: 1234, Contact: Ranger Smith (555) 123-4567',
   parking: {
     text: 'Parking available in main lot. Overflow parking in field.',
@@ -103,7 +103,7 @@ const EventDetailPage: React.FC = () => {
           name: 'Camp Wokanda',
           address: '1234 Scout Road, Peoria, IL 61614',
           geo: { lat: 40.7103, lng: -89.6144 },
-          notesPublic: 'Beautiful campground with hiking trails and lake access. Perfect for families with children of all ages.',
+          notesPublic: 'Beautiful campground with nature trails and lake access. Perfect for families with children of all ages.',
           notesPrivate: 'Gate code: 1234, Contact: Ranger Smith (555) 123-4567',
           parking: {
             text: 'Parking available in main lot. Overflow parking in field.',

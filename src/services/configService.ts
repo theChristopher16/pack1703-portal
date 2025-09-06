@@ -235,7 +235,7 @@ class ConfigService {
       },
       {
         key: 'system.pack.name',
-        value: 'Pack 1703',
+        value: 'Cub Scout Pack 1703',
         category: 'system',
         description: 'Official pack name',
         validationRules: {
@@ -259,7 +259,7 @@ class ConfigService {
       },
       {
         key: 'display.site.title',
-        value: 'Pack 1703 Families Portal',
+        value: 'Cub Scout Pack 1703 Families Portal',
         category: 'display',
         description: 'Website title',
         validationRules: {

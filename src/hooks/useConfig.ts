@@ -161,9 +161,9 @@ export const useConfigsByCategory = (
 // Convenience hooks for common configuration types
 export const useEmailConfig = (key: string) => useConfig(key, { defaultValue: 'pack1703@gmail.com' });
 export const usePhoneConfig = (key: string) => useConfig(key, { defaultValue: '(555) 123-4567' });
-export const usePackNameConfig = () => useConfig('system.pack.name', { defaultValue: 'Pack 1703' });
+export const usePackNameConfig = () => useConfig('system.pack.name', { defaultValue: 'Cub Scout Pack 1703' });
 export const usePackLocationConfig = () => useConfig('system.pack.location', { defaultValue: 'Peoria, IL' });
-export const useSiteTitleConfig = () => useConfig('display.site.title', { defaultValue: 'Pack 1703 Families Portal' });
+export const useSiteTitleConfig = () => useConfig('display.site.title', { defaultValue: 'Cub Scout Pack 1703 Families Portal' });
 
 // Hook for all contact-related configurations
 export const useContactConfigs = () => {

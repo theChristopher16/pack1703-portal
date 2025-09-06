@@ -95,9 +95,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center shadow-glow">
                 <span className="text-white" style={{ fontSize: '24px' }}>🏕️</span>
               </div>
-              <div className="hidden sm:block">
-                <h1 className="text-xl font-display font-bold text-gradient">
-                  {packName}
+              <div className="block">
+                <h1 className="text-lg sm:text-xl font-display font-bold text-gradient">
+                  {packName || 'Cub Scout Pack 1703'}
                 </h1>
                 <p className="text-xs text-gray-600">Families Portal</p>
               </div>

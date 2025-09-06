@@ -237,10 +237,42 @@ const EventsPage: React.FC = () => {
     console.log('Calendar view changed to:', view);
   };
 
-  const generateICSFeed = () => {
-    // Generate ICS feed URL with current filters
-    const url = '/api/ics-feed';
-    window.open(url, '_blank');
+  const generateICSFeed = async () => {
+    try {
+      // Import Firebase Functions
+      const { getFunctions, httpsCallable } = await import('firebase/functions');
+      const functions = getFunctions();
+      const icsFeed = httpsCallable(functions, 'icsFeed');
+      
+      // Call the Cloud Function to generate ICS feed for all events
+      const result = await icsFeed({
+        // No filters - get all events
+        categories: undefined,
+        denTags: undefined,
+        startDate: undefined,
+        endDate: undefined
+      });
+      
+      const data = result.data as any;
+      if (data.success && data.icsContent) {
+        // Create and download the ICS file
+        const blob = new Blob([data.icsContent], { type: 'text/calendar' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `pack1703-events-${new Date().toISOString().split('T')[0]}.ics`;
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        console.log(`ICS feed generated with ${data.eventCount} events`);
+      } else {
+        console.error('Failed to generate ICS feed:', data);
+        alert('Failed to generate ICS feed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating ICS feed:', error);
+      alert('Error generating ICS feed. Please try again.');
+    }
   };
 
   const shareCalendar = async () => {

@@ -182,37 +182,42 @@ export const downloadICS = (icsContent: string, filename: string): void => {
 };
 
 /**
- * Generate ICS feed URL for server-side generation
+ * Generate ICS feed using Cloud Function
  */
-export const generateICSFeedURL = (options: ICSFeedOptions = {}): string => {
-  const params = new URLSearchParams();
-  
-  if (options.categories && options.categories.length > 0) {
-    params.append('categories', options.categories.join(','));
+export const generateICSFeedURL = async (options: ICSFeedOptions = {}): Promise<string> => {
+  try {
+    // Import Firebase Functions
+    const { getFunctions, httpsCallable } = await import('firebase/functions');
+    const functions = getFunctions();
+    const icsFeed = httpsCallable(functions, 'icsFeed');
+    
+    // Call the Cloud Function with options
+    const result = await icsFeed({
+      categories: options.categories,
+      denTags: options.dens,
+      startDate: options.startDate,
+      endDate: options.endDate
+    });
+    
+    const data = result.data as any;
+    if (data.success && data.icsContent) {
+      // Create and download the ICS file
+      const blob = new Blob([data.icsContent], { type: 'text/calendar' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `pack1703-events-${new Date().toISOString().split('T')[0]}.ics`;
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      return `ICS feed generated with ${data.eventCount} events`;
+    } else {
+      throw new Error('Failed to generate ICS feed');
+    }
+  } catch (error) {
+    console.error('Error generating ICS feed:', error);
+    throw error;
   }
-  
-  if (options.dens && options.dens.length > 0) {
-    params.append('dens', options.dens.join(','));
-  }
-  
-  if (options.startDate) {
-    params.append('startDate', options.startDate);
-  }
-  
-  if (options.endDate) {
-    params.append('endDate', options.endDate);
-  }
-  
-  if (options.includeDescription !== undefined) {
-    params.append('includeDescription', options.includeDescription.toString());
-  }
-  
-  if (options.includeLocation !== undefined) {
-    params.append('includeLocation', options.includeLocation.toString());
-  }
-  
-  const queryString = params.toString();
-  return `/api/ics-feed${queryString ? `?${queryString}` : ''}`;
 };
 
 /**

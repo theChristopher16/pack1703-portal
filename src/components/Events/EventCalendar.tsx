@@ -132,18 +132,41 @@ const EventCalendar: React.FC<EventCalendarProps> = ({
     );
   };
 
-  const generateICSFeed = () => {
-    // Generate ICS feed URL with current filters
-    const params = new URLSearchParams();
-    if (selectedCategories.length > 0) {
-      params.append('categories', selectedCategories.join(','));
+  const generateICSFeed = async () => {
+    try {
+      // Import Firebase Functions
+      const { getFunctions, httpsCallable } = await import('firebase/functions');
+      const functions = getFunctions();
+      const icsFeed = httpsCallable(functions, 'icsFeed');
+      
+      // Call the Cloud Function with current filters
+      const result = await icsFeed({
+        categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+        denTags: selectedDens.length > 0 ? selectedDens : undefined,
+        startDate: undefined, // Could add date range filters if needed
+        endDate: undefined
+      });
+      
+      const data = result.data as any;
+      if (data.success && data.icsContent) {
+        // Create and download the ICS file
+        const blob = new Blob([data.icsContent], { type: 'text/calendar' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `pack1703-events-${new Date().toISOString().split('T')[0]}.ics`;
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        console.log(`ICS feed generated with ${data.eventCount} events`);
+      } else {
+        console.error('Failed to generate ICS feed:', data);
+        alert('Failed to generate ICS feed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating ICS feed:', error);
+      alert('Error generating ICS feed. Please try again.');
     }
-    if (selectedDens.length > 0) {
-      params.append('dens', selectedDens.join(','));
-    }
-    
-    const url = `/api/ics-feed?${params.toString()}`;
-    window.open(url, '_blank');
   };
 
   const shareCalendar = async () => {

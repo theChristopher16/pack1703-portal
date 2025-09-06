@@ -7,6 +7,7 @@ import { externalApiService } from './externalApiService';
 import emailMonitorService from './emailMonitorService';
 import { dataAuditService } from './dataAuditService';
 import firestoreService from './firestore';
+import { frontendGeminiService } from './frontendGeminiService';
 
 export interface AIResponse {
   id: string;
@@ -80,7 +81,7 @@ class AIService {
       // Track API usage for cost monitoring (optional in test environment)
       try {
         const { costManagementService } = await import('./costManagementService');
-        await costManagementService.instance.trackApiUsage('openai', context.userRole, 0.002);
+        await costManagementService.instance.trackApiUsage('gemini', context.userRole, 0.001);
       } catch (costError) {
         // Silently ignore cost tracking errors in test environment
         if (process.env.NODE_ENV !== 'test') {

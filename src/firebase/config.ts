@@ -5,7 +5,7 @@ import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth'
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyD6QerA4QW2KKrBqgDJvFwhvAHc6WobKX0",
   authDomain: "pack-1703-portal.firebaseapp.com",
   projectId: "pack-1703-portal",

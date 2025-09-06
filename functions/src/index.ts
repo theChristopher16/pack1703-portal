@@ -383,12 +383,10 @@ export const icsFeed = functions.https.onCall(async (data: {
   endDate?: string;
 }, context) => {
   try {
-    // Skip App Check for ICS feed since it's a public calendar feed
-    // This allows the ICS feed to work without requiring App Check setup
-    console.log('ICS feed request received:', { 
-      hasApp: !!context.app, 
-      isEmulator: process.env.FUNCTIONS_EMULATOR === 'true' 
-    });
+    // Check App Check (skip in emulator for testing)
+    if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
+      throw new functions.https.HttpsError('unauthenticated', 'App Check required');
+    }
 
     // Build query
     let query = db.collection('events').where('startDate', '>=', getTimestamp());
@@ -1317,8 +1315,8 @@ export const adminDeleteEvent = functions.https.onCall(async (data, context) => 
   }
 });
 
-// GPT-5 AI Integration Function
-import OpenAIService from './openaiService';
+// Gemini AI Integration Function
+import GeminiService from './geminiService';
 
 export const aiGenerateContent = functions.https.onCall(async (data, context) => {
   try {
@@ -1344,8 +1342,8 @@ export const aiGenerateContent = functions.https.onCall(async (data, context) =>
       throw new functions.https.HttpsError('invalid-argument', 'Type and prompt are required');
     }
 
-    // Initialize OpenAI service
-    const openaiService = new OpenAIService();
+    // Initialize Gemini service
+    const geminiService = new GeminiService();
 
     let result: any = {};
 
@@ -1354,32 +1352,32 @@ export const aiGenerateContent = functions.https.onCall(async (data, context) =>
         if (!eventData) {
           throw new functions.https.HttpsError('invalid-argument', 'Event data is required for event description generation');
         }
-        result.content = await openaiService.generateEventDescription(eventData);
+        result.content = await geminiService.generateEventDescription(eventData);
         break;
 
       case 'announcement_content':
         if (!announcementData) {
           throw new functions.https.HttpsError('invalid-argument', 'Announcement data is required for announcement generation');
         }
-        result.content = await openaiService.generateAnnouncementContent(announcementData);
+        result.content = await geminiService.generateAnnouncementContent(announcementData);
         break;
 
       case 'packing_list':
         if (!eventData) {
           throw new functions.https.HttpsError('invalid-argument', 'Event data is required for packing list generation');
         }
-        result.items = await openaiService.generatePackingList(eventData);
+        result.items = await geminiService.generatePackingList(eventData);
         break;
 
       case 'event_title':
         if (!eventData) {
           throw new functions.https.HttpsError('invalid-argument', 'Event data is required for title generation');
         }
-        result.title = await openaiService.generateEventTitle(eventData);
+        result.title = await geminiService.generateEventTitle(eventData);
         break;
 
       case 'query_analysis':
-        result.response = await openaiService.analyzeQuery(prompt, {
+        result.response = await geminiService.analyzeQuery(prompt, {
           userRole: userData?.isAdmin ? 'admin' : 'user',
           availableData: data.context
         });
@@ -1397,7 +1395,7 @@ export const aiGenerateContent = functions.https.onCall(async (data, context) =>
       prompt: prompt,
       result: result,
       timestamp: getTimestamp(),
-      model: openaiService.getModelInfo().model,
+      model: geminiService.getModelInfo().model,
       ipAddress: context.rawRequest.ip || 'unknown',
       userAgent: context.rawRequest.headers['user-agent'] || 'unknown'
     });
@@ -1405,7 +1403,7 @@ export const aiGenerateContent = functions.https.onCall(async (data, context) =>
     return {
       success: true,
       result: result,
-      model: openaiService.getModelInfo().model
+      model: geminiService.getModelInfo().model
     };
 
   } catch (error) {
@@ -1438,12 +1436,12 @@ export const testAIConnection = functions.https.onCall(async (data, context) => 
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to test AI connection');
     }
 
-    // Initialize OpenAI service
-    const openaiService = new OpenAIService();
+    // Initialize Gemini service
+    const geminiService = new GeminiService();
     
     // Test connection
-    const isConnected = await openaiService.testConnection();
-    const modelInfo = openaiService.getModelInfo();
+    const isConnected = await geminiService.testConnection();
+    const modelInfo = geminiService.getModelInfo();
 
     return {
       success: true,
@@ -1533,12 +1531,12 @@ export const systemCommand = functions.https.onCall(async (data, context) => {
 
       case 'check_ai':
         try {
-          const openaiService = new OpenAIService();
-          const isConnected = await openaiService.testConnection();
+          const geminiService = new GeminiService();
+          const isConnected = await geminiService.testConnection();
           result = { 
             status: 'success', 
             ai_connected: isConnected,
-            model: openaiService.getModelInfo().model,
+            model: geminiService.getModelInfo().model,
             timestamp: new Date().toISOString()
           };
         } catch (error) {

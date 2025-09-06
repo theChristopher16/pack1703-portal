@@ -1,0 +1,299 @@
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getAI, getGenerativeModel, GoogleAIBackend } from 'firebase-admin/ai';
+
+interface GeminiConfig {
+  model: string;
+  maxTokens: number;
+  temperature: number;
+}
+
+interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+interface AIResponse {
+  content: string;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+  model: string;
+}
+
+interface EventData {
+  title: string;
+  description?: string;
+  date: string;
+  location?: string;
+  category?: string;
+  denTags?: string[];
+  isImportant?: boolean;
+}
+
+interface AnnouncementData {
+  title: string;
+  body?: string;
+  category: string;
+  priority: string;
+  eventId?: string;
+  eventTitle?: string;
+}
+
+interface QueryContext {
+  userRole: 'admin' | 'user';
+  availableData: {
+    events: number;
+    locations: number;
+    announcements: number;
+    messages: number;
+    users: number;
+  };
+}
+
+class GeminiService {
+  private app: any;
+  private ai: any;
+  private model: any;
+  private config: GeminiConfig;
+
+  constructor() {
+    // Initialize Firebase Admin if not already initialized
+    if (getApps().length === 0) {
+      this.app = initializeApp();
+    } else {
+      this.app = getApps()[0];
+    }
+
+    this.config = {
+      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+      maxTokens: parseInt(process.env.GEMINI_MAX_TOKENS || '4000'),
+      temperature: parseFloat(process.env.GEMINI_TEMPERATURE || '0.7')
+    };
+
+    // Initialize Firebase AI Logic
+    this.ai = getAI(this.app, { backend: new GoogleAIBackend() });
+    this.model = getGenerativeModel(this.ai, { 
+      model: this.config.model,
+      generationConfig: {
+        maxOutputTokens: this.config.maxTokens,
+        temperature: this.config.temperature,
+      }
+    });
+  }
+
+  /**
+   * Generate a response using Gemini
+   */
+  async generateResponse(
+    messages: ChatMessage[],
+    systemPrompt?: string
+  ): Promise<AIResponse> {
+    try {
+      let prompt = '';
+      
+      if (systemPrompt) {
+        prompt += `System: ${systemPrompt}\n\n`;
+      }
+      
+      messages.forEach(msg => {
+        prompt += `${msg.role}: ${msg.content}\n`;
+      });
+
+      const result = await this.model.generateContent(prompt);
+      const response = result.response;
+      const text = response.text();
+
+      return {
+        content: text,
+        model: this.config.model,
+        usage: {
+          promptTokens: 0, // Gemini doesn't provide detailed token usage in this version
+          completionTokens: 0,
+          totalTokens: 0
+        }
+      };
+    } catch (error) {
+      console.error('Error generating Gemini response:', error);
+      throw new Error(`Failed to generate response: ${error}`);
+    }
+  }
+
+  /**
+   * Generate event description
+   */
+  async generateEventDescription(eventData: EventData): Promise<string> {
+    const prompt = `Generate an engaging, scout-appropriate event description for a Cub Scout Pack event. 
+
+Event Details:
+- Title: ${eventData.title}
+- Date: ${eventData.date}
+- Location: ${eventData.location || 'TBD'}
+- Category: ${eventData.category || 'General'}
+- Den Tags: ${eventData.denTags?.join(', ') || 'All Dens'}
+- Important: ${eventData.isImportant ? 'Yes' : 'No'}
+
+Requirements:
+- 100-200 words
+- Scout-appropriate language
+- Include what scouts will learn/do
+- Mention any special requirements
+- Houston-area appropriate activities
+- Engaging and exciting tone
+
+Generate the description:`;
+
+    const result = await this.generateResponse([
+      { role: 'user', content: prompt }
+    ]);
+
+    return result.content;
+  }
+
+  /**
+   * Generate announcement content
+   */
+  async generateAnnouncementContent(announcementData: AnnouncementData): Promise<string> {
+    const prompt = `Generate a clear, informative announcement for Cub Scout Pack families.
+
+Announcement Details:
+- Title: ${announcementData.title}
+- Category: ${announcementData.category}
+- Priority: ${announcementData.priority}
+- Related Event: ${announcementData.eventTitle || 'N/A'}
+
+Requirements:
+- Clear, family-friendly language
+- Include important details
+- Mention deadlines if applicable
+- Professional but warm tone
+- 50-150 words
+
+Generate the announcement content:`;
+
+    const result = await this.generateResponse([
+      { role: 'user', content: prompt }
+    ]);
+
+    return result.content;
+  }
+
+  /**
+   * Generate packing list
+   */
+  async generatePackingList(eventData: EventData): Promise<string[]> {
+    const prompt = `Generate a comprehensive packing list for a Cub Scout Pack event.
+
+Event Details:
+- Title: ${eventData.title}
+- Date: ${eventData.date}
+- Location: ${eventData.location || 'TBD'}
+- Category: ${eventData.category || 'General'}
+
+Requirements:
+- Scout-appropriate items only
+- Consider Houston weather
+- Include essentials and optional items
+- Organize by category (clothing, gear, supplies, etc.)
+- Return as a simple list of items
+
+Generate the packing list (one item per line):`;
+
+    const result = await this.generateResponse([
+      { role: 'user', content: prompt }
+    ]);
+
+    // Split the response into individual items and clean them up
+    return result.content
+      .split('\n')
+      .map(item => item.trim())
+      .filter(item => item.length > 0 && !item.match(/^(packing list|items?|essentials?)/i))
+      .map(item => item.replace(/^[-•*]\s*/, '')) // Remove bullet points
+      .slice(0, 20); // Limit to 20 items
+  }
+
+  /**
+   * Generate event title
+   */
+  async generateEventTitle(eventData: EventData): Promise<string> {
+    const prompt = `Generate an engaging, scout-appropriate event title.
+
+Event Details:
+- Description: ${eventData.description || 'Scout activity'}
+- Date: ${eventData.date}
+- Location: ${eventData.location || 'TBD'}
+- Category: ${eventData.category || 'General'}
+
+Requirements:
+- Engaging and exciting
+- Scout-appropriate
+- Include relevant emoji
+- 5-10 words maximum
+- Houston-area appropriate
+
+Generate the event title:`;
+
+    const result = await this.generateResponse([
+      { role: 'user', content: prompt }
+    ]);
+
+    return result.content.trim();
+  }
+
+  /**
+   * Analyze user query
+   */
+  async analyzeQuery(query: string, context: QueryContext): Promise<string> {
+    const prompt = `Analyze this user query and provide a helpful response for a Cub Scout Pack management system.
+
+User Query: "${query}"
+
+Context:
+- User Role: ${context.userRole}
+- Available Data: ${JSON.stringify(context.availableData)}
+
+Requirements:
+- Scout-appropriate response
+- Helpful and informative
+- Professional but friendly tone
+- If asking about data, provide relevant information
+- If asking for help, provide actionable guidance
+
+Provide your analysis and response:`;
+
+    const result = await this.generateResponse([
+      { role: 'user', content: prompt }
+    ]);
+
+    return result.content;
+  }
+
+  /**
+   * Test connection to Gemini
+   */
+  async testConnection(): Promise<boolean> {
+    try {
+      const result = await this.generateResponse([
+        { role: 'user', content: 'Hello, this is a test message.' }
+      ]);
+      return result.content.length > 0;
+    } catch (error) {
+      console.error('Gemini connection test failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get model information
+   */
+  getModelInfo(): { model: string; maxTokens: number; temperature: number } {
+    return {
+      model: this.config.model,
+      maxTokens: this.config.maxTokens,
+      temperature: this.config.temperature
+    };
+  }
+}
+
+export default GeminiService;

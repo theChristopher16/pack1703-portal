@@ -37,16 +37,33 @@ const AdminNav: React.FC = () => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: Event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        console.log('Click outside detected, closing dropdown');
-        setDropdownOpen(false);
+      const target = event.target as Node;
+      
+      // Don't close if clicking on navigation items or dropdown content
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
+        // Check if the click is on a navigation link
+        const isNavLink = target instanceof Element && (
+          target.closest('a[href]') || 
+          target.closest('[role="button"]') ||
+          target.closest('button')
+        );
+        
+        if (!isNavLink) {
+          console.log('Click outside detected, closing dropdown');
+          setDropdownOpen(false);
+        }
       }
     };
 
     if (dropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
+      // Use a small delay to prevent immediate closing on navigation clicks
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('touchstart', handleClickOutside);
+      }, 100);
+      
       return () => {
+        clearTimeout(timeoutId);
         document.removeEventListener('mousedown', handleClickOutside);
         document.removeEventListener('touchstart', handleClickOutside);
       };
@@ -122,8 +139,12 @@ const AdminNav: React.FC = () => {
               <Link
                 key={item.path}
                 to={item.path}
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   addDebugMessage(`Nav clicked: ${item.label} (${item.path})`);
+                  // Force navigation
+                  window.location.href = item.path;
                 }}
                 className={`flex-shrink-0 inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                   location.pathname === item.path
@@ -168,9 +189,12 @@ const AdminNav: React.FC = () => {
                         key={item.path}
                         to={item.path}
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           addDebugMessage(`Dropdown clicked: ${item.label} (${item.path})`);
                           setDropdownOpen(false);
+                          // Force navigation
+                          window.location.href = item.path;
                         }}
                         className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors ${
                           location.pathname === item.path ? 'bg-blue-50 text-blue-700' : ''
@@ -205,9 +229,13 @@ const AdminNav: React.FC = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     addDebugMessage(`Mobile nav clicked: ${item.label} (${item.path})`);
                     setDropdownOpen(false);
+                    // Force navigation
+                    window.location.href = item.path;
                   }}
                   className={`block px-3 py-2 rounded-md text-base font-medium ${
                     location.pathname === item.path
@@ -227,9 +255,13 @@ const AdminNav: React.FC = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     addDebugMessage(`Mobile secondary clicked: ${item.label} (${item.path})`);
                     setDropdownOpen(false);
+                    // Force navigation
+                    window.location.href = item.path;
                   }}
                   className={`block px-3 py-2 rounded-md text-base font-medium ${
                     location.pathname === item.path

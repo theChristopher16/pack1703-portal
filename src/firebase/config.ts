@@ -27,7 +27,7 @@ try {
     provider: new ReCaptchaV3Provider('8EC4C83B-FA44-453B-9EDB-DC063C36FCA8'),
     isTokenAutoRefreshEnabled: true
   });
-  console.log('✅ App Check initialized with debug token (forced for stability) - Build: ' + new Date().toISOString());
+  console.log('✅ App Check initialized with debug token (forced for stability) - Build: ' + new Date().toISOString() + ' - Triggering CI test');
 } catch (error) {
   console.warn('❌ App Check initialization failed:', error);
   // Continue without App Check if initialization fails

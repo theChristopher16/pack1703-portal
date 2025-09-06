@@ -15,7 +15,14 @@ const AdminNav: React.FC = () => {
   const { currentUser } = state;
   const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [debugMessages, setDebugMessages] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Add debug message function
+  const addDebugMessage = (message: string) => {
+    console.log(message);
+    setDebugMessages(prev => [...prev.slice(-4), `${new Date().toLocaleTimeString()}: ${message}`]);
+  };
 
   // Keyboard event handler for accessibility
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -29,7 +36,7 @@ const AdminNav: React.FC = () => {
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: Event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         console.log('Click outside detected, closing dropdown');
         setDropdownOpen(false);
@@ -89,8 +96,18 @@ const AdminNav: React.FC = () => {
   ];
 
   return (
-    <nav className="bg-white border-b border-gray-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div>
+      {/* Debug Panel - Only show on mobile or when debugging */}
+      {debugMessages.length > 0 && (
+        <div className="bg-yellow-100 border-b border-yellow-300 p-2 text-xs">
+          <div className="max-w-7xl mx-auto px-4">
+            <strong>Debug:</strong> {debugMessages.join(' | ')}
+          </div>
+        </div>
+      )}
+      
+      <nav className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo/Brand */}
           <div className="flex items-center">
@@ -106,7 +123,7 @@ const AdminNav: React.FC = () => {
                 key={item.path}
                 to={item.path}
                 onClick={() => {
-                  console.log('Navigation clicked:', item.path, item.label);
+                  addDebugMessage(`Nav clicked: ${item.label} (${item.path})`);
                 }}
                 className={`flex-shrink-0 inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                   location.pathname === item.path
@@ -152,7 +169,7 @@ const AdminNav: React.FC = () => {
                         to={item.path}
                         onClick={(e) => {
                           e.stopPropagation();
-                          console.log('Dropdown navigation clicked:', item.path, item.label);
+                          addDebugMessage(`Dropdown clicked: ${item.label} (${item.path})`);
                           setDropdownOpen(false);
                         }}
                         className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors ${
@@ -189,7 +206,7 @@ const AdminNav: React.FC = () => {
                   key={item.path}
                   to={item.path}
                   onClick={() => {
-                    console.log('Mobile navigation clicked:', item.path, item.label);
+                    addDebugMessage(`Mobile nav clicked: ${item.label} (${item.path})`);
                     setDropdownOpen(false);
                   }}
                   className={`block px-3 py-2 rounded-md text-base font-medium ${
@@ -211,7 +228,7 @@ const AdminNav: React.FC = () => {
                   key={item.path}
                   to={item.path}
                   onClick={() => {
-                    console.log('Mobile secondary navigation clicked:', item.path, item.label);
+                    addDebugMessage(`Mobile secondary clicked: ${item.label} (${item.path})`);
                     setDropdownOpen(false);
                   }}
                   className={`block px-3 py-2 rounded-md text-base font-medium ${
@@ -229,6 +246,7 @@ const AdminNav: React.FC = () => {
         )}
       </div>
     </nav>
+    </div>
   );
 };
 

@@ -73,6 +73,7 @@
     "test:runner:user-management": "./scripts/test-runner.sh user-management",
     "test:runner:ai": "./scripts/test-runner.sh ai",
     "test:runner:coverage": "./scripts/test-runner.sh -c",
+    "test:mobile": "node scripts/mobile-test-runner.js",
     "eject": "react-scripts eject",
     "deploy": "npm run build && firebase deploy --only hosting",
     "deploy:all": "npm run build && firebase deploy",

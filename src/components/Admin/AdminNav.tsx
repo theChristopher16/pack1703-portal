@@ -76,6 +76,7 @@ const AdminNav: React.FC = () => {
     { path: '/admin/fundraising', label: 'Fundraising', icon: '🎯' },
     { path: '/admin/finances', label: 'Finances', icon: '💰' },
     { path: '/admin/cost-management', label: 'Cost Management', icon: '📊', roles: ['admin', 'root'] },
+    { path: '/admin/mobile-testing', label: 'Mobile Testing', icon: '📱' },
     { path: '/admin/multi-tenant', label: 'Multi-Tenant', icon: '🏢' },
     { path: '/admin/lists', label: 'Lists', icon: '📋' },
     { path: '/admin/volunteer', label: 'Volunteer', icon: '🤝' },

@@ -114,7 +114,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     key={item.name}
                     onClick={() => {
                       // console.log('Main toolbar navigation clicked:', item.href);
-                      window.location.href = item.href;
+                      handleNavigation(item.href);
                     }}
                     className={`px-3 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
                       isActive(item.href)
@@ -143,7 +143,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     key={item.name}
                     onClick={() => {
                       // console.log('Medium toolbar navigation clicked:', item.href);
-                      window.location.href = item.href;
+                      handleNavigation(item.href);
                     }}
                     className={`px-3 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
                       isActive(item.href)
@@ -196,8 +196,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                               e.preventDefault();
                               e.stopPropagation();
                               // console.log('Dropdown navigation clicked:', item.href);
-                              // console.log('Forcing navigation to:', item.href);
-                              window.location.href = item.href;
+                              handleNavigation(item.href);
                             }}
                             className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
                               isActive(item.href)
@@ -228,7 +227,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                     onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      window.location.href = item.href;
+                                      handleNavigation(item.href);
                                     }}
                                     className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
                                       isActive(item.href)
@@ -252,8 +251,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             e.preventDefault();
                             e.stopPropagation();
                             // console.log('Admin navigation clicked');
-                            // console.log('Forcing admin navigation');
-                            window.location.href = '/admin';
+                            handleNavigation('/admin');
                           }}
                           className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
                             isActive('/admin')

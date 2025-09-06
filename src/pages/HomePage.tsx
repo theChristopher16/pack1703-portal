@@ -171,21 +171,21 @@ const HomePage: React.FC = () => {
               Welcome to the Future of Scouting
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-display font-bold mb-6 animate-slide-up">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold mb-6 animate-slide-up">
               <span className="text-gradient">Scout</span>
               <br />
               <span className="text-gray-900">Families Portal</span>
             </h1>
             
-            <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed animate-slide-up" style={{ animationDelay: '200ms' }}>
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed animate-slide-up px-4" style={{ animationDelay: '200ms' }}>
               Where technology meets tradition, and every family becomes part of an 
               <span className="text-gradient font-semibold"> adventure</span> that shapes the future.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center animate-slide-up" style={{ animationDelay: '400ms' }}>
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center animate-slide-up px-4" style={{ animationDelay: '400ms' }}>
               <Link
                 to="/events"
-                className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold text-lg rounded-2xl shadow-glow-primary hover:shadow-glow-primary/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-primary-300/50"
+                className="group relative inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold text-base sm:text-lg rounded-2xl shadow-glow-primary hover:shadow-glow-primary/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-primary-300/50 w-full sm:w-auto"
               >
                 <Calendar className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-200" />
                 Explore Events
@@ -194,7 +194,7 @@ const HomePage: React.FC = () => {
               
               <Link
                 to="/locations"
-                className="group relative inline-flex items-center justify-center px-8 py-4 bg-white/90 backdrop-blur-sm border-2 border-primary-300 text-primary-600 hover:bg-primary-50 hover:border-primary-400 font-semibold text-lg rounded-2xl shadow-soft hover:shadow-glow-primary/50 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-primary-300/50"
+                className="group relative inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-white/90 backdrop-blur-sm border-2 border-primary-300 text-primary-600 hover:bg-primary-50 hover:border-primary-400 font-semibold text-base sm:text-lg rounded-2xl shadow-soft hover:shadow-glow-primary/50 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-primary-300/50 w-full sm:w-auto"
               >
                 <Compass className="w-5 h-5 mr-3 group-hover:rotate-12 transition-transform duration-200" />
                 Discover Locations

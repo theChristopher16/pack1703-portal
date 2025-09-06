@@ -143,7 +143,7 @@ const EventCard: React.FC<EventCardProps> = ({
         </h3>
 
         {/* Date and Time */}
-        <div className="flex items-center space-x-4 mb-4 text-sm text-gray-600">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0 mb-4 text-sm text-gray-600">
           <div className="flex items-center space-x-2">
             <Calendar className="w-4 h-4 text-primary-500" />
             <span>{formatDate(event.date)}</span>
@@ -243,7 +243,7 @@ const EventCard: React.FC<EventCardProps> = ({
 
       {/* Action Buttons */}
       <div className="px-6 pb-6">
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           {/* Primary Actions */}
           <button
             onClick={() => onRSVP(event.id)}
@@ -254,15 +254,15 @@ const EventCard: React.FC<EventCardProps> = ({
           
           <button
             onClick={() => onViewDetails(event.id)}
-            className="px-4 py-2 bg-white border-2 border-primary-300 text-primary-600 font-medium rounded-xl hover:bg-primary-50 hover:border-primary-400 transition-all duration-200"
+            className="flex-1 sm:flex-none px-4 py-2 bg-white border-2 border-primary-300 text-primary-600 font-medium rounded-xl hover:bg-primary-50 hover:border-primary-400 transition-all duration-200"
           >
             View Details
           </button>
         </div>
 
         {/* Secondary Actions */}
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-          <div className="flex items-center space-x-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-4 pt-4 border-t border-gray-100 space-y-2 sm:space-y-0">
+          <div className="flex items-center justify-center sm:justify-start space-x-3">
             <button
               onClick={() => onAddToCalendar(event)}
               className="flex items-center space-x-2 text-sm text-gray-600 hover:text-primary-600 transition-colors duration-200"
@@ -283,7 +283,7 @@ const EventCard: React.FC<EventCardProps> = ({
           {/* Expand/Collapse */}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
+            className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200 text-center sm:text-right"
           >
             {isExpanded ? 'Show Less' : 'Show More'}
           </button>

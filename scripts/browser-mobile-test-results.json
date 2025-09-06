@@ -1,0 +1,147 @@
+{
+  "timestamp": "2025-09-06T00:30:43.848Z",
+  "devices": [
+    {
+      "device": "iPhone SE",
+      "viewport": {
+        "width": 375,
+        "height": 667
+      },
+      "tests": [
+        {
+          "name": "mobileNavigation",
+          "passed": false,
+          "error": "Mobile menu button not found"
+        },
+        {
+          "name": "responsiveLayout",
+          "passed": false,
+          "error": "Missing responsive design or layout structure"
+        },
+        {
+          "name": "touchFriendlyButtons",
+          "passed": false,
+          "error": "No touch-friendly buttons found"
+        },
+        {
+          "name": "mobilePerformance",
+          "passed": false,
+          "error": "Navigation timeout of 30000 ms exceeded"
+        },
+        {
+          "name": "accessibility",
+          "passed": false,
+          "error": "Accessibility issues found"
+        }
+      ]
+    },
+    {
+      "device": "iPhone 12",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "tests": [
+        {
+          "name": "mobileNavigation",
+          "passed": false,
+          "error": "Mobile menu button not found"
+        },
+        {
+          "name": "responsiveLayout",
+          "passed": false,
+          "error": "Missing responsive design or layout structure"
+        },
+        {
+          "name": "touchFriendlyButtons",
+          "passed": false,
+          "error": "No touch-friendly buttons found"
+        },
+        {
+          "name": "mobilePerformance",
+          "passed": false,
+          "error": "Navigation timeout of 30000 ms exceeded"
+        },
+        {
+          "name": "accessibility",
+          "passed": false,
+          "error": "Accessibility issues found"
+        }
+      ]
+    },
+    {
+      "device": "iPhone 12 Pro Max",
+      "viewport": {
+        "width": 428,
+        "height": 926
+      },
+      "tests": [
+        {
+          "name": "mobileNavigation",
+          "passed": false,
+          "error": "Mobile menu button not found"
+        },
+        {
+          "name": "responsiveLayout",
+          "passed": false,
+          "error": "Missing responsive design or layout structure"
+        },
+        {
+          "name": "touchFriendlyButtons",
+          "passed": false,
+          "error": "No touch-friendly buttons found"
+        },
+        {
+          "name": "mobilePerformance",
+          "passed": false,
+          "error": "Navigation timeout of 30000 ms exceeded"
+        },
+        {
+          "name": "accessibility",
+          "passed": false,
+          "error": "Accessibility issues found"
+        }
+      ]
+    },
+    {
+      "device": "Samsung Galaxy S21",
+      "viewport": {
+        "width": 384,
+        "height": 854
+      },
+      "tests": [
+        {
+          "name": "mobileNavigation",
+          "passed": false,
+          "error": "Mobile menu button not found"
+        },
+        {
+          "name": "responsiveLayout",
+          "passed": false,
+          "error": "Missing responsive design or layout structure"
+        },
+        {
+          "name": "touchFriendlyButtons",
+          "passed": false,
+          "error": "No touch-friendly buttons found"
+        },
+        {
+          "name": "mobilePerformance",
+          "passed": false,
+          "error": "Navigation timeout of 30000 ms exceeded"
+        },
+        {
+          "name": "accessibility",
+          "passed": false,
+          "error": "Accessibility issues found"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total": 20,
+    "passed": 0,
+    "failed": 20,
+    "successRate": 0
+  }
+}

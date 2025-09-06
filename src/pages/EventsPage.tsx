@@ -302,13 +302,13 @@ const EventsPage: React.FC = () => {
         )}
 
         {/* View Toggle and Actions */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 mb-8">
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
             {/* View Mode Toggle */}
-            <div className="flex bg-gray-100 rounded-lg p-1">
+            <div className="flex bg-gray-100 rounded-lg p-1 w-full sm:w-auto">
               <button
                 onClick={() => setViewMode('list')}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                   viewMode === 'list'
                     ? 'bg-white text-primary-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -319,7 +319,7 @@ const EventsPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setViewMode('calendar')}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                   viewMode === 'calendar'
                     ? 'bg-white text-primary-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -333,7 +333,7 @@ const EventsPage: React.FC = () => {
             {/* Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`px-4 py-2 rounded-lg border transition-colors duration-200 ${
+              className={`w-full sm:w-auto px-4 py-2 rounded-lg border transition-colors duration-200 ${
                 showFilters
                   ? 'bg-primary-500 text-white border-primary-500'
                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
@@ -345,10 +345,10 @@ const EventsPage: React.FC = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
             <button
               onClick={generateICSFeed}
-              className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+              className="flex-1 sm:flex-none px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
             >
               <Download className="w-4 h-4 inline mr-2" />
               ICS Feed
@@ -356,7 +356,7 @@ const EventsPage: React.FC = () => {
             
             <button
               onClick={shareCalendar}
-              className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+              className="flex-1 sm:flex-none px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
             >
               <Share2 className="w-4 h-4 inline mr-2" />
               Share Calendar

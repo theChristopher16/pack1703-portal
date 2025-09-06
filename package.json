@@ -73,6 +73,7 @@
     "test:runner:user-management": "./scripts/test-runner.sh user-management",
     "test:runner:ai": "./scripts/test-runner.sh ai",
     "test:runner:coverage": "./scripts/test-runner.sh -c",
+    "test:mobile": "node scripts/mobile-test-runner.js",
     "eject": "react-scripts eject",
     "deploy": "npm run build && firebase deploy --only hosting",
     "deploy:all": "npm run build && firebase deploy",
@@ -104,6 +105,7 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^30.0.0",
-    "jsdom": "^26.1.0"
+    "jsdom": "^26.1.0",
+    "puppeteer": "^24.19.0"
   }
 }

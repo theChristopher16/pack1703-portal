@@ -1,0 +1,61 @@
+{
+  "timestamp": "2025-09-06T00:33:18.711Z",
+  "tests": [
+    {
+      "name": "Server Running",
+      "passed": true,
+      "details": "Status: 200"
+    },
+    {
+      "name": "Mobile CSS File",
+      "passed": true,
+      "details": "mobile.css found"
+    },
+    {
+      "name": "Mobile CSS Content",
+      "passed": true,
+      "details": "Media queries: true, Button sizing: true, Touch action: true"
+    },
+    {
+      "name": "Layout Component Mobile Fixes",
+      "passed": true,
+      "details": "Mobile menu: true, Navigation handler: true, React Router: true"
+    },
+    {
+      "name": "HomePage Mobile Fixes",
+      "passed": true,
+      "details": "Responsive text: true, Mobile buttons: true, Mobile padding: true"
+    },
+    {
+      "name": "EventsPage Mobile Fixes",
+      "passed": true,
+      "details": "Mobile layout: true, Mobile buttons: true, Mobile toggle: true"
+    },
+    {
+      "name": "EventCard Mobile Fixes",
+      "passed": true,
+      "details": "Mobile layout: true, Mobile buttons: true, Mobile spacing: true"
+    },
+    {
+      "name": "Mobile Testing Suite",
+      "passed": true,
+      "details": "Test suite: true, Test page: true"
+    },
+    {
+      "name": "Package.json Mobile Script",
+      "passed": true,
+      "details": "Script: node scripts/mobile-test-runner.js"
+    },
+    {
+      "name": "Tailwind Mobile Config",
+      "passed": true,
+      "details": "Config exists: true, Colors: true, Responsive: true"
+    }
+  ],
+  "summary": {
+    "total": 10,
+    "passed": 10,
+    "failed": 0,
+    "successRate": 100
+  }
+}

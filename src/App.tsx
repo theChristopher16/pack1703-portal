@@ -44,6 +44,7 @@ import UserManagement from './components/Admin/UserManagement';
 import ChatPage from './pages/ChatPage';
 import JoinPage from './pages/JoinPage';
 import HackerTab from './pages/HackerTab';
+import MobileTestingPage from './pages/MobileTestingPage';
 import { AdminProvider } from './contexts/AdminContext';
 import { MultiTenantProvider } from './contexts/MultiTenantContext';
 
@@ -51,6 +52,7 @@ import { MultiTenantProvider } from './contexts/MultiTenantContext';
 import './App.css';
 import './styles/accessibility.css';
 import './styles/components/cycling-scout-icon.css';
+import './styles/mobile.css';
 
 function App() {
   useEffect(() => {
@@ -128,6 +130,7 @@ function App() {
           <Route path="/admin/multi-tenant" element={<AdminLayout><MultiTenantManagement /></AdminLayout>} />
           <Route path="/admin/users" element={<AdminLayout><UserManagement /></AdminLayout>} />
           <Route path="/admin/settings" element={<AdminLayout><div className="max-w-7xl mx-auto px-4 py-8"><h1 className="text-2xl font-bold text-gray-900">Admin Settings - Coming Soon</h1></div></AdminLayout>} />
+          <Route path="/admin/mobile-testing" element={<AdminLayout><MobileTestingPage /></AdminLayout>} />
           
           {/* Root-only SOC Console */}
           <Route path="/admin/soc" element={<AdminLayout><HackerTab /></AdminLayout>} />

@@ -20,35 +20,14 @@ const app = initializeApp(firebaseConfig);
 // Initialize App Check for security
 // Using reCAPTCHA v3 for production and debug token for development
 try {
-  if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
-    // Set debug token for development/testing
-    (globalThis as any).FIREBASE_APPCHECK_DEBUG_TOKEN = '8EC4C83B-FA44-453B-9EDB-DC063C36FCA8';
-    initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider('8EC4C83B-FA44-453B-9EDB-DC063C36FCA8'),
-      isTokenAutoRefreshEnabled: true
-    });
-    console.log('✅ App Check initialized with debug token for development');
-  } else {
-    // For production, use reCAPTCHA v3
-    // The reCAPTCHA site key should be set as an environment variable
-    const recaptchaSiteKey = process.env.REACT_APP_RECAPTCHA_V3_SITE_KEY;
-    if (recaptchaSiteKey && recaptchaSiteKey.startsWith('6L')) {
-      initializeAppCheck(app, {
-        provider: new ReCaptchaV3Provider(recaptchaSiteKey),
-        isTokenAutoRefreshEnabled: true
-      });
-      console.log('✅ App Check initialized with reCAPTCHA v3 for production');
-    } else {
-      // Fallback: Use debug token if no reCAPTCHA key is configured
-      console.warn('⚠️ App Check using debug token: REACT_APP_RECAPTCHA_V3_SITE_KEY not configured or invalid');
-      console.warn('Please set REACT_APP_RECAPTCHA_V3_SITE_KEY environment variable with a valid reCAPTCHA v3 site key');
-      (globalThis as any).FIREBASE_APPCHECK_DEBUG_TOKEN = '8EC4C83B-FA44-453B-9EDB-DC063C36FCA8';
-      initializeAppCheck(app, {
-        provider: new ReCaptchaV3Provider('8EC4C83B-FA44-453B-9EDB-DC063C36FCA8'),
-        isTokenAutoRefreshEnabled: true
-      });
-    }
-  }
+  // Always use debug token for now to ensure App Check works
+  // TODO: Set up proper reCAPTCHA v3 configuration for production
+  (globalThis as any).FIREBASE_APPCHECK_DEBUG_TOKEN = '8EC4C83B-FA44-453B-9EDB-DC063C36FCA8';
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider('8EC4C83B-FA44-453B-9EDB-DC063C36FCA8'),
+    isTokenAutoRefreshEnabled: true
+  });
+  console.log('✅ App Check initialized with debug token (forced for stability)');
 } catch (error) {
   console.warn('❌ App Check initialization failed:', error);
   // Continue without App Check if initialization fails

@@ -4,6 +4,7 @@ import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, Messag
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { usePackNameConfig } from '../../hooks/useConfig';
 import { useAdmin } from '../../contexts/AdminContext';
+import { authService, UserRole } from '../../services/authService';
 import OfflineBanner from './OfflineBanner';
 import PWAInstallPrompt from '../PWAInstallPrompt/PWAInstallPrompt';
 import BackToTop from '../BackToTop/BackToTop';
@@ -15,6 +16,8 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<UserRole>(UserRole.ANONYMOUS);
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -27,6 +30,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Get admin context for role-based navigation
   const { state: adminState } = useAdmin();
   const isAdmin = adminState.currentUser?.role === 'super-admin' || adminState.currentUser?.role === 'root';
+
+  // Track authentication changes
+  useEffect(() => {
+    const unsubscribe = authService.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      if (user) {
+        // Get user role from the current user
+        const appUser = authService.getCurrentUser();
+        setUserRole(appUser?.role || UserRole.PARENT);
+      } else {
+        setUserRole(UserRole.ANONYMOUS);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Debug navigation issues
   useEffect(() => {
@@ -61,23 +80,57 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   //   // return navigation.sort((a, b) => pageViews[b.href] - pageViews[a.href]);
   // };
 
-  // Navigation ordered by expected usage frequency for a scouting pack
-  // Based on typical family priorities: communication, events, info, participation
-  const navigation = [
-    { name: 'Home', href: '/', icon: Home },
-    { name: 'Chat', href: '/chat', icon: MessageCircle }, // Communication is key
-    { name: 'Events', href: '/events', icon: Calendar }, // Events are crucial for families
-    { name: 'Announcements', href: '/announcements', icon: MessageSquare }, // Important updates
-    { name: 'Locations', href: '/locations', icon: MapPin }, // Where to go
-    { name: 'Resources', href: '/resources', icon: FileText }, // Reference materials
-    { name: 'Volunteer', href: '/volunteer', icon: Users }, // Participation
-    { name: 'Feedback', href: '/feedback', icon: MessageSquare }, // Input
-    { name: 'Data Audit', href: '/data-audit', icon: Shield }, // Privacy & transparency
-    { name: 'Analytics', href: '/analytics', icon: BarChart3 }, // Admin/advanced
-  ];
+  // Role-based navigation - simplified for stay-at-home moms
+  const getNavigationForRole = (role: UserRole) => {
+    // Essential features for stay-at-home moms (anonymous and parent roles)
+    const essentialNavigation = [
+      { name: 'Home', href: '/', icon: Home },
+      { name: 'Events', href: '/events', icon: Calendar }, // Most important - what's happening
+      { name: 'Announcements', href: '/announcements', icon: MessageSquare }, // Important updates
+      { name: 'Locations', href: '/locations', icon: MapPin }, // Where to go
+      { name: 'Volunteer', href: '/volunteer', icon: Users }, // How to help
+    ];
+
+    // Additional features for authenticated parents
+    const parentNavigation = [
+      ...essentialNavigation,
+      { name: 'Chat', href: '/chat', icon: MessageCircle }, // Communication
+      { name: 'Resources', href: '/resources', icon: FileText }, // Reference materials
+      { name: 'Feedback', href: '/feedback', icon: MessageSquare }, // Input
+    ];
+
+    // Full navigation for volunteers and above
+    const fullNavigation = [
+      ...parentNavigation,
+      { name: 'Data Audit', href: '/data-audit', icon: Shield }, // Privacy & transparency
+    ];
+
+    // Admin/advanced features
+    const adminNavigation = [
+      ...fullNavigation,
+      { name: 'Analytics', href: '/analytics', icon: BarChart3 }, // Admin/advanced
+    ];
+
+    switch (role) {
+      case UserRole.ANONYMOUS:
+        return essentialNavigation;
+      case UserRole.PARENT:
+        return parentNavigation;
+      case UserRole.VOLUNTEER:
+      case UserRole.AI_ASSISTANT:
+        return fullNavigation;
+      case UserRole.ADMIN:
+      case UserRole.ROOT:
+        return adminNavigation;
+      default:
+        return essentialNavigation;
+    }
+  };
+
+  const navigation = getNavigationForRole(userRole);
 
   // Admin-specific navigation items
-  const adminNavigation = [
+  const adminOnlyNavigation = [
     { name: 'User Management', href: '/admin/users', icon: UserPlus, roles: ['super-admin', 'root'] },
     { name: 'Cost Management', href: '/admin/cost-management', icon: DollarSign, roles: ['super-admin', 'root'] },
     { name: 'Event Management', href: '/admin/events', icon: Calendar, roles: ['super-admin', 'root'] },
@@ -218,7 +271,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             <div className="px-4 py-2">
                               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Admin</span>
                             </div>
-                            {adminNavigation
+                            {adminOnlyNavigation
                               .filter(item => !item.roles || (adminState.currentUser?.role && item.roles.includes(adminState.currentUser.role)))
                               .map((item) => {
                                 const Icon = item.icon;
@@ -336,7 +389,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <div className="px-3 py-2">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Admin</span>
                   </div>
-                  {adminNavigation
+                  {adminOnlyNavigation
                     .filter(item => !item.roles || (adminState.currentUser?.role && item.roles.includes(adminState.currentUser.role)))
                     .map((item) => {
                       const Icon = item.icon;

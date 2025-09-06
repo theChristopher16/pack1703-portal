@@ -17,6 +17,7 @@ import AnnouncementsPage from './pages/AnnouncementsPage';
 import ResourcesPage from './pages/ResourcesPage';
 import VolunteerPage from './pages/VolunteerPage';
 import FeedbackPage from './pages/FeedbackPage';
+import DataAuditPage from './pages/DataAuditPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import AnalyticsDashboard from './components/Analytics/AnalyticsDashboard';
 import AnalyticsTest from './components/Analytics/AnalyticsTest';
@@ -100,6 +101,7 @@ function App() {
           <Route path="/volunteer" element={<Layout><VolunteerPage /></Layout>} />
           <Route path="/chat" element={<Layout><ChatPage /></Layout>} />
           <Route path="/feedback" element={<Layout><FeedbackPage /></Layout>} />
+          <Route path="/data-audit" element={<Layout><DataAuditPage /></Layout>} />
           <Route path="/analytics" element={<Layout><AnalyticsDashboard /></Layout>} />
           <Route path="/analytics/test" element={<Layout><AnalyticsTest /></Layout>} />
           <Route path="/forms-demo" element={<Layout><FormsDemoPage /></Layout>} />

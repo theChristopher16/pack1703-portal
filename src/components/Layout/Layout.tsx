@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, MessageCircle, ChevronDown, BarChart3, Settings, DollarSign, UserPlus, Cog } from 'lucide-react';
+import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, MessageCircle, ChevronDown, BarChart3, Settings, DollarSign, UserPlus, Cog, Shield } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { usePackNameConfig } from '../../hooks/useConfig';
 import { useAdmin } from '../../contexts/AdminContext';
@@ -71,6 +71,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Resources', href: '/resources', icon: FileText }, // Reference materials
     { name: 'Volunteer', href: '/volunteer', icon: Users }, // Participation
     { name: 'Feedback', href: '/feedback', icon: MessageSquare }, // Input
+    { name: 'Data Audit', href: '/data-audit', icon: Shield }, // Privacy & transparency
     { name: 'Analytics', href: '/analytics', icon: BarChart3 }, // Admin/advanced
   ];
 

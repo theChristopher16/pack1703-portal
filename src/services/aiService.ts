@@ -5,7 +5,7 @@ import chatService from './chatService';
 import configService from './configService';
 import { externalApiService } from './externalApiService';
 import emailMonitorService from './emailMonitorService';
-import dataAuditService from './dataAuditService';
+import { dataAuditService } from './dataAuditService';
 import firestoreService from './firestore';
 
 export interface AIResponse {

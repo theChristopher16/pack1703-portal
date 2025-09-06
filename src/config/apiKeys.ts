@@ -24,55 +24,25 @@ const initializeKeys = async () => {
     }
   } catch (error) {
     console.warn('⚠️ Failed to load keys from secure key manager, using environment variables:', error);
-    // Fallback to environment variables only
+    // Fallback to environment variables only - handle missing keys gracefully
     API_KEYS = {
       ADMIN: {
         // OpenAI removed - using Firebase AI Logic with Gemini
-        GOOGLE_MAPS: process.env.REACT_APP_ADMIN_GOOGLE_MAPS_API_KEY || (() => {
-          console.error('❌ SECURITY ERROR: REACT_APP_ADMIN_GOOGLE_MAPS_API_KEY not set!');
-          throw new Error('Admin Google Maps API key is required but not configured');
-        })(),
-        OPENWEATHER: process.env.REACT_APP_ADMIN_OPENWEATHER_API_KEY || (() => {
-          console.error('❌ SECURITY ERROR: REACT_APP_ADMIN_OPENWEATHER_API_KEY not set!');
-          throw new Error('Admin OpenWeather API key is required but not configured');
-        })(),
-        GOOGLE_PLACES: process.env.REACT_APP_ADMIN_GOOGLE_PLACES_API_KEY || (() => {
-          console.error('❌ SECURITY ERROR: REACT_APP_ADMIN_GOOGLE_PLACES_API_KEY not set!');
-          throw new Error('Admin Google Places API key is required but not configured');
-        })(),
+        GOOGLE_MAPS: process.env.REACT_APP_ADMIN_GOOGLE_MAPS_API_KEY || '',
+        OPENWEATHER: process.env.REACT_APP_ADMIN_OPENWEATHER_API_KEY || '',
+        GOOGLE_PLACES: process.env.REACT_APP_ADMIN_GOOGLE_PLACES_API_KEY || '',
       },
       USER: {
         // OpenAI removed - using Firebase AI Logic with Gemini
-        GOOGLE_MAPS: process.env.REACT_APP_USER_GOOGLE_MAPS_API_KEY || (() => {
-          console.error('❌ SECURITY ERROR: REACT_APP_USER_GOOGLE_MAPS_API_KEY not set!');
-          throw new Error('User Google Maps API key is required but not configured');
-        })(),
-        OPENWEATHER: process.env.REACT_APP_USER_OPENWEATHER_API_KEY || (() => {
-          console.error('❌ SECURITY ERROR: REACT_APP_USER_OPENWEATHER_API_KEY not set!');
-          throw new Error('User OpenWeather API key is required but not configured');
-        })(),
-        GOOGLE_PLACES: process.env.REACT_APP_USER_GOOGLE_PLACES_API_KEY || (() => {
-          console.error('❌ SECURITY ERROR: REACT_APP_USER_GOOGLE_PLACES_API_KEY not set!');
-          throw new Error('User Google Places API key is required but not configured');
-        })(),
+        GOOGLE_MAPS: process.env.REACT_APP_USER_GOOGLE_MAPS_API_KEY || '',
+        OPENWEATHER: process.env.REACT_APP_USER_OPENWEATHER_API_KEY || '',
+        GOOGLE_PLACES: process.env.REACT_APP_USER_GOOGLE_PLACES_API_KEY || '',
       },
-      PHONE_VALIDATION: process.env.REACT_APP_PHONE_VALIDATION_API_KEY || (() => {
-        console.error('❌ SECURITY ERROR: REACT_APP_PHONE_VALIDATION_API_KEY not set!');
-        throw new Error('Phone validation API key is required but not configured');
-      })(),
-      TENOR: process.env.REACT_APP_TENOR_API_KEY || (() => {
-        console.error('❌ SECURITY ERROR: REACT_APP_TENOR_API_KEY not set!');
-        throw new Error('Tenor API key is required but not configured');
-      })(),
+      PHONE_VALIDATION: process.env.REACT_APP_PHONE_VALIDATION_API_KEY || '',
+      TENOR: process.env.REACT_APP_TENOR_API_KEY || '',
       RECAPTCHA: {
-        SITE_KEY: process.env.REACT_APP_RECAPTCHA_V3_SITE_KEY || (() => {
-          console.error('❌ SECURITY ERROR: REACT_APP_RECAPTCHA_V3_SITE_KEY not set!');
-          throw new Error('reCAPTCHA v3 site key is required but not configured');
-        })(),
-        SECRET_KEY: process.env.REACT_APP_RECAPTCHA_V3_SECRET_KEY || (() => {
-          console.error('❌ SECURITY ERROR: REACT_APP_RECAPTCHA_V3_SECRET_KEY not set!');
-          throw new Error('reCAPTCHA v3 secret key is required but not configured');
-        })(),
+        SITE_KEY: process.env.REACT_APP_RECAPTCHA_V3_SITE_KEY || '',
+        SECRET_KEY: process.env.REACT_APP_RECAPTCHA_V3_SECRET_KEY || '',
       },
     };
     console.log('🔑 API keys loaded from environment variables');

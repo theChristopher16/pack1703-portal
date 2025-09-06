@@ -40,12 +40,11 @@ class SecureKeyManager {
       return config.fallback;
     }
 
-    // Throw error if required and not found
+    // For required keys, return empty string instead of throwing error
+    // This allows the app to continue running with limited functionality
     if (config.required) {
-      const error = `❌ SECURITY ERROR: ${keyName} is required but not configured!`;
-      console.error(error);
-      console.error(`Please set ${keyName} environment variable`);
-      throw new Error(`${keyName} is required but not configured`);
+      console.warn(`⚠️ ${keyName} is required but not configured - using empty string`);
+      return '';
     }
 
     return '';

@@ -53,22 +53,50 @@ export interface WeatherData {
 }
 
 class ExternalApiService {
-  private googleMapsKey: string;
-  private phoneValidationKey: string;
-  private openWeatherKey: string;
+  private googleMapsKey: string | null = null;
+  private phoneValidationKey: string | null = null;
+  private openWeatherKey: string | null = null;
 
   constructor() {
-    // Use admin keys for external API service (this service is used by admin functions)
-    this.googleMapsKey = API_KEYS.ADMIN.GOOGLE_MAPS;
-    this.phoneValidationKey = API_KEYS.PHONE_VALIDATION;
-    this.openWeatherKey = API_KEYS.ADMIN.OPENWEATHER;
+    // Keys will be loaded lazily when needed
+  }
+
+  /**
+   * Get Google Maps API key (lazy loading)
+   */
+  private getGoogleMapsKey(): string {
+    if (this.googleMapsKey === null) {
+      this.googleMapsKey = API_KEYS.ADMIN?.GOOGLE_MAPS || '';
+    }
+    return this.googleMapsKey || '';
+  }
+
+  /**
+   * Get Phone Validation API key (lazy loading)
+   */
+  private getPhoneValidationKey(): string {
+    if (this.phoneValidationKey === null) {
+      this.phoneValidationKey = API_KEYS.PHONE_VALIDATION || '';
+    }
+    return this.phoneValidationKey || '';
+  }
+
+  /**
+   * Get OpenWeather API key (lazy loading)
+   */
+  private getOpenWeatherKey(): string {
+    if (this.openWeatherKey === null) {
+      this.openWeatherKey = API_KEYS.ADMIN?.OPENWEATHER || '';
+    }
+    return this.openWeatherKey || '';
   }
 
   /**
    * Verify location using Google Maps Geocoding API
    */
   async verifyLocation(address: string): Promise<LocationData> {
-    if (!FEATURE_FLAGS.LOCATION_VERIFICATION || !this.googleMapsKey) {
+    const googleMapsKey = this.getGoogleMapsKey();
+    if (!FEATURE_FLAGS.LOCATION_VERIFICATION || !googleMapsKey) {
       return this.getFallbackLocationData();
     }
 
@@ -82,7 +110,7 @@ class ExternalApiService {
       }
 
       const response = await fetch(
-        `${API_CONFIG.ADMIN.GOOGLE_MAPS.baseUrl}${API_CONFIG.ADMIN.GOOGLE_MAPS.geocodingEndpoint}?address=${encodeURIComponent(address)}&key=${this.googleMapsKey}`
+        `${API_CONFIG.ADMIN.GOOGLE_MAPS.baseUrl}${API_CONFIG.ADMIN.GOOGLE_MAPS.geocodingEndpoint}?address=${encodeURIComponent(address)}&key=${googleMapsKey}`
       );
 
       if (!response.ok) {
@@ -125,13 +153,14 @@ class ExternalApiService {
    * Get place details using Google Places API
    */
   async getPlaceDetails(placeId: string): Promise<BusinessInfo | null> {
-    if (!FEATURE_FLAGS.BUSINESS_INFO_ENRICHMENT || !this.googleMapsKey) {
+    const googleMapsKey = this.getGoogleMapsKey();
+    if (!FEATURE_FLAGS.BUSINESS_INFO_ENRICHMENT || !googleMapsKey) {
       return null;
     }
 
     try {
       const response = await fetch(
-        `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}${API_CONFIG.ADMIN.GOOGLE_PLACES.detailsEndpoint}?place_id=${placeId}&fields=name,rating,formatted_phone_number,website,opening_hours,types,price_level,user_ratings_total&key=${this.googleMapsKey}`
+        `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}${API_CONFIG.ADMIN.GOOGLE_PLACES.detailsEndpoint}?place_id=${placeId}&fields=name,rating,formatted_phone_number,website,opening_hours,types,price_level,user_ratings_total&key=${googleMapsKey}`
       );
 
       if (!response.ok) {
@@ -164,7 +193,8 @@ class ExternalApiService {
    * Get business information using Google Places Nearby Search
    */
   async getBusinessInfo(lat: number, lng: number, query?: string): Promise<BusinessInfo | null> {
-    if (!FEATURE_FLAGS.BUSINESS_INFO_ENRICHMENT || !this.googleMapsKey) {
+    const googleMapsKey = this.getGoogleMapsKey();
+    if (!FEATURE_FLAGS.BUSINESS_INFO_ENRICHMENT || !googleMapsKey) {
       return null;
     }
 
@@ -173,10 +203,10 @@ class ExternalApiService {
       
       if (query) {
         // Use text search for better results with business names
-        url = `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}${API_CONFIG.ADMIN.GOOGLE_PLACES.textSearchEndpoint}?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=1000&key=${this.googleMapsKey}`;
+        url = `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}${API_CONFIG.ADMIN.GOOGLE_PLACES.textSearchEndpoint}?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=1000&key=${googleMapsKey}`;
       } else {
         // Use nearby search
-        url = `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}${API_CONFIG.ADMIN.GOOGLE_PLACES.nearbySearchEndpoint}?location=${lat},${lng}&radius=1000&key=${this.googleMapsKey}`;
+        url = `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}${API_CONFIG.ADMIN.GOOGLE_PLACES.nearbySearchEndpoint}?location=${lat},${lng}&radius=1000&key=${googleMapsKey}`;
       }
 
       const response = await fetch(url);
@@ -218,13 +248,14 @@ class ExternalApiService {
    * Get parking information using Google Places API
    */
   async getParkingInfo(lat: number, lng: number): Promise<ParkingInfo | null> {
-    if (!FEATURE_FLAGS.PARKING_INFO || !this.googleMapsKey) {
+    const googleMapsKey = this.getGoogleMapsKey();
+    if (!FEATURE_FLAGS.PARKING_INFO || !googleMapsKey) {
       return null;
     }
 
     try {
       const response = await fetch(
-        `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}${API_CONFIG.ADMIN.GOOGLE_PLACES.nearbySearchEndpoint}?location=${lat},${lng}&radius=500&type=parking&key=${this.googleMapsKey}`
+        `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}${API_CONFIG.ADMIN.GOOGLE_PLACES.nearbySearchEndpoint}?location=${lat},${lng}&radius=500&type=parking&key=${googleMapsKey}`
       );
 
       if (!response.ok) {
@@ -246,7 +277,7 @@ class ExternalApiService {
 
       // Check for street parking indicators
       const streetParkingResponse = await fetch(
-        `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}${API_CONFIG.ADMIN.GOOGLE_PLACES.nearbySearchEndpoint}?location=${lat},${lng}&radius=200&keyword=parking&key=${this.googleMapsKey}`
+        `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}${API_CONFIG.ADMIN.GOOGLE_PLACES.nearbySearchEndpoint}?location=${lat},${lng}&radius=200&keyword=parking&key=${googleMapsKey}`
       );
 
       if (streetParkingResponse.ok) {
@@ -294,7 +325,8 @@ class ExternalApiService {
    * Validate phone number using NumLookupAPI
    */
   async validatePhoneNumber(phone: string): Promise<PhoneValidationResult> {
-    if (!FEATURE_FLAGS.PHONE_VALIDATION || !this.phoneValidationKey || this.phoneValidationKey === 'demo_key') {
+    const phoneValidationKey = this.getPhoneValidationKey();
+    if (!FEATURE_FLAGS.PHONE_VALIDATION || !phoneValidationKey || phoneValidationKey === 'demo_key') {
       return this.getFallbackPhoneValidation();
     }
 
@@ -308,7 +340,7 @@ class ExternalApiService {
       }
 
       const response = await fetch(
-        `${API_CONFIG.PHONE_VALIDATION.baseUrl}${API_CONFIG.PHONE_VALIDATION.endpoint}?apikey=${this.phoneValidationKey}&number=${phone}`
+        `${API_CONFIG.PHONE_VALIDATION.baseUrl}${API_CONFIG.PHONE_VALIDATION.endpoint}?apikey=${phoneValidationKey}&number=${phone}`
       );
 
       if (!response.ok) {
@@ -341,7 +373,8 @@ class ExternalApiService {
    * Get weather forecast using OpenWeather API
    */
   async getWeatherForecast(lat: number, lng: number): Promise<WeatherData | null> {
-    if (!FEATURE_FLAGS.WEATHER_INTEGRATION || !this.openWeatherKey || this.openWeatherKey === 'demo_key') {
+    const openWeatherKey = this.getOpenWeatherKey();
+    if (!FEATURE_FLAGS.WEATHER_INTEGRATION || !openWeatherKey || openWeatherKey === 'demo_key') {
       return null;
     }
 
@@ -355,7 +388,7 @@ class ExternalApiService {
       }
 
       const response = await fetch(
-        `${API_CONFIG.ADMIN.OPENWEATHER.baseUrl}${API_CONFIG.ADMIN.OPENWEATHER.currentEndpoint}?lat=${lat}&lon=${lng}&appid=${this.openWeatherKey}&units=imperial`
+        `${API_CONFIG.ADMIN.OPENWEATHER.baseUrl}${API_CONFIG.ADMIN.OPENWEATHER.currentEndpoint}?lat=${lat}&lon=${lng}&appid=${openWeatherKey}&units=imperial`
       );
 
       if (!response.ok) {
@@ -410,12 +443,12 @@ class ExternalApiService {
       phoneValidation: {
         requestsToday: 0,
         costEstimate: 0,
-        status: this.phoneValidationKey === 'demo_key' ? 'inactive' : 'active',
+        status: this.getPhoneValidationKey() === 'demo_key' ? 'inactive' : 'active',
       },
       openWeather: {
         requestsToday: 0,
         costEstimate: 0,
-        status: this.openWeatherKey === 'demo_key' ? 'inactive' : 'active',
+        status: this.getOpenWeatherKey() === 'demo_key' ? 'inactive' : 'active',
       },
       googlePlaces: {
         requestsToday: 0,
@@ -464,13 +497,14 @@ class ExternalApiService {
    * Get address suggestions for autocomplete
    */
   async getAddressSuggestions(query: string): Promise<string[]> {
-    if (!this.googleMapsKey) {
+    const googleMapsKey = this.getGoogleMapsKey();
+    if (!googleMapsKey) {
       return [];
     }
 
     try {
       const response = await fetch(
-        `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}/place/autocomplete/json?input=${encodeURIComponent(query)}&types=establishment&key=${this.googleMapsKey}`
+        `${API_CONFIG.ADMIN.GOOGLE_PLACES.baseUrl}/place/autocomplete/json?input=${encodeURIComponent(query)}&types=establishment&key=${googleMapsKey}`
       );
 
       if (!response.ok) {

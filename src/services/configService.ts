@@ -186,6 +186,19 @@ class ConfigService {
    * Initialize default configurations
    */
   async initializeDefaultConfigs(userId: string = 'system'): Promise<void> {
+    // Check if user is authenticated before attempting to write
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      if (!auth.currentUser) {
+        console.log('Config initialization skipped - no authenticated user');
+        return;
+      }
+    } catch (error) {
+      console.log('Config initialization skipped - auth check failed');
+      return;
+    }
+
     const defaultConfigs: Array<{
       key: string;
       value: string | number | boolean | string[];
@@ -301,27 +314,36 @@ class ConfigService {
       }
     ];
 
-    const batch = writeBatch(db);
-    
-    for (const config of defaultConfigs) {
-      const configRef = doc(db, this.COLLECTION, config.key);
-      const existingDoc = await getDoc(configRef);
+    try {
+      const batch = writeBatch(db);
       
-      if (!existingDoc.exists()) {
-        const now = Timestamp.now();
-        batch.set(configRef, {
-          ...config,
-          id: config.key,
-          isEditable: true,
-          createdAt: now,
-          createdBy: userId,
-          updatedAt: now,
-          updatedBy: userId
-        });
+      for (const config of defaultConfigs) {
+        const configRef = doc(db, this.COLLECTION, config.key);
+        const existingDoc = await getDoc(configRef);
+        
+        if (!existingDoc.exists()) {
+          const now = Timestamp.now();
+          batch.set(configRef, {
+            ...config,
+            id: config.key,
+            isEditable: true,
+            createdAt: now,
+            createdBy: userId,
+            updatedAt: now,
+            updatedBy: userId
+          });
+        }
       }
-    }
 
-    await batch.commit();
+      await batch.commit();
+    } catch (error: any) {
+      // Handle permission errors gracefully
+      if (error?.code === 'permission-denied') {
+        console.log('Config initialization skipped - insufficient permissions');
+        return;
+      }
+      throw error;
+    }
   }
 
   /**

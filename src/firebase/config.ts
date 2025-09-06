@@ -1,7 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
-import { getAnalytics, isSupported } from 'firebase/analytics';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -61,7 +60,8 @@ setPersistence(auth, browserLocalPersistence).catch((error) => {
   console.error('Error setting auth persistence:', error);
 });
 
-// Initialize Analytics conditionally (only if supported and in production)
-export const analytics = isSupported().then(yes => yes ? getAnalytics(app) : null);
+// Analytics disabled - no measurement ID configured
+// This prevents the "id=undefined" error from Google Analytics
+export const analytics = Promise.resolve(null);
 
 export default app;

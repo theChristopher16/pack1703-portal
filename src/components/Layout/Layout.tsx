@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, MessageCircle, ChevronDown, BarChart3, Settings, Shield, DollarSign, UserPlus, Cog } from 'lucide-react';
+import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, MessageCircle, ChevronDown, BarChart3, Settings, DollarSign, UserPlus, Cog } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { usePackNameConfig, useContactConfigs } from '../../hooks/useConfig';
 import { useAdmin } from '../../contexts/AdminContext';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Users, 
   UserPlus, 
@@ -64,15 +64,7 @@ const AdminUsers: React.FC = () => {
     'Pack Leadership', 'Committee', 'Volunteer'
   ];
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  useEffect(() => {
-    filterUsers();
-  }, [users, searchTerm, roleFilter, denFilter]);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -90,7 +82,7 @@ const AdminUsers: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [addNotification]);
 
   const buildUserHierarchy = (users: AppUser[]): UserWithChildren[] => {
     const userMap = new Map<string, UserWithChildren>();
@@ -138,7 +130,7 @@ const AdminUsers: React.FC = () => {
     return rootUsers;
   };
 
-  const filterUsers = () => {
+  const filterUsers = useCallback(() => {
     let filtered = [...users];
 
     // Search filter
@@ -162,7 +154,15 @@ const AdminUsers: React.FC = () => {
     }
 
     setFilteredUsers(filtered);
-  };
+  }, [users, searchTerm, roleFilter, denFilter]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  useEffect(() => {
+    filterUsers();
+  }, [filterUsers]);
 
   const handleEditUser = (user: UserWithChildren) => {
     setSelectedUser(user);

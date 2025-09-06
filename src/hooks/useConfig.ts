@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import configService from '../services/configService';
 
 interface UseConfigOptions {
@@ -29,7 +29,7 @@ export const useConfig = (
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -41,7 +41,7 @@ export const useConfig = (
     } finally {
       setLoading(false);
     }
-  };
+  }, [key, defaultValue]);
 
   useEffect(() => {
     fetchConfig();
@@ -57,7 +57,7 @@ export const useConfig = (
         clearInterval(intervalId);
       }
     };
-  }, [key, cacheKey, refreshInterval, defaultValue]);
+  }, [fetchConfig, refreshInterval]);
 
   const refresh = async () => {
     await fetchConfig();
@@ -80,7 +80,7 @@ export const useConfigs = (
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchConfigs = async () => {
+  const fetchConfigs = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -106,11 +106,11 @@ export const useConfigs = (
     } finally {
       setLoading(false);
     }
-  };
+  }, [keys, options.defaultValue]);
 
   useEffect(() => {
     fetchConfigs();
-  }, [keys.join(','), options.defaultValue]);
+  }, [fetchConfigs]);
 
   const refresh = async () => {
     await fetchConfigs();
@@ -133,7 +133,7 @@ export const useConfigsByCategory = (
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchConfigsByCategory = async () => {
+  const fetchConfigsByCategory = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -145,11 +145,11 @@ export const useConfigsByCategory = (
     } finally {
       setLoading(false);
     }
-  };
+  }, [category]);
 
   useEffect(() => {
     fetchConfigsByCategory();
-  }, [category]);
+  }, [fetchConfigsByCategory]);
 
   const refresh = async () => {
     await fetchConfigsByCategory();

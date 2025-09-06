@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 interface UseNavigationTimeoutOptions {
   timeoutMs?: number;
@@ -12,7 +11,6 @@ export const useNavigationTimeout = (
   options: UseNavigationTimeoutOptions = {}
 ) => {
   const { timeoutMs = 10000, onTimeout, enabled = true } = options;
-  const navigate = useNavigate();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
 

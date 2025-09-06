@@ -27,6 +27,19 @@ export const AdminDashboard: React.FC = () => {
   const [selectedEntityType, setSelectedEntityType] = useState<EntityType>('event');
   const [selectedAction, setSelectedAction] = useState<AdminActionType>('create');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'config' | 'ai-chat' | 'channels'>('dashboard');
+  const [isTabLoading, setIsTabLoading] = useState(false);
+
+  const handleTabChange = (newTab: 'dashboard' | 'config' | 'ai-chat' | 'channels') => {
+    if (newTab === activeTab) return;
+    
+    setIsTabLoading(true);
+    
+    // Use setTimeout to prevent blocking the UI thread
+    setTimeout(() => {
+      setActiveTab(newTab);
+      setIsTabLoading(false);
+    }, 50);
+  };
 
   useEffect(() => {
     if (state.isAuthenticated) {
@@ -213,7 +226,7 @@ export const AdminDashboard: React.FC = () => {
         {/* Navigation Tabs */}
         <div className="flex space-x-1 mb-8 bg-gray-100 rounded-lg p-1">
           <button
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => handleTabChange('dashboard')}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
               activeTab === 'dashboard'
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -223,7 +236,7 @@ export const AdminDashboard: React.FC = () => {
             Dashboard
           </button>
           <button
-            onClick={() => setActiveTab('ai-chat')}
+            onClick={() => handleTabChange('ai-chat')}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
               activeTab === 'ai-chat'
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -233,7 +246,7 @@ export const AdminDashboard: React.FC = () => {
             Solyn
           </button>
           <button
-            onClick={() => setActiveTab('config')}
+            onClick={() => handleTabChange('config')}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
               activeTab === 'config'
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -243,7 +256,7 @@ export const AdminDashboard: React.FC = () => {
             Configuration
           </button>
           <button
-            onClick={() => setActiveTab('channels')}
+            onClick={() => handleTabChange('channels')}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
               activeTab === 'channels'
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -342,7 +355,12 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Main Content Area */}
-        {activeTab === 'dashboard' ? (
+        {isTabLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <span className="ml-3 text-gray-600">Loading...</span>
+          </div>
+        ) : activeTab === 'dashboard' ? (
           <SystemMonitor />
         ) : activeTab === 'config' ? (
           <ConfigManager />

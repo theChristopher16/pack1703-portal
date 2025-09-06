@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { authService } from '../services/authService';
 import { firestoreService } from '../services/firestore';
@@ -55,11 +55,7 @@ const AdminSettings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    loadAccountData();
-  }, []);
-
-  const loadAccountData = async () => {
+  const loadAccountData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -82,7 +78,11 @@ const AdminSettings: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser?.uid]);
+
+  useEffect(() => {
+    loadAccountData();
+  }, [loadAccountData]);
 
   const handleLinkAccount = async (provider: 'google' | 'apple' | 'microsoft') => {
     try {

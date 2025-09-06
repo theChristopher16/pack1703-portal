@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { Link } from 'react-router-dom';
-import { Shield, Mail, Bell, ArrowLeft, Home } from 'lucide-react';
+import { Shield, ArrowLeft, Home } from 'lucide-react';
 import DatabaseMonitor from '../components/Admin/DatabaseMonitor';
 import SystemMonitor from '../components/Admin/SystemMonitor';
 import AccountLinking from '../components/Admin/AccountLinking';
@@ -32,10 +32,10 @@ const AdminDashboard: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-6xl font-display font-bold mb-6 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-4xl lg:text-6xl font-display font-bold mb-6 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
             Admin Dashboard
           </h1>
-          <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed mb-8">
+          <p className="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed mb-8">
             Welcome back, <span className="font-semibold text-primary-700">{currentUser?.displayName || 'Admin'}</span>!
           </p>
           
@@ -43,54 +43,54 @@ const AdminDashboard: React.FC = () => {
           <div className="flex justify-center mb-8">
             <Link
               to="/"
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-semibold"
+              className="inline-flex items-center px-4 py-2 md:px-6 md:py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg md:rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-semibold text-sm md:text-base"
             >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              <Home className="w-5 h-5 mr-2" />
+              <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 mr-2" />
+              <Home className="w-4 h-4 md:w-5 md:h-5 mr-2" />
               Back to User Portal
             </Link>
           </div>
         </div>
         
         {/* Quick Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-6 shadow-lg">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-8">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl md:rounded-2xl p-3 md:p-6 shadow-lg">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100 text-sm font-medium">Total Events</p>
-                <p className="text-3xl font-bold">24</p>
+                <p className="text-blue-100 text-xs md:text-sm font-medium">Total Events</p>
+                <p className="text-lg md:text-3xl font-bold">24</p>
               </div>
-              <div className="text-blue-200 text-4xl">📅</div>
+              <div className="text-blue-200 text-lg md:text-4xl">📅</div>
             </div>
           </div>
           
-          <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-2xl p-6 shadow-lg">
+          <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl md:rounded-2xl p-3 md:p-6 shadow-lg">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm font-medium">Active Locations</p>
-                <p className="text-3xl font-bold">12</p>
+                <p className="text-green-100 text-xs md:text-sm font-medium">Active Locations</p>
+                <p className="text-lg md:text-3xl font-bold">12</p>
               </div>
-              <div className="text-green-200 text-4xl">📍</div>
+              <div className="text-green-200 text-lg md:text-4xl">📍</div>
             </div>
           </div>
           
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl p-6 shadow-lg">
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl md:rounded-2xl p-3 md:p-6 shadow-lg">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-purple-100 text-sm font-medium">Volunteer Needs</p>
-                <p className="text-3xl font-bold">18</p>
+                <p className="text-purple-100 text-xs md:text-sm font-medium">Volunteer Needs</p>
+                <p className="text-lg md:text-3xl font-bold">18</p>
               </div>
-              <div className="text-purple-200 text-4xl">🤝</div>
+              <div className="text-purple-200 text-lg md:text-4xl">🤝</div>
             </div>
           </div>
           
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-2xl p-6 shadow-lg">
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl md:rounded-2xl p-3 md:p-6 shadow-lg">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-orange-100 text-sm font-medium">Packing Lists</p>
-                <p className="text-3xl font-bold">8</p>
+                <p className="text-orange-100 text-xs md:text-sm font-medium">Packing Lists</p>
+                <p className="text-lg md:text-3xl font-bold">8</p>
               </div>
-              <div className="text-orange-200 text-4xl">📋</div>
+              <div className="text-orange-200 text-lg md:text-4xl">📋</div>
             </div>
           </div>
         </div>

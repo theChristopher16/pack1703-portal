@@ -8,6 +8,6 @@ describe('Basic Test Setup', () => {
   });
 
   it('should handle string operations', () => {
-    expect('hello' + ' world').toBe('hello world');
+    expect('hello world').toBe('hello world');
   });
 });

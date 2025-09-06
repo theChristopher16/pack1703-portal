@@ -419,4 +419,5 @@ class DataAuditService {
   }
 }
 
-export default new DataAuditService();
+const dataAuditService = new DataAuditService();
+export default dataAuditService;

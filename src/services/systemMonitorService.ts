@@ -371,4 +371,5 @@ class SystemMonitorService {
   }
 }
 
-export default new SystemMonitorService();
+const systemMonitorService = new SystemMonitorService();
+export default systemMonitorService;

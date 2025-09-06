@@ -1368,4 +1368,5 @@ class EmailMonitorService {
   }
 }
 
-export default new EmailMonitorService();
+const emailMonitorService = new EmailMonitorService();
+export default emailMonitorService;

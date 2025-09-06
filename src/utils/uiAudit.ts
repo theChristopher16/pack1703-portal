@@ -151,11 +151,13 @@ export const responsiveBreakpoints = [
   { name: 'Desktop Large', width: 1920, height: 1080 },
 ];
 
-export default {
+const uiAuditConfig = {
   knownUIIssues,
   uiAuditChecklist,
   browserAuditChecks,
   pagesToAudit,
   responsiveBreakpoints
 };
+
+export default uiAuditConfig;
 

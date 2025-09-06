@@ -3,9 +3,6 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import systemMonitorService from './systemMonitorService';
 import chatService from './chatService';
 import configService from './configService';
-import { adminService } from './adminService';
-import { analytics } from './analytics';
-import { SecurityAuditService } from './securityAuditService';
 import { externalApiService } from './externalApiService';
 import emailMonitorService from './emailMonitorService';
 import dataAuditService from './dataAuditService';
@@ -2307,9 +2304,9 @@ class AIService {
     } catch (error) {
       console.error('Error validating phone:', error);
       // Fallback to basic regex validation
-      const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+      const phoneRegex = /^[+]?[1-9]\d{0,15}$/;
       return {
-        valid: phoneRegex.test(phone.replace(/[\s\-\(\)]/g, '')),
+        valid: phoneRegex.test(phone.replace(/[\s\-()]/g, '')),
         formatted: phone
       };
     }
@@ -2833,4 +2830,5 @@ class AIService {
   }
 }
 
-export default new AIService();
+const aiService = new AIService();
+export default aiService;

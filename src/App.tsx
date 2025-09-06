@@ -47,11 +47,6 @@ import HackerTab from './pages/HackerTab';
 import { AdminProvider } from './contexts/AdminContext';
 import { MultiTenantProvider } from './contexts/MultiTenantContext';
 
-// Styles
-import './App.css';
-import './styles/accessibility.css';
-import './styles/components/cycling-scout-icon.css';
-
 function App() {
   useEffect(() => {
     // Register service worker for PWA

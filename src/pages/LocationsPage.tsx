@@ -15,10 +15,13 @@ const LocationsPage: React.FC = () => {
     const fetchLocations = async () => {
       try {
         setLoading(true);
+        console.log('Fetching locations...');
         const locations = await firestoreService.getLocations();
+        console.log('Locations fetched:', locations.length);
         setFilteredLocations(locations);
       } catch (err) {
         console.error('Error fetching locations:', err);
+        // Show user-friendly error message
         setFilteredLocations([]);
       } finally {
         setLoading(false);
@@ -48,7 +51,37 @@ const LocationsPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12 flex items-center justify-center">
         <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-lg text-gray-600">Loading locations...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (filteredLocations.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-100 to-secondary-100 text-primary-700 rounded-full text-sm font-medium mb-6">
+              <MapPin className="w-4 h-4 mr-2" />
+              No Locations Available
+            </div>
+            
+            <h1 className="text-4xl md:text-6xl font-display font-bold mb-6 text-gray-900">
+              <span className="text-gradient">Scout Pack</span> Locations
+            </h1>
+            
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
+              We're working on adding locations to our map. Check back soon for meeting spots, adventure destinations, and community venues.
+            </p>
+            
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft max-w-md mx-auto">
+              <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">Coming Soon</h3>
+              <p className="text-gray-500">Location data will be available shortly</p>
+            </div>
+          </div>
         </div>
       </div>
     );

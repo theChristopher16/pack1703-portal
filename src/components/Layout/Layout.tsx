@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, MessageCircle, ChevronDown, BarChart3, Settings, DollarSign, UserPlus, Cog } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
-import { usePackNameConfig, useContactConfigs } from '../../hooks/useConfig';
+import { usePackNameConfig } from '../../hooks/useConfig';
 import { useAdmin } from '../../contexts/AdminContext';
 import OfflineBanner from './OfflineBanner';
 import PWAInstallPrompt from '../PWAInstallPrompt/PWAInstallPrompt';
@@ -22,12 +22,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   
   // Load configuration values
   const { value: packName } = usePackNameConfig();
-  const { primaryEmail, supportEmail, loading: contactLoading } = useContactConfigs();
   
   // Get admin context for role-based navigation
   const { state: adminState } = useAdmin();
   const isAdmin = adminState.currentUser?.role === 'super-admin' || adminState.currentUser?.role === 'root';
-  const isRoot = adminState.currentUser?.role === 'root';
 
   // Debug navigation issues
   useEffect(() => {

@@ -72,9 +72,16 @@ const LocationMap: React.FC<LocationMapProps> = ({
           // Add markers for each location
           const markers: any[] = [];
           locations.forEach((location) => {
-            if (location.geo?.lat && location.geo?.lng) {
+            if (location.geo?.lat && location.geo?.lng && 
+                typeof location.geo.lat === 'number' && 
+                typeof location.geo.lng === 'number' &&
+                location.geo.lat >= -90 && location.geo.lat <= 90 &&
+                location.geo.lng >= -180 && location.geo.lng <= 180) {
               try {
-                const marker = L.marker([location.geo.lat, location.geo.lng])
+                const marker = L.marker([location.geo.lat, location.geo.lng], {
+                  title: location.name,
+                  alt: location.name
+                })
                   .addTo(map)
                   .bindPopup(createPopupContent(location))
                   .on('click', () => onLocationSelect(location));
@@ -83,6 +90,8 @@ const LocationMap: React.FC<LocationMapProps> = ({
               } catch (error) {
                 console.warn(`Failed to create marker for location ${location.name}:`, error);
               }
+            } else {
+              console.warn(`Invalid coordinates for location ${location.name}:`, location.geo);
             }
           });
           markersRef.current = markers;
@@ -91,14 +100,34 @@ const LocationMap: React.FC<LocationMapProps> = ({
           if (markers.length > 0) {
             setTimeout(() => {
               try {
-                const group = new (L as any).featureGroup(markers);
-                if (group.getBounds().isValid()) {
-                  map.fitBounds(group.getBounds().pad(0.1));
+                // Ensure all markers are properly initialized
+                const validMarkers = markers.filter(marker => {
+                  try {
+                    const pos = marker.getLatLng();
+                    return pos && typeof pos.lat === 'number' && typeof pos.lng === 'number';
+                  } catch (e) {
+                    return false;
+                  }
+                });
+                
+                if (validMarkers.length > 0) {
+                  const group = new (L as any).featureGroup(validMarkers);
+                  const bounds = group.getBounds();
+                  if (bounds && bounds.isValid()) {
+                    map.fitBounds(bounds.pad(0.1));
+                  } else {
+                    // Fallback: center on first valid marker
+                    const firstMarker = validMarkers[0];
+                    const pos = firstMarker.getLatLng();
+                    map.setView([pos.lat, pos.lng], 12);
+                  }
                 }
               } catch (error) {
                 console.warn('Failed to fit map bounds:', error);
+                // Fallback: center on default location
+                map.setView([40.7103, -89.6144], 11);
               }
-            }, 500);
+            }, 1000); // Increased delay to ensure markers are ready
           }
         });
 
@@ -213,9 +242,26 @@ const LocationMap: React.FC<LocationMapProps> = ({
               if (mapInstanceRef.current && markersRef.current.length > 0) {
                 try {
                   const L = await import('leaflet');
-                  const group = new (L as any).featureGroup(markersRef.current);
-                  if (group.getBounds().isValid()) {
-                    mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
+                  const validMarkers = markersRef.current.filter(marker => {
+                    try {
+                      const pos = marker.getLatLng();
+                      return pos && typeof pos.lat === 'number' && typeof pos.lng === 'number';
+                    } catch (e) {
+                      return false;
+                    }
+                  });
+                  
+                  if (validMarkers.length > 0) {
+                    const group = new (L as any).featureGroup(validMarkers);
+                    const bounds = group.getBounds();
+                    if (bounds && bounds.isValid()) {
+                      mapInstanceRef.current.fitBounds(bounds.pad(0.1));
+                    } else {
+                      // Fallback: center on first valid marker
+                      const firstMarker = validMarkers[0];
+                      const pos = firstMarker.getLatLng();
+                      mapInstanceRef.current.setView([pos.lat, pos.lng], 12);
+                    }
                   }
                 } catch (error) {
                   console.warn('Failed to fit bounds in button click:', error);

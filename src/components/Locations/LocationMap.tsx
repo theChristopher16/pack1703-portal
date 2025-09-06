@@ -72,14 +72,25 @@ const LocationMap: React.FC<LocationMapProps> = ({
 
         if (!mapRef.current || mapInstanceRef.current) return;
 
-        // Initialize map
+        // Ensure the map container is visible and has dimensions
+        if (mapRef.current.offsetWidth === 0 || mapRef.current.offsetHeight === 0) {
+          console.warn('Map container has no dimensions, retrying in 100ms');
+          setTimeout(initMap, 100);
+          return;
+        }
+
+        // Initialize map with better error handling
         const map = L.map(mapRef.current, {
           zoomControl: true,
           attributionControl: true,
           preferCanvas: false,
           zoomSnap: 0.1,
-          zoomDelta: 0.5
+          zoomDelta: 0.5,
+          // Add these options to prevent positioning issues
+          renderer: L.canvas(),
+          worldCopyJump: false
         }).setView([40.7103, -89.6144], 11);
+        
         mapInstanceRef.current = map;
 
         // Add OpenStreetMap tiles with fallback
@@ -94,69 +105,96 @@ const LocationMap: React.FC<LocationMapProps> = ({
           console.warn('Tile loading error:', e);
         });
 
-        // Wait for map to be ready before adding markers
+        // Wait for map to be ready and tiles to load before adding markers
         map.whenReady(() => {
-          // Add markers for each location
-          const markers: any[] = [];
-          locations.forEach((location) => {
-            if (location.geo?.lat && location.geo?.lng && 
-                typeof location.geo.lat === 'number' && 
-                typeof location.geo.lng === 'number' &&
-                location.geo.lat >= -90 && location.geo.lat <= 90 &&
-                location.geo.lng >= -180 && location.geo.lng <= 180) {
-              try {
-                const marker = L.marker([location.geo.lat, location.geo.lng], {
-                  title: location.name,
-                  alt: location.name
-                })
-                  .addTo(map)
-                  .bindPopup(createPopupContent(location))
-                  .on('click', () => onLocationSelect(location));
-
-                markers.push(marker);
-              } catch (error) {
-                console.warn(`Failed to create marker for location ${location.name}:`, error);
-              }
-            } else {
-              console.warn(`Location ${location.name} has no valid coordinates - skipping marker creation`);
-            }
-          });
-          markersRef.current = markers;
-
-          // Fit map to show all markers
-          if (markers.length > 0) {
-            setTimeout(() => {
-              try {
-                // Ensure all markers are properly initialized
-                const validMarkers = markers.filter(marker => {
+          // Additional delay to ensure tiles are loaded
+          setTimeout(() => {
+            try {
+              // Add markers for each location
+              const markers: any[] = [];
+              locations.forEach((location) => {
+                if (location.geo?.lat && location.geo?.lng && 
+                    typeof location.geo.lat === 'number' && 
+                    typeof location.geo.lng === 'number' &&
+                    location.geo.lat >= -90 && location.geo.lat <= 90 &&
+                    location.geo.lng >= -180 && location.geo.lng <= 180) {
                   try {
-                    const pos = marker.getLatLng();
-                    return pos && typeof pos.lat === 'number' && typeof pos.lng === 'number';
-                  } catch (e) {
-                    return false;
+                    const marker = L.marker([location.geo.lat, location.geo.lng], {
+                      title: location.name,
+                      alt: location.name
+                    })
+                      .addTo(map)
+                      .bindPopup(createPopupContent(location))
+                      .on('click', () => onLocationSelect(location));
+
+                    markers.push(marker);
+                  } catch (error) {
+                    console.warn(`Failed to create marker for location ${location.name}:`, error);
                   }
-                });
-                
-                if (validMarkers.length > 0) {
-                  const group = new (L as any).featureGroup(validMarkers);
-                  const bounds = group.getBounds();
-                  if (bounds && bounds.isValid()) {
-                    map.fitBounds(bounds.pad(0.1));
-                  } else {
-                    // Fallback: center on first valid marker
-                    const firstMarker = validMarkers[0];
-                    const pos = firstMarker.getLatLng();
-                    map.setView([pos.lat, pos.lng], 12);
-                  }
+                } else {
+                  console.warn(`Location ${location.name} has no valid coordinates - skipping marker creation`);
                 }
-              } catch (error) {
-                console.warn('Failed to fit map bounds:', error);
-                // Fallback: center on default location
-                map.setView([40.7103, -89.6144], 11);
+              });
+              markersRef.current = markers;
+
+              // Fit map to show all markers with better error handling
+              if (markers.length > 0) {
+                setTimeout(() => {
+                  try {
+                    // Ensure all markers are properly initialized
+                    const validMarkers = markers.filter(marker => {
+                      try {
+                        const pos = marker.getLatLng();
+                        return pos && typeof pos.lat === 'number' && typeof pos.lng === 'number';
+                      } catch (e) {
+                        return false;
+                      }
+                    });
+                    
+                    if (validMarkers.length > 0) {
+                      const group = new (L as any).featureGroup(validMarkers);
+                      const bounds = group.getBounds();
+                      if (bounds && bounds.isValid()) {
+                        // Use invalidateSize to ensure map is properly sized
+                        map.invalidateSize();
+                        map.fitBounds(bounds.pad(0.1));
+                      } else {
+                        // Fallback: center on first valid marker
+                        const firstMarker = validMarkers[0];
+                        const pos = firstMarker.getLatLng();
+                        map.invalidateSize();
+                        map.setView([pos.lat, pos.lng], 12);
+                      }
+                    }
+                  } catch (error) {
+                    console.warn('Failed to fit map bounds:', error);
+                    // Fallback: center on default location
+                    map.invalidateSize();
+                    map.setView([40.7103, -89.6144], 11);
+                  }
+                }, 1500); // Increased delay to ensure everything is ready
               }
-            }, 1000); // Increased delay to ensure markers are ready
-          }
+            } catch (error) {
+              console.error('Error adding markers:', error);
+            }
+          }, 500); // Wait for tiles to load
         });
+
+        // Handle map resize events
+        const handleResize = () => {
+          if (mapInstanceRef.current) {
+            setTimeout(() => {
+              mapInstanceRef.current.invalidateSize();
+            }, 100);
+          }
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        // Cleanup resize listener
+        return () => {
+          window.removeEventListener('resize', handleResize);
+        };
 
       } catch (error) {
         console.error('Failed to load map:', error);
@@ -169,7 +207,11 @@ const LocationMap: React.FC<LocationMapProps> = ({
 
     return () => {
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        try {
+          mapInstanceRef.current.remove();
+        } catch (error) {
+          console.warn('Error removing map:', error);
+        }
         mapInstanceRef.current = null;
       }
     };
@@ -255,11 +297,14 @@ const LocationMap: React.FC<LocationMapProps> = ({
                     const group = new (L as any).featureGroup(validMarkers);
                     const bounds = group.getBounds();
                     if (bounds && bounds.isValid()) {
+                      // Use invalidateSize to ensure map is properly sized
+                      mapInstanceRef.current.invalidateSize();
                       mapInstanceRef.current.fitBounds(bounds.pad(0.1));
                     } else {
                       // Fallback: center on first valid marker
                       const firstMarker = validMarkers[0];
                       const pos = firstMarker.getLatLng();
+                      mapInstanceRef.current.invalidateSize();
                       mapInstanceRef.current.setView([pos.lat, pos.lng], 12);
                     }
                   }
@@ -277,6 +322,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
           <button
             onClick={() => {
               if (mapInstanceRef.current) {
+                mapInstanceRef.current.invalidateSize();
                 mapInstanceRef.current.setView([40.7103, -89.6144], 11);
               }
             }}

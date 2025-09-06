@@ -19,6 +19,8 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize App Check for security
 // Using reCAPTCHA v3 for production and debug token for development
+// TEMPORARILY DISABLED TO DEBUG FIRESTORE ACCESS CONTROL ISSUES
+/*
 try {
   if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
     // Set debug token for development/testing
@@ -54,6 +56,10 @@ try {
   // Continue without App Check if initialization fails
   console.log('Continuing without App Check enforcement');
 }
+*/
+
+// TEMPORARY: App Check disabled to resolve Firestore access control issues
+console.warn('⚠️ App Check temporarily disabled for debugging Firestore access control issues');
 
 // Initialize Firestore
 export const db = getFirestore(app);

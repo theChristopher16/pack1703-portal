@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Filter, Download, Share2 } from 'lucide-react';
+import { Calendar, Filter, Share2 } from 'lucide-react';
 
 // 🔒 AGENT WORKING: FullCalendar Integration - [2025-01-28]
 // ✅ COMPLETED: FullCalendar integration replacing mock calendar
@@ -132,42 +132,6 @@ const EventCalendar: React.FC<EventCalendarProps> = ({
     );
   };
 
-  const generateICSFeed = async () => {
-    try {
-      // Import Firebase Functions
-      const { getFunctions, httpsCallable } = await import('firebase/functions');
-      const functions = getFunctions();
-      const icsFeed = httpsCallable(functions, 'icsFeed');
-      
-      // Call the Cloud Function with current filters
-      const result = await icsFeed({
-        categories: selectedCategories.length > 0 ? selectedCategories : undefined,
-        denTags: selectedDens.length > 0 ? selectedDens : undefined,
-        startDate: undefined, // Could add date range filters if needed
-        endDate: undefined
-      });
-      
-      const data = result.data as any;
-      if (data.success && data.icsContent) {
-        // Create and download the ICS file
-        const blob = new Blob([data.icsContent], { type: 'text/calendar' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `pack1703-events-${new Date().toISOString().split('T')[0]}.ics`;
-        link.click();
-        URL.revokeObjectURL(url);
-        
-        console.log(`ICS feed generated with ${data.eventCount} events`);
-      } else {
-        console.error('Failed to generate ICS feed:', data);
-        alert('Failed to generate ICS feed. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error generating ICS feed:', error);
-      alert('Error generating ICS feed. Please try again.');
-    }
-  };
 
   const shareCalendar = async () => {
     if (navigator.share) {
@@ -459,14 +423,6 @@ const EventCalendar: React.FC<EventCalendarProps> = ({
           >
             <Filter className="w-4 h-4 inline mr-2" />
             Filters
-          </button>
-          
-          <button
-            onClick={generateICSFeed}
-            className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-          >
-            <Download className="w-4 h-4 inline mr-2" />
-            ICS Feed
           </button>
           
           <button

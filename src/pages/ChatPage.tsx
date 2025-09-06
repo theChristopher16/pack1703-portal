@@ -720,6 +720,69 @@ const ChatPage: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  // Reinitialize chat when authentication state changes
+  useEffect(() => {
+    if (authLoading) return; // Wait for auth check to complete
+    
+    if (!isAuthenticated) {
+      // User signed out - cleanup chat
+      if (isConnected) {
+        chatService.cleanup();
+        setIsConnected(false);
+        setCurrentUser(null);
+        setUsers([]);
+        setChannels([]);
+        setMessages([]);
+      }
+      setIsLoading(false);
+      return;
+    }
+
+    // User signed in - reinitialize chat with new user data
+    const reinitializeChat = async () => {
+      try {
+        console.log('Reinitializing chat for authenticated user...');
+        setIsLoading(true);
+        setError(null);
+        
+        // Cleanup existing chat session
+        if (isConnected) {
+          chatService.cleanup();
+        }
+        
+        // Initialize chat service with new user data
+        const user = await chatService.reinitialize();
+        console.log('Current user reinitialized:', user);
+        setCurrentUser(user);
+        
+        // Load channels and users
+        const channelData = await chatService.getChannels();
+        setChannels(channelData);
+        
+        const userData = await chatService.getOnlineUsers();
+        setUsers(userData);
+        
+        setIsConnected(true);
+        setIsLoading(false);
+        console.log('Chat reinitialization complete');
+        
+        // Set up real-time subscriptions
+        const unsubscribeUsers = chatService.subscribeToOnlineUsers(setUsers);
+        
+        return () => {
+          unsubscribeUsers();
+        };
+      } catch (error) {
+        console.error('Failed to reinitialize chat:', error);
+        setIsConnected(false);
+        setError('Unable to reconnect to chat server. Please refresh the page.');
+        setIsLoading(false);
+      }
+    };
+
+    reinitializeChat();
+  }, [isAuthenticated, authLoading]); // Re-run when auth state changes
+
   // Initialize chat (only for authenticated users)
   useEffect(() => {
     if (authLoading) return; // Wait for auth check to complete

@@ -1021,6 +1021,20 @@ class ChatService {
     }
   }
 
+  // Clear current user session and reinitialize
+  async reinitialize(): Promise<ChatUser> {
+    console.log('Reinitializing chat service...');
+    
+    // Cleanup existing session
+    this.cleanup();
+    
+    // Clear cached user data
+    SessionManager.clearUserFromStorage();
+    
+    // Initialize with fresh user data
+    return await this.initialize();
+  }
+
   private getDefaultChannels(): ChatChannel[] {
     return [
       {

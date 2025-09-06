@@ -16,6 +16,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { authService } from './authService';
 
 // User session management
 export interface ChatUser {
@@ -174,7 +175,36 @@ class SessionManager {
     return user;
   }
 
-  static getOrCreateUser(): ChatUser {
+  static async getOrCreateUser(): Promise<ChatUser> {
+    // First check if user is authenticated via Firebase Auth
+    const authenticatedUser = authService.getCurrentUser();
+    
+    if (authenticatedUser) {
+      // User is authenticated - use their real name
+      const existingUser = this.getUserFromStorage();
+      
+      if (existingUser && existingUser.id && existingUser.name) {
+        // Update existing user with authenticated info
+        const updatedUser: ChatUser = {
+          ...existingUser as ChatUser,
+          name: authenticatedUser.displayName || authenticatedUser.email || 'Authenticated User',
+          isOnline: true,
+          lastSeen: new Date(),
+          sessionId: this.generateSessionId(),
+          isAdmin: existingUser.isAdmin || false,
+          userAgent: existingUser.userAgent || navigator.userAgent,
+          ipHash: existingUser.ipHash || this.generateIPHash()
+        };
+        this.saveUserToStorage(updatedUser);
+        return updatedUser;
+      } else {
+        // Create new authenticated user
+        const realName = authenticatedUser.displayName || authenticatedUser.email || 'Authenticated User';
+        return this.createNewUser(realName);
+      }
+    }
+    
+    // User is not authenticated - check for existing anonymous user
     const existingUser = this.getUserFromStorage();
     
     if (existingUser && existingUser.id && existingUser.name) {
@@ -192,7 +222,7 @@ class SessionManager {
       return updatedUser;
     }
 
-    // Create new user with automatic scout-themed name
+    // Create new anonymous user with automatic scout-themed name
     const scoutAdjectives = [
       'Brave', 'Swift', 'Wise', 'Noble', 'Bright', 'Wild', 'Free', 'Bold', 'Calm', 'True',
       'Quick', 'Sharp', 'Clear', 'Strong', 'Fair', 'Kind', 'Good', 'Pure', 'Fresh', 'New',
@@ -234,7 +264,7 @@ class ChatService {
   }
 
   async initialize(): Promise<ChatUser> {
-    this.currentUser = SessionManager.getOrCreateUser();
+    this.currentUser = await SessionManager.getOrCreateUser();
     
     // Mark user as online
     this.currentUser.isOnline = true;
@@ -253,7 +283,7 @@ class ChatService {
   }
 
   async initializeAsAdmin(): Promise<ChatUser> {
-    this.currentUser = SessionManager.getOrCreateUser();
+    this.currentUser = await SessionManager.getOrCreateUser();
     
     // Set admin status and mark as online
     this.currentUser.isAdmin = true;

@@ -3,7 +3,7 @@ const { getFunctions, httpsCallable } = require('firebase/functions');
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyD6QerA4QW2KKrBqgDJvFwhvAHc6WobKX0",
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "YOUR_FIREBASE_API_KEY_HERE",
   authDomain: "pack-1703-portal.firebaseapp.com",
   projectId: "pack-1703-portal",
   storageBucket: "pack-1703-portal.firebasestorage.app",

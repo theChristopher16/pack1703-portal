@@ -5,29 +5,25 @@
 ### ✅ **ADMIN API Keys (CONFIGURED)**
 These are already set up and working:
 
-1. **OpenAI API Key** - `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`
-   - **Purpose**: AI collaboration, system monitoring, advanced AI features
-   - **Usage**: Admin functions only
-   - **Cost**: $0.002 per 1K tokens
-   - **Limit**: 10,000 requests/day
-
-2. **Google Maps API Key** - `AIzaSyC1nkEYq0YP89BwS_An_sMc3Kn4FJY2Nos`
+1. **Google Maps API Key** - `AIzaSyYOUR_GOOGLE_MAPS_KEY_HERE`
    - **Purpose**: Location verification, geocoding, admin location management
    - **Usage**: Admin functions only
    - **Cost**: $5 per 1000 requests
    - **Limit**: 5,000 requests/day
 
-3. **OpenWeather API Key** - `a769d61ef03910861ff1734bb254f87c`
+2. **OpenWeather API Key** - `your_openweather_key_here`
    - **Purpose**: Weather monitoring, admin weather features
    - **Usage**: Admin functions only
    - **Cost**: $1 per 1000 requests
    - **Limit**: 2,000 requests/day
 
-4. **Google Places API Key** - `AIzaSyC1nkEYq0YP89BwS_An_sMc3Kn4FJY2Nos` (same as Google Maps)
+3. **Google Places API Key** - `AIzaSyYOUR_GOOGLE_PLACES_KEY_HERE` (same as Google Maps)
    - **Purpose**: Business information, parking info, admin place details
    - **Usage**: Admin functions only
    - **Cost**: $17 per 1000 requests
    - **Limit**: 5,000 requests/day
+
+**Note**: OpenAI has been removed and replaced with Firebase AI Logic (Gemini) for AI features.
 
 ---
 

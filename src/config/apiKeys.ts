@@ -1,6 +1,7 @@
 // API Keys Configuration - SECURE: All keys must be provided via environment variables
 // ⚠️  SECURITY WARNING: Never hardcode API keys in source code!
 // All keys must be set via environment variables or Google Secret Manager
+// Note: OpenAI has been replaced with Firebase AI Logic (Gemini)
 
 import { secureKeyManager } from '../services/secureKeyManager';
 
@@ -26,10 +27,7 @@ const initializeKeys = async () => {
     // Fallback to environment variables only
     API_KEYS = {
       ADMIN: {
-        OPENAI: process.env.REACT_APP_ADMIN_OPENAI_API_KEY || (() => {
-          console.error('❌ SECURITY ERROR: REACT_APP_ADMIN_OPENAI_API_KEY not set!');
-          throw new Error('Admin OpenAI API key is required but not configured');
-        })(),
+        // OpenAI removed - using Firebase AI Logic with Gemini
         GOOGLE_MAPS: process.env.REACT_APP_ADMIN_GOOGLE_MAPS_API_KEY || (() => {
           console.error('❌ SECURITY ERROR: REACT_APP_ADMIN_GOOGLE_MAPS_API_KEY not set!');
           throw new Error('Admin Google Maps API key is required but not configured');
@@ -44,10 +42,7 @@ const initializeKeys = async () => {
         })(),
       },
       USER: {
-        OPENAI: process.env.REACT_APP_USER_OPENAI_API_KEY || (() => {
-          console.error('❌ SECURITY ERROR: REACT_APP_USER_OPENAI_API_KEY not set!');
-          throw new Error('User OpenAI API key is required but not configured');
-        })(),
+        // OpenAI removed - using Firebase AI Logic with Gemini
         GOOGLE_MAPS: process.env.REACT_APP_USER_GOOGLE_MAPS_API_KEY || (() => {
           console.error('❌ SECURITY ERROR: REACT_APP_USER_GOOGLE_MAPS_API_KEY not set!');
           throw new Error('User Google Maps API key is required but not configured');
@@ -100,19 +95,10 @@ export const getApiKeys = async (): Promise<Record<string, any>> => {
 // Export synchronous access (for backward compatibility)
 export { API_KEYS };
 
-// API Configuration Settings - Separated by Admin and User permissions
+// API Configuration Settings - Updated to remove OpenAI
 export const API_CONFIG = {
   // Admin API Configuration - Full access and higher limits
   ADMIN: {
-    OPENAI: {
-      baseUrl: 'https://api.openai.com/v1',
-      chatEndpoint: '/chat/completions',
-      modelsEndpoint: '/models',
-      maxRequestsPerDay: 10000, // Higher limit for admin functions
-      costPerRequest: 0.002, // $0.002 per 1K tokens
-      allowedModels: ['gpt-4', 'gpt-3.5-turbo', 'gpt-4-turbo'],
-      maxTokensPerRequest: 4000,
-    },
     GOOGLE_MAPS: {
       baseUrl: 'https://maps.googleapis.com/maps/api',
       geocodingEndpoint: '/geocode/json',
@@ -140,15 +126,6 @@ export const API_CONFIG = {
   
   // User API Configuration - Limited access and lower limits
   USER: {
-    OPENAI: {
-      baseUrl: 'https://api.openai.com/v1',
-      chatEndpoint: '/chat/completions',
-      modelsEndpoint: '/models',
-      maxRequestsPerDay: 1000, // Lower limit for user functions
-      costPerRequest: 0.002, // $0.002 per 1K tokens
-      allowedModels: ['gpt-3.5-turbo'], // Limited to cheaper model
-      maxTokensPerRequest: 1000, // Lower token limit
-    },
     GOOGLE_MAPS: {
       baseUrl: 'https://maps.googleapis.com/maps/api',
       geocodingEndpoint: '/geocode/json',
@@ -197,16 +174,16 @@ export const API_CONFIG = {
   },
 };
 
-// Feature Flags - Control which features are enabled
+// Feature Flags - Updated to remove OpenAI features
 export const FEATURE_FLAGS = {
   // Admin Features
-  ADMIN_AI_COLLABORATION: true, // AI collaboration between organizations
+  ADMIN_AI_COLLABORATION: true, // AI collaboration using Firebase AI Logic
   ADMIN_SYSTEM_MONITORING: true, // System monitoring and analytics
-  ADMIN_ADVANCED_AI: true, // Advanced AI features for admins
+  ADMIN_ADVANCED_AI: true, // Advanced AI features using Gemini
   
   // User Features
-  USER_CHAT_ASSISTANCE: true, // Basic chat assistance for users
-  USER_BASIC_AI: true, // Basic AI features for users
+  USER_CHAT_ASSISTANCE: true, // Basic chat assistance using Firebase AI Logic
+  USER_BASIC_AI: true, // Basic AI features using Gemini
   
   // Shared Features
   LOCATION_VERIFICATION: true,
@@ -256,16 +233,10 @@ export const FALLBACK_BEHAVIOR = {
   },
 };
 
-// API Status Tracking - Separated by Admin and User
+// API Status Tracking - Updated to remove OpenAI
 export const API_STATUS = {
   // Admin API Status
   ADMIN: {
-    OPENAI: {
-      status: 'active',
-      lastCheck: new Date(),
-      requestsToday: 0,
-      errorsToday: 0,
-    },
     GOOGLE_MAPS: {
       status: 'active',
       lastCheck: new Date(),
@@ -288,12 +259,6 @@ export const API_STATUS = {
   
   // User API Status
   USER: {
-    OPENAI: {
-      status: 'active', // User OpenAI API key now configured
-      lastCheck: new Date(),
-      requestsToday: 0,
-      errorsToday: 0,
-    },
     GOOGLE_MAPS: {
       status: 'active', // User API key now configured
       lastCheck: new Date(),
@@ -380,17 +345,15 @@ export const getFallbackBehavior = (service: keyof typeof FALLBACK_BEHAVIOR) => 
   return FALLBACK_BEHAVIOR[service];
 };
 
-// Cost Estimation Functions - Updated for Admin/User separation
+// Cost Estimation Functions - Updated to remove OpenAI
 export const estimateApiCosts = () => {
   const adminCosts = {
-    openai: API_STATUS.ADMIN.OPENAI.requestsToday * API_CONFIG.ADMIN.OPENAI.costPerRequest,
     googleMaps: API_STATUS.ADMIN.GOOGLE_MAPS.requestsToday * API_CONFIG.ADMIN.GOOGLE_MAPS.costPerRequest,
     openWeather: API_STATUS.ADMIN.OPENWEATHER.requestsToday * API_CONFIG.ADMIN.OPENWEATHER.costPerRequest,
     googlePlaces: API_STATUS.ADMIN.GOOGLE_PLACES.requestsToday * API_CONFIG.ADMIN.GOOGLE_PLACES.costPerRequest,
   };
   
   const userCosts = {
-    openai: API_STATUS.USER.OPENAI.requestsToday * API_CONFIG.USER.OPENAI.costPerRequest,
     googleMaps: API_STATUS.USER.GOOGLE_MAPS.requestsToday * API_CONFIG.USER.GOOGLE_MAPS.costPerRequest,
     openWeather: API_STATUS.USER.OPENWEATHER.requestsToday * API_CONFIG.USER.OPENWEATHER.costPerRequest,
     googlePlaces: API_STATUS.USER.GOOGLE_PLACES.requestsToday * API_CONFIG.USER.GOOGLE_PLACES.costPerRequest,
@@ -425,17 +388,15 @@ export const estimateApiCosts = () => {
   };
 };
 
-// API Key Validation - Updated for Admin/User separation
+// API Key Validation - Updated to remove OpenAI
 export const validateApiKeys = () => {
   const adminValidation = {
-    openai: isValidApiKey(API_KEYS.ADMIN?.OPENAI || ''),
     googleMaps: isValidApiKey(API_KEYS.ADMIN?.GOOGLE_MAPS || ''),
     openWeather: isValidApiKey(API_KEYS.ADMIN?.OPENWEATHER || ''),
     googlePlaces: isValidApiKey(API_KEYS.ADMIN?.GOOGLE_PLACES || ''),
   };
   
   const userValidation = {
-    openai: isValidApiKey(API_KEYS.USER?.OPENAI || ''),
     googleMaps: isValidApiKey(API_KEYS.USER?.GOOGLE_MAPS || ''),
     openWeather: isValidApiKey(API_KEYS.USER?.OPENWEATHER || ''),
     googlePlaces: isValidApiKey(API_KEYS.USER?.GOOGLE_PLACES || ''),

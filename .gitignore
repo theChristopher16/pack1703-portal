@@ -19,6 +19,11 @@
 .env.test.local
 .env.production.local
 
+# Environment files with sensitive data
+.env
+.env.*
+!.env.example
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -50,3 +55,18 @@ gcp/*.tfstate.*
 
 # OS
 Thumbs.db
+
+# Security - API Keys and Secrets
+*api-key*
+*secret*
+*password*
+*credential*
+*key*
+!*key*.example
+!*key*.template
+
+# Test files that might contain keys
+test-*.js
+!test-*.example.js
+populate-*.js
+!populate-*.example.js

@@ -6,7 +6,7 @@ const { getFirestore, doc, setDoc, getDoc, Timestamp } = require('firebase/fires
 
 // Firebase configuration - update with your actual config
 const firebaseConfig = {
-  apiKey: "AIzaSyBxGxGxGxGxGxGxGxGxGxGxGxGxGxGxGx",
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "YOUR_FIREBASE_API_KEY_HERE",
   authDomain: "pack-1703-portal.firebaseapp.com",
   projectId: "pack-1703-portal",
   storageBucket: "pack-1703-portal.appspot.com",

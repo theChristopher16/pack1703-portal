@@ -123,12 +123,7 @@ class SecureKeyManager {
    */
   async getAllKeys(): Promise<Record<string, string>> {
     const keyConfigs: Record<string, KeyConfig> = {
-      // Admin Keys
-      'REACT_APP_ADMIN_OPENAI_API_KEY': {
-        name: 'admin-openai-key',
-        required: true,
-        description: 'Admin OpenAI API key for premium features'
-      },
+      // Admin Keys (OpenAI removed - using Firebase AI Logic with Gemini)
       'REACT_APP_ADMIN_GOOGLE_MAPS_API_KEY': {
         name: 'admin-google-maps-key',
         required: true,
@@ -145,12 +140,7 @@ class SecureKeyManager {
         description: 'Admin Google Places API key'
       },
 
-      // User Keys
-      'REACT_APP_USER_OPENAI_API_KEY': {
-        name: 'user-openai-key',
-        required: true,
-        description: 'User OpenAI API key for basic features'
-      },
+      // User Keys (OpenAI removed - using Firebase AI Logic with Gemini)
       'REACT_APP_USER_GOOGLE_MAPS_API_KEY': {
         name: 'user-google-maps-key',
         required: true,

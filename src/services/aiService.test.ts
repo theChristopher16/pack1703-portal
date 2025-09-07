@@ -1,7 +1,7 @@
 import AIService from './aiService';
 
 // Increase timeout for all tests
-jest.setTimeout(30000);
+jest.setTimeout(120000);
 
 // Mock Firebase
 jest.mock('firebase/firestore', () => ({

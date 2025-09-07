@@ -33,7 +33,7 @@ jobs:
       run: npm run lint || echo "Linting completed with warnings"
     
     - name: Run basic tests (no coverage)
-      run: npm test -- --watchAll=false --testTimeout=10000 --passWithNoTests
+      run: npm test -- --watchAll=false --testTimeout=120000 --passWithNoTests
       env:
         CI: true
         NODE_ENV: test

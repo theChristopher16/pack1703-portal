@@ -427,8 +427,9 @@ const PrivacyPolicyPage: React.FC = () => {
               <div>
                 <h3 className="font-semibold text-gray-800 mb-2">COPPA Compliance</h3>
                 <p className="text-gray-600">
-                  We comply with the Children's Online Privacy Protection Act (COPPA) and do not 
-                  knowingly collect personal information from children under 13 without parental consent.
+                  Our platform is designed for adults only (parents, den leaders, volunteers). 
+                  Children under 13 do not create accounts or directly use our system. We do not 
+                  knowingly collect personal information directly from children under 13.
                 </p>
               </div>
             </div>

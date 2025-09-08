@@ -6,7 +6,7 @@ const DYNAMIC_CACHE = 'pack-1703-dynamic-v3';
 // Files to cache immediately
 const STATIC_FILES = [
   '/',
-  '/static/js/main.ebbaa67a.js',
+  '/static/js/main.1e0606f7.js',
   '/static/css/main.36cc0cfc.css',
   '/manifest.json',
   '/favicon.ico'

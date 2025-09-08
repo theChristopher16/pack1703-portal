@@ -43,9 +43,9 @@ service cloud.firestore {
     // USER DATA SECURITY - Users can only access their own data
     // ============================================================================
     
-    // Users collection - users can only access their own profile
+    // Users collection - users can ONLY access their own profile (no admin access)
     match /users/{userId} {
-      allow read, write: if isOwner(userId) || isAdmin();
+      allow read, write: if isOwner(userId);
       allow create: if isAuthenticated() && request.auth.uid == userId;
     }
     
@@ -65,13 +65,12 @@ service cloud.firestore {
         request.resource.data.userId == request.auth.uid;
     }
     
-    // Feedback - users can only access their own feedback
+    // Feedback - users can only access their own feedback (no admin access)
     match /feedback/{feedbackId} {
       allow read: if isAuthenticated() && 
         resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && 
         request.resource.data.userId == request.auth.uid;
-      allow read: if isAdmin(); // Admins can read all feedback
     }
     
     // Volunteer signups - users can only access their own signups
@@ -173,7 +172,7 @@ service cloud.firestore {
     }
 
     // ============================================================================
-    // ADMIN-ONLY COLLECTIONS
+    // ADMIN-ONLY COLLECTIONS (Aggregated/Anonymized Data Only - No Individual User Data)
     // ============================================================================
     
     // Admin audit logs - admin read-only

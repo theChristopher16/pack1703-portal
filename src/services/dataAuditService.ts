@@ -210,16 +210,16 @@ class DataAuditService {
   /**
    * Generate comprehensive data audit for a logged-in user
    */
-  async generateUserDataAudit(userId?: string): Promise<UserDataAudit> {
+  async generateUserDataAudit(): Promise<UserDataAudit> {
     try {
-      const currentUser = userId ? await this.getUserById(userId) : authService.getCurrentUser();
+      const currentUser = authService.getCurrentUser();
       if (!currentUser) {
         throw new Error('User not found or not authenticated');
       }
 
       const auditDate = new Date().toISOString();
       
-      // Collect data from all collections
+      // Collect data from all collections using authenticated user's ID
       const [
         profileData,
         eventsData,
@@ -360,11 +360,11 @@ class DataAuditService {
   }
 
   /**
-   * Export user data as downloadable JSON
+   * Export user data as downloadable JSON (for logged-in user only)
    */
-  async exportUserDataAsJSON(userId?: string): Promise<string> {
+  async exportUserDataAsJSON(): Promise<string> {
     try {
-      const auditData = await this.generateUserDataAudit(userId);
+      const auditData = await this.generateUserDataAudit();
       return JSON.stringify(auditData, null, 2);
     } catch (error) {
       console.error('Error exporting user data:', error);

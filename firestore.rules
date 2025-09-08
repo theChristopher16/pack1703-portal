@@ -1,13 +1,233 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.get('role', '') in ['admin', 'root'];
+    }
+    
+    function isRoot() {
+      return isAuthenticated() && 
+             request.auth.token.get('role', '') == 'root';
+    }
+    
+    function isValidTimestamp(ts) {
+      return ts is timestamp && 
+             ts > timestamp.date(2024, 1, 1) &&
+             ts < timestamp.date(2030, 12, 31);
+    }
+    
+    function isValidString(str, maxLength) {
+      return str is string && 
+             str.size() > 0 && 
+             str.size() <= maxLength &&
+             !str.matches('.*<[^>]*>.*'); // No HTML tags
+    }
+    
+    function isValidEmail(email) {
+      return email is string && 
+             email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
+    }
+
     // ============================================================================
-    // TEMPORARY RULES - Allow initial setup (will be secured later)
+    // USER DATA SECURITY - Users can only access their own data
     // ============================================================================
     
-    // Allow all operations for initial setup
+    // Users collection - users can only access their own profile
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Analytics - users can only access their own analytics data
+    match /analytics/{analyticsId} {
+      allow read, write: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+    }
+    
+    // RSVPs - users can only access their own RSVPs
+    match /rsvps/{rsvpId} {
+      allow read, write: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Feedback - users can only access their own feedback
+    match /feedback/{feedbackId} {
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      allow read: if isAdmin(); // Admins can read all feedback
+    }
+    
+    // Volunteer signups - users can only access their own signups
+    match /volunteer-signups/{signupId} {
+      allow read, write: if isAuthenticated() && 
+        resource.data.volunteerUserId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+        request.resource.data.volunteerUserId == request.auth.uid;
+    }
+    
+    // User-pinned announcements - users can only access their own pins
+    match /user-pinned-announcements/{pinId} {
+      allow read, write: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+    }
+    
+    // System logs - users can only access their own logs
+    match /system-logs/{logId} {
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+    }
+
+    // ============================================================================
+    // PUBLIC DATA - Readable by all authenticated users
+    // ============================================================================
+    
+    // Events - public read for non-private events, admin write
+    match /events/{eventId} {
+      allow read: if resource.data.visibility == 'public' || 
+                     (isAuthenticated() && resource.data.visibility == 'link-only') ||
+                     isAdmin();
+      allow write: if isAdmin() &&
+                      isValidString(resource.data.title, 200) &&
+                      isValidString(resource.data.description, 2000) &&
+                      isValidTimestamp(resource.data.start) &&
+                      isValidTimestamp(resource.data.end) &&
+                      resource.data.start < resource.data.end;
+    }
+    
+    // Announcements - public read, admin write
+    match /announcements/{announcementId} {
+      allow read: if true; // Public announcements
+      allow write: if isAdmin() &&
+                      isValidString(resource.data.title, 200) &&
+                      isValidString(resource.data.content, 5000) &&
+                      isValidTimestamp(resource.data.createdAt);
+    }
+    
+    // Locations - public read, admin write
+    match /locations/{locationId} {
+      allow read: if true;
+      allow write: if isAdmin() &&
+                      isValidString(resource.data.name, 100) &&
+                      isValidString(resource.data.address, 500);
+    }
+    
+    // Categories - public read, admin write
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin() &&
+                      isValidString(resource.data.name, 100);
+    }
+    
+    // Seasons - public read, admin write
+    match /seasons/{seasonId} {
+      allow read: if true;
+      allow write: if isAdmin() &&
+                      isValidString(resource.data.name, 100) &&
+                      isValidTimestamp(resource.data.startDate) &&
+                      isValidTimestamp(resource.data.endDate) &&
+                      resource.data.startDate < resource.data.endDate;
+    }
+
+    // ============================================================================
+    // CHAT SYSTEM - Users can access channels they're part of
+    // ============================================================================
+    
+    // Chat channels - authenticated users can read, admins can write
+    match /chat-channels/{channelId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Chat messages - authenticated users can read/write
+    match /chat-messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        request.resource.data.senderId == request.auth.uid;
+    }
+    
+    // Chat users - users can read their own status, admins can read all
+    match /chat-users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // ============================================================================
+    // ADMIN-ONLY COLLECTIONS
+    // ============================================================================
+    
+    // Admin audit logs - admin read-only
+    match /admin/audit/{auditId} {
+      allow read: if isAdmin();
+      allow write: if false; // Audit logs are created by Cloud Functions only
+    }
+    
+    // Admin user management - admin only
+    match /admin/users/{userId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // System configuration - admin only
+    match /system/{configId} {
+      allow read: if isAdmin();
+      allow write: if isRoot();
+    }
+    
+    // Volunteers collection - admin only
+    match /volunteers/{volunteerId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Reminders - admin only
+    match /reminders/{reminderId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ============================================================================
+    // MULTI-TENANT DATA
+    // ============================================================================
+    
+    // Cross-organization users - users can only access their own records
+    match /crossOrganizationUsers/{recordId} {
+      allow read, write: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Organizations - authenticated users can read, admins can write
+    match /organizations/{orgId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ============================================================================
+    // DENY ALL OTHER ACCESS
+    // ============================================================================
+    
+    // Deny all other access
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

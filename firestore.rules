@@ -192,6 +192,12 @@ service cloud.firestore {
       allow write: if isRoot();
     }
     
+    // Application configurations - admin read/write, authenticated users read
+    match /configurations/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
     // Volunteers collection - admin only
     match /volunteers/{volunteerId} {
       allow read, write: if isAdmin();

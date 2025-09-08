@@ -37,10 +37,16 @@ class AnalyticsService {
     try {
       const user = this.auth.currentUser;
       
+      // Only track analytics if user is authenticated
+      if (!user) {
+        console.log('Analytics tracking skipped - user not authenticated');
+        return;
+      }
+      
       await addDoc(collection(this.db, 'analytics'), {
         ...event,
-        userId: user?.uid || 'anonymous',
-        userEmail: user?.email || null,
+        userId: user.uid,
+        userEmail: user.email || null,
         timestamp: serverTimestamp(),
         sessionId: this.sessionStartTime,
         userAgent: event.userAgent || navigator.userAgent,
@@ -50,6 +56,7 @@ class AnalyticsService {
       });
     } catch (error) {
       console.error('Error tracking analytics event:', error);
+      // Don't throw - analytics failures shouldn't break the app
     }
   }
 

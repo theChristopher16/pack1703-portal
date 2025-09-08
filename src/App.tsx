@@ -70,9 +70,9 @@ function App() {
         await configService.initializeDefaultConfigs('system');
         console.log('Default configurations initialized');
       } catch (error: any) {
-        // Silently handle permission errors - this is expected in production
+        // Silently handle permission errors - this is expected when not authenticated
         if (error?.code === 'permission-denied') {
-          console.log('Config initialization skipped - admin access required');
+          console.log('Config initialization skipped - no authenticated user');
         } else {
           console.warn('Failed to initialize default configurations:', error);
         }

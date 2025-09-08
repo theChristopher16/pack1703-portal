@@ -1,13 +1,13 @@
 // Service Worker for Pack 1703 Families Portal
-const CACHE_NAME = 'pack-1703-v1';
-const STATIC_CACHE = 'pack-1703-static-v1';
-const DYNAMIC_CACHE = 'pack-1703-dynamic-v1';
+const CACHE_NAME = 'pack-1703-v2';
+const STATIC_CACHE = 'pack-1703-static-v2';
+const DYNAMIC_CACHE = 'pack-1703-dynamic-v2';
 
 // Files to cache immediately
 const STATIC_FILES = [
   '/',
-  '/static/js/main.d0edb582.js',
-  '/static/css/main.1b1a1232.css',
+  '/static/js/main.632ca8f4.js',
+  '/static/css/main.36cc0cfc.css',
   '/manifest.json',
   '/favicon.ico'
 ];

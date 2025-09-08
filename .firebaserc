@@ -1,5 +1,25 @@
 {
   "projects": {
     "default": "pack1703-portal"
-  }
+  },
+  "targets": {
+    "pack1703-portal": {
+      "hosting": {
+        "pack1703-portal": [
+          "pack1703-portal"
+        ],
+        "sfpack1703": [
+          "sfpack1703"
+        ]
+      }
+    },
+    "sfpack1703": {
+      "hosting": {
+        "sfpack1703": [
+          "sfpack1703"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

@@ -6,12 +6,12 @@ import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyD6QerA4QW2KKrBqgDJvFwhvAHc6WobKX0",
+  apiKey: "AIzaSyBIBpkVqhPAJNYjymD-eK1n3ZuLwn9rf8g",
   authDomain: "pack1703-portal.firebaseapp.com",
   projectId: "pack1703-portal",
   storageBucket: "pack1703-portal.firebasestorage.app",
-  messagingSenderId: "1090892022787",
-  appId: "1:1090892022787:web:a04a0ad22006b26f557a36"
+  messagingSenderId: "869412763535",
+  appId: "1:869412763535:web:94b3b1ccc756ddfe92bdfa"
   // measurementId removed to prevent mismatch with server config
 };
 

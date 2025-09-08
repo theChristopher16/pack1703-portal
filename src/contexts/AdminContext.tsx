@@ -228,7 +228,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
     const loadingTimeout = setTimeout(() => {
       console.log('AdminContext: Auth state timeout reached, setting loading to false');
       dispatch({ type: 'SET_LOADING', payload: false });
-    }, 5000); // 5 second timeout
+    }, 10000); // Increased to 10 second timeout
     
     // Also check current auth state immediately as a fallback
     const checkCurrentAuthState = async () => {
@@ -249,13 +249,17 @@ export function AdminProvider({ children }: AdminProviderProps) {
             isActive: currentUser.isActive,
           };
           dispatch({ type: 'SET_CURRENT_USER', payload: adminUser });
+          dispatch({ type: 'SET_LOADING', payload: false });
+          clearTimeout(loadingTimeout);
         } else {
-          dispatch({ type: 'SET_CURRENT_USER', payload: null });
+          // Only set loading to false if we're sure there's no user
+          // Don't clear the timeout here, let the auth state listener handle it
+          console.log('AdminContext: No current user found, waiting for auth state listener');
         }
-        dispatch({ type: 'SET_LOADING', payload: false });
-        clearTimeout(loadingTimeout);
       } catch (error) {
         console.error('AdminContext: Error checking current auth state:', error);
+        dispatch({ type: 'SET_LOADING', payload: false });
+        clearTimeout(loadingTimeout);
       }
     };
     

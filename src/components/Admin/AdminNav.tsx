@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, ChevronDown } from 'lucide-react';
 import { useAdmin } from '../../contexts/AdminContext';
 
@@ -14,6 +14,7 @@ const AdminNav: React.FC = () => {
   const { state } = useAdmin();
   const { currentUser } = state;
   const location = useLocation();
+  const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [debugMessages, setDebugMessages] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -143,8 +144,8 @@ const AdminNav: React.FC = () => {
                   e.preventDefault();
                   e.stopPropagation();
                   addDebugMessage(`Nav clicked: ${item.label} (${item.path})`);
-                  // Force navigation
-                  window.location.href = item.path;
+                  // Use React Router navigation instead of page reload
+                  navigate(item.path);
                 }}
                 className={`flex-shrink-0 inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                   location.pathname === item.path
@@ -193,8 +194,8 @@ const AdminNav: React.FC = () => {
                           e.stopPropagation();
                           addDebugMessage(`Dropdown clicked: ${item.label} (${item.path})`);
                           setDropdownOpen(false);
-                          // Force navigation
-                          window.location.href = item.path;
+                          // Use React Router navigation instead of page reload
+                          navigate(item.path);
                         }}
                         className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors ${
                           location.pathname === item.path ? 'bg-blue-50 text-blue-700' : ''

@@ -314,9 +314,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            // console.log('Admin navigation clicked');
-                            // console.log('Forcing admin navigation');
-                            window.location.href = '/admin';
+                            // If user is already logged in, go to admin dashboard
+                            // If not logged in, go to login page
+                            if (currentUser) {
+                              window.location.href = '/admin';
+                            } else {
+                              window.location.href = '/admin/login';
+                            }
                           }}
                           className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
                             isActive('/admin')
@@ -379,7 +383,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div className="border-t border-gray-200 pt-2 mt-2">
                 <button
                   onClick={() => {
-                    handleNavigation('/admin');
+                    // If user is already logged in, go to admin dashboard
+                    // If not logged in, go to login page
+                    if (currentUser) {
+                      handleNavigation('/admin');
+                    } else {
+                      handleNavigation('/admin/login');
+                    }
                     setIsMobileMenuOpen(false);
                   }}
                   className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl font-medium transition-all duration-300 ${

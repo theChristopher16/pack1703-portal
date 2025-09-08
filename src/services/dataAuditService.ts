@@ -408,7 +408,7 @@ class DataAuditService {
     const q = query(
       eventsRef,
       where('createdBy', '==', userId),
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'asc')
     );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({

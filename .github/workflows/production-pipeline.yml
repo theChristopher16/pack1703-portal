@@ -126,7 +126,7 @@ jobs:
         repoToken: '${{ secrets.GITHUB_TOKEN }}'
         firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
         channelId: live
-        projectId: pack-1703-portal
+        projectId: pack1703-portal
         entryPoint: .
     
     - name: Run post-deployment tests

@@ -28,6 +28,6 @@ jobs:
     
     - name: Check Firebase configuration
       run: |
-        echo "Firebase project: pack-1703-portal"
+        echo "Firebase project: pack1703-portal"
         echo "Build directory exists: $(ls -la build/)"
         echo "✅ Setup test completed successfully!"

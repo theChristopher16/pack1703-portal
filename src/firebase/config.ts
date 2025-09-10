@@ -18,16 +18,10 @@ export const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Initialize App Check for security
-// Using reCAPTCHA v3 for production and debug token for development
+// Temporarily disabled to fix authentication issues
 try {
-  // Always use debug token for now to ensure App Check works
-  // TODO: Set up proper reCAPTCHA v3 configuration for production
-  (globalThis as any).FIREBASE_APPCHECK_DEBUG_TOKEN = '8EC4C83B-FA44-453B-9EDB-DC063C36FCA8';
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider('8EC4C83B-FA44-453B-9EDB-DC063C36FCA8'),
-    isTokenAutoRefreshEnabled: true
-  });
-  console.log('✅ App Check initialized with debug token (forced for stability) - Build: ' + new Date().toISOString() + ' - Testing after account-level Actions budget set to $40');
+  // TODO: Re-enable App Check after fixing Firebase Console configuration
+  console.log('⚠️ App Check temporarily disabled for authentication testing');
 } catch (error) {
   console.warn('❌ App Check initialization failed:', error);
   // Continue without App Check if initialization fails

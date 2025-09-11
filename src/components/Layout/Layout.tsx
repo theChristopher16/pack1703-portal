@@ -31,25 +31,29 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Get admin context for role-based navigation
   const { state } = useAdmin();
 
-  // Track authentication changes
+  // Track authentication changes from AdminContext
   useEffect(() => {
-    const unsubscribe = authService.onAuthStateChanged((user) => {
-      setCurrentUser(user);
-      if (user) {
-        // Use the user's role directly from the auth state change
-        setUserRole(user.role || UserRole.PARENT);
-      } else {
-        setUserRole(UserRole.ANONYMOUS);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
+    if (state.currentUser) {
+      setCurrentUser(state.currentUser);
+      // Convert AdminRole to UserRole
+      const roleMap: { [key: string]: UserRole } = {
+        'root': UserRole.ROOT,
+        'admin': UserRole.ADMIN,
+        'volunteer': UserRole.VOLUNTEER,
+        'parent': UserRole.PARENT,
+        'anonymous': UserRole.ANONYMOUS
+      };
+      setUserRole(roleMap[state.currentUser.role] || UserRole.PARENT);
+    } else {
+      setCurrentUser(null);
+      setUserRole(UserRole.ANONYMOUS);
+    }
+  }, [state.currentUser]);
 
   // Debug navigation issues
   useEffect(() => {
-    // console.log('Navigation changed to:', location.pathname);
-  }, [location.pathname]);
+    console.log('Layout: Navigation updated - User:', currentUser?.email || 'No user', 'Role:', userRole);
+  }, [currentUser, userRole, location.pathname]);
 
   // Handle navigation with error recovery
   const handleNavigation = (href: string) => {

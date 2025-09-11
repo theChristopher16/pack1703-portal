@@ -266,28 +266,12 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     description: 'Application performance tracking'
   },
   {
-    name: 'Security Audit',
-    href: '/admin/security',
-    icon: Lock,
-    roles: [UserRole.ROOT],
-    category: 'system',
-    description: 'Security audit and compliance'
-  },
-  {
     name: 'Permissions Audit',
-    href: '/admin/permissions',
+    href: '/admin/permissions-audit',
     icon: Eye,
-    roles: [UserRole.ROOT],
-    category: 'system',
+    roles: [UserRole.ADMIN, UserRole.ROOT],
+    category: 'admin',
     description: 'User permissions audit'
-  },
-  {
-    name: 'API Monitor',
-    href: '/admin/api',
-    icon: Zap,
-    roles: [UserRole.ROOT],
-    category: 'system',
-    description: 'API usage and monitoring'
   }
 ];
 

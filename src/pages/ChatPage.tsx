@@ -10,6 +10,7 @@ import { useToast } from '../contexts/ToastContext';
 import { authService, UserRole } from '../services/authService';
 import analyticsService from '../services/analyticsService';
 import ProfilePicture from '../components/ui/ProfilePicture';
+import { useAdmin } from '../contexts/AdminContext';
 
 // Rich text formatting utilities
 const FORMATTING_PATTERNS = {
@@ -67,10 +68,11 @@ const ChatPage: React.FC = () => {
   const [messageListRef, setMessageListRef] = useState<HTMLDivElement | null>(null);
   const [hasNewMessages, setHasNewMessages] = useState(false);
   
-  // Authentication state
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<UserRole>(UserRole.ANONYMOUS);
-  const [authLoading, setAuthLoading] = useState(true);
+  // Get authentication state from AdminContext
+  const { state } = useAdmin();
+  const isAuthenticated = !!state.currentUser;
+  const userRole = state.currentUser?.role as UserRole || UserRole.ANONYMOUS;
+  const authLoading = state.isLoading;
   
   // Rich text state
   const [richTextState, setRichTextState] = useState<RichTextState>({
@@ -690,36 +692,7 @@ const ChatPage: React.FC = () => {
     return currentMessage.userName !== nextMessage.userName || timeDiff > fiveMinutes;
   };
 
-  // Check authentication first
-  useEffect(() => {
-    const checkAuth = () => {
-      const user = authService.getCurrentUser();
-      if (user) {
-        setIsAuthenticated(true);
-        setUserRole(user.role);
-      } else {
-        setIsAuthenticated(false);
-        setUserRole(UserRole.ANONYMOUS);
-      }
-      setAuthLoading(false);
-    };
-
-    checkAuth();
-    
-    // Listen for auth changes
-    const unsubscribe = authService.onAuthStateChanged((user) => {
-      if (user) {
-        setIsAuthenticated(true);
-        setUserRole(user.role);
-      } else {
-        setIsAuthenticated(false);
-        setUserRole(UserRole.ANONYMOUS);
-      }
-      setAuthLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  // Authentication is now handled by AdminContext via AuthenticatedOnly wrapper
 
   // Reinitialize chat when authentication state changes
   useEffect(() => {
@@ -1014,6 +987,9 @@ const ChatPage: React.FC = () => {
     }
   }, [channels]);
 
+  // Debug authentication state
+  console.log('ChatPage: Auth state - loading:', authLoading, 'authenticated:', isAuthenticated, 'user:', state.currentUser?.email);
+  
   // Show authentication required message for anonymous users
   if (!authLoading && !isAuthenticated) {
     return (

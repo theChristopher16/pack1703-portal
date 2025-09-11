@@ -7,7 +7,7 @@ import ScrollToTop from './components/ScrollToTop';
 
 // Components
 import Layout from './components/Layout/Layout';
-import AdminLayout from './components/Layout/AdminLayout';
+import RoleGuard, { AdminOnly, RootOnly, AuthenticatedOnly } from './components/Auth/RoleGuard';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -45,7 +45,14 @@ import MultiTenantManagement from './pages/MultiTenantManagement';
 import UserManagement from './components/Admin/UserManagement';
 import ChatPage from './pages/ChatPage';
 import JoinPage from './pages/JoinPage';
+import RootAccountSetup from './pages/RootAccountSetup';
 import HackerTab from './pages/HackerTab';
+import AdminUsers from './pages/AdminUsers';
+import AdminSettings from './pages/AdminSettings';
+import AdminReminders from './pages/AdminReminders';
+import DatabaseMonitor from './components/Admin/DatabaseMonitor';
+import SystemMonitor from './components/Admin/SystemMonitor';
+import PerformanceMonitor from './components/Performance/PerformanceMonitor';
 import { AdminProvider } from './contexts/AdminContext';
 import { MultiTenantProvider } from './contexts/MultiTenantContext';
 
@@ -91,7 +98,7 @@ function App() {
             <Router>
               <ScrollToTop />
           <Routes>
-          {/* Public Routes with Layout */}
+          {/* Public Routes */}
           <Route path="/" element={<Layout><HomePage /></Layout>} />
           <Route path="/events" element={<Layout><EventsPage /></Layout>} />
           <Route path="/events/:eventId" element={<Layout><EventDetailPage /></Layout>} />
@@ -99,40 +106,49 @@ function App() {
           <Route path="/announcements" element={<Layout><AnnouncementsPage /></Layout>} />
           <Route path="/resources" element={<Layout><ResourcesPage /></Layout>} />
           <Route path="/volunteer" element={<Layout><VolunteerPage /></Layout>} />
-          <Route path="/chat" element={<Layout><ChatPage /></Layout>} />
-          <Route path="/feedback" element={<Layout><FeedbackPage /></Layout>} />
-          <Route path="/data-audit" element={<Layout><DataAuditPage /></Layout>} />
-          <Route path="/analytics" element={<Layout><AnalyticsDashboard /></Layout>} />
-          <Route path="/analytics/test" element={<Layout><AnalyticsTest /></Layout>} />
-          <Route path="/forms-demo" element={<Layout><FormsDemoPage /></Layout>} />
-          <Route path="/cloud-functions-test" element={<Layout><CloudFunctionsTestPage /></Layout>} />
           <Route path="/privacy" element={<Layout><PrivacyPolicyPage /></Layout>} />
           <Route path="/join/:inviteId" element={<JoinPage />} />
           
-          {/* Admin Routes with AdminLayout */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
-          <Route path="/admin/events" element={<AdminLayout><AdminEvents /></AdminLayout>} />
-          <Route path="/admin/locations" element={<AdminLayout><AdminLocations /></AdminLayout>} />
-          <Route path="/admin/announcements" element={<AdminLayout><AdminAnnouncements /></AdminLayout>} />
-          <Route path="/admin/chat" element={<AdminLayout><AdminChat /></AdminLayout>} />
-                   <Route path="/admin/ai" element={<AdminLayout><AdminAI /></AdminLayout>} />
-         <Route path="/admin/permissions-audit" element={<AdminLayout><AdminPermissionsAudit /></AdminLayout>} />
-         <Route path="/admin/lists" element={<AdminLayout><AdminLists /></AdminLayout>} />
-          <Route path="/admin/volunteer" element={<AdminLayout><AdminVolunteer /></AdminLayout>} />
-          <Route path="/admin/seasons" element={<AdminLayout><AdminSeasons /></AdminLayout>} />
-          <Route path="/admin/fundraising" element={<AdminLayout><AdminFundraising /></AdminLayout>} />
-          <Route path="/admin/finances" element={<AdminLayout><AdminFinances /></AdminLayout>} />
-          <Route path="/admin/cost-management" element={<AdminLayout><AdminCostManagement /></AdminLayout>} />
-          <Route path="/admin/multi-tenant" element={<AdminLayout><MultiTenantManagement /></AdminLayout>} />
-          <Route path="/admin/users" element={<AdminLayout><UserManagement /></AdminLayout>} />
-          <Route path="/admin/settings" element={<AdminLayout><div className="max-w-7xl mx-auto px-4 py-8"><h1 className="text-2xl font-bold text-gray-900">Admin Settings - Coming Soon</h1></div></AdminLayout>} />
+          {/* Authenticated Routes */}
+          <Route path="/chat" element={<Layout><AuthenticatedOnly><ChatPage /></AuthenticatedOnly></Layout>} />
+          <Route path="/feedback" element={<Layout><AuthenticatedOnly><FeedbackPage /></AuthenticatedOnly></Layout>} />
+          <Route path="/data-audit" element={<Layout><AuthenticatedOnly><DataAuditPage /></AuthenticatedOnly></Layout>} />
           
-          {/* Root-only SOC Console */}
-          <Route path="/admin/soc" element={<AdminLayout><HackerTab /></AdminLayout>} />
+          {/* Admin Routes */}
+          <Route path="/analytics" element={<Layout><AdminOnly><AnalyticsDashboard /></AdminOnly></Layout>} />
+          <Route path="/analytics/test" element={<Layout><AdminOnly><AnalyticsTest /></AdminOnly></Layout>} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<Layout><AdminOnly><AdminDashboard /></AdminOnly></Layout>} />
+          <Route path="/admin/events" element={<Layout><AdminOnly><AdminEvents /></AdminOnly></Layout>} />
+          <Route path="/admin/locations" element={<Layout><AdminOnly><AdminLocations /></AdminOnly></Layout>} />
+          <Route path="/admin/announcements" element={<Layout><AdminOnly><AdminAnnouncements /></AdminOnly></Layout>} />
+          <Route path="/admin/chat" element={<Layout><AdminOnly><AdminChat /></AdminOnly></Layout>} />
+          <Route path="/admin/lists" element={<Layout><AdminOnly><AdminLists /></AdminOnly></Layout>} />
+          <Route path="/admin/volunteer" element={<Layout><AdminOnly><AdminVolunteer /></AdminOnly></Layout>} />
+          <Route path="/admin/seasons" element={<Layout><AdminOnly><AdminSeasons /></AdminOnly></Layout>} />
+          <Route path="/admin/fundraising" element={<Layout><AdminOnly><AdminFundraising /></AdminOnly></Layout>} />
+          <Route path="/admin/finances" element={<Layout><AdminOnly><AdminFinances /></AdminOnly></Layout>} />
+          <Route path="/admin/users" element={<Layout><AdminOnly><UserManagement /></AdminOnly></Layout>} />
+          <Route path="/admin/permissions-audit" element={<Layout><AdminOnly><AdminPermissionsAudit /></AdminOnly></Layout>} />
+          <Route path="/admin/reminders" element={<Layout><AdminOnly><AdminReminders /></AdminOnly></Layout>} />
+          
+          {/* Root-only Routes */}
+          <Route path="/admin/ai" element={<Layout><RootOnly><AdminAI /></RootOnly></Layout>} />
+          <Route path="/admin/cost-management" element={<Layout><RootOnly><AdminCostManagement /></RootOnly></Layout>} />
+          <Route path="/admin/multi-tenant" element={<Layout><RootOnly><MultiTenantManagement /></RootOnly></Layout>} />
+          <Route path="/admin/settings" element={<Layout><RootOnly><AdminSettings /></RootOnly></Layout>} />
+          <Route path="/admin/soc" element={<Layout><RootOnly><HackerTab /></RootOnly></Layout>} />
+          <Route path="/admin/database" element={<Layout><RootOnly><DatabaseMonitor /></RootOnly></Layout>} />
+          <Route path="/admin/system" element={<Layout><RootOnly><SystemMonitor /></RootOnly></Layout>} />
+          <Route path="/admin/performance" element={<Layout><RootOnly><PerformanceMonitor /></RootOnly></Layout>} />
+          <Route path="/admin/root-setup" element={<RootAccountSetup />} />
+          
+          {/* Development/Test Routes */}
+          <Route path="/forms-demo" element={<Layout><FormsDemoPage /></Layout>} />
+          <Route path="/cloud-functions-test" element={<Layout><CloudFunctionsTestPage /></Layout>} />
           
           <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
-                                    </Routes>
+          </Routes>
                 </Router>
               </MultiTenantProvider>
             </AdminProvider>

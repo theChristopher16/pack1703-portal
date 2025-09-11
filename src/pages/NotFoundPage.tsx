@@ -40,10 +40,10 @@ const NotFoundPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-gray-100/30 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div className="mb-12">
-          <h1 className="text-6xl font-bold text-primary-600 mb-4">404</h1>
+          <h1 className="text-6xl font-bold text-blue-600 mb-4">404</h1>
           <h2 className="text-3xl font-bold text-gray-900 mb-4">Page Not Found</h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
             Oops! The page you're looking for doesn't exist.
@@ -52,7 +52,7 @@ const NotFoundPage: React.FC = () => {
           
           {/* Inspiring Quote */}
           {randomQuote && (
-            <div className="max-w-3xl mx-auto bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200 shadow-soft">
+            <div className="max-w-3xl mx-auto bg-white/95 backdrop-blur-md rounded-2xl p-6 border border-white/50 shadow-soft">
               <div className="flex items-start space-x-3">
                 <Quote className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />
                 <div className="text-left">
@@ -71,7 +71,7 @@ const NotFoundPage: React.FC = () => {
         <div className="mb-8">
           <Link
             to="/"
-            className="inline-flex items-center px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-all duration-200 shadow-soft hover:shadow-lg transform hover:scale-[1.02] text-lg"
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-200 shadow-soft hover:shadow-lg transform hover:scale-[1.02] text-lg"
           >
             <Home className="w-5 h-5 mr-2" />
             Back to Home
@@ -87,10 +87,10 @@ const NotFoundPage: React.FC = () => {
                 <Link
                   key={link.name}
                   to={link.href}
-                  className="flex flex-col items-center p-4 bg-white rounded-lg border border-gray-200 hover:shadow-soft transition-all duration-200 group"
+                  className="flex flex-col items-center p-4 bg-white/95 backdrop-blur-md rounded-xl border border-white/50 shadow-soft hover:shadow-lg transition-all duration-200 group"
                 >
-                  <Icon className="w-6 h-6 text-primary-600 mb-2 group-hover:scale-110 transition-transform duration-200" />
-                  <span className="text-sm font-medium text-gray-700 group-hover:text-primary-600 transition-colors duration-200">
+                  <Icon className="w-6 h-6 text-blue-600 mb-2 group-hover:scale-110 transition-transform duration-200" />
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors duration-200">
                     {link.name}
                   </span>
                 </Link>

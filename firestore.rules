@@ -43,11 +43,28 @@ service cloud.firestore {
     // USER DATA SECURITY - Users can only access their own data
     // ============================================================================
     
-    // Users collection - users can ONLY access their own profile (no admin access)
-    match /users/{userId} {
-      allow read, write: if isOwner(userId);
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-    }
+  // Users collection - SECURE RULES (root account now exists)
+  match /users/{userId} {
+    // Users can read their own data
+    allow read: if request.auth != null && request.auth.uid == userId;
+    
+    // Users can update their own profile (except role and permissions)
+    allow update: if request.auth != null && 
+                     request.auth.uid == userId &&
+                     !('role' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                     !('permissions' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                     !('isActive' in request.resource.data.diff(resource.data).affectedKeys());
+    
+    // Only root users can create new users
+    allow create: if request.auth != null && 
+                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'root';
+    
+    // Only root users can delete users
+    allow delete: if request.auth != null && 
+                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'root';
+  }
     
     // Analytics - users can only access their own analytics data
     match /analytics/{analyticsId} {

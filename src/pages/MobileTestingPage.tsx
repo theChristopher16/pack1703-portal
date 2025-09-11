@@ -19,7 +19,7 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-import AdminNav from '../components/Admin/AdminNav';
+// AdminNav removed - admin features now integrated into main navigation
 import { useAdmin } from '../contexts/AdminContext';
 
 interface DeviceTest {
@@ -404,11 +404,7 @@ const MobileTestingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Admin Navigation */}
-      {showAdminNav && (
-        <div className="mb-8">
-          <AdminNav />
-        </div>
-      )}
+      {/* AdminNav removed - admin features now integrated into main navigation */}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
@@ -416,11 +412,11 @@ const MobileTestingPage: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900">📱 Mobile Testing Dashboard</h1>
             <div className="flex space-x-3">
               <button
-                onClick={() => setShowAdminNav(!showAdminNav)}
-                className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                onClick={() => {/* AdminNav removed */}}
+                className="flex items-center px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed"
               >
-                {showAdminNav ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                {showAdminNav ? 'Hide' : 'Show'} Admin Nav
+                <EyeOff className="w-4 h-4 mr-2" />
+                Admin Nav (Removed)
               </button>
               <button
                 onClick={runAllTests}

@@ -1,5 +1,5 @@
 // Service Worker for Pack 1703 Families Portal
-// Updated: 2025-09-11T03:18:56Z
+// Updated: 2025-09-10T21:55:00Z
 const CACHE_NAME = 'pack-1703-v1757560736';
 const STATIC_CACHE = 'pack-1703-static-v11';
 const DYNAMIC_CACHE = 'pack-1703-dynamic-v11';

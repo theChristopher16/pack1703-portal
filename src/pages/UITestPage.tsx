@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Monitor, Smartphone, Tablet, Eye, CheckCircle, AlertTriangle } from 'lucide-react';
-import AdminNav from '../components/Admin/AdminNav';
+// AdminNav removed - admin features now integrated into main navigation
 import { useAdmin } from '../contexts/AdminContext';
 
 const UITestPage: React.FC = () => {
@@ -44,11 +44,7 @@ const UITestPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Test Admin Navigation */}
-      {showAdminNav && (
-        <div className="mb-8">
-          <AdminNav />
-        </div>
-      )}
+      {/* AdminNav removed - admin features now integrated into main navigation */}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
@@ -80,11 +76,12 @@ const UITestPage: React.FC = () => {
               <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  checked={showAdminNav}
-                  onChange={(e) => setShowAdminNav(e.target.checked)}
+                  checked={false}
+                  onChange={() => {/* AdminNav removed */}}
                   className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  disabled
                 />
-                <span className="text-sm text-gray-700">Show Admin Navigation</span>
+                <span className="text-sm text-gray-500">Admin Navigation (Removed)</span>
               </label>
             </div>
           </div>

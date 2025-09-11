@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { Shield, User, Lock, Mail, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import SocialLogin from '../components/Auth/SocialLogin';
+import RootAccountLinker from '../components/Auth/RootAccountLinker';
 import { useRecaptcha } from '../hooks/useRecaptcha';
 
 const AdminLogin: React.FC = () => {
@@ -24,7 +25,8 @@ const AdminLogin: React.FC = () => {
   });
 
   useEffect(() => {
-    // Check if root account exists
+    // Check if root account exists, but don't automatically show setup
+    // Only show setup if no root account is found
     checkRootAccount();
   }, []);
 
@@ -41,12 +43,17 @@ const AdminLogin: React.FC = () => {
       const rootUsersSnapshot = await getDocs(rootUsersQuery);
       
       if (rootUsersSnapshot.empty) {
+        console.log('No root account found, showing setup');
         setShowRootSetup(true);
+      } else {
+        console.log('Root account exists, showing normal login');
+        setShowRootSetup(false);
       }
     } catch (error) {
       console.error('Error checking root account:', error);
-      // If we can't check, assume root setup is needed
-      setShowRootSetup(true);
+      // If we can't check, don't show setup - let user try to login normally
+      console.log('Error checking root account, showing normal login');
+      setShowRootSetup(false);
     } finally {
       setIsCheckingRoot(false);
     }
@@ -136,8 +143,6 @@ const AdminLogin: React.FC = () => {
   }
 
   if (showRootSetup) {
-    // Import and render RootAccountLinker component
-    const RootAccountLinker = require('../components/Auth/RootAccountLinker').default;
     return <RootAccountLinker onSetupComplete={handleRootSetupComplete} />;
   }
 

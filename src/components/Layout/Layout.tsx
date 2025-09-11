@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Home, Calendar, MapPin, FileText, Users, MessageSquare, MessageCircle, ChevronDown, BarChart3, Settings, DollarSign, UserPlus, Cog, Shield } from 'lucide-react';
+import { Menu, X, ChevronDown, Settings } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { usePackNameConfig } from '../../hooks/useConfig';
 import { useAdmin } from '../../contexts/AdminContext';
 import { authService, UserRole } from '../../services/authService';
+import { getNavigationForRole, getNavigationByCategory, isAdminOrAbove, isRoot } from '../../services/navigationService';
 import OfflineBanner from './OfflineBanner';
 import PWAInstallPrompt from '../PWAInstallPrompt/PWAInstallPrompt';
 import BackToTop from '../BackToTop/BackToTop';
@@ -28,8 +29,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { value: packName } = usePackNameConfig();
   
   // Get admin context for role-based navigation
-  const { state: adminState } = useAdmin();
-  const isAdmin = adminState.currentUser?.role === 'super-admin' || adminState.currentUser?.role === 'root';
+  const { state } = useAdmin();
 
   // Track authentication changes
   useEffect(() => {
@@ -72,79 +72,120 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }, 100);
   };
 
-  // TODO: Future analytics-based ordering
-  // const getNavigationOrder = async () => {
-  //   // This would fetch analytics data and return ordered navigation
-  //   // const pageViews = await fetchPageViewAnalytics();
-  //   // return navigation.sort((a, b) => pageViews[b.href] - pageViews[a.href]);
-  // };
+  
+  // Separate navigation by category for better organization
+  const publicNav = getNavigationByCategory(userRole, 'public');
+  const authenticatedNav = getNavigationByCategory(userRole, 'authenticated');
+  const adminNav = getNavigationByCategory(userRole, 'admin');
+  const systemNav = getNavigationByCategory(userRole, 'system');
+  
+  // Combine all navigation items
+  const allNavItems = [...publicNav, ...authenticatedNav, ...adminNav, ...systemNav];
+  
+  // Check if user has admin privileges
+  const isAdmin = isAdminOrAbove(userRole);
+  const isRootUser = isRoot(userRole);
 
-  // Role-based navigation - simplified for stay-at-home moms
-  const getNavigationForRole = (role: UserRole) => {
-    // Essential features for stay-at-home moms (anonymous and parent roles)
-    const essentialNavigation = [
-      { name: 'Home', href: '/', icon: Home },
-      { name: 'Events', href: '/events', icon: Calendar }, // Most important - what's happening
-      { name: 'Announcements', href: '/announcements', icon: MessageSquare }, // Important updates
-      { name: 'Locations', href: '/locations', icon: MapPin }, // Where to go
-      { name: 'Volunteer', href: '/volunteer', icon: Users }, // How to help
-    ];
-
-    // Additional features for authenticated parents
-    const parentNavigation = [
-      ...essentialNavigation,
-      { name: 'Chat', href: '/chat', icon: MessageCircle }, // Communication - authenticated only
-      { name: 'Resources', href: '/resources', icon: FileText }, // Reference materials
-      { name: 'Feedback', href: '/feedback', icon: MessageSquare }, // Input
-    ];
-
-    // Full navigation for volunteers and above
-    const fullNavigation = [
-      ...parentNavigation,
-      { name: 'Data Audit', href: '/data-audit', icon: Shield }, // Privacy & transparency
-    ];
-
-    // Admin/advanced features
-    const adminNavigation = [
-      ...fullNavigation,
-      { name: 'Analytics', href: '/analytics', icon: BarChart3 }, // Admin/advanced
-    ];
-
-    switch (role) {
-      case UserRole.ANONYMOUS:
-        return essentialNavigation;
-      case UserRole.PARENT:
-        return parentNavigation;
-      case UserRole.VOLUNTEER:
-      case UserRole.AI_ASSISTANT:
-        return fullNavigation;
-      case UserRole.ADMIN:
-      case UserRole.ROOT:
-        return adminNavigation;
-      default:
-        return essentialNavigation;
+  // Organize navigation into logical groups for dropdown
+  const navigationGroups = [
+    {
+      name: 'Core Features',
+      items: publicNav.slice(0, 4), // First 4 public items go in main toolbar
+      icon: '🏠'
+    },
+    {
+      name: 'Communication',
+      items: authenticatedNav.filter(item => 
+        item.href === '/chat' || item.href === '/feedback'
+      ),
+      icon: '💬'
+    },
+    {
+      name: 'Resources',
+      items: authenticatedNav.filter(item => 
+        item.href === '/resources' || item.href === '/data-audit'
+      ),
+      icon: '📚'
+    },
+    {
+      name: 'Analytics',
+      items: adminNav.filter(item => 
+        item.href === '/analytics' || item.href === '/analytics/test'
+      ),
+      icon: '📊'
+    },
+    {
+      name: 'Content Management',
+      items: adminNav.filter(item => 
+        item.href.includes('/admin/events') || 
+        item.href.includes('/admin/announcements') || 
+        item.href.includes('/admin/locations')
+      ),
+      icon: '📝'
+    },
+    {
+      name: 'User Management',
+      items: adminNav.filter(item => 
+        item.href.includes('/admin/users') || 
+        item.href.includes('/admin/volunteer') ||
+        item.href.includes('/admin/permissions-audit')
+      ),
+      icon: '👥'
+    },
+    {
+      name: 'Financial',
+      items: adminNav.filter(item => 
+        item.href.includes('/admin/fundraising') || 
+        item.href.includes('/admin/finances')
+      ),
+      icon: '💰'
+    },
+    {
+      name: 'Operations',
+      items: adminNav.filter(item => 
+        item.href.includes('/admin/lists') || 
+        item.href.includes('/admin/seasons') ||
+        item.href.includes('/admin/chat')
+      ),
+      icon: '⚙️'
+    },
+    {
+      name: 'System Administration',
+      items: systemNav.filter(item => 
+        item.href.includes('/admin/ai') || 
+        item.href.includes('/admin/cost-management') ||
+        item.href.includes('/admin/multi-tenant') ||
+        item.href.includes('/admin/settings')
+      ),
+      icon: '🔧'
+    },
+    {
+      name: 'Monitoring',
+      items: systemNav.filter(item => 
+        item.href.includes('/admin/soc') ||
+        item.href.includes('/admin/database') ||
+        item.href.includes('/admin/system') ||
+        item.href.includes('/admin/performance') ||
+        item.href.includes('/admin/security') ||
+        item.href.includes('/admin/permissions') ||
+        item.href.includes('/admin/api')
+      ),
+      icon: '📈'
     }
-  };
-
-  const navigation = getNavigationForRole(userRole);
+  ].filter(group => group.items.length > 0); // Only show groups with items
 
   // Debug navigation
   useEffect(() => {
     console.log('Layout: Navigation updated', {
       userRole,
       currentUser: currentUser?.email || 'No user',
-      navigationItems: navigation.map(item => item.name),
-      navigationLength: navigation.length
+      publicItems: publicNav.length,
+      authenticatedItems: authenticatedNav.length,
+      adminItems: adminNav.length,
+      systemItems: systemNav.length,
+      totalItems: allNavItems.length
     });
-  }, [userRole, currentUser, navigation]);
-
-  // Admin-specific navigation items
-  const adminOnlyNavigation = [
-    { name: 'User Management', href: '/admin/users', icon: UserPlus, roles: ['super-admin', 'root'] },
-    { name: 'Cost Management', href: '/admin/cost-management', icon: DollarSign, roles: ['super-admin', 'root'] },
-    { name: 'Event Management', href: '/admin/events', icon: Calendar, roles: ['super-admin', 'root'] },
-    { name: 'System Settings', href: '/admin/settings', icon: Cog, roles: ['root'] },
-  ];
+  }, [userRole, currentUser, publicNav, authenticatedNav, adminNav, systemNav]);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -169,7 +210,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center space-x-1">
-              {navigation.slice(0, 4).map((item) => {
+              {allNavItems.slice(0, 4).map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
@@ -198,7 +239,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Medium Screen Navigation (shorter names) */}
             <nav className="hidden md:flex lg:hidden items-center space-x-1">
-              {navigation.slice(0, 4).map((item) => {
+              {allNavItems.slice(0, 4).map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
@@ -239,74 +280,56 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 
-                {/* Dropdown Menu */}
+                {/* Enhanced Dropdown Menu with Organized Groups */}
                 {isDropdownOpen && (
                   <div 
-                    className="absolute top-full right-0 mt-2 w-48 bg-white/95 backdrop-blur-md rounded-2xl shadow-soft border border-white/50 z-50"
+                    className="absolute top-full right-0 mt-2 w-80 bg-white/95 backdrop-blur-md rounded-2xl shadow-soft border border-white/50 z-50 max-h-96 overflow-y-auto"
                     onMouseLeave={() => {
                       console.log('Mouse left dropdown, closing');
                       setIsDropdownOpen(false);
                     }}
                   >
-                    <div className="py-2">
-                      {/* Show additional navigation items beyond the first 4 */}
-                      {navigation.length > 4 && navigation.slice(4).map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <button
-                            key={item.name}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              // console.log('Dropdown navigation clicked:', item.href);
-                              // console.log('Forcing navigation to:', item.href);
-                              window.location.href = item.href;
-                            }}
-                            className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
-                              isActive(item.href)
-                                ? 'text-primary-600 bg-primary-50'
-                                : 'nav-text-inactive hover:nav-text-active hover:bg-primary-50/50'
-                            }`}
-                          >
-                            <Icon className="w-4 h-4" />
-                            <span>{item.name}</span>
-                          </button>
-                        );
-                      })}
-                      
-                      {/* Admin Navigation Items */}
-                      {isAdmin && (
-                        <>
-                          <div className="border-t border-gray-200 mt-2 pt-2">
-                            <div className="px-4 py-2">
-                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Admin</span>
+                    <div className="py-2 max-h-96 overflow-y-auto">
+                      {/* Navigation Groups */}
+                      {navigationGroups.map((group, groupIndex) => (
+                        <div key={group.name} className="mb-2">
+                          {/* Group Header */}
+                          <div className="px-4 py-2 border-b border-gray-100">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-lg">{group.icon}</span>
+                              <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                {group.name}
+                              </span>
                             </div>
-                            {adminOnlyNavigation
-                              .filter(item => !item.roles || (adminState.currentUser?.role && item.roles.includes(adminState.currentUser.role)))
-                              .map((item) => {
-                                const Icon = item.icon;
-                                return (
-                                  <button
-                                    key={item.name}
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      window.location.href = item.href;
-                                    }}
-                                    className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
-                                      isActive(item.href)
-                                        ? 'text-blue-600 bg-blue-50'
-                                        : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50/50'
-                                    }`}
-                                  >
-                                    <Icon className="w-4 h-4" />
-                                    <span>{item.name}</span>
-                                  </button>
-                                );
-                              })}
                           </div>
-                        </>
-                      )}
+                          
+                          {/* Group Items */}
+                          <div className="py-1">
+                            {group.items.map((item) => {
+                              const Icon = item.icon;
+                              return (
+                                <button
+                                  key={item.name}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    window.location.href = item.href;
+                                    setIsDropdownOpen(false);
+                                  }}
+                                  className={`w-full flex items-center space-x-3 px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                                    isActive(item.href)
+                                      ? 'text-primary-600 bg-primary-50'
+                                      : 'nav-text-inactive hover:nav-text-active hover:bg-primary-50/50'
+                                  }`}
+                                >
+                                  <Icon className="w-4 h-4 flex-shrink-0" />
+                                  <span className="truncate">{item.name}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                       
                       {/* Login/Admin Link */}
                       <div className="border-t border-gray-200 mt-2 pt-2">
@@ -314,13 +337,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            // If user is already logged in, go to admin dashboard
-                            // If not logged in, go to login page
                             if (currentUser) {
                               window.location.href = '/admin';
                             } else {
                               window.location.href = '/admin/login';
                             }
+                            setIsDropdownOpen(false);
                           }}
                           className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
                             isActive('/admin')
@@ -358,7 +380,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {isMobileMenuOpen && (
           <div className="md:hidden bg-white/95 backdrop-blur-md border-t border-gray-200/50">
             <div className="px-4 py-2 space-y-1">
-              {navigation.map((item) => {
+              {/* Public and Authenticated Navigation */}
+              {allNavItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
@@ -409,28 +432,55 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <div className="px-3 py-2">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Admin</span>
                   </div>
-                  {adminOnlyNavigation
-                    .filter(item => !item.roles || (adminState.currentUser?.role && item.roles.includes(adminState.currentUser.role)))
-                    .map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <button
-                          key={item.name}
-                          onClick={() => {
-                            handleNavigation(item.href);
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl font-medium transition-all duration-300 ${
-                            isActive(item.href)
-                              ? 'text-blue-600 bg-blue-50'
-                              : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50/50'
-                          }`}
-                        >
-                          <Icon className="w-5 h-5" />
-                          <span>{item.name}</span>
-                        </button>
-                      );
-                    })}
+                  {adminNav.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.name}
+                        onClick={() => {
+                          handleNavigation(item.href);
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl font-medium transition-all duration-300 ${
+                          isActive(item.href)
+                            ? 'text-blue-600 bg-blue-50'
+                            : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50/50'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5" />
+                        <span>{item.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              
+              {/* System Navigation Items for Mobile (Root only) */}
+              {isRootUser && systemNav.length > 0 && (
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <div className="px-3 py-2">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">System</span>
+                  </div>
+                  {systemNav.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.name}
+                        onClick={() => {
+                          handleNavigation(item.href);
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl font-medium transition-all duration-300 ${
+                          isActive(item.href)
+                            ? 'text-red-600 bg-red-50'
+                            : 'text-red-600 hover:text-red-700 hover:bg-red-50/50'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5" />
+                        <span>{item.name}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -468,7 +518,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div>
               <h3 className="text-lg font-display font-semibold footer-heading mb-4">Quick Links</h3>
               <div className="space-y-2">
-                {navigation.slice(0, 4).map((item) => (
+                {allNavItems.slice(0, 4).map((item) => (
                   <button
                     key={item.name}
                     onClick={() => handleNavigation(item.href)}

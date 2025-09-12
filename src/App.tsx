@@ -7,7 +7,7 @@ import ScrollToTop from './components/ScrollToTop';
 
 // Components
 import Layout from './components/Layout/Layout';
-import RoleGuard, { AdminOnly, RootOnly, AuthenticatedOnly } from './components/Auth/RoleGuard';
+import { AdminOnly, RootOnly, AuthenticatedOnly } from './components/Auth/RoleGuard';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -27,7 +27,6 @@ import NotFoundPage from './pages/NotFoundPage';
 import EventDetailPage from './pages/EventDetailPage';
 
 // Admin Pages
-import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminEvents from './pages/AdminEvents';
 import AdminLocations from './pages/AdminLocations';
@@ -47,7 +46,6 @@ import ChatPage from './pages/ChatPage';
 import JoinPage from './pages/JoinPage';
 import RootAccountSetup from './pages/RootAccountSetup';
 import HackerTab from './pages/HackerTab';
-import AdminUsers from './pages/AdminUsers';
 import AdminSettings from './pages/AdminSettings';
 import AdminReminders from './pages/AdminReminders';
 import DatabaseMonitor from './components/Admin/DatabaseMonitor';
@@ -97,7 +95,7 @@ function App() {
           <MultiTenantProvider>
             <Router>
               <ScrollToTop />
-          <Routes>
+            <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Layout><HomePage /></Layout>} />
           <Route path="/events" element={<Layout><EventsPage /></Layout>} />
@@ -117,7 +115,6 @@ function App() {
           {/* Admin Routes */}
           <Route path="/analytics" element={<Layout><AdminOnly><AnalyticsDashboard /></AdminOnly></Layout>} />
           <Route path="/analytics/test" element={<Layout><AdminOnly><AnalyticsTest /></AdminOnly></Layout>} />
-          <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<Layout><AdminOnly><AdminDashboard /></AdminOnly></Layout>} />
           <Route path="/admin/events" element={<Layout><AdminOnly><AdminEvents /></AdminOnly></Layout>} />
           <Route path="/admin/locations" element={<Layout><AdminOnly><AdminLocations /></AdminOnly></Layout>} />

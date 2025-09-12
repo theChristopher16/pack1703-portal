@@ -74,6 +74,28 @@ service cloud.firestore {
         request.resource.data.userId == request.auth.uid;
     }
     
+    // Usage tracking - users can only access their own usage data
+    match /usageTracking/{usageId} {
+      allow read, write: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+    }
+    
+    // User usage stats - users can only access their own stats
+    match /userUsageStats/{userId} {
+      allow read, write: if isAuthenticated() && 
+        request.auth.uid == userId;
+      allow create: if isAuthenticated() && 
+        request.auth.uid == userId;
+    }
+    
+    // Component analytics - authenticated users can read, admins can write
+    match /componentAnalytics/{analyticsId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
     // RSVPs - users can only access their own RSVPs
     match /rsvps/{rsvpId} {
       allow read, write: if isAuthenticated() && 

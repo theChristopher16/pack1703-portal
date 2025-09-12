@@ -12,14 +12,6 @@ export interface UIIssue {
 
 export const knownUIIssues: UIIssue[] = [
   {
-    component: 'AdminLogin',
-    issue: 'White text on light background',
-    severity: 'critical',
-    description: 'Text appears white/invisible on light background, making it unreadable',
-    solution: 'Use text-gray-900 or text-text-primary instead of white text classes',
-    location: 'app/sfpack1703app/src/pages/AdminLogin.tsx'
-  },
-  {
     component: 'AdminNav',
     issue: 'Toolbar bleeding off page',
     severity: 'high', 
@@ -135,7 +127,6 @@ export const pagesToAudit = [
   { path: '/volunteer', name: 'Volunteer Page' },
   { path: '/feedback', name: 'Feedback Page' },
   { path: '/admin', name: 'Admin Dashboard' },
-  { path: '/admin/login', name: 'Admin Login' },
   { path: '/events/test-event', name: 'Event Detail Page' },
 ];
 

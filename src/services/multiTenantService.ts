@@ -9,10 +9,8 @@ import {
   deleteDoc, 
   query, 
   where, 
-  orderBy, 
-  limit, 
-  serverTimestamp,
-  Timestamp 
+  orderBy,
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { authService } from './authService';
@@ -21,11 +19,7 @@ import {
   Organization,
   CrossOrganizationCollaboration,
   AICollaborationSession,
-  OrganizationInvitation,
-  CrossOrganizationUser,
-  CategorySettings,
-  OrganizationSettings,
-  OrganizationMetadata
+  CrossOrganizationUser
 } from '../types/multiTenant';
 
 class MultiTenantService {
@@ -61,17 +55,19 @@ class MultiTenantService {
     try {
       const q = query(
         collection(db, 'categories'),
-        where('isActive', '==', true),
-        orderBy('name')
+        where('isActive', '==', true)
       );
       
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
+      const categories = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date()
       })) as Category[];
+      
+      // Sort by name in memory instead of using orderBy
+      return categories.sort((a, b) => a.name.localeCompare(b.name));
     } catch (error: any) {
       console.error('Error fetching categories:', error);
       return [];

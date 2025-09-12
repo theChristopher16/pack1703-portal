@@ -11,6 +11,7 @@ import { authService, UserRole } from '../services/authService';
 import analyticsService from '../services/analyticsService';
 import ProfilePicture from '../components/ui/ProfilePicture';
 import { useAdmin } from '../contexts/AdminContext';
+import LoginModal from '../components/Auth/LoginModal';
 
 // Rich text formatting utilities
 const FORMATTING_PATTERNS = {
@@ -67,12 +68,20 @@ const ChatPage: React.FC = () => {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [messageListRef, setMessageListRef] = useState<HTMLDivElement | null>(null);
   const [hasNewMessages, setHasNewMessages] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   
   // Get authentication state from AdminContext
   const { state } = useAdmin();
   const isAuthenticated = !!state.currentUser;
   const userRole = state.currentUser?.role as UserRole || UserRole.ANONYMOUS;
   const authLoading = state.isLoading;
+  
+  // Handle successful login
+  const handleLoginSuccess = (user: any) => {
+    console.log('Login successful:', user);
+    setIsLoginModalOpen(false);
+    // The AdminContext will automatically update the currentUser state
+  };
   
   // Rich text state
   const [richTextState, setRichTextState] = useState<RichTextState>({
@@ -1007,7 +1016,7 @@ const ChatPage: React.FC = () => {
           
           <div className="space-y-3">
             <button
-              onClick={() => window.location.href = '/admin/login'}
+              onClick={() => setIsLoginModalOpen(true)}
               className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
             >
               Sign In
@@ -1906,6 +1915,13 @@ const ChatPage: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onSuccess={handleLoginSuccess}
+      />
     </div>
   );
 };

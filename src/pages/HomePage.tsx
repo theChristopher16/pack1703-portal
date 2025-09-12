@@ -36,8 +36,30 @@ const HomePage: React.FC = () => {
       const role = user?.role || UserRole.ANONYMOUS;
       setUserRole(role);
       
-      // Load personalized hero buttons
-      loadHeroButtons(user?.uid || 'anonymous', role);
+      // Load personalized hero buttons only if user is authenticated
+      if (user) {
+        loadHeroButtons(user.uid, role);
+      } else {
+        // For anonymous users, use default buttons without analytics
+        setHeroButtons([
+          {
+            name: 'Events',
+            href: '/events',
+            icon: 'Calendar',
+            description: 'View upcoming pack events',
+            color: 'blue',
+            priority: 1
+          },
+          {
+            name: 'Locations',
+            href: '/locations',
+            icon: 'MapPin',
+            description: 'Find meeting locations',
+            color: 'green',
+            priority: 2
+          }
+        ]);
+      }
     });
 
     return () => unsubscribe();

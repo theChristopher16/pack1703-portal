@@ -16,13 +16,6 @@ const UIAuditComponent: React.FC = () => {
 
   const knownIssues: UIIssue[] = [
     {
-      component: 'AdminLogin',
-      issue: 'White text visibility',
-      severity: 'critical',
-      fixed: true,
-      description: 'Fixed: Changed text-text-primary to text-gray-900 for proper contrast'
-    },
-    {
       component: 'AdminNav',
       issue: 'Toolbar overflow',
       severity: 'high',

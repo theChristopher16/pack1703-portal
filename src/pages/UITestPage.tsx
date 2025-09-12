@@ -16,12 +16,6 @@ const UITestPage: React.FC = () => {
 
   const uiIssuesFixed = [
     {
-      component: 'AdminLogin',
-      issue: 'White text visibility',
-      status: 'fixed',
-      description: 'Changed text-text-primary to text-gray-900 for proper contrast'
-    },
-    {
       component: 'AdminNav',
       issue: 'Navigation overflow',
       status: 'fixed',

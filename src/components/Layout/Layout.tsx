@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronDown, Settings } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
-import { usePackNameConfig } from '../../hooks/useConfig';
 import { useAdmin } from '../../contexts/AdminContext';
-import { authService, UserRole } from '../../services/authService';
-import { getNavigationForRole, getNavigationByCategory, isAdminOrAbove, isRoot } from '../../services/navigationService';
+import { UserRole } from '../../services/authService';
+import { getNavigationByCategory, isAdminOrAbove, isRoot } from '../../services/navigationService';
 import OfflineBanner from './OfflineBanner';
 import PWAInstallPrompt from '../PWAInstallPrompt/PWAInstallPrompt';
 import BackToTop from '../BackToTop/BackToTop';
+import LoginModal from '../Auth/LoginModal';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -19,18 +19,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<UserRole>(UserRole.ANONYMOUS);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   
   // Initialize analytics
   useAnalytics();
   
-  // Load configuration values
-  const { value: packName } = usePackNameConfig();
-  
   // Get admin context for role-based navigation
   const { state } = useAdmin();
-
+  
+  // Use hardcoded pack name for now to avoid permission issues
+  const packName = 'Cub Scout Pack 1703';
+  
   // Track authentication changes from AdminContext
   useEffect(() => {
     if (state.currentUser) {
@@ -50,10 +51,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   }, [state.currentUser]);
 
-  // Debug navigation issues
-  useEffect(() => {
-    console.log('Layout: Navigation updated - User:', currentUser?.email || 'No user', 'Role:', userRole);
-  }, [currentUser, userRole, location.pathname]);
+  // Handle successful login
+  const handleLoginSuccess = (user: any) => {
+    console.log('Login successful:', user);
+    setIsLoginModalOpen(false);
+    // The AdminContext will automatically update the currentUser state
+  };
 
   // Handle navigation with error recovery
   const handleNavigation = (href: string) => {
@@ -89,6 +92,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Check if user has admin privileges
   const isAdmin = isAdminOrAbove(userRole);
   const isRootUser = isRoot(userRole);
+
+  // Debug navigation issues
+  useEffect(() => {
+    console.log('Layout: Navigation updated - User:', currentUser?.email || 'No user', 'Role:', userRole);
+    console.log('Layout: Public nav items:', publicNav.length);
+    console.log('Layout: Authenticated nav items:', authenticatedNav.length);
+    console.log('Layout: Admin nav items:', adminNav.length);
+    console.log('Layout: All nav items:', allNavItems.length);
+  }, [currentUser, userRole, location.pathname, publicNav.length, authenticatedNav.length, adminNav.length, allNavItems.length]);
 
   // Organize navigation into logical groups for dropdown
   const navigationGroups = [
@@ -189,7 +201,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       systemItems: systemNav.length,
       totalItems: allNavItems.length
     });
-  }, [userRole, currentUser, publicNav, authenticatedNav, adminNav, systemNav]);
+  }, [userRole, currentUser, publicNav, authenticatedNav, adminNav, systemNav, allNavItems.length]);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -344,7 +356,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             if (currentUser) {
                               window.location.href = '/admin';
                             } else {
-                              window.location.href = '/admin/login';
+                              setIsLoginModalOpen(true);
                             }
                             setIsDropdownOpen(false);
                           }}
@@ -411,11 +423,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <button
                   onClick={() => {
                     // If user is already logged in, go to admin dashboard
-                    // If not logged in, go to login page
+                    // If not logged in, show login modal
                     if (currentUser) {
                       handleNavigation('/admin');
                     } else {
-                      handleNavigation('/admin/login');
+                      setIsLoginModalOpen(true);
                     }
                     setIsMobileMenuOpen(false);
                   }}
@@ -574,6 +586,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       
       {/* Back to Top Button */}
       <BackToTop />
+      
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onSuccess={handleLoginSuccess}
+      />
     </div>
   );
 };

@@ -369,15 +369,23 @@ class AuthService {
       
       if (firebaseUser) {
         try {
+          // Only try to access Firestore if user is authenticated
           const appUser = await this.getUserFromFirestore(firebaseUser.uid);
           this.currentUser = appUser;
           this.notifyAuthStateListeners(appUser);
         } catch (error) {
           console.error('AuthService: Error fetching user data:', error);
-          // If user doesn't exist in Firestore, create them with default role
-          const appUser = await this.createUserFromFirebaseUser(firebaseUser);
-          this.currentUser = appUser;
-          this.notifyAuthStateListeners(appUser);
+          // If user doesn't exist in Firestore or permission denied, create them with default role
+          try {
+            const appUser = await this.createUserFromFirebaseUser(firebaseUser);
+            this.currentUser = appUser;
+            this.notifyAuthStateListeners(appUser);
+          } catch (createError) {
+            console.error('AuthService: Error creating user:', createError);
+            // If all else fails, set user to null
+            this.currentUser = null;
+            this.notifyAuthStateListeners(null);
+          }
         }
       } else {
         this.currentUser = null;
@@ -457,7 +465,7 @@ class AuthService {
     const isFirstUser = usersSnapshot.empty;
 
     // Determine role based on whether this is the first user
-          const role = isFirstUser ? UserRole.ROOT : UserRole.PARENT;
+    const role = isFirstUser ? UserRole.ROOT : UserRole.PARENT;
 
     // Create user document in Firestore
     console.log('Creating Firestore user document...');
@@ -465,8 +473,8 @@ class AuthService {
       email: firebaseUser.email!,
       displayName: firebaseUser.displayName || 'User',
       photoURL: firebaseUser.photoURL || undefined, // Include profile picture from social login
-      role: UserRole.ROOT,
-      permissions: ROLE_PERMISSIONS[UserRole.ROOT],
+      role: role,
+      permissions: ROLE_PERMISSIONS[role],
       isActive: true,
       authProvider: authProvider,
       profile: {

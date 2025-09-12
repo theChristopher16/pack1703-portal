@@ -26,15 +26,27 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
 
   // Check if user has access to the route
   if (route && !hasAccessToRoute(userRole, route)) {
+    // If user is not authenticated, redirect to home
+    if (userRole === UserRole.ANONYMOUS) {
+      return <Navigate to="/" replace />;
+    }
     return <Navigate to={fallbackPath} replace />;
   }
 
   // Check specific role requirements
   if (requiredRole && userRole !== requiredRole) {
+    // If user is not authenticated, redirect to home
+    if (userRole === UserRole.ANONYMOUS) {
+      return <Navigate to="/" replace />;
+    }
     return <Navigate to={fallbackPath} replace />;
   }
 
   if (requiredRoles && !requiredRoles.includes(userRole)) {
+    // If user is not authenticated, redirect to home
+    if (userRole === UserRole.ANONYMOUS) {
+      return <Navigate to="/" replace />;
+    }
     return <Navigate to={fallbackPath} replace />;
   }
 
@@ -68,7 +80,7 @@ export const RootOnly: React.FC<{ children: React.ReactNode; fallbackPath?: stri
 
 export const AuthenticatedOnly: React.FC<{ children: React.ReactNode; fallbackPath?: string }> = ({ 
   children, 
-  fallbackPath = '/admin/login' 
+  fallbackPath = '/' 
 }) => (
   <RoleGuard 
     requiredRoles={[UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.ROOT, UserRole.AI_ASSISTANT]} 

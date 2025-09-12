@@ -11,7 +11,7 @@ const RootAccountSetup: React.FC = () => {
 
   // Only allow root users to access this page
   if (userRole !== UserRole.ROOT) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   const handleSetupComplete = () => {

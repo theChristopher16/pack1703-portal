@@ -2832,15 +2832,29 @@ class AIService {
           if (realLocationData.phone) {
             enhancedData.eventData.phone = realLocationData.phone;
             console.log('📞 Found real phone number:', realLocationData.phone);
+          } else {
+            enhancedData.eventData.phone = 'Unable to find - Admin edit required';
+            console.log('⚠️ Phone number not found in search results');
           }
           if (realLocationData.address) {
             enhancedData.eventData.address = realLocationData.address;
             console.log('📍 Found real address:', realLocationData.address);
+          } else {
+            enhancedData.eventData.address = 'Unable to find - Admin edit required';
+            console.log('⚠️ Address not found in search results');
           }
           if (realLocationData.coordinates) {
             enhancedData.eventData.coordinates = realLocationData.coordinates;
             console.log('🗺️ Found real coordinates:', realLocationData.coordinates);
+          } else {
+            enhancedData.eventData.coordinates = { lat: 0, lng: 0 };
+            console.log('⚠️ Coordinates not found in search results');
           }
+        } else {
+          console.log('⚠️ No location search results found');
+          enhancedData.eventData.phone = 'Unable to find - Admin edit required';
+          enhancedData.eventData.address = 'Unable to find - Admin edit required';
+          enhancedData.eventData.coordinates = { lat: 0, lng: 0 };
         }
 
         // Get real medical facility data
@@ -2852,12 +2866,28 @@ class AIService {
           if (realMedicalData.name && realMedicalData.phone) {
             enhancedData.eventData.medicalFacility = {
               name: realMedicalData.name,
-              address: realMedicalData.address || 'Address not found',
+              address: realMedicalData.address || 'Unable to find - Admin edit required',
               phone: realMedicalData.phone,
-              distance: realMedicalData.distance || 'Distance not available'
+              distance: realMedicalData.distance || 'Unable to find - Admin edit required'
             };
             console.log('🏥 Found real medical facility:', realMedicalData.name, realMedicalData.phone);
+          } else {
+            enhancedData.eventData.medicalFacility = {
+              name: 'Unable to find - Admin edit required',
+              address: 'Unable to find - Admin edit required',
+              phone: 'Unable to find - Admin edit required',
+              distance: 'Unable to find - Admin edit required'
+            };
+            console.log('⚠️ Medical facility not found in search results');
           }
+        } else {
+          console.log('⚠️ No medical facility search results found');
+          enhancedData.eventData.medicalFacility = {
+            name: 'Unable to find - Admin edit required',
+            address: 'Unable to find - Admin edit required',
+            phone: 'Unable to find - Admin edit required',
+            distance: 'Unable to find - Admin edit required'
+          };
         }
 
         // Get 5-day weather forecast if coordinates are available
@@ -2879,7 +2909,21 @@ class AIService {
         
       } catch (enhancementError) {
         console.warn('⚠️ Failed to enhance with real data:', enhancementError);
-        // Continue with AI-generated data if enhancement fails
+        // Mark fields as needing manual input instead of using AI-generated placeholders
+        enhancedData.eventData.phone = 'Unable to find - Admin edit required';
+        enhancedData.eventData.address = 'Unable to find - Admin edit required';
+        enhancedData.eventData.medicalFacility = {
+          name: 'Unable to find - Admin edit required',
+          address: 'Unable to find - Admin edit required',
+          phone: 'Unable to find - Admin edit required',
+          distance: 'Unable to find - Admin edit required'
+        };
+        enhancedData.eventData.coordinates = {
+          lat: 0,
+          lng: 0
+        };
+        enhancedData.weatherForecast = null;
+        console.log('⚠️ Marked fields for manual admin input due to web search failure');
       }
 
       // Step 3: Check for existing locations to prevent duplicates

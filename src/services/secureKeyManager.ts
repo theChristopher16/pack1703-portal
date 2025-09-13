@@ -176,6 +176,13 @@ class SecureKeyManager {
         name: 'recaptcha-secret-key',
         required: true,
         description: 'reCAPTCHA v3 secret key'
+      },
+
+      // Vertex AI / Google AI Keys
+      'REACT_APP_GOOGLE_AI_API_KEY': {
+        name: 'google-ai-key',
+        required: true,
+        description: 'Google AI API key for Vertex AI/Gemini access'
       }
     };
 

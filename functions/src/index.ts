@@ -903,10 +903,9 @@ export const fetchUrlContent = functions.https.onCall(async (request) => {
 });
 
 // Cloud function to perform web searches for event enhancement
-export const webSearch = functions.https.onCall(async (request) => {
+export const webSearch = functions.https.onCall(async (data, context) => {
   try {
-    const data = request.data as { query: string; maxResults?: number };
-    const { query, maxResults = 5 } = data;
+    const { query, maxResults = 5 } = data as { query: string; maxResults?: number };
     
     if (!query) {
       throw new functions.https.HttpsError('invalid-argument', 'Search query is required');

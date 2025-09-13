@@ -2817,37 +2817,87 @@ class AIService {
       const comprehensiveData = await vertexAIService.generateComprehensiveEventData(eventPrompt);
       console.log('📋 Generated comprehensive data:', comprehensiveData);
 
-      // Step 2: Get 5-day weather forecast if coordinates are available
-      let weatherForecast = null;
-      if (comprehensiveData.eventData.coordinates && comprehensiveData.eventData.coordinates.lat && comprehensiveData.eventData.coordinates.lng) {
-        try {
-          const { externalApiService } = await import('./externalApiService');
-          weatherForecast = await externalApiService.get5DayWeatherForecast(
-            comprehensiveData.eventData.coordinates.lat,
-            comprehensiveData.eventData.coordinates.lng
-          );
-          console.log('🌤️ Retrieved 5-day weather forecast:', weatherForecast);
-        } catch (weatherError) {
-          console.warn('⚠️ Failed to get weather forecast:', weatherError);
+      // Step 2: Enhance with real data using web search and external APIs
+      let enhancedData = comprehensiveData;
+      try {
+        console.log('🔍 Enhancing event data with real information...');
+        
+        // Get real location data using web search
+        const locationSearchQuery = `${comprehensiveData.eventData.location} ${comprehensiveData.eventData.address || ''} phone number address`;
+        const locationResults = await this.performWebSearch(locationSearchQuery);
+        
+        if (locationResults && locationResults.length > 0) {
+          // Extract real phone number and address from search results
+          const realLocationData = this.extractLocationData(locationResults);
+          if (realLocationData.phone) {
+            enhancedData.eventData.phone = realLocationData.phone;
+            console.log('📞 Found real phone number:', realLocationData.phone);
+          }
+          if (realLocationData.address) {
+            enhancedData.eventData.address = realLocationData.address;
+            console.log('📍 Found real address:', realLocationData.address);
+          }
+          if (realLocationData.coordinates) {
+            enhancedData.eventData.coordinates = realLocationData.coordinates;
+            console.log('🗺️ Found real coordinates:', realLocationData.coordinates);
+          }
         }
+
+        // Get real medical facility data
+        const medicalSearchQuery = `nearest hospital emergency room ${comprehensiveData.eventData.location} ${comprehensiveData.eventData.address || ''} phone number`;
+        const medicalResults = await this.performWebSearch(medicalSearchQuery);
+        
+        if (medicalResults && medicalResults.length > 0) {
+          const realMedicalData = this.extractMedicalFacilityData(medicalResults);
+          if (realMedicalData.name && realMedicalData.phone) {
+            enhancedData.eventData.medicalFacility = {
+              name: realMedicalData.name,
+              address: realMedicalData.address || 'Address not found',
+              phone: realMedicalData.phone,
+              distance: realMedicalData.distance || 'Distance not available'
+            };
+            console.log('🏥 Found real medical facility:', realMedicalData.name, realMedicalData.phone);
+          }
+        }
+
+        // Get 5-day weather forecast if coordinates are available
+        let weatherForecast = null;
+        if (enhancedData.eventData.coordinates && enhancedData.eventData.coordinates.lat && enhancedData.eventData.coordinates.lng) {
+          try {
+            const { externalApiService } = await import('./externalApiService');
+            weatherForecast = await externalApiService.get5DayWeatherForecast(
+              enhancedData.eventData.coordinates.lat,
+              enhancedData.eventData.coordinates.lng
+            );
+            console.log('🌤️ Retrieved 5-day weather forecast:', weatherForecast);
+          } catch (weatherError) {
+            console.warn('⚠️ Failed to get weather forecast:', weatherError);
+          }
+        }
+
+        enhancedData.weatherForecast = weatherForecast;
+        
+      } catch (enhancementError) {
+        console.warn('⚠️ Failed to enhance with real data:', enhancementError);
+        // Continue with AI-generated data if enhancement fails
       }
 
       // Step 3: Check for existing locations to prevent duplicates
-      const existingLocations = await this.checkExistingLocations(comprehensiveData.eventData.location);
+      const existingLocations = await this.checkExistingLocations(enhancedData.eventData.location);
       
       // Step 4: Create location if needed (and not duplicate)
       let locationId = null;
-      if (comprehensiveData.duplicateCheck.shouldCreateNew && !testMode) {
+      if (enhancedData.duplicateCheck.shouldCreateNew && !testMode) {
         const locationData = {
-          name: comprehensiveData.eventData.location,
-          address: comprehensiveData.eventData.address,
-          phone: comprehensiveData.eventData.phone,
-          coordinates: comprehensiveData.eventData.coordinates,
-          amenities: comprehensiveData.eventData.amenities,
-          medicalFacility: comprehensiveData.eventData.medicalFacility,
-          accessibility: comprehensiveData.eventData.accessibility,
-          allergies: comprehensiveData.eventData.allergies,
-          weatherConsiderations: comprehensiveData.eventData.weatherConsiderations
+          name: enhancedData.eventData.location,
+          address: enhancedData.eventData.address,
+          phone: enhancedData.eventData.phone,
+          coordinates: enhancedData.eventData.coordinates,
+          amenities: enhancedData.eventData.amenities,
+          medicalFacility: enhancedData.eventData.medicalFacility,
+          accessibility: enhancedData.eventData.accessibility,
+          allergies: enhancedData.eventData.allergies,
+          weatherConsiderations: enhancedData.eventData.weatherConsiderations
         };
         
         locationId = await this.createLocation(locationData);
@@ -2857,19 +2907,19 @@ class AIService {
         console.log('📍 Using existing location:', locationId);
       }
 
-      // Step 5: Create event with comprehensive data including weather forecast
+      // Step 5: Create event with enhanced data including weather forecast
       const eventData = {
-        ...comprehensiveData.eventData,
+        ...enhancedData.eventData,
         locationId: locationId,
-        packingList: comprehensiveData.packingList,
-        familyNotes: comprehensiveData.familyNotes,
-        checkInTime: comprehensiveData.eventData.checkInTime,
-        earliestArrival: comprehensiveData.eventData.earliestArrival,
-        medicalFacility: comprehensiveData.eventData.medicalFacility,
-        allergies: comprehensiveData.eventData.allergies,
-        accessibility: comprehensiveData.eventData.accessibility,
-        weatherConsiderations: comprehensiveData.eventData.weatherConsiderations,
-        weatherForecast: weatherForecast, // Add 5-day weather forecast
+        packingList: enhancedData.packingList,
+        familyNotes: enhancedData.familyNotes,
+        checkInTime: enhancedData.eventData.checkInTime,
+        earliestArrival: enhancedData.eventData.earliestArrival,
+        medicalFacility: enhancedData.eventData.medicalFacility,
+        allergies: enhancedData.eventData.allergies,
+        accessibility: enhancedData.eventData.accessibility,
+        weatherConsiderations: enhancedData.eventData.weatherConsiderations,
+        weatherForecast: enhancedData.weatherForecast, // Add 5-day weather forecast
         createdBy: 'ai_solyn',
         createdAt: new Date().toISOString(),
         testMode: testMode // Flag for test events
@@ -2888,9 +2938,9 @@ class AIService {
         eventId: eventId,
         locationId: locationId,
         eventData: eventData,
-        comprehensiveData: comprehensiveData,
-        weatherForecast: weatherForecast,
-        duplicateCheck: comprehensiveData.duplicateCheck,
+        comprehensiveData: enhancedData,
+        weatherForecast: enhancedData.weatherForecast,
+        duplicateCheck: enhancedData.duplicateCheck,
         existingLocations: existingLocations,
         testMode: testMode
       };
@@ -2899,6 +2949,91 @@ class AIService {
       console.error('❌ Failed to create comprehensive event:', error);
       throw error;
     }
+  }
+
+  /**
+   * Perform web search for real data
+   */
+  private async performWebSearch(query: string): Promise<any[]> {
+    try {
+      // Use the existing web search functionality
+      const searchResults = await this.enhanceEventDataWithWebSearch(query);
+      return searchResults || [];
+    } catch (error) {
+      console.warn('Web search failed:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Extract real location data from web search results
+   */
+  private extractLocationData(searchResults: any[]): any {
+    const locationData: any = {};
+    
+    for (const result of searchResults) {
+      const content = result.content || result.snippet || '';
+      
+      // Extract phone number
+      const phoneMatch = content.match(/(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/);
+      if (phoneMatch && !locationData.phone) {
+        locationData.phone = phoneMatch[1];
+      }
+      
+      // Extract address
+      const addressMatch = content.match(/(\d+\s+[A-Za-z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct))/i);
+      if (addressMatch && !locationData.address) {
+        locationData.address = addressMatch[1];
+      }
+      
+      // Extract coordinates (if available)
+      const coordMatch = content.match(/(\d+\.\d+),\s*(\d+\.\d+)/);
+      if (coordMatch && !locationData.coordinates) {
+        locationData.coordinates = {
+          lat: parseFloat(coordMatch[1]),
+          lng: parseFloat(coordMatch[2])
+        };
+      }
+    }
+    
+    return locationData;
+  }
+
+  /**
+   * Extract real medical facility data from web search results
+   */
+  private extractMedicalFacilityData(searchResults: any[]): any {
+    const medicalData: any = {};
+    
+    for (const result of searchResults) {
+      const content = result.content || result.snippet || '';
+      
+      // Extract hospital name
+      const hospitalMatch = content.match(/([A-Za-z\s]+(?:Hospital|Medical Center|Emergency Room|ER|Clinic|Health Center))/i);
+      if (hospitalMatch && !medicalData.name) {
+        medicalData.name = hospitalMatch[1].trim();
+      }
+      
+      // Extract phone number
+      const phoneMatch = content.match(/(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/);
+      if (phoneMatch && !medicalData.phone) {
+        medicalData.phone = phoneMatch[1];
+      }
+      
+      // Extract address
+      const addressMatch = content.match(/(\d+\s+[A-Za-z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct))/i);
+      if (addressMatch && !medicalData.address) {
+        medicalData.address = addressMatch[1];
+      }
+      
+      // Extract distance
+      const distanceMatch = content.match(/(\d+\.?\d*)\s*(?:miles?|mi|km|kilometers?)/i);
+      if (distanceMatch && !medicalData.distance) {
+        medicalData.distance = `${distanceMatch[1]} miles`;
+      }
+    }
+    
+    return medicalData;
   }
 
   /**

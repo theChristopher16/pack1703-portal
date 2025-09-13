@@ -336,10 +336,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       {navigationGroups.map((group, groupIndex) => (
                         <div key={group.name} className="mb-2">
                           {/* Group Header */}
-                          <div className="px-4 py-2 border-b border-gray-100 bg-gray-50/50">
+                          <div className="px-4 py-2 border-b border-gray-300 bg-gray-200/90">
                             <div className="flex items-center space-x-2">
-                              <span className="text-lg opacity-60">{group.icon}</span>
-                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide select-none">
+                              <span className="text-lg">{group.icon}</span>
+                              <span className="text-xs font-bold text-gray-800 uppercase tracking-wide select-none">
                                 {group.name}
                               </span>
                             </div>

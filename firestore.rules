@@ -210,8 +210,14 @@ service cloud.firestore {
       allow write: if isOwner(userId) || isAdmin();
     }
 
-    // ============================================================================
-    // ADMIN-ONLY COLLECTIONS (Aggregated/Anonymized Data Only - No Individual User Data)
+    // Pack lists - admin read/write, authenticated users read
+    match /packLists/{listId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() &&
+                      isValidString(resource.data.name, 100) &&
+                      isValidString(resource.data.description, 500);
+    }
+
     // ============================================================================
     
     // Admin audit logs - admin read-only

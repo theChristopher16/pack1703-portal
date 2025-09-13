@@ -30,5 +30,12 @@ module.exports = {
     '^firebase/app$': '<rootDir>/src/__mocks__/firebase.js',
     '^firebase/firestore$': '<rootDir>/src/__mocks__/firebase.js',
     '^firebase/auth$': '<rootDir>/src/__mocks__/firebase.js',
+    '^firebase/functions$': '<rootDir>/src/__mocks__/firebase.js',
+    '^firebase/analytics$': '<rootDir>/src/__mocks__/firebase.js',
+    '^../services/authService$': '<rootDir>/src/__mocks__/services/authService.js',
+    '^../services/aiAuthService$': '<rootDir>/src/__mocks__/services/aiAuthService.js',
+    '^../services/vertexAIService$': '<rootDir>/src/__mocks__/services/vertexAIService.js',
+    '^../services/externalApiService$': '<rootDir>/src/__mocks__/services/externalApiService.js',
+    '^../services/firestore$': '<rootDir>/src/__mocks__/services/firestore.js',
   }
 };

@@ -39,6 +39,31 @@ vi.mock('firebase/analytics', () => ({
   isSupported: vi.fn(() => Promise.resolve(true)),
 }));
 
+vi.mock('firebase/auth', () => ({
+  getAuth: vi.fn(() => ({
+    currentUser: null,
+    onAuthStateChanged: vi.fn(() => vi.fn()),
+    signInWithEmailAndPassword: vi.fn(() => Promise.resolve({ user: {} })),
+    createUserWithEmailAndPassword: vi.fn(() => Promise.resolve({ user: {} })),
+    signOut: vi.fn(() => Promise.resolve()),
+    sendPasswordResetEmail: vi.fn(() => Promise.resolve()),
+    updateProfile: vi.fn(() => Promise.resolve()),
+  })),
+  signInWithEmailAndPassword: vi.fn(() => Promise.resolve({ user: {} })),
+  createUserWithEmailAndPassword: vi.fn(() => Promise.resolve({ user: {} })),
+  signOut: vi.fn(() => Promise.resolve()),
+  sendPasswordResetEmail: vi.fn(() => Promise.resolve()),
+  updateProfile: vi.fn(() => Promise.resolve()),
+  onAuthStateChanged: vi.fn(() => vi.fn()),
+  GoogleAuthProvider: vi.fn(),
+  FacebookAuthProvider: vi.fn(),
+  TwitterAuthProvider: vi.fn(),
+  GithubAuthProvider: vi.fn(),
+  signInWithPopup: vi.fn(() => Promise.resolve({ user: {} })),
+  signInWithRedirect: vi.fn(() => Promise.resolve({ user: {} })),
+  getRedirectResult: vi.fn(() => Promise.resolve({ user: {} })),
+}));
+
 // Mock React Router with more flexible mocks
 const mockNavigate = vi.fn();
 const mockUseParams = vi.fn(() => ({ id: 'test-id' }));
@@ -137,6 +162,8 @@ vi.mock('../../services/firestore', () => ({
     getSeasons: vi.fn(() => Promise.resolve([])),
     getLists: vi.fn(() => Promise.resolve([])),
     getVolunteerNeeds: vi.fn(() => Promise.resolve([])),
+    deleteEvent: vi.fn(() => Promise.resolve()),
+    deleteLocation: vi.fn(() => Promise.resolve()),
   },
   default: {
     getEvents: vi.fn(() => Promise.resolve([])),
@@ -147,6 +174,104 @@ vi.mock('../../services/firestore', () => ({
     getSeasons: vi.fn(() => Promise.resolve([])),
     getLists: vi.fn(() => Promise.resolve([])),
     getVolunteerNeeds: vi.fn(() => Promise.resolve([])),
+    deleteEvent: vi.fn(() => Promise.resolve()),
+    deleteLocation: vi.fn(() => Promise.resolve()),
+  },
+}));
+
+// Mock the auth service
+vi.mock('../../services/authService', () => ({
+  authService: {
+    getCurrentUser: vi.fn(() => null),
+    isAuthenticated: vi.fn(() => false),
+    hasPermission: vi.fn(() => false),
+    hasAtLeastRole: vi.fn(() => false),
+    hasRole: vi.fn(() => false),
+    getRoleLevel: vi.fn(() => 0),
+    signIn: vi.fn(() => Promise.resolve({})),
+    signOut: vi.fn(() => Promise.resolve()),
+    createUser: vi.fn(() => Promise.resolve({})),
+    updateProfile: vi.fn(() => Promise.resolve()),
+    onAuthStateChanged: vi.fn(() => vi.fn()),
+  },
+  UserRole: {
+    ANONYMOUS: 'anonymous',
+    PARENT: 'parent',
+    VOLUNTEER: 'volunteer',
+    ADMIN: 'admin',
+    ROOT: 'root',
+    AI_ASSISTANT: 'ai_assistant',
+  },
+  Permission: {},
+  ROLE_PERMISSIONS: {},
+  ROLE_HIERARCHY: {},
+  SocialProvider: {},
+}));
+
+// Mock the aiAuthService
+vi.mock('../../services/aiAuthService', () => ({
+  aiAuthService: {
+    getAIUser: vi.fn(() => ({ uid: 'ai_user', role: 'ai_assistant' })),
+    canAIPerformAction: vi.fn(() => true),
+    canAIAccessCollection: vi.fn(() => true),
+    hasAIPermission: vi.fn(() => true),
+  },
+}));
+
+// Mock the vertexAIService
+vi.mock('../../services/vertexAIService', () => ({
+  vertexAIService: {
+    initialize: vi.fn(() => Promise.resolve()),
+    generateResponse: vi.fn(() => Promise.resolve({ content: 'Mock AI response' })),
+    generateEventDescription: vi.fn(() => Promise.resolve('Mock event description')),
+    generateAnnouncementContent: vi.fn(() => Promise.resolve('Mock announcement content')),
+    generatePackingList: vi.fn(() => Promise.resolve(['item1', 'item2'])),
+    generateEventTitle: vi.fn(() => Promise.resolve('Mock Event Title')),
+    analyzeQuery: vi.fn(() => Promise.resolve('Mock query analysis')),
+    generateComprehensiveEventData: vi.fn(() => Promise.resolve({
+      eventData: {
+        title: 'Mock Event',
+        startDate: '2024-01-01',
+        endDate: '2024-01-02',
+        description: 'Mock description',
+        location: 'Mock Location',
+        address: 'Mock Address',
+        phone: 'Mock Phone',
+        coordinates: { lat: 0, lng: 0 },
+        amenities: ['Mock Amenity'],
+        checkInTime: 'Mock Time',
+        earliestArrival: 'Mock Time',
+        medicalFacility: {
+          name: 'Mock Hospital',
+          address: 'Mock Address',
+          phone: 'Mock Phone',
+          distance: 'Mock Distance',
+        },
+        allergies: ['Mock Allergen'],
+        accessibility: 'Mock Accessibility',
+        weatherConsiderations: 'Mock Weather',
+      },
+      packingList: ['Mock Item'],
+      weatherForecast: null,
+      duplicateCheck: {
+        existingLocations: [],
+        shouldCreateNew: true,
+        reason: 'Mock reason',
+      },
+      familyNotes: 'Mock family notes',
+    })),
+    testConnection: vi.fn(() => Promise.resolve({ success: true })),
+  },
+}));
+
+// Mock the externalApiService
+vi.mock('../../services/externalApiService', () => ({
+  externalApiService: {
+    get5DayWeatherForecast: vi.fn(() => Promise.resolve({
+      location: { lat: 0, lng: 0, name: 'Mock Location' },
+      dailyForecasts: [],
+      lastUpdated: new Date().toISOString(),
+    })),
   },
 }));
 

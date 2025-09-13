@@ -394,13 +394,23 @@ export interface AppUser {
 
 // Authentication service
 class AuthService {
-  private auth = getAuth();
+  private _auth: any = null;
   private currentUser: AppUser | null = null;
   private authStateListeners: ((user: AppUser | null) => void)[] = [];
 
+  private get auth() {
+    if (!this._auth) {
+      this._auth = getAuth();
+    }
+    return this._auth;
+  }
+
   constructor() {
-    this.initializeAuthStateListener();
-    this.handleRedirectResult();
+    // Only initialize Firebase-dependent features if not in test environment
+    if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'test') {
+      this.initializeAuthStateListener();
+      this.handleRedirectResult();
+    }
   }
 
   // Initialize auth state listener

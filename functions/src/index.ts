@@ -1495,10 +1495,8 @@ export const aiGenerateContent = functions.https.onCall(async (request) => {
 });
 
 // Test GPT-5 Connection Function
-export const testAIConnection = functions.https.onCall(async (request) => {
+export const testAIConnection = functions.https.onCall(async (data, context) => {
   try {
-    const context = request;
-    
     // Check authentication
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -1548,10 +1546,8 @@ export const testAIConnection = functions.https.onCall(async (request) => {
 });
 
 // System Command Function for Root Users
-export const systemCommand = functions.https.onCall(async (request) => {
+export const systemCommand = functions.https.onCall(async (data, context) => {
   try {
-    const data = request.data as { command: string };
-    const context = request;
     
     // Check authentication
     if (!context.auth) {
@@ -1569,7 +1565,7 @@ export const systemCommand = functions.https.onCall(async (request) => {
       throw new functions.https.HttpsError('permission-denied', 'Only root users can execute system commands');
     }
 
-    const { command } = data;
+    const { command } = data as { command: string };
     
     if (!command) {
       throw new functions.https.HttpsError('invalid-argument', 'Command is required');

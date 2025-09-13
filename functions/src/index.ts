@@ -296,8 +296,8 @@ export const claimVolunteerRole = functions.https.onCall(async (request) => {
     const data = request.data as VolunteerSignup;
     const context = request;
     
-    // Check App Check (skip in emulator for testing)
-    if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
+    // Check App Check (skip in emulator and development for testing)
+    if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
       throw new functions.https.HttpsError('unauthenticated', 'App Check required');
     }
 
@@ -390,8 +390,8 @@ export const icsFeed = functions.https.onCall(async (request) => {
     };
     const context = request;
     
-    // Check App Check (skip in emulator for testing)
-    if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
+    // Check App Check (skip in emulator and development for testing)
+    if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
       throw new functions.https.HttpsError('unauthenticated', 'App Check required');
     }
 
@@ -472,8 +472,8 @@ export const weatherProxy = functions.https.onCall(async (request) => {
     };
     const context = request;
     
-    // Check App Check (skip in emulator for testing)
-    if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
+    // Check App Check (skip in emulator and development for testing)
+    if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
       throw new functions.https.HttpsError('unauthenticated', 'App Check required');
     }
 
@@ -2003,8 +2003,8 @@ export const testSecretManager = functions.https.onCall(async (request) => {
   try {
     const context = request;
     
-    // Check App Check (skip in emulator for testing)
-    if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
+    // Check App Check (skip in emulator and development for testing)
+    if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
       throw new functions.https.HttpsError('unauthenticated', 'App Check required');
     }
 

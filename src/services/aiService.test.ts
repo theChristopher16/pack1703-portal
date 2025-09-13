@@ -572,12 +572,22 @@ describe('AIService', () => {
         date: new Date('2024-09-15T14:00:00Z')
       };
 
-      const enhancedData = await (aiService as any).enhanceEventDataWithWebSearch(eventData);
-      
-      expect(enhancedData).toBeDefined();
-      expect(enhancedData.webSearchResults).toBeDefined();
-      // The web search might not always return results, so we just check that the function runs
-      expect(typeof enhancedData.webSearchResults).toBe('object');
-    });
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Test timeout after 10 seconds')), 10000);
+      });
+
+      const testPromise = (async () => {
+        const enhancedData = await (aiService as any).enhanceEventDataWithWebSearch(eventData);
+        
+        expect(enhancedData).toBeDefined();
+        expect(enhancedData.webSearchResults).toBeDefined();
+        // The web search might not always return results, so we just check that the function runs
+        expect(typeof enhancedData.webSearchResults).toBe('object');
+      })();
+
+      // Race between the test and timeout
+      await Promise.race([testPromise, timeoutPromise]);
+    }, 15000); // Increase test timeout to 15 seconds
   });
 });

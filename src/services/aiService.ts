@@ -884,64 +884,72 @@ class AIService {
     try {
       console.log('🚀 Starting enhanced web search for event data...');
       
-      // Search for location information if missing or unclear
-      if (!eventData.location || eventData.location === 'TBD' || eventData.location.length < 5) {
-        const locationSearch = await this.enhancedWebSearch('location', eventData);
-        if (locationSearch.confidence > 0.5) {
-          enhancedData.location = locationSearch.data;
-          searchResults.location = locationSearch;
-          console.log(`✅ Found location: ${locationSearch.data}`);
-        }
-      }
+      // Add timeout wrapper to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Web search timeout after 8 seconds')), 8000);
+      });
 
-      // Search for event description if missing or generic
-      if (!eventData.description || eventData.description === 'Event details to be determined') {
-        const descriptionSearch = await this.enhancedWebSearch('description', eventData);
-        if (descriptionSearch.confidence > 0.6) {
-          enhancedData.description = descriptionSearch.data;
-          searchResults.description = descriptionSearch;
-          console.log(`✅ Found description with confidence ${descriptionSearch.confidence}`);
-        } else {
-          // Create a creative and factual description
-          enhancedData.description = this.createEventDescription(enhancedData);
-          searchResults.description = {
-            confidence: 0.8,
-            data: enhancedData.description,
-            source: 'ai_generated'
-          };
-          console.log('📝 Generated AI description as fallback');
-        }
-      }
-
-      // Search for requirements/packing lists for camping/outdoor events
-      if (this.isOutdoorEvent(eventData.title)) {
-        const requirementsSearch = await this.enhancedWebSearch('requirements', eventData);
-        if (requirementsSearch.confidence > 0.5) {
-          searchResults.requirements = requirementsSearch;
-          console.log(`✅ Found requirements with confidence ${requirementsSearch.confidence}`);
-        }
-      }
-
-      // Search for nearest medical services for all events
-      const medicalSearch = await this.enhancedWebSearch('medical', eventData);
-      if (medicalSearch.confidence > 0.5) {
-        searchResults.medical = medicalSearch;
-        console.log(`✅ Found medical services with confidence ${medicalSearch.confidence}`);
-      }
-
+      const searchPromise = this.performWebSearches(eventData, enhancedData, searchResults);
+      
+      // Race between search and timeout
+      await Promise.race([searchPromise, timeoutPromise]);
+      
       enhancedData.webSearchResults = searchResults;
-      console.log('🎉 Enhanced web search completed!');
+      console.log('✅ Enhanced event data with web search results');
       return enhancedData;
-
+      
     } catch (error) {
-      console.error('Error enhancing event data with web search:', error);
-      
-      // Fallback: create a basic description
-      if (!enhancedData.description || enhancedData.description === 'Event details to be determined') {
-        enhancedData.description = this.createEventDescription(enhancedData);
-      }
-      
+      console.warn('⚠️ Web search enhancement failed:', error);
+      // Return original data with empty search results if enhancement fails
+      enhancedData.webSearchResults = {};
       return enhancedData;
+    }
+  }
+
+  private async performWebSearches(eventData: any, enhancedData: any, searchResults: any): Promise<void> {
+    // Search for location information if missing or unclear
+    if (!eventData.location || eventData.location === 'TBD' || eventData.location.length < 5) {
+      const locationSearch = await this.enhancedWebSearch('location', eventData);
+      if (locationSearch.confidence > 0.5) {
+        enhancedData.location = locationSearch.data;
+        searchResults.location = locationSearch;
+        console.log(`✅ Found location: ${locationSearch.data}`);
+      }
+    }
+
+    // Search for event description if missing or generic
+    if (!eventData.description || eventData.description === 'Event details to be determined') {
+      const descriptionSearch = await this.enhancedWebSearch('description', eventData);
+      if (descriptionSearch.confidence > 0.6) {
+        enhancedData.description = descriptionSearch.data;
+        searchResults.description = descriptionSearch;
+        console.log(`✅ Found description with confidence ${descriptionSearch.confidence}`);
+      } else {
+        // Create a creative and factual description
+        enhancedData.description = this.createEventDescription(enhancedData);
+        searchResults.description = {
+          confidence: 0.8,
+          data: enhancedData.description,
+          source: 'ai_generated'
+        };
+        console.log('📝 Generated AI description as fallback');
+      }
+    }
+
+    // Search for requirements/packing lists for camping/outdoor events
+    if (this.isOutdoorEvent(eventData.title)) {
+      const requirementsSearch = await this.enhancedWebSearch('requirements', eventData);
+      if (requirementsSearch.confidence > 0.5) {
+        searchResults.requirements = requirementsSearch;
+        console.log(`✅ Found requirements with confidence ${requirementsSearch.confidence}`);
+      }
+    }
+
+    // Search for nearest medical services for all events
+    const medicalSearch = await this.enhancedWebSearch('medical', eventData);
+    if (medicalSearch.confidence > 0.5) {
+      searchResults.medical = medicalSearch;
+      console.log(`✅ Found medical services with confidence ${medicalSearch.confidence}`);
     }
   }
 

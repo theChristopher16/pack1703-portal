@@ -906,49 +906,49 @@ class AIService {
   }
 
   private async performWebSearches(eventData: any, enhancedData: any, searchResults: any): Promise<void> {
-    // Search for location information if missing or unclear
-    if (!eventData.location || eventData.location === 'TBD' || eventData.location.length < 5) {
-      const locationSearch = await this.enhancedWebSearch('location', eventData);
-      if (locationSearch.confidence > 0.5) {
-        enhancedData.location = locationSearch.data;
-        searchResults.location = locationSearch;
-        console.log(`✅ Found location: ${locationSearch.data}`);
+      // Search for location information if missing or unclear
+      if (!eventData.location || eventData.location === 'TBD' || eventData.location.length < 5) {
+        const locationSearch = await this.enhancedWebSearch('location', eventData);
+        if (locationSearch.confidence > 0.5) {
+          enhancedData.location = locationSearch.data;
+          searchResults.location = locationSearch;
+          console.log(`✅ Found location: ${locationSearch.data}`);
+        }
       }
-    }
 
-    // Search for event description if missing or generic
-    if (!eventData.description || eventData.description === 'Event details to be determined') {
-      const descriptionSearch = await this.enhancedWebSearch('description', eventData);
-      if (descriptionSearch.confidence > 0.6) {
-        enhancedData.description = descriptionSearch.data;
-        searchResults.description = descriptionSearch;
-        console.log(`✅ Found description with confidence ${descriptionSearch.confidence}`);
-      } else {
-        // Create a creative and factual description
-        enhancedData.description = this.createEventDescription(enhancedData);
-        searchResults.description = {
-          confidence: 0.8,
-          data: enhancedData.description,
-          source: 'ai_generated'
-        };
-        console.log('📝 Generated AI description as fallback');
+      // Search for event description if missing or generic
+      if (!eventData.description || eventData.description === 'Event details to be determined') {
+        const descriptionSearch = await this.enhancedWebSearch('description', eventData);
+        if (descriptionSearch.confidence > 0.6) {
+          enhancedData.description = descriptionSearch.data;
+          searchResults.description = descriptionSearch;
+          console.log(`✅ Found description with confidence ${descriptionSearch.confidence}`);
+        } else {
+          // Create a creative and factual description
+          enhancedData.description = this.createEventDescription(enhancedData);
+          searchResults.description = {
+            confidence: 0.8,
+            data: enhancedData.description,
+            source: 'ai_generated'
+          };
+          console.log('📝 Generated AI description as fallback');
+        }
       }
-    }
 
-    // Search for requirements/packing lists for camping/outdoor events
-    if (this.isOutdoorEvent(eventData.title)) {
-      const requirementsSearch = await this.enhancedWebSearch('requirements', eventData);
-      if (requirementsSearch.confidence > 0.5) {
-        searchResults.requirements = requirementsSearch;
-        console.log(`✅ Found requirements with confidence ${requirementsSearch.confidence}`);
+      // Search for requirements/packing lists for camping/outdoor events
+      if (this.isOutdoorEvent(eventData.title)) {
+        const requirementsSearch = await this.enhancedWebSearch('requirements', eventData);
+        if (requirementsSearch.confidence > 0.5) {
+          searchResults.requirements = requirementsSearch;
+          console.log(`✅ Found requirements with confidence ${requirementsSearch.confidence}`);
+        }
       }
-    }
 
-    // Search for nearest medical services for all events
-    const medicalSearch = await this.enhancedWebSearch('medical', eventData);
-    if (medicalSearch.confidence > 0.5) {
-      searchResults.medical = medicalSearch;
-      console.log(`✅ Found medical services with confidence ${medicalSearch.confidence}`);
+      // Search for nearest medical services for all events
+      const medicalSearch = await this.enhancedWebSearch('medical', eventData);
+      if (medicalSearch.confidence > 0.5) {
+        searchResults.medical = medicalSearch;
+        console.log(`✅ Found medical services with confidence ${medicalSearch.confidence}`);
     }
   }
 
@@ -2861,6 +2861,18 @@ class AIService {
         const medicalSearchQuery = `nearest hospital emergency room ${comprehensiveData.eventData.location} ${comprehensiveData.eventData.address || ''} phone number`;
         const medicalResults = await this.performWebSearch(medicalSearchQuery);
         
+        // Get amenities and facilities information
+        const amenitiesSearchQuery = `${comprehensiveData.eventData.location} amenities facilities parking restrooms picnic areas playground`;
+        const amenitiesResults = await this.performWebSearch(amenitiesSearchQuery);
+        
+        // Get safety and accessibility information
+        const safetySearchQuery = `${comprehensiveData.eventData.location} safety accessibility allergens emergency procedures rules`;
+        const safetyResults = await this.performWebSearch(safetySearchQuery);
+        
+        // Get event-specific information (check-in times, requirements)
+        const eventInfoSearchQuery = `${comprehensiveData.eventData.location} check-in times arrival hours operation hours requirements reservations`;
+        const eventInfoResults = await this.performWebSearch(eventInfoSearchQuery);
+        
         if (medicalResults && medicalResults.length > 0) {
           const realMedicalData = this.extractMedicalFacilityData(medicalResults);
           if (realMedicalData.name && realMedicalData.phone) {
@@ -2888,6 +2900,67 @@ class AIService {
             phone: 'Unable to find - Admin edit required',
             distance: 'Unable to find - Admin edit required'
           };
+        }
+
+        // Process amenities and facilities information
+        if (amenitiesResults && amenitiesResults.length > 0) {
+          const realAmenitiesData = this.extractAmenitiesData(amenitiesResults);
+          if (realAmenitiesData.amenities && realAmenitiesData.amenities.length > 0) {
+            enhancedData.eventData.amenities = realAmenitiesData.amenities;
+            console.log('🏕️ Found real amenities:', realAmenitiesData.amenities);
+          } else {
+            enhancedData.eventData.amenities = ['Unable to find - Admin edit required'];
+            console.log('⚠️ Amenities not found in search results');
+          }
+        } else {
+          console.log('⚠️ No amenities search results found');
+          enhancedData.eventData.amenities = ['Unable to find - Admin edit required'];
+        }
+
+        // Process safety and accessibility information
+        if (safetyResults && safetyResults.length > 0) {
+          const realSafetyData = this.extractSafetyData(safetyResults);
+          if (realSafetyData.allergies && realSafetyData.allergies.length > 0) {
+            enhancedData.eventData.allergies = realSafetyData.allergies;
+            console.log('⚠️ Found potential allergens:', realSafetyData.allergies);
+          } else {
+            enhancedData.eventData.allergies = ['Unable to find - Admin edit required'];
+            console.log('⚠️ Allergy information not found in search results');
+          }
+          if (realSafetyData.accessibility) {
+            enhancedData.eventData.accessibility = realSafetyData.accessibility;
+            console.log('♿ Found accessibility info:', realSafetyData.accessibility);
+          } else {
+            enhancedData.eventData.accessibility = 'Unable to find - Admin edit required';
+            console.log('⚠️ Accessibility information not found in search results');
+          }
+        } else {
+          console.log('⚠️ No safety search results found');
+          enhancedData.eventData.allergies = ['Unable to find - Admin edit required'];
+          enhancedData.eventData.accessibility = 'Unable to find - Admin edit required';
+        }
+
+        // Process event-specific information (check-in times, requirements)
+        if (eventInfoResults && eventInfoResults.length > 0) {
+          const realEventInfoData = this.extractEventInfoData(eventInfoResults);
+          if (realEventInfoData.checkInTime) {
+            enhancedData.eventData.checkInTime = realEventInfoData.checkInTime;
+            console.log('🕐 Found check-in time:', realEventInfoData.checkInTime);
+          } else {
+            enhancedData.eventData.checkInTime = 'Unable to find - Admin edit required';
+            console.log('⚠️ Check-in time not found in search results');
+          }
+          if (realEventInfoData.earliestArrival) {
+            enhancedData.eventData.earliestArrival = realEventInfoData.earliestArrival;
+            console.log('🕐 Found earliest arrival:', realEventInfoData.earliestArrival);
+          } else {
+            enhancedData.eventData.earliestArrival = 'Unable to find - Admin edit required';
+            console.log('⚠️ Earliest arrival time not found in search results');
+          }
+        } else {
+          console.log('⚠️ No event info search results found');
+          enhancedData.eventData.checkInTime = 'Unable to find - Admin edit required';
+          enhancedData.eventData.earliestArrival = 'Unable to find - Admin edit required';
         }
 
         // Get 5-day weather forecast if coordinates are available
@@ -2996,15 +3069,32 @@ class AIService {
   }
 
   /**
-   * Perform web search for real data
+   * Perform web search for real data using Cloud Function
    */
   private async performWebSearch(query: string): Promise<any[]> {
     try {
-      // Use the existing web search functionality
-      const searchResults = await this.enhanceEventDataWithWebSearch(query);
-      return searchResults || [];
+      console.log('🔍 Performing web search for:', query);
+      
+      // Import Firebase Functions
+      const { getFunctions, httpsCallable } = await import('firebase/functions');
+      const functions = getFunctions();
+      
+      // Call the webSearch Cloud Function
+      const webSearch = httpsCallable(functions, 'webSearch');
+      const result = await webSearch({ 
+        query: query, 
+        maxResults: 5 
+      });
+      
+      if (result.data && (result.data as any).success && (result.data as any).results) {
+        console.log(`✅ Found ${(result.data as any).results.length} search results`);
+        return (result.data as any).results;
+      } else {
+        console.warn('⚠️ Web search returned no results');
+        return [];
+      }
     } catch (error) {
-      console.warn('Web search failed:', error);
+      console.warn('❌ Web search failed:', error);
       return [];
     }
   }
@@ -3016,18 +3106,30 @@ class AIService {
     const locationData: any = {};
     
     for (const result of searchResults) {
-      const content = result.content || result.snippet || '';
+      // Combine title, snippet, and link for comprehensive search
+      const content = `${result.title || ''} ${result.snippet || ''} ${result.link || ''}`;
       
-      // Extract phone number
+      // Extract phone number (various formats)
       const phoneMatch = content.match(/(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/);
       if (phoneMatch && !locationData.phone) {
         locationData.phone = phoneMatch[1];
+        console.log(`📞 Extracted phone: ${locationData.phone}`);
       }
       
-      // Extract address
-      const addressMatch = content.match(/(\d+\s+[A-Za-z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct))/i);
-      if (addressMatch && !locationData.address) {
-        locationData.address = addressMatch[1];
+      // Extract address (more comprehensive pattern)
+      const addressPatterns = [
+        /(\d+\s+[A-Za-z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct|FM\s+\d+))/i,
+        /(\d+\s+[A-Za-z\s]+,\s*[A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5})/i, // Full address with city, state, zip
+        /(FM\s+\d+\s+[A-Za-z\s]+)/i // Texas FM roads
+      ];
+      
+      for (const pattern of addressPatterns) {
+        const addressMatch = content.match(pattern);
+        if (addressMatch && !locationData.address) {
+          locationData.address = addressMatch[1].trim();
+          console.log(`📍 Extracted address: ${locationData.address}`);
+          break;
+        }
       }
       
       // Extract coordinates (if available)
@@ -3037,6 +3139,7 @@ class AIService {
           lat: parseFloat(coordMatch[1]),
           lng: parseFloat(coordMatch[2])
         };
+        console.log(`🗺️ Extracted coordinates: ${locationData.coordinates.lat}, ${locationData.coordinates.lng}`);
       }
     }
     
@@ -3050,34 +3153,182 @@ class AIService {
     const medicalData: any = {};
     
     for (const result of searchResults) {
-      const content = result.content || result.snippet || '';
+      // Combine title, snippet, and link for comprehensive search
+      const content = `${result.title || ''} ${result.snippet || ''} ${result.link || ''}`;
       
-      // Extract hospital name
-      const hospitalMatch = content.match(/([A-Za-z\s]+(?:Hospital|Medical Center|Emergency Room|ER|Clinic|Health Center))/i);
-      if (hospitalMatch && !medicalData.name) {
-        medicalData.name = hospitalMatch[1].trim();
+      // Extract hospital name (more comprehensive patterns)
+      const hospitalPatterns = [
+        /([A-Za-z\s]+(?:Hospital|Medical Center|Emergency Room|ER|Clinic|Health Center|Memorial Hospital|Regional Medical Center))/i,
+        /([A-Za-z\s]+(?:Health|Medical|Memorial|Regional|Community)\s+(?:Hospital|Center|Clinic))/i
+      ];
+      
+      for (const pattern of hospitalPatterns) {
+        const hospitalMatch = content.match(pattern);
+        if (hospitalMatch && !medicalData.name) {
+          medicalData.name = hospitalMatch[1].trim();
+          console.log(`🏥 Extracted medical facility: ${medicalData.name}`);
+          break;
+        }
       }
       
       // Extract phone number
       const phoneMatch = content.match(/(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/);
       if (phoneMatch && !medicalData.phone) {
         medicalData.phone = phoneMatch[1];
+        console.log(`📞 Extracted medical phone: ${medicalData.phone}`);
       }
       
-      // Extract address
-      const addressMatch = content.match(/(\d+\s+[A-Za-z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct))/i);
-      if (addressMatch && !medicalData.address) {
-        medicalData.address = addressMatch[1];
+      // Extract address (more comprehensive patterns)
+      const addressPatterns = [
+        /(\d+\s+[A-Za-z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Circle|Cir|Court|Ct))/i,
+        /(\d+\s+[A-Za-z\s]+,\s*[A-Za-z\s]+,\s*[A-Z]{2}\s+\d{5})/i // Full address with city, state, zip
+      ];
+      
+      for (const pattern of addressPatterns) {
+        const addressMatch = content.match(pattern);
+        if (addressMatch && !medicalData.address) {
+          medicalData.address = addressMatch[1].trim();
+          console.log(`📍 Extracted medical address: ${medicalData.address}`);
+          break;
+        }
       }
       
       // Extract distance
       const distanceMatch = content.match(/(\d+\.?\d*)\s*(?:miles?|mi|km|kilometers?)/i);
       if (distanceMatch && !medicalData.distance) {
         medicalData.distance = `${distanceMatch[1]} miles`;
+        console.log(`📏 Extracted distance: ${medicalData.distance}`);
       }
     }
     
     return medicalData;
+  }
+
+  /**
+   * Extract amenities and facilities data from web search results
+   */
+  private extractAmenitiesData(searchResults: any[]): any {
+    const amenitiesData: any = { amenities: [] };
+    
+    for (const result of searchResults) {
+      // Combine title, snippet, and link for comprehensive search
+      const content = `${result.title || ''} ${result.snippet || ''} ${result.link || ''}`;
+      
+      // Common amenities patterns
+      const amenityPatterns = [
+        /(parking|restrooms?|bathrooms?|picnic\s+tables?|playground|pavilion|shelter|grill|fire\s+pit|campground|campsite|trail|hiking|fishing|swimming|boat\s+ramp|dock|pier)/gi,
+        /(restroom|bathroom|toilet|facilities|amenities|features|available|provided)/gi
+      ];
+      
+      for (const pattern of amenityPatterns) {
+        const matches = content.match(pattern);
+        if (matches) {
+          matches.forEach(match => {
+            const cleanMatch = match.toLowerCase().trim();
+            if (!amenitiesData.amenities.includes(cleanMatch)) {
+              amenitiesData.amenities.push(cleanMatch);
+              console.log(`🏕️ Extracted amenity: ${cleanMatch}`);
+            }
+          });
+        }
+      }
+    }
+    
+    return amenitiesData;
+  }
+
+  /**
+   * Extract safety and accessibility data from web search results
+   */
+  private extractSafetyData(searchResults: any[]): any {
+    const safetyData: any = { allergies: [], accessibility: '' };
+    
+    for (const result of searchResults) {
+      // Combine title, snippet, and link for comprehensive search
+      const content = `${result.title || ''} ${result.snippet || ''} ${result.link || ''}`;
+      
+      // Extract potential allergens
+      const allergenPatterns = [
+        /(nuts?|peanuts?|tree\s+nuts?|dairy|milk|eggs?|soy|wheat|gluten|shellfish|fish|sesame|pollen|bees?|wasps?|insects?|poison\s+ivy|oak|sumac)/gi,
+        /(allergens?|allergies?|allergic|reactions?|sensitivity)/gi
+      ];
+      
+      for (const pattern of allergenPatterns) {
+        const matches = content.match(pattern);
+        if (matches) {
+          matches.forEach(match => {
+            const cleanMatch = match.toLowerCase().trim();
+            if (!safetyData.allergies.includes(cleanMatch)) {
+              safetyData.allergies.push(cleanMatch);
+              console.log(`⚠️ Extracted allergen: ${cleanMatch}`);
+            }
+          });
+        }
+      }
+      
+      // Extract accessibility information
+      const accessibilityPatterns = [
+        /(wheelchair\s+accessible|ADA\s+compliant|handicap\s+accessible|accessible\s+parking|ramp|elevator|accessible\s+restroom)/gi,
+        /(accessibility|accessible|disability|mobility|assistance)/gi
+      ];
+      
+      for (const pattern of accessibilityPatterns) {
+        const match = content.match(pattern);
+        if (match && !safetyData.accessibility) {
+          safetyData.accessibility = match[0].trim();
+          console.log(`♿ Extracted accessibility info: ${safetyData.accessibility}`);
+          break;
+        }
+      }
+    }
+    
+    return safetyData;
+  }
+
+  /**
+   * Extract event-specific information (check-in times, requirements) from web search results
+   */
+  private extractEventInfoData(searchResults: any[]): any {
+    const eventInfoData: any = {};
+    
+    for (const result of searchResults) {
+      // Combine title, snippet, and link for comprehensive search
+      const content = `${result.title || ''} ${result.snippet || ''} ${result.link || ''}`;
+      
+      // Extract check-in times
+      const checkInPatterns = [
+        /(check[-\s]?in\s+time[s]?[:\s]+(\d{1,2}:\d{2}\s*[AP]M|\d{1,2}\s*[AP]M))/gi,
+        /(registration\s+time[s]?[:\s]+(\d{1,2}:\d{2}\s*[AP]M|\d{1,2}\s*[AP]M))/gi,
+        /(arrival\s+time[s]?[:\s]+(\d{1,2}:\d{2}\s*[AP]M|\d{1,2}\s*[AP]M))/gi
+      ];
+      
+      for (const pattern of checkInPatterns) {
+        const match = content.match(pattern);
+        if (match && !eventInfoData.checkInTime) {
+          eventInfoData.checkInTime = match[2] || match[1];
+          console.log(`🕐 Extracted check-in time: ${eventInfoData.checkInTime}`);
+          break;
+        }
+      }
+      
+      // Extract earliest arrival times
+      const arrivalPatterns = [
+        /(earliest\s+arrival[:\s]+(\d{1,2}:\d{2}\s*[AP]M|\d{1,2}\s*[AP]M))/gi,
+        /(gates?\s+open[:\s]+(\d{1,2}:\d{2}\s*[AP]M|\d{1,2}\s*[AP]M))/gi,
+        /(opens?\s+at[:\s]+(\d{1,2}:\d{2}\s*[AP]M|\d{1,2}\s*[AP]M))/gi
+      ];
+      
+      for (const pattern of arrivalPatterns) {
+        const match = content.match(pattern);
+        if (match && !eventInfoData.earliestArrival) {
+          eventInfoData.earliestArrival = match[2] || match[1];
+          console.log(`🕐 Extracted earliest arrival: ${eventInfoData.earliestArrival}`);
+          break;
+        }
+      }
+    }
+    
+    return eventInfoData;
   }
 
   /**

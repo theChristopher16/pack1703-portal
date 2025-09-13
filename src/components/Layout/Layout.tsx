@@ -89,6 +89,31 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Combine all navigation items
   const allNavItems = [...publicNav, ...authenticatedNav, ...adminNav, ...systemNav];
   
+  // Create prioritized navigation for main toolbar (prioritize main content items)
+  const getMainToolbarItems = () => {
+    if (currentUser) {
+      // For authenticated users, prioritize main content items
+      const mainContentItems = publicNav.filter(item => 
+        ['Events', 'Announcements', 'Locations', 'Volunteer'].includes(item.name)
+      );
+      const chatItem = authenticatedNav.find(item => item.name === 'Chat');
+      const otherItems = publicNav.filter(item => 
+        !['Events', 'Announcements', 'Locations', 'Volunteer', 'Home'].includes(item.name)
+      );
+      
+      return [
+        ...mainContentItems,
+        ...(chatItem ? [chatItem] : []),
+        ...otherItems
+      ].slice(0, 4);
+    } else {
+      // For anonymous users, show public items
+      return publicNav.slice(0, 4);
+    }
+  };
+  
+  const mainToolbarItems = getMainToolbarItems();
+  
   // Check if user has admin privileges
   const isAdmin = isAdminOrAbove(userRole);
   const isRootUser = isRoot(userRole);
@@ -100,7 +125,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     console.log('Layout: Authenticated nav items:', authenticatedNav.length);
     console.log('Layout: Admin nav items:', adminNav.length);
     console.log('Layout: All nav items:', allNavItems.length);
-  }, [currentUser, userRole, location.pathname, publicNav.length, authenticatedNav.length, adminNav.length, allNavItems.length]);
+    console.log('Layout: Main toolbar items:', mainToolbarItems.map(item => item.name).join(', '));
+  }, [currentUser, userRole, location.pathname, publicNav.length, authenticatedNav.length, adminNav.length, allNavItems.length, mainToolbarItems]);
 
   // Organize navigation into logical groups for dropdown
   const navigationGroups = [
@@ -226,7 +252,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center space-x-1">
-              {allNavItems.slice(0, 4).map((item) => {
+              {mainToolbarItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
@@ -255,7 +281,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Medium Screen Navigation (shorter names) */}
             <nav className="hidden md:flex lg:hidden items-center space-x-1">
-              {allNavItems.slice(0, 4).map((item) => {
+              {mainToolbarItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
@@ -397,7 +423,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="md:hidden bg-white/95 backdrop-blur-md border-t border-gray-200/50">
             <div className="px-4 py-2 space-y-1">
               {/* Public and Authenticated Navigation */}
-              {allNavItems.map((item) => {
+              {mainToolbarItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
@@ -534,7 +560,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div>
               <h3 className="text-lg font-display font-semibold footer-heading mb-4">Quick Links</h3>
               <div className="space-y-2">
-                {allNavItems.slice(0, 4).map((item) => (
+                {mainToolbarItems.map((item) => (
                   <button
                     key={item.name}
                     onClick={() => handleNavigation(item.href)}

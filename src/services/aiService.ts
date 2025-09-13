@@ -2817,10 +2817,25 @@ class AIService {
       const comprehensiveData = await vertexAIService.generateComprehensiveEventData(eventPrompt);
       console.log('📋 Generated comprehensive data:', comprehensiveData);
 
-      // Step 2: Check for existing locations to prevent duplicates
+      // Step 2: Get 5-day weather forecast if coordinates are available
+      let weatherForecast = null;
+      if (comprehensiveData.eventData.coordinates && comprehensiveData.eventData.coordinates.lat && comprehensiveData.eventData.coordinates.lng) {
+        try {
+          const { externalApiService } = await import('./externalApiService');
+          weatherForecast = await externalApiService.get5DayWeatherForecast(
+            comprehensiveData.eventData.coordinates.lat,
+            comprehensiveData.eventData.coordinates.lng
+          );
+          console.log('🌤️ Retrieved 5-day weather forecast:', weatherForecast);
+        } catch (weatherError) {
+          console.warn('⚠️ Failed to get weather forecast:', weatherError);
+        }
+      }
+
+      // Step 3: Check for existing locations to prevent duplicates
       const existingLocations = await this.checkExistingLocations(comprehensiveData.eventData.location);
       
-      // Step 3: Create location if needed (and not duplicate)
+      // Step 4: Create location if needed (and not duplicate)
       let locationId = null;
       if (comprehensiveData.duplicateCheck.shouldCreateNew && !testMode) {
         const locationData = {
@@ -2842,7 +2857,7 @@ class AIService {
         console.log('📍 Using existing location:', locationId);
       }
 
-      // Step 4: Create event with comprehensive data
+      // Step 5: Create event with comprehensive data including weather forecast
       const eventData = {
         ...comprehensiveData.eventData,
         locationId: locationId,
@@ -2854,6 +2869,7 @@ class AIService {
         allergies: comprehensiveData.eventData.allergies,
         accessibility: comprehensiveData.eventData.accessibility,
         weatherConsiderations: comprehensiveData.eventData.weatherConsiderations,
+        weatherForecast: weatherForecast, // Add 5-day weather forecast
         createdBy: 'ai_solyn',
         createdAt: new Date().toISOString(),
         testMode: testMode // Flag for test events
@@ -2873,6 +2889,7 @@ class AIService {
         locationId: locationId,
         eventData: eventData,
         comprehensiveData: comprehensiveData,
+        weatherForecast: weatherForecast,
         duplicateCheck: comprehensiveData.duplicateCheck,
         existingLocations: existingLocations,
         testMode: testMode

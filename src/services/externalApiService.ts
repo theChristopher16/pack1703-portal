@@ -52,6 +52,38 @@ export interface WeatherData {
   }>;
 }
 
+export interface WeatherForecastData {
+  location: {
+    lat: number;
+    lng: number;
+    name: string;
+    country: string;
+  };
+  dailyForecasts: DailyWeatherForecast[];
+  hourlyForecasts: HourlyWeatherForecast[];
+  lastUpdated: string;
+}
+
+export interface DailyWeatherForecast {
+  date: string;
+  dayName: string;
+  minTemperature: number;
+  maxTemperature: number;
+  conditions: string;
+  humidity: number;
+  windSpeed: number;
+  description: string;
+}
+
+export interface HourlyWeatherForecast {
+  datetime: string;
+  temperature: number;
+  conditions: string;
+  humidity: number;
+  windSpeed: number;
+  description: string;
+}
+
 class ExternalApiService {
   private googleMapsKey: string | null = null;
   private phoneValidationKey: string | null = null;
@@ -410,6 +442,128 @@ class ExternalApiService {
       console.error('Weather forecast failed:', error);
       return null;
     }
+  }
+
+  /**
+   * Get 5-day weather forecast using OpenWeather API
+   */
+  async get5DayWeatherForecast(lat: number, lng: number): Promise<WeatherForecastData | null> {
+    const openWeatherKey = await this.getOpenWeatherKey();
+    if (!FEATURE_FLAGS.WEATHER_INTEGRATION || !openWeatherKey || openWeatherKey === 'demo_key') {
+      return null;
+    }
+
+    try {
+      // Track API usage for cost monitoring (5-day forecast costs more)
+      try {
+        const { costManagementService } = await import('./costManagementService');
+        await costManagementService.instance.trackApiUsage('openWeather', 'admin', 0.005);
+      } catch (costError) {
+        console.warn('Cost tracking not available:', costError);
+      }
+
+      const response = await fetch(
+        `${API_CONFIG.ADMIN.OPENWEATHER.baseUrl}${API_CONFIG.ADMIN.OPENWEATHER.forecastEndpoint}?lat=${lat}&lon=${lng}&appid=${openWeatherKey}&units=imperial`
+      );
+
+      if (!response.ok) {
+        throw new Error(`OpenWeather API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Process the 5-day forecast data
+      const forecast = this.process5DayForecast(data);
+      return forecast;
+    } catch (error) {
+      console.error('5-day weather forecast failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Process OpenWeather 5-day forecast data into our format
+   */
+  private process5DayForecast(data: any): WeatherForecastData {
+    const dailyForecasts: DailyWeatherForecast[] = [];
+    const hourlyForecasts: HourlyWeatherForecast[] = [];
+
+    // Group forecasts by date
+    const forecastsByDate = new Map<string, any[]>();
+    
+    data.list.forEach((forecast: any) => {
+      const date = new Date(forecast.dt * 1000).toDateString();
+      if (!forecastsByDate.has(date)) {
+        forecastsByDate.set(date, []);
+      }
+      forecastsByDate.get(date)!.push(forecast);
+    });
+
+    // Process each day
+    forecastsByDate.forEach((dayForecasts, date) => {
+      const dayDate = new Date(date);
+      
+      // Calculate daily min/max temperatures
+      const temperatures = dayForecasts.map(f => f.main.temp);
+      const minTemp = Math.min(...temperatures);
+      const maxTemp = Math.max(...temperatures);
+      
+      // Get most common condition for the day
+      const conditions = dayForecasts.map(f => f.weather[0].main);
+      const mostCommonCondition = this.getMostCommonCondition(conditions);
+      
+      // Calculate average humidity and wind speed
+      const avgHumidity = dayForecasts.reduce((sum, f) => sum + f.main.humidity, 0) / dayForecasts.length;
+      const avgWindSpeed = dayForecasts.reduce((sum, f) => sum + f.wind.speed, 0) / dayForecasts.length;
+
+      dailyForecasts.push({
+        date: dayDate.toISOString().split('T')[0],
+        dayName: dayDate.toLocaleDateString('en-US', { weekday: 'long' }),
+        minTemperature: Math.round(minTemp),
+        maxTemperature: Math.round(maxTemp),
+        conditions: mostCommonCondition,
+        humidity: Math.round(avgHumidity),
+        windSpeed: Math.round(avgWindSpeed * 10) / 10,
+        description: dayForecasts[0].weather[0].description
+      });
+
+      // Add hourly forecasts for the day
+      dayForecasts.forEach(forecast => {
+        const forecastTime = new Date(forecast.dt * 1000);
+        hourlyForecasts.push({
+          datetime: forecastTime.toISOString(),
+          temperature: Math.round(forecast.main.temp),
+          conditions: forecast.weather[0].main,
+          humidity: forecast.main.humidity,
+          windSpeed: forecast.wind.speed,
+          description: forecast.weather[0].description
+        });
+      });
+    });
+
+    return {
+      location: {
+        lat: data.city.coord.lat,
+        lng: data.city.coord.lon,
+        name: data.city.name,
+        country: data.city.country
+      },
+      dailyForecasts: dailyForecasts.slice(0, 5), // Limit to 5 days
+      hourlyForecasts: hourlyForecasts,
+      lastUpdated: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Get the most common weather condition from an array
+   */
+  private getMostCommonCondition(conditions: string[]): string {
+    const counts = conditions.reduce((acc, condition) => {
+      acc[condition] = (acc[condition] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
   }
 
   /**

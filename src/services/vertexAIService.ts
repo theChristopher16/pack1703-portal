@@ -329,6 +329,14 @@ Return your response as a JSON object with this exact structure:
     "weatherConsiderations": "Weather notes for Houston area"
   },
   "packingList": ["comprehensive", "list", "of", "items"],
+  "weatherForecast": {
+    "location": {"lat": 30.0, "lng": -95.0, "name": "Location Name"},
+    "dailyForecasts": [
+      {"date": "2024-10-15", "dayName": "Tuesday", "minTemperature": 65, "maxTemperature": 85, "conditions": "Clear", "humidity": 60, "windSpeed": 8.5, "description": "clear sky"},
+      {"date": "2024-10-16", "dayName": "Wednesday", "minTemperature": 68, "maxTemperature": 88, "conditions": "Clouds", "humidity": 65, "windSpeed": 7.2, "description": "few clouds"}
+    ],
+    "lastUpdated": "2024-10-14T10:00:00Z"
+  },
   "duplicateCheck": {
     "existingLocations": ["list", "of", "similar", "locations"],
     "shouldCreateNew": true,

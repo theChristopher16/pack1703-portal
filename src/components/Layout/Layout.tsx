@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, ChevronDown, Settings } from 'lucide-react';
+import { Menu, X, ChevronDown, Settings, LogOut } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { useAdmin } from '../../contexts/AdminContext';
 import { UserRole } from '../../services/authService';
@@ -373,6 +373,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         </div>
                       ))}
                       
+                      {/* Logout Button (only when logged in) */}
+                      {currentUser && (
+                        <div className="border-t border-gray-200 mt-2 pt-2">
+                          <button
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              try {
+                                const { authService } = await import('../../services/authService');
+                                await authService.signOut();
+                                setIsDropdownOpen(false);
+                                console.log('User logged out successfully');
+                              } catch (error) {
+                                console.error('Error logging out:', error);
+                              }
+                            }}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 text-red-600 hover:text-red-700 hover:bg-red-50/50"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            <span>Logout</span>
+                          </button>
+                        </div>
+                      )}
+                      
                       {/* Login/Admin Link */}
                       <div className="border-t border-gray-200 mt-2 pt-2">
                         <button
@@ -443,6 +467,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </button>
                 );
               })}
+              
+              {/* Logout Button (only when logged in) */}
+              {currentUser && (
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const { authService } = await import('../../services/authService');
+                        await authService.signOut();
+                        setIsMobileMenuOpen(false);
+                        console.log('User logged out successfully');
+                      } catch (error) {
+                        console.error('Error logging out:', error);
+                      }
+                    }}
+                    className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl font-medium transition-all duration-300 text-red-600 hover:text-red-700 hover:bg-red-50/50"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
               
               {/* Login/Admin Link */}
               <div className="border-t border-gray-200 pt-2 mt-2">

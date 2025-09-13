@@ -5,9 +5,7 @@ import chatService from './chatService';
 import configService from './configService';
 import { externalApiService } from './externalApiService';
 import emailMonitorService from './emailMonitorService';
-import { dataAuditService } from './dataAuditService';
 import firestoreService from './firestore';
-import { frontendGeminiService } from './frontendGeminiService';
 
 export interface AIResponse {
   id: string;
@@ -394,8 +392,6 @@ class AIService {
 
     // Extract event data from user query
   private extractEventDataFromQuery(userQuery: string): any {
-    const query = userQuery.toLowerCase();
-    
     // First, let's clean up the query and extract basic components
     let cleanQuery = userQuery;
     
@@ -545,7 +541,7 @@ class AIService {
 
     // Extract description
     const descriptionPatterns = [
-      /(?:description|about|details?)\s*[:\-]?\s*([^,]+?)(?:\s+on|\s+at|\s+in|$)/i
+      /(?:description|about|details?)\s*[:-]?\s*([^,]+?)(?:\s+on|\s+at|\s+in|$)/i
     ];
     
     let description = '';
@@ -1194,7 +1190,7 @@ class AIService {
 
   // Generate creative event title with emoji
   private generateCreativeEventTitle(eventData: any): string {
-    const { location, date, endDate, time } = eventData;
+    const { location, date, endDate } = eventData;
     const isMultiDay = endDate && endDate !== date;
     const isOutdoor = this.isOutdoorEvent(location);
     const isCamping = location.toLowerCase().includes('camp') || location.toLowerCase().includes('recreation');

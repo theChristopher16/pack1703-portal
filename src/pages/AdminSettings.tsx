@@ -23,7 +23,7 @@ interface AccountLink {
   isActive: boolean;
 }
 
-interface AdminSettings {
+interface AdminSettingsData {
   notifications: {
     email: boolean;
     push: boolean;
@@ -45,7 +45,7 @@ const AdminSettings: React.FC = () => {
   const { currentUser } = state;
   const [activeTab, setActiveTab] = useState('account');
   const [linkedAccounts, setLinkedAccounts] = useState<AccountLink[]>([]);
-  const [settings, setSettings] = useState<AdminSettings>({
+  const [settings, setSettings] = useState<AdminSettingsData>({
     notifications: { email: true, push: false, sms: false },
     security: { twoFactorAuth: false, sessionTimeout: 30, passwordExpiry: 90 },
     appearance: { theme: 'light', compactMode: false }

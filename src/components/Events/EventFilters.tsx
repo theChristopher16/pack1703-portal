@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Filter, X, Search, MapPin } from 'lucide-react';
 
 interface EventFiltersProps {
-  onFiltersChange: (filters: EventFilters) => void;
+  onFiltersChange: (filters: EventFiltersData) => void;
   className?: string;
 }
 
-export interface EventFilters {
+export interface EventFiltersData {
   search: string;
   categories: string[];
   denTags: string[];
@@ -26,7 +26,7 @@ export interface EventFilters {
 
 const EventFilters: React.FC<EventFiltersProps> = ({ onFiltersChange, className = '' }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [filters, setFilters] = useState<EventFilters>({
+  const [filters, setFilters] = useState<EventFiltersData>({
     search: '',
     categories: [],
     denTags: [],

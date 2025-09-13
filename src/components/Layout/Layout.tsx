@@ -339,7 +339,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           <div className="px-4 py-2 border-b border-gray-100">
                             <div className="flex items-center space-x-2">
                               <span className="text-lg">{group.icon}</span>
-                              <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                              <span className="text-xs font-semibold text-primary-700 uppercase tracking-wide">
                                 {group.name}
                               </span>
                             </div>

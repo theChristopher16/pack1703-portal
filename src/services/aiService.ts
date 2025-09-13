@@ -1931,7 +1931,7 @@ class AIService {
   private async handleContentCreation(userQuery: string, context: AIContext): Promise<AIResponse> {
     try {
       // Check if user has permission to create content
-      if (context.userRole !== 'admin') {
+      if (!this.hasAdminPermissions(context.userRole)) {
         return {
           id: Date.now().toString(),
           message: '❌ **Access Denied**\n\nI\'m sorry, but only pack leaders, den leaders, and cubmaster can create events from uploaded files. Please contact your den leader or cubmaster if you have an event to add!',
@@ -1993,7 +1993,7 @@ class AIService {
     
     // Event creation - restricted to admins only
     if (query.includes('create event') || query.includes('make event') || query.includes('add event')) {
-      if (context.userRole !== 'admin') {
+      if (!this.hasAdminPermissions(context.userRole)) {
         return {
           id: Date.now().toString(),
           message: 'I\'m sorry, but only pack leaders, den leaders, and cubmaster can create events. Please contact your den leader or cubmaster if you have an event idea!',
@@ -2012,7 +2012,7 @@ class AIService {
 
     // Announcement creation - restricted to admins only
     if (query.includes('create announcement') || query.includes('make announcement') || query.includes('add announcement')) {
-      if (context.userRole !== 'admin') {
+      if (!this.hasAdminPermissions(context.userRole)) {
         return {
           id: Date.now().toString(),
           message: 'I\'m sorry, but only pack leaders, den leaders, and cubmaster can create announcements. Please contact your den leader or cubmaster if you have information to share!',
@@ -2031,7 +2031,7 @@ class AIService {
 
     // Location creation - restricted to admins only
     if (query.includes('create location') || query.includes('add location') || query.includes('new location')) {
-      if (context.userRole !== 'admin') {
+      if (!this.hasAdminPermissions(context.userRole)) {
         return {
           id: Date.now().toString(),
           message: 'I\'m sorry, but only pack leaders, den leaders, and cubmaster can add new locations. Please contact your den leader or cubmaster if you know of a good location!',
@@ -2050,7 +2050,7 @@ class AIService {
 
     // Resource creation - restricted to admins only
     if (query.includes('create resource') || query.includes('add resource') || query.includes('new resource')) {
-      if (context.userRole !== 'admin') {
+      if (!this.hasAdminPermissions(context.userRole)) {
         return {
           id: Date.now().toString(),
           message: 'I\'m sorry, but only pack leaders, den leaders, and cubmaster can add new resources. Please contact your den leader or cubmaster if you have a resource to share!',
@@ -2658,6 +2658,12 @@ class AIService {
     const adminRoles = ['pack-leader', 'cubmaster', 'lion', 'tiger', 'wolf', 'bear', 'webelos', 'arrow-of-light'];
     
     return adminRoles.includes(userDen) ? 'admin' : 'user';
+  }
+
+  private hasAdminPermissions(userRole: 'admin' | 'user'): boolean {
+    // Admin permissions include: admin, root, volunteer (den leaders), cubmaster
+    // This covers: root, admin, volunteer (which includes den leaders and cubmaster)
+    return userRole === 'admin';
   }
 
   // Create content functions with write access

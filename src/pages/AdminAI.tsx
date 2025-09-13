@@ -91,7 +91,7 @@ const AdminAI: React.FC = () => {
     try {
       const context: AIContext = {
         userQuery: inputValue,
-        userRole: 'admin',
+        userRole: state.currentUser?.role === 'root' || state.currentUser?.role === 'admin' || state.currentUser?.role === 'volunteer' ? 'admin' : 'user',
         currentPage: 'admin-ai',
         availableData: {
           events: systemMetrics?.totalEvents || 0,

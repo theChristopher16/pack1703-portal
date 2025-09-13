@@ -190,8 +190,8 @@ exports.claimVolunteerRole = functions.https.onCall(async (request) => {
     try {
         const data = request.data;
         const context = request;
-        // Check App Check (skip in emulator for testing)
-        if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
+        // Check App Check (skip in emulator and development for testing)
+        if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
             throw new functions.https.HttpsError('unauthenticated', 'App Check required');
         }
         // Rate limiting (2 volunteer signups per hour per IP)
@@ -252,8 +252,8 @@ exports.icsFeed = functions.https.onCall(async (request) => {
     try {
         const data = request.data;
         const context = request;
-        // Check App Check (skip in emulator for testing)
-        if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
+        // Check App Check (skip in emulator and development for testing)
+        if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
             throw new functions.https.HttpsError('unauthenticated', 'App Check required');
         }
         // Build query
@@ -316,8 +316,8 @@ exports.weatherProxy = functions.https.onCall(async (request) => {
     try {
         const data = request.data;
         const context = request;
-        // Check App Check (skip in emulator for testing)
-        if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
+        // Check App Check (skip in emulator and development for testing)
+        if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
             throw new functions.https.HttpsError('unauthenticated', 'App Check required');
         }
         // Validate coordinates
@@ -386,9 +386,8 @@ exports.moderationDigest = functions.pubsub.schedule('0 9 * * *').onRun(async (c
     }
 });
 // 7. Hello World Function (for testing)
-exports.helloWorld = functions.https.onCall(async (request) => {
+exports.helloWorld = functions.https.onCall(async (data, context) => {
     try {
-        const data = request.data;
         return {
             message: 'Hello from Firebase Cloud Functions!',
             timestamp: getTimestamp(),
@@ -400,14 +399,17 @@ exports.helloWorld = functions.https.onCall(async (request) => {
         return {
             message: 'Hello from Firebase Cloud Functions!',
             timestamp: getTimestamp(),
-            data: request.data
+            data: data
         };
     }
 });
 // 8. Email Monitoring Functions
-exports.testEmailConnection = functions.https.onCall(async (request) => {
+exports.testEmailConnection = functions.https.onCall(async (data, context) => {
     try {
-        const data = request.data;
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
         const { emailAddress, password, imapServer, imapPort } = data;
         if (!emailAddress || !password || !imapServer || !imapPort) {
             throw new functions.https.HttpsError('invalid-argument', 'Missing required email configuration');
@@ -441,9 +443,12 @@ exports.testEmailConnection = functions.https.onCall(async (request) => {
         throw new functions.https.HttpsError('internal', 'Failed to test email connection');
     }
 });
-exports.fetchNewEmails = functions.https.onCall(async (request) => {
+exports.fetchNewEmails = functions.https.onCall(async (data, context) => {
     try {
-        const data = request.data;
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
         const { emailAddress, password, imapServer, imapPort, lastChecked } = data;
         if (!emailAddress || !password || !imapServer || !imapPort) {
             throw new functions.https.HttpsError('invalid-argument', 'Missing required email configuration');
@@ -1146,9 +1151,8 @@ exports.aiGenerateContent = functions.https.onCall(async (request) => {
     }
 });
 // Test GPT-5 Connection Function
-exports.testAIConnection = functions.https.onCall(async (request) => {
+exports.testAIConnection = functions.https.onCall(async (data, context) => {
     try {
-        const context = request;
         // Check authentication
         if (!context.auth) {
             throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -1190,10 +1194,8 @@ exports.testAIConnection = functions.https.onCall(async (request) => {
     }
 });
 // System Command Function for Root Users
-exports.systemCommand = functions.https.onCall(async (request) => {
+exports.systemCommand = functions.https.onCall(async (data, context) => {
     try {
-        const data = request.data;
-        const context = request;
         // Check authentication
         if (!context.auth) {
             throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -1580,8 +1582,8 @@ async function sendEscalationNotification(reminder) {
 exports.testSecretManager = functions.https.onCall(async (request) => {
     try {
         const context = request;
-        // Check App Check (skip in emulator for testing)
-        if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
+        // Check App Check (skip in emulator and development for testing)
+        if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
             throw new functions.https.HttpsError('unauthenticated', 'App Check required');
         }
         functions.logger.info('🧪 Testing Secret Manager integration...');

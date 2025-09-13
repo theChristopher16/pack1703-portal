@@ -239,6 +239,26 @@ export const firestoreService = {
     }
   },
 
+  async deleteEvent(eventId: string): Promise<void> {
+    try {
+      const eventRef = doc(db, 'events', eventId);
+      await deleteDoc(eventRef);
+    } catch (error) {
+      console.error('Failed to delete event in Firestore:', error);
+      throw error;
+    }
+  },
+
+  async deleteLocation(locationId: string): Promise<void> {
+    try {
+      const locationRef = doc(db, 'locations', locationId);
+      await deleteDoc(locationRef);
+    } catch (error) {
+      console.error('Failed to delete location in Firestore:', error);
+      throw error;
+    }
+  },
+
   async createLocation(locationData: any): Promise<any> {
     try {
       const locationsRef = collection(db, 'locations');

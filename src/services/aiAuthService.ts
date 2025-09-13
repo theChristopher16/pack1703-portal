@@ -40,9 +40,35 @@ class AIAuthService {
         Permission.READ_CONTENT,
         Permission.CREATE_CONTENT,
         Permission.UPDATE_CONTENT,
+        Permission.DELETE_CONTENT,
+        
+        // Event Management (Full Access)
         Permission.EVENT_MANAGEMENT,
+        Permission.SCOUT_EVENTS,
+        Permission.DEN_EVENTS,
+        Permission.FAMILY_EVENTS,
+        
+        // Location Management (Full Access)
         Permission.LOCATION_MANAGEMENT,
+        
+        // Announcement Management (Full Access)
         Permission.ANNOUNCEMENT_MANAGEMENT,
+        Permission.DEN_ANNOUNCEMENTS,
+        
+        // Pack Management (Full Access)
+        Permission.PACK_MANAGEMENT,
+        Permission.ALL_DEN_ACCESS,
+        
+        // Scout Content (Full Access)
+        Permission.SCOUT_CONTENT,
+        Permission.DEN_CONTENT,
+        
+        // Chat (Full Access for AI interactions)
+        Permission.CHAT_READ,
+        Permission.CHAT_WRITE,
+        Permission.CHAT_MANAGEMENT,
+        Permission.SCOUT_CHAT,
+        Permission.DEN_CHAT_MANAGEMENT,
         
         // System Access (Read Only)
         Permission.SYSTEM_CONFIG,
@@ -50,15 +76,21 @@ class AIAuthService {
         // Analytics and Monitoring
         Permission.COST_ANALYTICS,
         Permission.COST_ALERTS,
+        Permission.COST_MANAGEMENT,
         
-        // Chat (Limited - Only AI interactions)
-        Permission.CHAT_READ,
-        Permission.CHAT_WRITE,
+        // Financial Management (Read Only for AI)
+        Permission.FINANCIAL_MANAGEMENT,
         
-        // Scout Content (Full Access)
-        Permission.SCOUT_CONTENT,
-        Permission.SCOUT_EVENTS,
-        Permission.SCOUT_CHAT
+        // Fundraising Management (Read Only for AI)
+        Permission.FUNDRAISING_MANAGEMENT,
+        
+        // Family Management (Read Only for AI)
+        Permission.FAMILY_MANAGEMENT,
+        Permission.FAMILY_RSVP,
+        Permission.FAMILY_VOLUNTEER,
+        
+        // Den Members (Read Only for AI)
+        Permission.DEN_MEMBERS
       ],
       isActive: true,
       createdAt: new Date(),

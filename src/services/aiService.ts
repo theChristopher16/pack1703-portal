@@ -2805,65 +2805,226 @@ class AIService {
     }
   }
 
-  async createAnnouncement(announcementData: any): Promise<boolean> {
+  /**
+   * Create comprehensive event from natural language prompt
+   * Includes location creation, duplicate checking, and family safety considerations
+   */
+  async createComprehensiveEvent(eventPrompt: string, testMode: boolean = false): Promise<any> {
+    try {
+      console.log('🤖 Creating comprehensive event from prompt:', eventPrompt);
+
+      // Step 1: Generate comprehensive event data using Vertex AI
+      const comprehensiveData = await vertexAIService.generateComprehensiveEventData(eventPrompt);
+      console.log('📋 Generated comprehensive data:', comprehensiveData);
+
+      // Step 2: Check for existing locations to prevent duplicates
+      const existingLocations = await this.checkExistingLocations(comprehensiveData.eventData.location);
+      
+      // Step 3: Create location if needed (and not duplicate)
+      let locationId = null;
+      if (comprehensiveData.duplicateCheck.shouldCreateNew && !testMode) {
+        const locationData = {
+          name: comprehensiveData.eventData.location,
+          address: comprehensiveData.eventData.address,
+          phone: comprehensiveData.eventData.phone,
+          coordinates: comprehensiveData.eventData.coordinates,
+          amenities: comprehensiveData.eventData.amenities,
+          medicalFacility: comprehensiveData.eventData.medicalFacility,
+          accessibility: comprehensiveData.eventData.accessibility,
+          allergies: comprehensiveData.eventData.allergies,
+          weatherConsiderations: comprehensiveData.eventData.weatherConsiderations
+        };
+        
+        locationId = await this.createLocation(locationData);
+        console.log('📍 Location created:', locationId);
+      } else if (existingLocations.length > 0) {
+        locationId = existingLocations[0].id;
+        console.log('📍 Using existing location:', locationId);
+      }
+
+      // Step 4: Create event with comprehensive data
+      const eventData = {
+        ...comprehensiveData.eventData,
+        locationId: locationId,
+        packingList: comprehensiveData.packingList,
+        familyNotes: comprehensiveData.familyNotes,
+        checkInTime: comprehensiveData.eventData.checkInTime,
+        earliestArrival: comprehensiveData.eventData.earliestArrival,
+        medicalFacility: comprehensiveData.eventData.medicalFacility,
+        allergies: comprehensiveData.eventData.allergies,
+        accessibility: comprehensiveData.eventData.accessibility,
+        weatherConsiderations: comprehensiveData.eventData.weatherConsiderations,
+        createdBy: 'ai_solyn',
+        createdAt: new Date().toISOString(),
+        testMode: testMode // Flag for test events
+      };
+
+      let eventId = null;
+      if (!testMode) {
+        eventId = await this.createEvent(eventData);
+      } else {
+        // In test mode, just return the data without creating
+        eventId = 'test-event-' + Date.now();
+      }
+
+      return {
+        success: true,
+        eventId: eventId,
+        locationId: locationId,
+        eventData: eventData,
+        comprehensiveData: comprehensiveData,
+        duplicateCheck: comprehensiveData.duplicateCheck,
+        existingLocations: existingLocations,
+        testMode: testMode
+      };
+
+    } catch (error) {
+      console.error('❌ Failed to create comprehensive event:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check for existing locations to prevent duplicates
+   */
+  private async checkExistingLocations(locationName: string): Promise<any[]> {
+    try {
+      // Search for similar location names
+      const locations = await firestoreService.getLocations();
+      const similarLocations = locations.filter(loc => 
+        loc.name.toLowerCase().includes(locationName.toLowerCase()) ||
+        locationName.toLowerCase().includes(loc.name.toLowerCase())
+      );
+      
+      return similarLocations;
+    } catch (error) {
+      console.error('❌ Failed to check existing locations:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Clean up test events and locations
+   */
+  async cleanupTestData(): Promise<boolean> {
+    try {
+      console.log('🧹 Cleaning up test data...');
+
+      // Delete test events
+      const events = await firestoreService.getEvents();
+      const testEvents = events.filter(event => event.testMode === true);
+      
+      for (const event of testEvents) {
+        await firestoreService.deleteEvent(event.id);
+        console.log('🗑️ Deleted test event:', event.id);
+      }
+
+      // Delete test locations (those created by AI in test mode)
+      const locations = await firestoreService.getLocations();
+      const testLocations = locations.filter(loc => 
+        loc.createdBy === 'ai_solyn' && 
+        (loc.name.includes('Test') || loc.name.includes('test'))
+      );
+      
+      for (const location of testLocations) {
+        await firestoreService.deleteLocation(location.id);
+        console.log('🗑️ Deleted test location:', location.id);
+      }
+
+      console.log('✅ Test data cleanup completed');
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to cleanup test data:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create location with comprehensive data
+   */
+  async createLocation(locationData: any): Promise<string> {
+    try {
+      // Security check: Ensure AI can perform this action
+      if (!this.canAIPerformAction('create', 'locations')) {
+        console.warn('AI attempted unauthorized location creation');
+        throw new Error('AI does not have permission to create locations');
+      }
+
+      // Add AI metadata
+      const enhancedLocationData = {
+        ...locationData,
+        createdBy: 'ai_solyn',
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      };
+
+      const locationId = await firestoreService.createLocation(enhancedLocationData);
+      console.log('✅ AI created location:', locationId);
+      return locationId;
+    } catch (error) {
+      console.error('❌ AI failed to create location:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create announcement with comprehensive data
+   */
+  async createAnnouncement(announcementData: any): Promise<string> {
     try {
       // Security check: Ensure AI can perform this action
       if (!this.canAIPerformAction('create', 'announcements')) {
         console.warn('AI attempted unauthorized announcement creation');
-        return false;
+        throw new Error('AI does not have permission to create announcements');
       }
 
-      // Check for duplicates before creating
-      const isDuplicate = await this.checkForDuplicateAnnouncement(announcementData);
-      if (isDuplicate) {
-        console.log('AI detected duplicate announcement, skipping creation');
-        return false;
-      }
-      
-      const announcement = await firestoreService.createAnnouncement(announcementData);
-      console.log('AI created announcement:', announcement);
-      return true;
+      // Add AI metadata
+      const enhancedAnnouncementData = {
+        ...announcementData,
+        createdBy: 'ai_solyn',
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      };
+
+      const announcementId = await firestoreService.createAnnouncement(enhancedAnnouncementData);
+      console.log('✅ AI created announcement:', announcementId);
+      return announcementId;
     } catch (error) {
-      console.error('AI failed to create announcement:', error);
-      return false;
+      console.error('❌ AI failed to create announcement:', error);
+      throw error;
     }
   }
 
-  async createLocation(locationData: any): Promise<boolean> {
+  /**
+   * Create resource with comprehensive data
+   */
+  async createResource(resourceData: any): Promise<string> {
     try {
-      // Check for duplicates before creating
-      const isDuplicate = await this.checkForDuplicateLocation(locationData);
-      if (isDuplicate) {
-        console.log('AI detected duplicate location, skipping creation');
-        return false;
+      // Security check: Ensure AI can perform this action
+      if (!this.canAIPerformAction('create', 'resources')) {
+        console.warn('AI attempted unauthorized resource creation');
+        throw new Error('AI does not have permission to create resources');
       }
-      
-      const location = await firestoreService.createLocation(locationData);
-      console.log('AI created location:', location);
-      return true;
+
+      // Add AI metadata
+      const enhancedResourceData = {
+        ...resourceData,
+        createdBy: 'ai_solyn',
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      };
+
+      const resourceId = await firestoreService.createResource(enhancedResourceData);
+      console.log('✅ AI created resource:', resourceId);
+      return resourceId;
     } catch (error) {
-      console.error('AI failed to create location:', error);
-      return false;
+      console.error('❌ AI failed to create resource:', error);
+      throw error;
     }
   }
 
-  async createResource(resourceData: any): Promise<boolean> {
-    try {
-      // Check for duplicates before creating
-      const isDuplicate = await this.checkForDuplicateResource(resourceData);
-      if (isDuplicate) {
-        console.log('AI detected duplicate resource, skipping creation');
-        return false;
-      }
-      
-      const resource = await firestoreService.createResource(resourceData);
-      console.log('AI created resource:', resource);
-      return true;
-    } catch (error) {
-      console.error('AI failed to create resource:', error);
-      return false;
-    }
-  }
+
+
 
   // Duplicate detection methods
   private async checkForDuplicateEvent(eventData: any): Promise<boolean> {

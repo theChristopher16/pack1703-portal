@@ -279,6 +279,116 @@ Provide your analysis and response:`;
   }
 
   /**
+   * Generate comprehensive event data including location details, safety info, and family considerations
+   */
+  async generateComprehensiveEventData(eventPrompt: string): Promise<any> {
+    const systemPrompt = `You are Solyn, an AI assistant for Pack 1703 Cub Scout Pack. You specialize in creating comprehensive, family-safe event data for Cub Scout activities.`;
+
+    const prompt = `A user has requested: "${eventPrompt}"
+
+Your task is to create comprehensive event data including:
+1. Event details (title, dates, description)
+2. Location information (address, phone, coordinates, amenities)
+3. Safety information (nearest medical facility, emergency contacts)
+4. Check-in/arrival times (earliest arrival, recommended check-in)
+5. Family considerations (allergies, accessibility, what to bring)
+6. Packing list (comprehensive, family-focused)
+7. Duplicate prevention (check for existing similar locations)
+
+CRITICAL SAFETY REQUIREMENTS:
+- Always consider food allergies and dietary restrictions
+- Include nearest medical facility with phone number and distance
+- Mention any potential allergens (nuts, pollen, insects, plants, etc.)
+- Include emergency contact information
+- Consider accessibility needs for families
+- Include weather considerations for Houston area
+- Mention any age-appropriate safety concerns
+
+Return your response as a JSON object with this exact structure:
+{
+  "eventData": {
+    "title": "Engaging event title with emoji",
+    "startDate": "YYYY-MM-DD",
+    "endDate": "YYYY-MM-DD", 
+    "description": "Comprehensive description (100-200 words)",
+    "location": "Location name",
+    "address": "Full street address",
+    "phone": "Phone number if available",
+    "coordinates": {"lat": 0.0, "lng": 0.0},
+    "amenities": ["list", "of", "amenities"],
+    "checkInTime": "HH:MM AM/PM",
+    "earliestArrival": "HH:MM AM/PM",
+    "medicalFacility": {
+      "name": "Facility name",
+      "address": "Address",
+      "phone": "Phone number",
+      "distance": "X.X miles"
+    },
+    "allergies": ["potential", "allergens", "to", "watch", "for"],
+    "accessibility": "Accessibility notes",
+    "weatherConsiderations": "Weather notes for Houston area"
+  },
+  "packingList": ["comprehensive", "list", "of", "items"],
+  "duplicateCheck": {
+    "existingLocations": ["list", "of", "similar", "locations"],
+    "shouldCreateNew": true,
+    "reason": "explanation for decision"
+  },
+  "familyNotes": "Additional family-focused considerations and safety tips"
+}
+
+Generate comprehensive event data:`;
+
+    const result = await this.generateResponse([
+      { role: 'user', content: prompt }
+    ], systemPrompt);
+
+    try {
+      // Try to parse the JSON response
+      const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No JSON found in response');
+      }
+    } catch (error) {
+      console.error('Failed to parse Vertex AI response as JSON:', error);
+      // Return a fallback structure
+      return {
+        eventData: {
+          title: "Scout Adventure Event",
+          startDate: new Date().toISOString().split('T')[0],
+          endDate: new Date().toISOString().split('T')[0],
+          description: "A fun-filled Cub Scout adventure!",
+          location: "TBD",
+          address: "TBD",
+          phone: "TBD",
+          coordinates: { lat: 0, lng: 0 },
+          amenities: [],
+          checkInTime: "9:00 AM",
+          earliestArrival: "8:30 AM",
+          medicalFacility: {
+            name: "Nearest Emergency Room",
+            address: "TBD",
+            phone: "911",
+            distance: "TBD"
+          },
+          allergies: ["Check with families"],
+          accessibility: "Contact location for details",
+          weatherConsiderations: "Check weather forecast"
+        },
+        packingList: ["Water bottle", "Snacks", "First aid kit"],
+        duplicateCheck: {
+          existingLocations: [],
+          shouldCreateNew: true,
+          reason: "Unable to parse AI response"
+        },
+        familyNotes: "Please verify all details with location directly"
+      };
+    }
+  }
+
+  /**
    * Test connection to Vertex AI
    */
   async testConnection(): Promise<boolean> {

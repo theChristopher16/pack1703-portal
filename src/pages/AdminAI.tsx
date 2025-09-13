@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
-import { Send, Bot, User, Sparkles, Loader2, RefreshCw, Settings, MessageSquare, TrendingUp, Shield, DollarSign, Activity, Upload, FileText, Calendar, MapPin } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Loader2, RefreshCw, Settings, MessageSquare, TrendingUp, Shield, DollarSign, Activity, Upload, FileText, Calendar, MapPin, Users, Trash2 } from 'lucide-react';
 import aiService, { AIResponse, AIContext } from '../services/aiService';
 import systemMonitorService from '../services/systemMonitorService';
 
@@ -9,7 +9,7 @@ interface ChatMessage {
   content: string;
   sender: 'user' | 'ai';
   timestamp: Date;
-  type: 'info' | 'warning' | 'error' | 'success';
+  type: 'info' | 'warning' | 'error' | 'success' | 'event-preview' | 'text';
   data?: any;
   attachments?: FileAttachment[];
 }
@@ -89,36 +89,118 @@ const AdminAI: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const context: AIContext = {
-        userQuery: inputValue,
-        userRole: state.currentUser?.isAdmin ? 'admin' : 'user',
-        currentPage: 'admin-ai',
-        availableData: {
-          events: systemMetrics?.totalEvents || 0,
-          locations: systemMetrics?.totalLocations || 0,
-          announcements: systemMetrics?.totalAnnouncements || 0,
-          messages: systemMetrics?.totalMessages || 0,
-          users: systemMetrics?.totalUsers || 0
-        },
-        attachments: attachments.length > 0 ? attachments : undefined
-      };
+      // Check if this is a comprehensive event creation request
+      const isEventCreation = inputValue.toLowerCase().includes('create') && 
+                             (inputValue.toLowerCase().includes('event') || 
+                              inputValue.toLowerCase().includes('camping') ||
+                              inputValue.toLowerCase().includes('meeting') ||
+                              inputValue.toLowerCase().includes('activity'));
 
-      const aiResponse = await aiService.processQuery(inputValue, context);
-      
-      const aiMessage: ChatMessage = {
-        id: aiResponse.id,
-        content: aiResponse.message,
-        sender: 'ai',
-        timestamp: aiResponse.timestamp,
-        type: aiResponse.type,
-        data: aiResponse.data
-      };
+      if (isEventCreation) {
+        // Handle comprehensive event creation
+        await handleComprehensiveEventCreation(inputValue);
+      } else {
+        // Handle regular AI query
+        const context: AIContext = {
+          userQuery: inputValue,
+          userRole: state.currentUser?.isAdmin ? 'admin' : 'user',
+          currentPage: 'admin-ai',
+          availableData: {
+            events: systemMetrics?.totalEvents || 0,
+            locations: systemMetrics?.totalLocations || 0,
+            announcements: systemMetrics?.totalAnnouncements || 0,
+            messages: systemMetrics?.totalMessages || 0,
+            users: systemMetrics?.totalUsers || 0
+          },
+          attachments: attachments.length > 0 ? attachments : undefined
+        };
 
-      setMessages(prev => [...prev, aiMessage]);
+        const aiResponse = await aiService.processQuery(inputValue, context);
+        
+        const aiMessage: ChatMessage = {
+          id: aiResponse.id,
+          content: aiResponse.message,
+          sender: 'ai',
+          timestamp: aiResponse.timestamp,
+          type: aiResponse.type,
+          data: aiResponse.data
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+      }
     } catch (error) {
       const errorMessage: ChatMessage = {
         id: Date.now().toString(),
         content: 'I apologize, but I encountered an error processing your request. Please try again.',
+        sender: 'ai',
+        timestamp: new Date(),
+        type: 'error'
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleComprehensiveEventCreation = async (prompt: string) => {
+    try {
+      console.log('🤖 Processing comprehensive event creation:', prompt);
+      
+      // First, try in test mode to show what would be created
+      const testResult = await aiService.createComprehensiveEvent(prompt, true);
+      
+      const testMessage: ChatMessage = {
+        id: Date.now().toString(),
+        content: `🎯 **Comprehensive Event Preview**\n\nI've analyzed your request and here's what I would create:\n\n**Event:** ${testResult.eventData.title}\n**Dates:** ${testResult.eventData.startDate} to ${testResult.eventData.endDate}\n**Location:** ${testResult.eventData.location}\n**Address:** ${testResult.eventData.address}\n**Phone:** ${testResult.eventData.phone}\n\n**Safety Information:**\n🏥 **Nearest Medical Facility:** ${testResult.eventData.medicalFacility.name} (${testResult.eventData.medicalFacility.distance})\n📞 **Emergency Contact:** ${testResult.eventData.medicalFacility.phone}\n\n**Family Safety:**\n⚠️ **Allergies to Watch:** ${testResult.eventData.allergies.join(', ')}\n♿ **Accessibility:** ${testResult.eventData.accessibility}\n🌤️ **Weather:** ${testResult.eventData.weatherConsiderations}\n\n**Timing:**\n⏰ **Check-in:** ${testResult.eventData.checkInTime}\n🕐 **Earliest Arrival:** ${testResult.eventData.earliestArrival}\n\n**Packing List:**\n${testResult.packingList.map((item: string) => `• ${item}`).join('\n')}\n\n**Family Notes:**\n${testResult.familyNotes}\n\n**Duplicate Check:**\n${testResult.duplicateCheck.shouldCreateNew ? '✅ Creating new location' : '📍 Using existing location'}\n${testResult.duplicateCheck.reason}\n\nWould you like me to create this event? Type "yes" to proceed or "no" to cancel.`,
+        sender: 'ai',
+        timestamp: new Date(),
+        type: 'event-preview',
+        data: testResult
+      };
+
+      setMessages(prev => [...prev, testMessage]);
+      
+    } catch (error) {
+      console.error('❌ Failed to process comprehensive event creation:', error);
+      throw error;
+    }
+  };
+
+  const handleEventConfirmation = async (confirmation: boolean, eventData: any) => {
+    if (!confirmation) {
+      const cancelMessage: ChatMessage = {
+        id: Date.now().toString(),
+        content: '❌ Event creation cancelled. You can try again with different details.',
+        sender: 'ai',
+        timestamp: new Date(),
+        type: 'text'
+      };
+      setMessages(prev => [...prev, cancelMessage]);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Create the actual event
+      const result = await aiService.createComprehensiveEvent(eventData.comprehensiveData.eventData.title + ' ' + eventData.comprehensiveData.eventData.startDate, false);
+      
+      const successMessage: ChatMessage = {
+        id: Date.now().toString(),
+        content: `✅ **Event Created Successfully!**\n\n**Event ID:** ${result.eventId}\n**Location ID:** ${result.locationId}\n\nYour comprehensive event has been created with all safety information, family considerations, and detailed planning. The event is now available for families to view and RSVP.`,
+        sender: 'ai',
+        timestamp: new Date(),
+        type: 'success',
+        data: result
+      };
+
+      setMessages(prev => [...prev, successMessage]);
+      
+    } catch (error) {
+      console.error('❌ Failed to create event:', error);
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        content: '❌ Failed to create event. Please try again or contact support.',
         sender: 'ai',
         timestamp: new Date(),
         type: 'error'
@@ -144,11 +226,13 @@ const AdminAI: React.FC = () => {
   };
 
   const getQuickActions = () => [
-    { label: 'Create Event', icon: Calendar, query: 'Create an event called Pack Meeting on December 15th at 6:30 PM at the Community Center' },
+    { label: 'Create Comprehensive Event', icon: Calendar, query: 'Create an event for Double Lake Recreation Area on October 15 to 17' },
+    { label: 'Create Camping Event', icon: MapPin, query: 'Create a camping trip to Brazos Bend State Park next weekend' },
+    { label: 'Create Pack Meeting', icon: Users, query: 'Create a pack meeting at the Community Center on December 15th at 6:30 PM' },
     { label: 'System Status', icon: Activity, query: 'Show me the current system status and health' },
     { label: 'User Activity', icon: TrendingUp, query: 'How are users engaging with the platform?' },
     { label: 'Security Check', icon: Shield, query: 'What is our current security status and any concerns?' },
-    { label: 'Content Health', icon: MessageSquare, query: 'How is our content performing and any recommendations?' }
+    { label: 'Cleanup Test Data', icon: Trash2, query: 'Clean up any test events and locations created by AI' }
   ];
 
   const handleQuickAction = (query: string) => {

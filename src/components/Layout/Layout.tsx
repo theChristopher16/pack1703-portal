@@ -358,10 +358,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                     window.location.href = item.href;
                                     setIsDropdownOpen(false);
                                   }}
-                                  className={`w-full flex items-center space-x-3 px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                                  className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg cursor-pointer ${
                                     isActive(item.href)
-                                      ? 'text-primary-600 bg-primary-50'
-                                      : 'nav-text-inactive hover:nav-text-active hover:bg-primary-50/50'
+                                      ? 'text-primary-600 bg-primary-100 border border-primary-200 shadow-sm'
+                                      : 'text-gray-700 hover:text-primary-600 hover:bg-primary-50 hover:shadow-sm hover:border hover:border-primary-100'
                                   }`}
                                 >
                                   <Icon className="w-4 h-4 flex-shrink-0" />
@@ -389,7 +389,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 console.error('Error logging out:', error);
                               }
                             }}
-                            className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 text-red-600 hover:text-red-700 hover:bg-red-50/50"
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 hover:shadow-sm hover:border hover:border-red-100"
                           >
                             <LogOut className="w-4 h-4" />
                             <span>Logout</span>
@@ -410,10 +410,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             }
                             setIsDropdownOpen(false);
                           }}
-                          className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                          className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg cursor-pointer ${
                             isActive('/admin')
-                              ? 'text-blue-600 bg-blue-50'
-                              : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50/50'
+                              ? 'text-blue-600 bg-blue-100 border border-blue-200 shadow-sm'
+                              : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 hover:shadow-sm hover:border hover:border-blue-100'
                           }`}
                         >
                           <Settings className="w-4 h-4" />
@@ -456,10 +456,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       handleNavigation(item.href);
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl font-medium transition-all duration-300 ${
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-300 cursor-pointer ${
                       isActive(item.href)
-                        ? 'text-primary-600 bg-primary-50'
-                        : 'nav-text-inactive hover:nav-text-active hover:bg-primary-50/50'
+                        ? 'text-primary-600 bg-primary-100 border border-primary-200 shadow-sm'
+                        : 'text-gray-700 hover:text-primary-600 hover:bg-primary-50 hover:shadow-sm hover:border hover:border-primary-100'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -482,7 +482,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         console.error('Error logging out:', error);
                       }
                     }}
-                    className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl font-medium transition-all duration-300 text-red-600 hover:text-red-700 hover:bg-red-50/50"
+                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-300 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 hover:shadow-sm hover:border hover:border-red-100"
                   >
                     <LogOut className="w-5 h-5" />
                     <span>Logout</span>
@@ -503,10 +503,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     }
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl font-medium transition-all duration-300 ${
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-300 cursor-pointer ${
                     isActive('/admin')
-                      ? 'text-blue-600 bg-blue-50'
-                      : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50/50'
+                      ? 'text-blue-600 bg-blue-100 border border-blue-200 shadow-sm'
+                      : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 hover:shadow-sm hover:border hover:border-blue-100'
                   }`}
                 >
                   <Settings className="w-5 h-5" />

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { adminService } from '../services/adminService';
-import { authService, AppUser, Permission } from '../services/authService';
+import { authService, AppUser, Permission, UserRole } from '../services/authService';
 import { 
   AdminUser, 
   AdminRole, 
@@ -242,7 +242,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
             email: currentUser.email,
             displayName: currentUser.displayName || null,
             photoURL: currentUser.photoURL || null,
-            isAdmin: currentUser.role === 'root' || currentUser.role === 'admin' || currentUser.role === 'volunteer',
+            isAdmin: currentUser.role === UserRole.ROOT || currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.VOLUNTEER,
             role: currentUser.role as unknown as AdminRole,
             permissions: currentUser.permissions as unknown as AdminPermission[],
             lastLogin: currentUser.lastLoginAt || new Date(),
@@ -279,7 +279,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
           email: user.email,
           displayName: user.displayName || null,
           photoURL: user.photoURL || null,
-          isAdmin: user.role === 'root' || user.role === 'admin' || user.role === 'volunteer',
+          isAdmin: user.role === UserRole.ROOT || user.role === UserRole.ADMIN || user.role === UserRole.VOLUNTEER,
           role: user.role as unknown as AdminRole,
           permissions: user.permissions as unknown as AdminPermission[],
           lastLogin: user.lastLoginAt || new Date(),

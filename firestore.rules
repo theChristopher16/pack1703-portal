@@ -226,6 +226,42 @@ service cloud.firestore {
       allow write: if false; // Audit logs are created by Cloud Functions only
     }
     
+    // Admin actions - admin read-only
+    match /adminActions/{actionId} {
+      allow read: if isAdmin();
+      allow write: if false; // Admin actions are created by Cloud Functions only
+    }
+    
+    // AI usage logs - admin read-only
+    match /aiUsage/{usageId} {
+      allow read: if isAdmin();
+      allow write: if false; // AI usage logs are created by Cloud Functions only
+    }
+    
+    // AI interactions - admin read-only
+    match /ai-interactions/{interactionId} {
+      allow read: if isAdmin();
+      allow write: if false; // AI interactions are created by Cloud Functions only
+    }
+    
+    // AI confirmations - admin read-only
+    match /ai-confirmations/{confirmationId} {
+      allow read: if isAdmin();
+      allow write: if false; // AI confirmations are created by Cloud Functions only
+    }
+    
+    // Email monitor logs - admin read-only
+    match /email-monitor-logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // Email monitor logs are created by Cloud Functions only
+    }
+    
+    // AI collaboration sessions - admin read-only
+    match /aiCollaborationSessions/{sessionId} {
+      allow read: if isAdmin();
+      allow write: if false; // AI collaboration sessions are created by Cloud Functions only
+    }
+    
     // Admin user management - admin only
     match /admin/users/{userId} {
       allow read, write: if isAdmin();

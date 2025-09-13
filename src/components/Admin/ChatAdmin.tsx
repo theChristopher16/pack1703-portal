@@ -13,9 +13,20 @@ import {
   Palette,
   Type,
   Loader2,
-  Send
+  Send,
+  CheckCircle,
+  AlertTriangle,
+  Users,
+  MessageCircle,
+  Settings,
+  User,
+  Smile,
+  Trash2,
+  Share2,
+  AtSign,
+  Hash
 } from 'lucide-react';
-import { SessionManager, MessageReaction, chatService } from '../../services/chatService';
+import { SessionManager, MessageReaction, chatService, ChatMessage, ChatUser, ChatChannel } from '../../services/chatService';
 import tenorService, { TenorGif } from '../../services/tenorService';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -1350,7 +1361,7 @@ const ChatAdmin: React.FC = () => {
                           {/* Reactions */}
                           {message.reactions && message.reactions.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
-                              {Array.from(new Set(message.reactions.map(r => r.emoji))).map(emoji => (
+                              {Array.from(new Set(message.reactions.map((r: any) => r.emoji))).map((emoji: string) => (
                                 <button
                                   key={emoji}
                                   onClick={() => handleAddReaction(message.id, emoji)}

@@ -281,8 +281,12 @@ Provide your analysis and response:`;
   /**
    * Generate comprehensive event data including location details, safety info, and family considerations
    */
-  async generateComprehensiveEventData(eventPrompt: string): Promise<any> {
-    const systemPrompt = `You are Solyn, an AI assistant for Pack 1703 Cub Scout Pack. You specialize in creating comprehensive, family-safe event data for Cub Scout activities.`;
+  async generateComprehensiveEventData(eventPrompt: string, institutionalContext?: string): Promise<any> {
+    const systemPrompt = `You are Solyn, an AI assistant for Pack 1703 Cub Scout Pack. You specialize in creating comprehensive, family-safe event data for Cub Scout activities.
+
+${institutionalContext ? `\nINSTITUTIONAL KNOWLEDGE:\n${institutionalContext}\n` : ''}
+
+Use this institutional knowledge to provide accurate contact information, addresses, and context for all events. Always reference the school's information when relevant.`;
 
     const prompt = `A user has requested: "${eventPrompt}"
 
@@ -303,6 +307,7 @@ CRITICAL SAFETY REQUIREMENTS:
 - Consider accessibility needs for families
 - Include weather considerations for Houston area
 - Mention any age-appropriate safety concerns
+- Use the school's contact information (${institutionalContext ? '(713) 458-6100' : 'school phone'}) when appropriate
 
 Return your response as a JSON object with this exact structure:
 {

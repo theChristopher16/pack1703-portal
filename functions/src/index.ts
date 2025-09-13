@@ -590,7 +590,7 @@ export const testEmailConnection = functions.https.onCall(async (data, context) 
     }
 
     const userData = userDoc.data();
-    if (!userData?.role || !['admin', 'root', 'cubmaster', 'den_leader'].includes(userData.role)) {
+    if (!userData?.role || !['admin', 'root', 'cubmaster'].includes(userData.role)) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to test email connection');
     }
 
@@ -1506,7 +1506,7 @@ export const testAIConnection = functions.https.onCall(async (data, context) => 
     }
 
     const userData = userDoc.data();
-    if (!userData?.role || !['admin', 'root', 'cubmaster', 'den_leader'].includes(userData.role)) {
+    if (!userData?.role || !['admin', 'root', 'cubmaster'].includes(userData.role)) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to test AI connection');
     }
 

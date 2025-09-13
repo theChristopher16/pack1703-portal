@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Send, MessageCircle, Settings, User, Search, Smile, Share2, 
   Bold, Italic, Underline, Loader2, Camera, Palette, Type, 
@@ -103,6 +103,7 @@ const ChatPage: React.FC = () => {
   const [isLoadingGifs, setIsLoadingGifs] = useState(false);
   const [gifSearchResults, setGifSearchResults] = useState<TenorGif[]>([]);
   const [showGifSearch, setShowGifSearch] = useState(false);
+  const [gifApiStatus, setGifApiStatus] = useState<string>('Loading...');
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -463,14 +464,7 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  // Load trending GIFs when GIF picker is opened
-  useEffect(() => {
-    if (showGifPicker && gifs.length === 0) {
-      loadTrendingGifs();
-    }
-  }, [showGifPicker]);
-
-  const loadTrendingGifs = async () => {
+  const loadTrendingGifs = useCallback(async () => {
     setIsLoadingGifs(true);
     try {
       const trendingGifs = await tenorService.getTrendingGifs(20);
@@ -482,7 +476,27 @@ const ChatPage: React.FC = () => {
     } finally {
       setIsLoadingGifs(false);
     }
-  };
+  }, [showInfo, showError]);
+
+  // Load trending GIFs when GIF picker is opened
+  useEffect(() => {
+    if (showGifPicker && gifs.length === 0) {
+      loadTrendingGifs();
+    }
+  }, [showGifPicker, gifs.length, loadTrendingGifs]);
+
+  // Load GIF API status
+  useEffect(() => {
+    const loadGifApiStatus = async () => {
+      try {
+        const status = await tenorService.getApiStatus();
+        setGifApiStatus(status);
+      } catch (error) {
+        setGifApiStatus('Error loading status');
+      }
+    };
+    loadGifApiStatus();
+  }, []);
 
   const searchGifs = async (query: string) => {
     if (!query.trim()) {
@@ -1703,7 +1717,7 @@ const ChatPage: React.FC = () => {
                     {/* API Status */}
                     <div className="mb-3 p-2 bg-gray-50 rounded-lg">
                       <p className="text-xs text-gray-600">
-                        {tenorService.getApiStatus()}
+                        {gifApiStatus}
                       </p>
                     </div>
 

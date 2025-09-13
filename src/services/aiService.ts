@@ -8,6 +8,7 @@ import emailMonitorService from './emailMonitorService';
 import firestoreService from './firestore';
 import { aiAuthService } from './aiAuthService';
 import vertexAIService from './vertexAIService';
+import institutionalKnowledgeService from './institutionalKnowledgeService';
 
 export interface AIResponse {
   id: string;
@@ -2775,8 +2776,7 @@ class AIService {
       return true;
     }
     
-    // Admin permissions include: admin, root, volunteer (den leaders), cubmaster
-    // This covers: root, admin, volunteer (which includes den leaders and cubmaster)
+    // AI access restricted to: admin, root, cubmaster only
     return userRole === 'admin';
   }
 
@@ -2806,6 +2806,20 @@ class AIService {
   }
 
   /**
+   * Get institutional knowledge for AI context
+   */
+  getInstitutionalKnowledge(): string {
+    return institutionalKnowledgeService.generateLocationSummary();
+  }
+
+  /**
+   * Get school information for AI context
+   */
+  getSchoolInformation(): any {
+    return institutionalKnowledgeService.getSchoolInfo();
+  }
+
+  /**
    * Create comprehensive event from natural language prompt
    * Includes location creation, duplicate checking, and family safety considerations
    */
@@ -2813,8 +2827,16 @@ class AIService {
     try {
       console.log('🤖 Creating comprehensive event from prompt:', eventPrompt);
 
-      // Step 1: Generate comprehensive event data using Vertex AI
-      const comprehensiveData = await vertexAIService.generateComprehensiveEventData(eventPrompt);
+      // Get institutional knowledge for context
+      const schoolInfo = institutionalKnowledgeService.getSchoolInfo();
+      const locationContext = institutionalKnowledgeService.getLocationContext();
+      const eventCreationContext = institutionalKnowledgeService.getEventCreationContext();
+
+      // Step 1: Generate comprehensive event data using Vertex AI with institutional context
+      const comprehensiveData = await vertexAIService.generateComprehensiveEventData(
+        eventPrompt, 
+        eventCreationContext
+      );
       console.log('📋 Generated comprehensive data:', comprehensiveData);
 
       // Step 2: Enhance with real data using web search and external APIs

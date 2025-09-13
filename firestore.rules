@@ -256,10 +256,24 @@ service cloud.firestore {
       allow write: if false; // Email monitor logs are created by Cloud Functions only
     }
     
-    // AI collaboration sessions - admin read-only
-    match /aiCollaborationSessions/{sessionId} {
-      allow read: if isAdmin();
-      allow write: if false; // AI collaboration sessions are created by Cloud Functions only
+    // Usage tracking - authenticated users can read/write their own data
+    match /usageTracking/{usageId} {
+      allow read, write: if isAuthenticated() && 
+                          resource.data.userId == request.auth.uid;
+      allow read: if isAdmin(); // Admins can read all usage data
+    }
+    
+    // User usage stats - authenticated users can read/write their own data
+    match /userUsageStats/{userId} {
+      allow read, write: if isAuthenticated() && 
+                          resource.id == request.auth.uid;
+      allow read: if isAdmin(); // Admins can read all user stats
+    }
+    
+    // Component analytics - authenticated users can read, admins can write
+    match /componentAnalytics/{componentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
     
     // Admin user management - admin only

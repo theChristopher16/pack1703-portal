@@ -270,8 +270,21 @@ service cloud.firestore {
       allow read: if isAdmin(); // Admins can read all user stats
     }
     
-    // Component analytics - authenticated users can read, admins can write
-    match /componentAnalytics/{componentId} {
+    // Chat users - authenticated users can read/write their own data
+    match /chat-users/{userId} {
+      allow read, write: if isAuthenticated() && 
+                          resource.id == request.auth.uid;
+      allow read: if isAdmin(); // Admins can read all chat users
+    }
+    
+    // Analytics - authenticated users can read, admins can write
+    match /analytics/{analyticsId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Performance metrics - authenticated users can read, admins can write
+    match /performance_metrics/{metricId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }

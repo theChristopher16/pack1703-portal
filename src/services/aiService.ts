@@ -6,6 +6,8 @@ import configService from './configService';
 import { externalApiService } from './externalApiService';
 import emailMonitorService from './emailMonitorService';
 import firestoreService from './firestore';
+import { aiAuthService } from './aiAuthService';
+import vertexAIService from './vertexAIService';
 
 export interface AIResponse {
   id: string;
@@ -32,7 +34,7 @@ export interface ValidationCheck {
 
 export interface AIContext {
   userQuery: string;
-  userRole: 'admin' | 'user';
+  userRole: 'admin' | 'user' | 'ai';
   currentPage: string;
   availableData: {
     events: number;
@@ -64,8 +66,9 @@ class AIService {
     
     try {
       // Initialize AI service - could include API key validation, etc.
+      await vertexAIService.initialize();
       this.isInitialized = true;
-      console.log('AI Service initialized successfully');
+      console.log('AI Service initialized successfully with Vertex AI');
     } catch (error) {
       console.error('Failed to initialize AI service:', error);
       throw error;
@@ -2650,6 +2653,112 @@ class AIService {
     }
   }
 
+  /**
+   * Create AI context for automated operations
+   */
+  createAIContext(userQuery: string, currentPage: string = 'ai-automation', availableData?: any): AIContext {
+    const aiUser = aiAuthService.getAIUser();
+    
+    return {
+      userQuery,
+      userRole: 'ai',
+      currentPage,
+      availableData: availableData || {
+        events: 0,
+        locations: 0,
+        announcements: 0,
+        messages: 0,
+        users: 0
+      }
+    };
+  }
+
+  /**
+   * Check if AI can perform an action
+   */
+  private canAIPerformAction(action: string, resource: string): boolean {
+    return aiAuthService.canPerformAction(action, resource);
+  }
+
+  /**
+   * Check if AI can access a collection
+   */
+  private canAIAccessCollection(collection: string): boolean {
+    return aiAuthService.canAccessCollection(collection);
+  }
+
+  /**
+   * Generate event description using Vertex AI
+   */
+  async generateEventDescriptionWithVertexAI(eventData: any): Promise<string> {
+    try {
+      return await vertexAIService.generateEventDescription(eventData);
+    } catch (error) {
+      console.error('Failed to generate event description with Vertex AI:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate announcement content using Vertex AI
+   */
+  async generateAnnouncementContentWithVertexAI(announcementData: any): Promise<string> {
+    try {
+      return await vertexAIService.generateAnnouncementContent(announcementData);
+    } catch (error) {
+      console.error('Failed to generate announcement content with Vertex AI:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate packing list using Vertex AI
+   */
+  async generatePackingListWithVertexAI(eventData: any): Promise<string[]> {
+    try {
+      return await vertexAIService.generatePackingList(eventData);
+    } catch (error) {
+      console.error('Failed to generate packing list with Vertex AI:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate event title using Vertex AI
+   */
+  async generateEventTitleWithVertexAI(eventData: any): Promise<string> {
+    try {
+      return await vertexAIService.generateEventTitle(eventData);
+    } catch (error) {
+      console.error('Failed to generate event title with Vertex AI:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Analyze query using Vertex AI
+   */
+  async analyzeQueryWithVertexAI(query: string, context: any): Promise<string> {
+    try {
+      return await vertexAIService.analyzeQuery(query, context);
+    } catch (error) {
+      console.error('Failed to analyze query with Vertex AI:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Test Vertex AI connection
+   */
+  async testVertexAIConnection(): Promise<boolean> {
+    try {
+      return await vertexAIService.testConnection();
+    } catch (error) {
+      console.error('Vertex AI connection test failed:', error);
+      return false;
+    }
+  }
+
   // Determine user role based on den
   private getUserRole(userDen?: string): 'admin' | 'user' {
     if (!userDen) return 'user';
@@ -2661,6 +2770,11 @@ class AIService {
   }
 
   private hasAdminPermissions(userRole: 'admin' | 'user'): boolean {
+    // Check if this is an AI request (always allow AI)
+    if (userRole === 'ai') {
+      return true;
+    }
+    
     // Admin permissions include: admin, root, volunteer (den leaders), cubmaster
     // This covers: root, admin, volunteer (which includes den leaders and cubmaster)
     return userRole === 'admin';
@@ -2669,6 +2783,12 @@ class AIService {
   // Create content functions with write access
   async createEvent(eventData: any): Promise<boolean> {
     try {
+      // Security check: Ensure AI can perform this action
+      if (!this.canAIPerformAction('create', 'events')) {
+        console.warn('AI attempted unauthorized event creation');
+        return false;
+      }
+
       // Check for duplicates before creating
       const isDuplicate = await this.checkForDuplicateEvent(eventData);
       if (isDuplicate) {
@@ -2687,6 +2807,12 @@ class AIService {
 
   async createAnnouncement(announcementData: any): Promise<boolean> {
     try {
+      // Security check: Ensure AI can perform this action
+      if (!this.canAIPerformAction('create', 'announcements')) {
+        console.warn('AI attempted unauthorized announcement creation');
+        return false;
+      }
+
       // Check for duplicates before creating
       const isDuplicate = await this.checkForDuplicateAnnouncement(announcementData);
       if (isDuplicate) {

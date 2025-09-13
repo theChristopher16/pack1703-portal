@@ -156,20 +156,29 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.CHAT_MANAGEMENT
   ],
   [UserRole.AI_ASSISTANT]: [
+    // Content Management (Full Access)
     Permission.READ_CONTENT,
     Permission.CREATE_CONTENT,
     Permission.UPDATE_CONTENT,
     Permission.EVENT_MANAGEMENT,
+    Permission.LOCATION_MANAGEMENT,
     Permission.ANNOUNCEMENT_MANAGEMENT,
-    Permission.SCOUT_CONTENT,
-    Permission.SCOUT_EVENTS,
-    Permission.SCOUT_CHAT,
+    
+    // System Access (Read Only)
+    Permission.SYSTEM_CONFIG,
+    
+    // Analytics and Monitoring
+    Permission.COST_ANALYTICS,
+    Permission.COST_ALERTS,
+    
+    // Chat (Limited - Only AI interactions)
     Permission.CHAT_READ,
     Permission.CHAT_WRITE,
-    Permission.CHAT_MANAGEMENT,
-    Permission.COST_MANAGEMENT,
-    Permission.COST_ANALYTICS,
-    Permission.COST_ALERTS
+    
+    // Scout Content (Full Access)
+    Permission.SCOUT_CONTENT,
+    Permission.SCOUT_EVENTS,
+    Permission.SCOUT_CHAT
   ],
   [UserRole.ADMIN]: [
     Permission.SYSTEM_ADMIN,

@@ -2769,7 +2769,7 @@ class AIService {
     return adminRoles.includes(userDen) ? 'admin' : 'user';
   }
 
-  private hasAdminPermissions(userRole: 'admin' | 'user'): boolean {
+  private hasAdminPermissions(userRole: 'admin' | 'user' | 'ai'): boolean {
     // Check if this is an AI request (always allow AI)
     if (userRole === 'ai') {
       return true;

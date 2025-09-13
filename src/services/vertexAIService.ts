@@ -45,6 +45,8 @@ interface AnnouncementData {
 class VertexAIService {
   private config: VertexAIConfig;
   private isInitialized = false;
+  private genAI: any;
+  private model: any;
 
   constructor() {
     this.config = {

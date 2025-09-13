@@ -698,13 +698,13 @@ describe('AuthService - Enhanced User Management', () => {
       expect(user.role).toBe(UserRole.ROOT);
     });
 
-    test('should create subsequent users as SCOUT', async () => {
+    test('should create subsequent users as PARENT', async () => {
       // Mock getDocs to return non-empty (not first user)
       const { getDocs } = require('firebase/firestore');
       getDocs.mockResolvedValue({ empty: false });
 
       const user = await authService['createUserFromFirebaseUser'](mockFirebaseUser);
-      expect(user.role).toBe(UserRole.ROOT); // Currently always creates as ROOT
+      expect(user.role).toBe(UserRole.PARENT); // Subsequent users are created as PARENT
     });
 
     test('should generate safe username for new users', async () => {

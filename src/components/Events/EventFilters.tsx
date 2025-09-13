@@ -67,7 +67,7 @@ const EventFilters: React.FC<EventFiltersProps> = ({ onFiltersChange, className 
     onFiltersChange(filters);
   }, [filters, onFiltersChange]);
 
-  const handleFilterChange = (key: keyof EventFilters, value: any) => {
+  const handleFilterChange = (key: keyof EventFiltersData, value: any) => {
     setFilters(prev => ({
       ...prev,
       [key]: value

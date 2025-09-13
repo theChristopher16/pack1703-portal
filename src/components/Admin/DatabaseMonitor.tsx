@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-';
+import { 
+  CheckCircle, 
+  XCircle, 
+  Clock, 
+  Database, 
+  ChevronDown, 
+  ChevronRight 
+} from 'lucide-react';
 import { firestoreService } from '../../services/firestore';
 import configService from '../../services/configService';
 import { collection, getDocs, query, limit } from 'firebase/firestore';

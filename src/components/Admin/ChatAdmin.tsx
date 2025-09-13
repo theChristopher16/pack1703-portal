@@ -1,6 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-';
- '../../services/chatService';
+import { 
+  Bold, 
+  Italic, 
+  Underline, 
+  Strikethrough, 
+  Code, 
+  Link, 
+  List, 
+  ListOrdered, 
+  Quote, 
+  Camera,
+  Palette,
+  Type,
+  Loader2,
+  Send
+} from 'lucide-react';
+import { SessionManager, MessageReaction, chatService } from '../../services/chatService';
 import tenorService, { TenorGif } from '../../services/tenorService';
 import { useToast } from '../../contexts/ToastContext';
 

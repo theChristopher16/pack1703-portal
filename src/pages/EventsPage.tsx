@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, List, Filter, Download, Share2 } from 'lucide-react';
 import EventCard from '../components/Events/EventCard';
 import EventCalendar from '../components/Events/EventCalendar';
-import EventFilters, { EventFilters as EventFiltersType } from '../components/Events/EventFilters';
+import EventFilters, { EventFiltersData as EventFiltersType } from '../components/Events/EventFilters';
 import { firestoreService } from '../services/firestore';
 // import { analytics } from '../services/analytics';
 

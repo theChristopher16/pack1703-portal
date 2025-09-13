@@ -404,7 +404,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             e.preventDefault();
                             e.stopPropagation();
                             if (currentUser) {
-                              window.location.href = '/admin';
+                              navigate('/admin');
                             } else {
                               setIsLoginModalOpen(true);
                             }

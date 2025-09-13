@@ -558,9 +558,8 @@ export const moderationDigest = functions.pubsub.schedule('0 9 * * *').onRun(asy
 });
 
 // 7. Hello World Function (for testing)
-export const helloWorld = functions.https.onCall(async (request) => {
+export const helloWorld = functions.https.onCall(async (data, context) => {
   try {
-    const data = request.data;
     return {
       message: 'Hello from Firebase Cloud Functions!',
       timestamp: getTimestamp(),
@@ -571,22 +570,25 @@ export const helloWorld = functions.https.onCall(async (request) => {
     return {
       message: 'Hello from Firebase Cloud Functions!',
       timestamp: getTimestamp(),
-      data: request.data
+      data: data
     };
   }
 });
 
 // 8. Email Monitoring Functions
-export const testEmailConnection = functions.https.onCall(async (request) => {
+export const testEmailConnection = functions.https.onCall(async (data, context) => {
   try {
-    const data = request.data as {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    const { emailAddress, password, imapServer, imapPort } = data as {
       emailAddress: string;
       password: string;
       imapServer: string;
       imapPort: number;
     };
-    
-    const { emailAddress, password, imapServer, imapPort } = data;
 
     if (!emailAddress || !password || !imapServer || !imapPort) {
       throw new functions.https.HttpsError('invalid-argument', 'Missing required email configuration');
@@ -625,17 +627,20 @@ export const testEmailConnection = functions.https.onCall(async (request) => {
   }
 });
 
-export const fetchNewEmails = functions.https.onCall(async (request) => {
+export const fetchNewEmails = functions.https.onCall(async (data, context) => {
   try {
-    const data = request.data as {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    const { emailAddress, password, imapServer, imapPort, lastChecked } = data as {
       emailAddress: string;
       password: string;
       imapServer: string;
       imapPort: number;
       lastChecked?: string;
     };
-    
-    const { emailAddress, password, imapServer, imapPort, lastChecked } = data;
 
     if (!emailAddress || !password || !imapServer || !imapPort) {
       throw new functions.https.HttpsError('invalid-argument', 'Missing required email configuration');

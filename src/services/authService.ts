@@ -864,9 +864,45 @@ class AuthService {
   // Sign out
   async signOut(): Promise<void> {
     try {
+      // Sign out from Firebase Auth
       await signOut(this.auth);
+      
+      // Clear local state
       this.currentUser = null;
       this.notifyAuthStateListeners(null);
+      
+      // Clear chat service storage
+      try {
+        const { SessionManager } = await import('./chatService');
+        SessionManager.clearUserFromStorage();
+        console.log('Chat service storage cleared');
+      } catch (error) {
+        console.warn('Failed to clear chat service storage:', error);
+      }
+      
+      // Clear any other localStorage items related to the session
+      try {
+        // Clear any analytics or tracking data
+        localStorage.removeItem('pack1703_analytics_session');
+        localStorage.removeItem('pack1703_user_preferences');
+        localStorage.removeItem('pack1703_last_activity');
+        
+        // Clear any cached user data
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('pack1703_')) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+        
+        console.log('Additional session data cleared');
+      } catch (error) {
+        console.warn('Failed to clear additional session data:', error);
+      }
+      
+      console.log('User logged out successfully with full session cleanup');
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;

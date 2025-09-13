@@ -55,7 +55,7 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
   }, [state.currentUser]);
 
   // Check admin access - allow access to root and super-admin roles
-  if (!state.currentUser?.isAdmin && state.currentUser?.role !== 'super-admin') {
+  if (!state.currentUser?.isAdmin && state.currentUser?.role !== 'root' && state.currentUser?.role !== 'super-admin') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-gray-100/30 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

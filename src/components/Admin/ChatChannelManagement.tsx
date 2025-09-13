@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { authService, UserRole, Permission } from '../../services/authService';
+ '../../services/authService';
 import { 
   MessageSquare, 
   Plus, 

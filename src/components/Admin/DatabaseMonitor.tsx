@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Database, Wifi, WifiOff, Clock, CheckCircle, XCircle } from 'lucide-react';
+';
 import { firestoreService } from '../../services/firestore';
 import configService from '../../services/configService';
 import { collection, getDocs, query, limit } from 'firebase/firestore';

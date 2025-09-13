@@ -95,10 +95,11 @@ module.exports = {
         }
       },
       
-      // Typography
+      // Typography - Futura Font Family
       fontFamily: {
-        'display': ['Inter', 'system-ui', 'sans-serif'], // Modern, clean display font
-        'body': ['Inter', 'system-ui', 'sans-serif'], // Readable body font
+        'sans': ['Futura', 'system-ui', 'sans-serif'], // Primary font - Futura
+        'display': ['Futura', 'system-ui', 'sans-serif'], // Display font - Futura
+        'body': ['Futura', 'system-ui', 'sans-serif'], // Body font - Futura
         'mono': ['JetBrains Mono', 'Fira Code', 'monospace'], // Tech feel
       },
       

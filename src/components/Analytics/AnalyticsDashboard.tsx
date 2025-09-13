@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, Users, Clock, TrendingUp, Activity, Eye, MousePointer, Smartphone } from 'lucide-react';
-import { getFirestore, collection, getCountFromServer } from 'firebase/firestore';
+import { getFirestore, collection, getCountFromServer, getDoc, doc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import analyticsService from '../../services/analyticsService';
 import PerformanceMonitor from '../Performance/PerformanceMonitor';
@@ -43,8 +43,41 @@ const AnalyticsDashboard: React.FC = () => {
     const loadAnalyticsData = async () => {
       try {
         const db = getFirestore();
+        const auth = getAuth();
         
-        // Get total users count
+        // Check if user is admin before running aggregation queries
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+          console.warn('No authenticated user for analytics');
+          return;
+        }
+        
+        // Get user document to check admin status
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        const userData = userDoc.data();
+        const isAdmin = userData?.role === 'admin' || userData?.role === 'root';
+        
+        if (!isAdmin) {
+          console.warn('Non-admin user accessing analytics dashboard');
+          // Set fallback data for non-admin users
+          setAnalyticsData({
+            totalUsers: 0,
+            activeUsers: 0,
+            pageViews: 0,
+            averageSessionDuration: 0,
+            topPages: [],
+            deviceTypes: [],
+            featureUsage: [],
+            performanceMetrics: {
+              averageLoadTime: 0,
+              averageLCP: 0,
+              averageCLS: 0,
+            },
+          });
+          return;
+        }
+        
+        // Get total users count (only for admins)
         const usersSnapshot = await getCountFromServer(collection(db, 'users'));
         const totalUsers = usersSnapshot.data().count;
         

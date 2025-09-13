@@ -13,12 +13,16 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && 
-             request.auth.token.get('role', '') in ['admin', 'root'];
+             (request.auth.token.get('role', '') in ['admin', 'root'] ||
+              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'root']);
     }
     
     function isRoot() {
       return isAuthenticated() && 
-             request.auth.token.get('role', '') == 'root';
+             (request.auth.token.get('role', '') == 'root' ||
+              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'root');
     }
     
     function isValidTimestamp(ts) {
@@ -43,10 +47,13 @@ service cloud.firestore {
     // USER DATA SECURITY - Users can only access their own data
     // ============================================================================
     
-  // Users collection - SECURE RULES (root account now exists)
+    // Users collection - SECURE RULES (root account now exists)
   match /users/{userId} {
     // Users can read their own data
     allow read: if request.auth != null && request.auth.uid == userId;
+    
+    // Admins can read all users (for analytics and aggregation queries)
+    allow read: if isAdmin();
     
     // Users can update their own profile (except role and permissions)
     allow update: if request.auth != null && 
@@ -64,6 +71,31 @@ service cloud.firestore {
     allow delete: if request.auth != null && 
                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'root';
+  }
+  
+    // Allow aggregation queries on users collection for admins
+  match /users {
+    allow read: if isAdmin();
+  }
+  
+  // Allow aggregation queries on announcements collection for admins
+  match /announcements {
+    allow read: if isAdmin();
+  }
+  
+  // Allow aggregation queries on locations collection for admins
+  match /locations {
+    allow read: if isAdmin();
+  }
+  
+  // Allow aggregation queries on categories collection for admins
+  match /categories {
+    allow read: if isAdmin();
+  }
+  
+  // Allow aggregation queries on seasons collection for admins
+  match /seasons {
+    allow read: if isAdmin();
   }
     
     // Analytics - users can only access their own analytics data
@@ -153,6 +185,11 @@ service cloud.firestore {
                       resource.data.start < resource.data.end;
     }
     
+    // Allow aggregation queries on events collection for admins
+    match /events {
+      allow read: if isAdmin();
+    }
+    
     // Announcements - public read, admin write
     match /announcements/{announcementId} {
       allow read: if true; // Public announcements
@@ -209,6 +246,11 @@ service cloud.firestore {
       allow read: if isOwner(userId) || isAdmin();
       allow write: if isOwner(userId) || isAdmin();
     }
+    
+    // Allow aggregation queries on chat-users collection for admins
+    match /chat-users {
+      allow read: if isAdmin();
+    }
 
     // Pack lists - admin read/write, authenticated users read
     match /packLists/{listId} {
@@ -226,16 +268,31 @@ service cloud.firestore {
       allow write: if false; // Audit logs are created by Cloud Functions only
     }
     
+    // Allow aggregation queries on admin audit collection for admins
+    match /admin/audit {
+      allow read: if isAdmin();
+    }
+    
     // Admin actions - admin read-only
     match /adminActions/{actionId} {
       allow read: if isAdmin();
       allow write: if false; // Admin actions are created by Cloud Functions only
     }
     
+    // Allow aggregation queries on admin actions collection for admins
+    match /adminActions {
+      allow read: if isAdmin();
+    }
+    
     // AI usage logs - admin read-only
     match /aiUsage/{usageId} {
       allow read: if isAdmin();
       allow write: if false; // AI usage logs are created by Cloud Functions only
+    }
+    
+    // Allow aggregation queries on AI usage collection for admins
+    match /aiUsage {
+      allow read: if isAdmin();
     }
     
     // AI interactions - admin read-only
@@ -277,16 +334,24 @@ service cloud.firestore {
       allow read: if isAdmin(); // Admins can read all chat users
     }
     
-    // Analytics - authenticated users can read, admins can write
+    // Analytics - authenticated users can read/write their own data, admins can read all
     match /analytics/{analyticsId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow write: if isAuthenticated() && 
+                      (resource.data.userId == request.auth.uid || 
+                       request.resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
     }
     
-    // Performance metrics - authenticated users can read, admins can write
+    // Performance metrics - authenticated users can read/write their own data, admins can read all
     match /performance_metrics/{metricId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow write: if isAuthenticated() && 
+                      (resource.data.userId == request.auth.uid || 
+                       request.resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
     }
     
     // Admin user management - admin only

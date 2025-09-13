@@ -2,19 +2,28 @@
 // TEMPORARILY DISABLED FOR CACHE DEBUGGING
 // Updated: 2025-09-10T22:25:00Z
 
+// Production-friendly logging
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+function log(message, ...args) {
+  if (isDevelopment) {
+    console.log(`[SW] ${message}`, ...args);
+  }
+}
+
 // Completely disable caching for debugging
 self.addEventListener('install', (event) => {
-  console.log('Service Worker: Install event - DISABLED');
+  log('Service Worker: Install event - DISABLED');
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker: Activate event - DISABLED');
+  log('Service Worker: Activate event - DISABLED');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          console.log('Service Worker: Deleting ALL caches:', cacheName);
+          log('Service Worker: Deleting ALL caches:', cacheName);
           return caches.delete(cacheName);
         })
       );
@@ -26,7 +35,7 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   // Always fetch from network, never cache
-  console.log('Service Worker: Fetch event - BYPASSING CACHE');
+  log('Service Worker: Fetch event - BYPASSING CACHE');
   event.respondWith(
     fetch(event.request).catch(() => {
       // Only fallback for navigation requests

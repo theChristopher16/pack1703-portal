@@ -530,20 +530,20 @@ class AuthService {
       authProvider: authProvider,
       profile: {
         socialData: {
-          google: firebaseUser.providerData.find(p => p.providerId === 'google.com') ? {
+          google: firebaseUser.providerData.find((p: any) => p.providerId === 'google.com') ? {
             id: firebaseUser.uid,
             email: firebaseUser.email || undefined,
             name: firebaseUser.displayName || undefined,
             picture: firebaseUser.photoURL || undefined,
             verifiedEmail: firebaseUser.emailVerified
           } : undefined,
-          apple: firebaseUser.providerData.find(p => p.providerId === 'apple.com') ? {
+          apple: firebaseUser.providerData.find((p: any) => p.providerId === 'apple.com') ? {
             id: firebaseUser.uid,
             email: firebaseUser.email || undefined,
             name: firebaseUser.displayName || undefined,
             picture: firebaseUser.photoURL || undefined
           } : undefined,
-          facebook: firebaseUser.providerData.find(p => p.providerId === 'facebook.com') ? {
+          facebook: firebaseUser.providerData.find((p: any) => p.providerId === 'facebook.com') ? {
             id: firebaseUser.uid,
             email: firebaseUser.email || undefined,
             name: firebaseUser.displayName || undefined,
@@ -1564,7 +1564,7 @@ class AuthService {
       const providers = user?.providerData || [];
       
       // Find the provider to unlink
-      const providerToUnlink = providers.find(p => p.providerId.includes(provider));
+      const providerToUnlink = providers.find((p: any) => p.providerId.includes(provider));
       
       if (!providerToUnlink) {
         throw new Error(`No ${provider} account linked`);

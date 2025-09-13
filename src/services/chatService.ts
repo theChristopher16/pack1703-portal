@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger';
 import { 
   collection, 
   doc, 
@@ -7,7 +8,7 @@ import {
   updateDoc, 
   deleteDoc,
   setDoc,
-  query, 
+  query,  
   where, 
   orderBy, 
   limit as firestoreLimit,
@@ -259,6 +260,14 @@ class ChatService {
   private channelsCache: ChatChannel[] | null = null;
   private channelsCacheTime: number = 0;
   private readonly CACHE_DURATION = 30000; // 30 seconds
+  
+  // Activity tracking properties
+  private lastActivityTime: number = Date.now();
+  private heartbeatInterval: NodeJS.Timeout | null = null;
+  private activityTimeout: NodeJS.Timeout | null = null;
+  private readonly HEARTBEAT_INTERVAL = 15000; // 15 seconds for active users
+  private readonly INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+  private readonly ACTIVITY_EVENTS = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
 
   static getInstance(): ChatService {
     if (!ChatService.instance) {
@@ -276,12 +285,8 @@ class ChatService {
     // Create or update user in Firestore
     await this.createOrUpdateUserInFirestore(this.currentUser);
     
-    // Set up periodic status updates
-    setInterval(() => {
-      if (this.currentUser) {
-        this.updateUserStatus(this.currentUser.id, true);
-      }
-    }, 30000); // Update every 30 seconds
+    // Set up activity-based heartbeat system
+    this.setupActivityTracking();
 
     return this.currentUser;
   }
@@ -296,12 +301,8 @@ class ChatService {
     // Create or update user in Firestore
     await this.createOrUpdateUserInFirestore(this.currentUser);
     
-    // Set up periodic status updates
-    setInterval(() => {
-      if (this.currentUser) {
-        this.updateUserStatus(this.currentUser.id, true);
-      }
-    }, 30000); // Update every 30 seconds
+    // Set up activity-based heartbeat system
+    this.setupActivityTracking();
 
     return this.currentUser;
   }
@@ -507,7 +508,7 @@ class ChatService {
       const q = query(
         usersRef, 
         where('isOnline', '==', true),
-        where('lastSeen', '>', new Date(Date.now() - 5 * 60 * 1000)) // Online in last 5 minutes
+        where('lastSeen', '>', new Date(Date.now() - 2 * 60 * 1000)) // Online in last 2 minutes (more responsive)
       );
       const snapshot = await getDocs(q);
       
@@ -520,7 +521,7 @@ class ChatService {
         } as ChatUser;
       });
     } catch (error) {
-      console.warn('Failed to fetch online users (index may be building), trying fallback:', error);
+      logger.firebase('Failed to fetch online users (index may be building), trying fallback:', error);
       
       // Fallback: Get all users and filter client-side
       try {
@@ -528,7 +529,7 @@ class ChatService {
         const snapshot = await getDocs(usersRef);
         
         const now = new Date();
-        const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+        const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000); // More responsive timeout
         
         return snapshot.docs
           .map(doc => {
@@ -541,7 +542,7 @@ class ChatService {
           })
           .filter(user => 
             user.isOnline && 
-            user.lastSeen > fiveMinutesAgo
+            user.lastSeen > twoMinutesAgo
           );
       } catch (fallbackError) {
         console.warn('Fallback query also failed:', fallbackError);
@@ -598,7 +599,7 @@ class ChatService {
         });
       }
     } catch (error) {
-      console.warn('Failed to create/update user in Firestore:', error);
+      logger.firebase('Failed to create/update user in Firestore:', error);
     }
   }
 
@@ -922,7 +923,7 @@ class ChatService {
       const q = query(
         usersRef, 
         where('isOnline', '==', true),
-        where('lastSeen', '>', new Date(Date.now() - 5 * 60 * 1000))
+        where('lastSeen', '>', new Date(Date.now() - 2 * 60 * 1000)) // More responsive timeout
       );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -1010,10 +1011,112 @@ class ChatService {
     }
   }
 
+  // Activity tracking methods
+  private setupActivityTracking(): void {
+    console.log('Setting up activity tracking...');
+    
+    // Track user activity
+    this.ACTIVITY_EVENTS.forEach(event => {
+      document.addEventListener(event, this.handleUserActivity.bind(this), { passive: true });
+    });
+    
+    // Track page visibility changes
+    document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+    
+    // Start heartbeat
+    this.startHeartbeat();
+    
+    // Set initial activity timeout
+    this.resetActivityTimeout();
+  }
+  
+  private handleUserActivity(): void {
+    this.lastActivityTime = Date.now();
+      logger.activity('User activity detected, updating last activity time');
+    
+    // Reset activity timeout
+    this.resetActivityTimeout();
+    
+    // Update user status if not already online
+    if (this.currentUser && !this.currentUser.isOnline) {
+      this.currentUser.isOnline = true;
+      this.updateUserStatus(this.currentUser.id, true);
+    }
+  }
+  
+  private handleVisibilityChange(): void {
+    if (document.hidden) {
+      console.log('Page hidden, user may be inactive');
+      // Don't immediately mark as offline, but reduce heartbeat frequency
+      this.stopHeartbeat();
+    } else {
+      console.log('Page visible, user is active');
+      // Resume normal heartbeat
+      this.startHeartbeat();
+      this.handleUserActivity(); // Treat visibility change as activity
+    }
+  }
+  
+  private startHeartbeat(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+    }
+    
+    this.heartbeatInterval = setInterval(() => {
+      if (this.currentUser) {
+        logger.heartbeat('Sending heartbeat - user is active');
+        this.updateUserStatus(this.currentUser.id, true);
+      }
+    }, this.HEARTBEAT_INTERVAL);
+  }
+  
+  private stopHeartbeat(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+  
+  private resetActivityTimeout(): void {
+    if (this.activityTimeout) {
+      clearTimeout(this.activityTimeout);
+    }
+    
+    this.activityTimeout = setTimeout(() => {
+      console.log('User inactive for 5 minutes, marking as offline');
+      if (this.currentUser) {
+        this.currentUser.isOnline = false;
+        this.updateUserStatus(this.currentUser.id, false);
+      }
+    }, this.INACTIVITY_TIMEOUT);
+  }
+  
+  private cleanupActivityTracking(): void {
+    console.log('Cleaning up activity tracking...');
+    
+    // Remove event listeners
+    this.ACTIVITY_EVENTS.forEach(event => {
+      document.removeEventListener(event, this.handleUserActivity.bind(this));
+    });
+    
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+    
+    // Clear intervals and timeouts
+    this.stopHeartbeat();
+    
+    if (this.activityTimeout) {
+      clearTimeout(this.activityTimeout);
+      this.activityTimeout = null;
+    }
+  }
+
   cleanup(): void {
     // Unsubscribe from all listeners
     this.unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
     this.unsubscribeFunctions = [];
+
+    // Clean up activity tracking
+    this.cleanupActivityTracking();
 
     // Update user as offline
     if (this.currentUser) {

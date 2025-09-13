@@ -752,8 +752,19 @@ const ChatPage: React.FC = () => {
         // Set up real-time subscriptions
         const unsubscribeUsers = chatService.subscribeToOnlineUsers(setUsers);
         
+        // Set up periodic refresh of online users (every 30 seconds)
+        const refreshInterval = setInterval(async () => {
+          try {
+            const userData = await chatService.getOnlineUsers();
+            setUsers(userData);
+          } catch (error) {
+            console.warn('Failed to refresh online users:', error);
+          }
+        }, 30000);
+        
         return () => {
           unsubscribeUsers();
+          clearInterval(refreshInterval);
         };
       } catch (error) {
         console.error('Failed to reinitialize chat:', error);
@@ -814,9 +825,20 @@ const ChatPage: React.FC = () => {
         // Set up real-time subscriptions for users
         const unsubscribeUsers = chatService.subscribeToOnlineUsers(setUsers);
         
+        // Set up periodic refresh of online users (every 30 seconds)
+        const refreshInterval = setInterval(async () => {
+          try {
+            const userData = await chatService.getOnlineUsers();
+            setUsers(userData);
+          } catch (error) {
+            console.warn('Failed to refresh online users:', error);
+          }
+        }, 30000);
+        
         // Cleanup function
         return () => {
           unsubscribeUsers();
+          clearInterval(refreshInterval);
           chatService.cleanup();
         };
       } catch (error) {

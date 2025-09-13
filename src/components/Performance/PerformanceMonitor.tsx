@@ -29,10 +29,16 @@ const PerformanceMonitor: React.FC = () => {
       const db = getFirestore();
       const auth = getAuth();
       
+      // Only store performance data if user is authenticated
+      if (!auth.currentUser) {
+        console.log('User not authenticated, skipping performance data storage');
+        return;
+      }
+      
       await addDoc(collection(db, 'performance_metrics'), {
         metric: metricName,
         value: value,
-        userId: auth.currentUser?.uid || 'anonymous',
+        userId: auth.currentUser.uid,
         userAgent: navigator.userAgent,
         timestamp: serverTimestamp(),
         url: window.location.href,

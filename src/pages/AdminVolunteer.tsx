@@ -79,7 +79,8 @@ const AdminVolunteer: React.FC = () => {
     };
 
     loadVolunteerData();
-  }, [addNotification]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Remove addNotification from dependencies to prevent infinite loop
 
   const handleCreateNeed = () => {
     setModalMode('create');

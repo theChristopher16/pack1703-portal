@@ -355,7 +355,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    window.location.href = item.href;
+                                    navigate(item.href);
                                     setIsDropdownOpen(false);
                                   }}
                                   className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg cursor-pointer ${

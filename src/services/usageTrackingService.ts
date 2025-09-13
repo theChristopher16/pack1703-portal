@@ -12,6 +12,7 @@ import {
   orderBy,
   limit
 } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { db } from '../firebase/config';
 import { authService, UserRole } from './authService';
 
@@ -57,6 +58,13 @@ class UsageTrackingService {
       const currentUser = authService.getCurrentUser();
       if (!currentUser) {
         console.log('No authenticated user, skipping usage tracking');
+        return;
+      }
+
+      // Check if Firebase Auth user exists (additional safety check)
+      const firebaseAuth = getAuth();
+      if (!firebaseAuth.currentUser) {
+        console.log('No Firebase Auth user, skipping usage tracking');
         return;
       }
 

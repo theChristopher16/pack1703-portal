@@ -11,10 +11,10 @@ import {
   orderBy, 
   limit,
   serverTimestamp,
-  writeBatch,
   onSnapshot,
   Unsubscribe
 } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { db } from '../firebase/config';
 import { authService } from './authService';
 
@@ -73,6 +73,20 @@ class VolunteerService {
    */
   async getVolunteerNeeds(): Promise<VolunteerNeed[]> {
     try {
+      // Check authentication
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser) {
+        console.log('No authenticated user, skipping volunteer needs fetch');
+        return [];
+      }
+
+      // Check if Firebase Auth user exists
+      const firebaseAuth = getAuth();
+      if (!firebaseAuth.currentUser) {
+        console.log('No Firebase Auth user, skipping volunteer needs fetch');
+        return [];
+      }
+
       const needsRef = collection(db, this.VOLUNTEER_NEEDS_COLLECTION);
       const q = query(
         needsRef,
@@ -121,6 +135,20 @@ class VolunteerService {
    */
   async getVolunteerSignups(): Promise<VolunteerSignup[]> {
     try {
+      // Check authentication
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser) {
+        console.log('No authenticated user, skipping volunteer signups fetch');
+        return [];
+      }
+
+      // Check if Firebase Auth user exists
+      const firebaseAuth = getAuth();
+      if (!firebaseAuth.currentUser) {
+        console.log('No Firebase Auth user, skipping volunteer signups fetch');
+        return [];
+      }
+
       const signupsRef = collection(db, this.VOLUNTEER_SIGNUPS_COLLECTION);
       const q = query(signupsRef, orderBy('createdAt', 'desc'));
       

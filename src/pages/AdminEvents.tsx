@@ -434,7 +434,7 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) 
     if (validateForm()) {
       onSave({
         ...formData,
-        maxParticipants: formData.maxParticipants ? parseInt(formData.maxParticipants) : undefined,
+        maxParticipants: formData.maxParticipants && !isNaN(parseInt(formData.maxParticipants)) ? parseInt(formData.maxParticipants) : undefined,
         currentParticipants: event?.currentParticipants || 0,
         createdAt: event?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()

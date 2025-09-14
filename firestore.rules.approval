@@ -1,0 +1,184 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isApprovedUser() {
+      return isAuthenticated() && 
+             request.auth.token.approved == true;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.approved == true &&
+             request.auth.token.role == 'admin';
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && 
+             request.auth.uid == userId;
+    }
+    
+    function isPendingUser() {
+      return isAuthenticated() && 
+             (!request.auth.token.approved || request.auth.token.approved == false);
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Users can read their own document
+      allow read: if isOwner(userId);
+      
+      // Users can update their own document (limited fields)
+      allow update: if isOwner(userId) && 
+                       // Only allow updating displayName and email
+                       request.resource.data.keys().hasAll(['email', 'displayName', 'status', 'role', 'createdAt', 'approvedAt', 'approvedBy']) &&
+                       request.resource.data.status == resource.data.status &&
+                       request.resource.data.role == resource.data.role &&
+                       request.resource.data.createdAt == resource.data.createdAt &&
+                       request.resource.data.approvedAt == resource.data.approvedAt &&
+                       request.resource.data.approvedBy == resource.data.approvedBy;
+      
+      // Admins can read all user documents
+      allow read: if isAdmin();
+      
+      // Only Cloud Functions can create user documents
+      allow create: if false;
+      
+      // Only Cloud Functions can delete user documents
+      allow delete: if false;
+    }
+    
+    // Admin audit logs collection
+    match /adminAuditLogs/{logId} {
+      // Only admins can read audit logs
+      allow read: if isAdmin();
+      
+      // Only Cloud Functions can create audit logs
+      allow create: if false;
+      
+      // Audit logs are immutable - no updates or deletes
+      allow update, delete: if false;
+    }
+    
+    // Events collection (example of protected data)
+    match /events/{eventId} {
+      // Only approved users can read events
+      allow read: if isApprovedUser();
+      
+      // Only leaders and admins can create/update events
+      allow create, update: if isApprovedUser() && 
+                               (request.auth.token.role == 'leader' || 
+                                request.auth.token.role == 'admin');
+      
+      // Only admins can delete events
+      allow delete: if isAdmin();
+    }
+    
+    // Announcements collection (example of protected data)
+    match /announcements/{announcementId} {
+      // Only approved users can read announcements
+      allow read: if isApprovedUser();
+      
+      // Only leaders and admins can create/update announcements
+      allow create, update: if isApprovedUser() && 
+                               (request.auth.token.role == 'leader' || 
+                                request.auth.token.role == 'admin');
+      
+      // Only admins can delete announcements
+      allow delete: if isAdmin();
+    }
+    
+    // Locations collection (example of protected data)
+    match /locations/{locationId} {
+      // Only approved users can read locations
+      allow read: if isApprovedUser();
+      
+      // Only leaders and admins can create/update locations
+      allow create, update: if isApprovedUser() && 
+                               (request.auth.token.role == 'leader' || 
+                                request.auth.token.role == 'admin');
+      
+      // Only admins can delete locations
+      allow delete: if isAdmin();
+    }
+    
+    // Chat messages collection (example of protected data)
+    match /chatMessages/{messageId} {
+      // Only approved users can read chat messages
+      allow read: if isApprovedUser();
+      
+      // Only approved users can create messages
+      allow create: if isApprovedUser() && 
+                       request.auth.uid == resource.data.userId;
+      
+      // Users can update their own messages
+      allow update: if isApprovedUser() && 
+                       request.auth.uid == resource.data.userId;
+      
+      // Only admins can delete messages
+      allow delete: if isAdmin();
+    }
+    
+    // RSVPs collection (example of protected data)
+    match /rsvps/{rsvpId} {
+      // Only approved users can read RSVPs
+      allow read: if isApprovedUser();
+      
+      // Only approved users can create RSVPs
+      allow create: if isApprovedUser() && 
+                       request.auth.uid == resource.data.userId;
+      
+      // Users can update their own RSVPs
+      allow update: if isApprovedUser() && 
+                       request.auth.uid == resource.data.userId;
+      
+      // Only admins can delete RSVPs
+      allow delete: if isAdmin();
+    }
+    
+    // Feedback collection (example of protected data)
+    match /feedback/{feedbackId} {
+      // Only approved users can read feedback
+      allow read: if isApprovedUser();
+      
+      // Only approved users can create feedback
+      allow create: if isApprovedUser() && 
+                       request.auth.uid == resource.data.userId;
+      
+      // Users can update their own feedback
+      allow update: if isApprovedUser() && 
+                       request.auth.uid == resource.data.userId;
+      
+      // Only admins can delete feedback
+      allow delete: if isAdmin();
+    }
+    
+    // Volunteer signups collection (example of protected data)
+    match /volunteerSignups/{signupId} {
+      // Only approved users can read volunteer signups
+      allow read: if isApprovedUser();
+      
+      // Only approved users can create volunteer signups
+      allow create: if isApprovedUser() && 
+                       request.auth.uid == resource.data.userId;
+      
+      // Users can update their own volunteer signups
+      allow update: if isApprovedUser() && 
+                       request.auth.uid == resource.data.userId;
+      
+      // Only admins can delete volunteer signups
+      allow delete: if isAdmin();
+    }
+    
+    // Default deny rule for any other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -43,7 +43,7 @@ import {
 } from 'lucide-react';
 import { useAdmin } from '../../contexts/AdminContext';
 import { authService, AppUser, UserRole, Permission, ROLE_PERMISSIONS } from '../../services/authService';
-import { inviteService, Invite } from '../../services/inviteService';
+import { AdminUserManagement } from '../UserApproval/UserApprovalComponents';
 
 interface UserWithChildren extends AppUser {
   children?: UserWithChildren[];
@@ -92,20 +92,6 @@ const UserManagement: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
-  
-  // Invitation states
-  const [invites, setInvites] = useState<Invite[]>([]);
-  const [showCreateInviteModal, setShowCreateInviteModal] = useState(false);
-  const [showInviteLinkModal, setShowInviteLinkModal] = useState(false);
-  const [selectedInvite, setSelectedInvite] = useState<Invite | null>(null);
-  const [copySuccess, setCopySuccess] = useState<string | null>(null);
-  const [inviteFormData, setInviteFormData] = useState({
-    email: '',
-    role: UserRole.PARENT,
-    message: '',
-    denId: '',
-    expiresInDays: 7
-  });
   
   // Selected user for operations
   const [selectedUser, setSelectedUser] = useState<UserWithChildren | null>(null);
@@ -161,10 +147,6 @@ const UserManagement: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    loadInvites();
-  }, []);
-
-  useEffect(() => {
     filterAndSortUsers();
   }, [users, searchTerm, roleFilter, denFilter, statusFilter, sortBy, sortOrder]);
 
@@ -182,84 +164,6 @@ const UserManagement: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const loadInvites = async () => {
-    try {
-      const pendingInvites = await inviteService.getPendingInvites();
-      setInvites(pendingInvites);
-    } catch (error: any) {
-      await addNotification('error', 'Error', 'Failed to load invitations');
-    }
-  };
-
-  const handleCreateInvite = async () => {
-    if (!inviteFormData.email.trim()) {
-      await addNotification('error', 'Error', 'Email is required');
-      return;
-    }
-
-    try {
-      const currentUser = authService.getCurrentUser();
-      const invite = await inviteService.createInvite(inviteFormData, currentUser);
-      await inviteService.sendInviteEmail(invite);
-      await loadInvites();
-      setShowCreateInviteModal(false);
-      setInviteFormData({
-        email: '',
-        role: UserRole.PARENT,
-        message: '',
-        denId: '',
-        expiresInDays: 7
-      });
-      
-      // Show the invite link immediately
-      setSelectedInvite(invite);
-      setShowInviteLinkModal(true);
-      await addNotification('success', 'Success', 'Invitation created successfully');
-    } catch (error: any) {
-      await addNotification('error', 'Error', error.message);
-    }
-  };
-
-  const handleCancelInvite = async (inviteId: string) => {
-    if (!window.confirm('Are you sure you want to cancel this invite?')) {
-      return;
-    }
-
-    try {
-      await inviteService.cancelInvite(inviteId);
-      await loadInvites();
-      await addNotification('success', 'Success', 'Invitation cancelled successfully');
-    } catch (error: any) {
-      await addNotification('error', 'Error', error.message);
-    }
-  };
-
-  const handleResendInvite = async (inviteId: string) => {
-    try {
-      await inviteService.resendInvite(inviteId, 7);
-      await loadInvites();
-      await addNotification('success', 'Success', 'Invitation resent successfully');
-    } catch (error: any) {
-      await addNotification('error', 'Error', error.message);
-    }
-  };
-
-  const copyInviteUrl = async (inviteId: string) => {
-    const inviteUrl = inviteService.getInviteUrl(inviteId);
-    try {
-      await navigator.clipboard.writeText(inviteUrl);
-      setCopySuccess('Invite link copied to clipboard!');
-      setTimeout(() => setCopySuccess(null), 3000);
-    } catch (error) {
-      await addNotification('error', 'Error', 'Failed to copy invite link');
-    }
-  };
-
-  const showInviteLink = (invite: Invite) => {
-    setSelectedInvite(invite);
-    setShowInviteLinkModal(true);
   };
 
   const buildUserHierarchy = (users: AppUser[]): UserWithChildren[] => {
@@ -646,7 +550,7 @@ const UserManagement: React.FC = () => {
           }`}
         >
           <Mail className="w-4 h-4 inline mr-2" />
-          Invitations
+          Join Requests
         </button>
       </div>
 
@@ -767,132 +671,9 @@ const UserManagement: React.FC = () => {
         </>
       ) : (
         <>
-          {/* Invitations List */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-medium text-gray-900">Pending Invitations</h3>
-                <button
-                  onClick={() => setShowCreateInviteModal(true)}
-                  className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Send Invitation
-                </button>
-              </div>
+          {/* Join Requests - User Approval Management */}
+          <AdminUserManagement />
 
-              {invites.length === 0 ? (
-                <div className="text-center py-8">
-                  <Mail className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Pending Invitations</h3>
-                  <p className="text-gray-600 mb-4">Send your first invitation to get started</p>
-                  <button
-                    onClick={() => setShowCreateInviteModal(true)}
-                    className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Send Your First Invite
-                  </button>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Email
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Role
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Invited By
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Expires
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {invites.map((invite) => (
-                        <tr key={invite.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{invite.email}</div>
-                            {invite.message && (
-                              <div className="text-xs text-gray-500 italic">"{invite.message}"</div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              {getRoleIcon(invite.role)}
-                              <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(invite.role)}`}>
-                                {invite.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{invite.invitedByName}</div>
-                            <div className="text-xs text-gray-500">{new Date(invite.createdAt).toLocaleDateString()}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{new Date(invite.expiresAt).toLocaleDateString()}</div>
-                            <div className="text-xs text-gray-500">
-                              {Math.ceil((new Date(invite.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              invite.status === 'pending' 
-                                ? 'bg-yellow-100 text-yellow-800' 
-                                : invite.status === 'accepted'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {invite.status === 'pending' && <Clock className="w-3 h-3 mr-1" />}
-                              {invite.status === 'accepted' && <CheckCircle className="w-3 h-3 mr-1" />}
-                              {invite.status === 'expired' && <XCircle className="w-3 h-3 mr-1" />}
-                              {invite.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex items-center justify-end space-x-2">
-                              <button
-                                onClick={() => showInviteLink(invite)}
-                                className="text-blue-600 hover:text-blue-900"
-                                title="View Invite Link"
-                              >
-                                <Link className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleResendInvite(invite.id)}
-                                className="text-green-600 hover:text-green-900"
-                                title="Resend Invitation"
-                              >
-                                <RefreshCw className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleCancelInvite(invite.id)}
-                                className="text-red-600 hover:text-red-900"
-                                title="Cancel Invitation"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
         </>
       )}
 
@@ -1286,193 +1067,6 @@ const UserManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Create Invite Modal */}
-      {showCreateInviteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900">Send Invitation</h3>
-              <button
-                onClick={() => setShowCreateInviteModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="px-6 py-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  value={inviteFormData.email}
-                  onChange={(e) => setInviteFormData({...inviteFormData, email: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="user@example.com"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Role
-                </label>
-                <select
-                  value={inviteFormData.role}
-                  onChange={(e) => setInviteFormData({...inviteFormData, role: e.target.value as UserRole})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                >
-                  <option value={UserRole.PARENT}>Parent</option>
-                  <option value={UserRole.VOLUNTEER}>Volunteer</option>
-                  <option value={UserRole.ADMIN}>Admin</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Den (Optional)
-                </label>
-                <select
-                  value={inviteFormData.denId}
-                  onChange={(e) => setInviteFormData({...inviteFormData, denId: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                >
-                  <option value="">Select a den</option>
-                  {availableDens.map(den => (
-                    <option key={den} value={den}>{den}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Expires In
-                </label>
-                <select
-                  value={inviteFormData.expiresInDays}
-                  onChange={(e) => setInviteFormData({...inviteFormData, expiresInDays: parseInt(e.target.value)})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                >
-                  <option value={1}>1 day</option>
-                  <option value={3}>3 days</option>
-                  <option value={7}>7 days</option>
-                  <option value={14}>14 days</option>
-                  <option value={30}>30 days</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Personal Message (Optional)
-                </label>
-                <textarea
-                  value={inviteFormData.message}
-                  onChange={(e) => setInviteFormData({...inviteFormData, message: e.target.value})}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="Add a personal message to the invitation..."
-                />
-              </div>
-            </div>
-            
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-              <button
-                onClick={() => setShowCreateInviteModal(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateInvite}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                Send Invitation
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Invite Link Modal */}
-      {showInviteLinkModal && selectedInvite && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900">Invitation Link</h3>
-              <button
-                onClick={() => setShowInviteLinkModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="px-6 py-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Invitation Details
-                </label>
-                <div className="bg-gray-50 p-3 rounded-lg space-y-2">
-                  <div className="text-sm">
-                    <span className="font-medium">Email:</span> {selectedInvite.email}
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium">Role:</span> {selectedInvite.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium">Expires:</span> {new Date(selectedInvite.expiresAt).toLocaleDateString()}
-                  </div>
-                  {selectedInvite.message && (
-                    <div className="text-sm">
-                      <span className="font-medium">Message:</span> "{selectedInvite.message}"
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Invitation Link
-                </label>
-                <div className="flex">
-                  <input
-                    type="text"
-                    value={inviteService.getInviteUrl(selectedInvite.id)}
-                    readOnly
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg bg-gray-50 text-sm"
-                  />
-                  <button
-                    onClick={() => copyInviteUrl(selectedInvite.id)}
-                    className="px-4 py-2 bg-primary-600 text-white rounded-r-lg hover:bg-primary-700 transition-colors"
-                    title="Copy to clipboard"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                </div>
-                {copySuccess && (
-                  <p className="text-sm text-green-600 mt-1">{copySuccess}</p>
-                )}
-              </div>
-              
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  Share this link with the invited user. They can use it to join the pack and set up their account.
-                </p>
-              </div>
-            </div>
-            
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-              <button
-                onClick={() => setShowInviteLinkModal(false)}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

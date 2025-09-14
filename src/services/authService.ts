@@ -415,8 +415,10 @@ class AuthService {
 
   // Initialize auth state listener
   private initializeAuthStateListener() {
+    console.log('🔐 AuthService: Initializing auth state listener');
     
     onAuthStateChanged(this.auth, async (firebaseUser: FirebaseUser | null) => {
+      console.log('🔐 AuthService: Auth state changed:', firebaseUser ? `User ${firebaseUser.email} (${firebaseUser.uid})` : 'No user');
       
       if (firebaseUser) {
         try {
@@ -1219,6 +1221,7 @@ class AuthService {
 
   // Notify all auth state listeners
   private notifyAuthStateListeners(user: AppUser | null) {
+    console.log(`🔐 AuthService: Notifying ${this.authStateListeners.length} listeners:`, user ? `User ${user.email}` : 'No user');
     this.authStateListeners.forEach(listener => listener(user));
   }
 

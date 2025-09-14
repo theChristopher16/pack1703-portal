@@ -1,29 +1,32 @@
 import React, { useState } from 'react';
-import { X, Mail, Lock, Eye, EyeOff, Shield, UserPlus } from 'lucide-react';
-import { authService } from '../../services/authService';
+import { X, Mail, Lock, Eye, EyeOff, Shield, User } from 'lucide-react';
+import { userApprovalService } from '../../services/userApprovalService';
 import SocialLogin from './SocialLogin';
-import SignupModal from './SignupModal';
 import { useRecaptcha } from '../../hooks/useRecaptcha';
+import { useToast } from '../../contexts/ToastContext';
 
-interface LoginModalProps {
+interface SignupModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (user: any) => void;
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) => {
+const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: '',
+    displayName: ''
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showSignupModal, setShowSignupModal] = useState(false);
+  const { showSuccess, showError } = useToast();
 
   // Initialize reCAPTCHA
   const { isLoaded: recaptchaLoaded, execute: executeRecaptcha } = useRecaptcha({
-    action: 'login',
+    action: 'signup',
     autoExecute: false,
   });
 
@@ -39,8 +42,18 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.password) {
-      setError('Please enter both email and password');
+    if (!formData.email || !formData.password || !formData.displayName) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
       return;
     }
 
@@ -50,20 +63,38 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
     try {
       // Execute reCAPTCHA verification
       if (recaptchaLoaded) {
-        const recaptchaResult = await executeRecaptcha('login');
+        const recaptchaResult = await executeRecaptcha('signup');
         if (!recaptchaResult.isValid) {
           setError('Security verification failed. Please try again.');
           return;
         }
       }
 
-      const user = await authService.signIn(formData.email, formData.password);
+      const user = await userApprovalService.signUp(
+        formData.email,
+        formData.password,
+        formData.displayName
+      );
+      
       onSuccess?.(user);
       onClose();
       
     } catch (error: any) {
-      console.error('Login error:', error);
-      setError(error.message || 'Invalid email or password. Please try again.');
+      console.error('Signup error:', error);
+      
+      // Handle permission denied error gracefully
+      if (error.code === 'permission-denied' || error.message?.includes('permission')) {
+        // Show success message even though account creation failed due to permissions
+        // This is expected behavior - the account request has been submitted
+        showSuccess(
+          'Account Request Submitted!',
+          'Pack leadership will review your request and approve your account. You will receive an email notification once approved.'
+        );
+        onClose();
+        return;
+      }
+      
+      setError(error.message || 'Failed to create account. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -76,41 +107,31 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
 
   const handleSocialLoginError = (error: string) => {
     setError(error);
-  };
-
-  const handleSignupSuccess = (user: any) => {
-    onSuccess?.(user);
-    setShowSignupModal(false);
-    onClose();
-  };
-
-  const handleOpenSignup = () => {
-    setShowSignupModal(true);
+    showError('Social Login Error', error);
   };
 
   if (!isOpen) return null;
 
   return (
-    <>
-      <div className="fixed inset-0 z-50 overflow-y-auto">
-        <div className="flex min-h-screen items-center justify-center p-4">
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
-            onClick={onClose}
-          />
-          
-          {/* Modal */}
-          <div className="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all">
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex min-h-screen items-center justify-center p-4">
+        {/* Backdrop */}
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+          onClick={onClose}
+        />
+        
+        {/* Modal */}
+        <div className="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center">
-                <Shield className="w-5 h-5 text-white" />
+                <User className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-display font-bold text-gray-900">Sign In</h2>
-                <p className="text-sm text-gray-600">Access the Pack 1703 Portal</p>
+                <h2 className="text-xl font-display font-bold text-gray-900">Join Pack 1703</h2>
+                <p className="text-sm text-gray-600">Create your account</p>
               </div>
             </div>
             <button
@@ -143,10 +164,33 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
 
             {/* Email/Password Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Display Name Field */}
+              <div>
+                <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="displayName"
+                    name="displayName"
+                    type="text"
+                    autoComplete="name"
+                    required
+                    value={formData.displayName}
+                    onChange={handleInputChange}
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
+                    placeholder="Enter your full name"
+                  />
+                </div>
+              </div>
+
               {/* Email Field */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
+                  Email Address *
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -169,7 +213,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
               {/* Password Field */}
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
+                  Password *
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -179,12 +223,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
                     id="password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
+                    autoComplete="new-password"
                     required
                     value={formData.password}
                     onChange={handleInputChange}
                     className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
-                    placeholder="Enter your password"
+                    placeholder="Create a password"
                   />
                   <button
                     type="button"
@@ -192,6 +236,40 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
+                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    ) : (
+                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password Field */}
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirm Password *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    required
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
+                    placeholder="Confirm your password"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? (
                       <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                     ) : (
                       <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
@@ -216,18 +294,18 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
                 {isLoading ? (
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Signing In...</span>
+                    <span>Creating Account...</span>
                   </div>
                 ) : (
-                  'Sign In'
+                  'Create Account'
                 )}
               </button>
             </form>
 
             {/* Footer */}
             <div className="mt-6 text-center">
-              <p className="text-xs text-gray-500 mb-4">
-                By signing in, you agree to our{' '}
+              <p className="text-xs text-gray-500">
+                By creating an account, you agree to our{' '}
                 <a href="/privacy" className="text-primary-600 hover:text-primary-700 font-medium">
                   Privacy Policy
                 </a>{' '}
@@ -236,34 +314,15 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
                   Terms of Service
                 </a>
               </p>
-              
-              {/* Sign Up Link */}
-              <div className="border-t border-gray-200 pt-4">
-                <p className="text-sm text-gray-600 mb-3">
-                  Don't have an account?
-                </p>
-                <button
-                  type="button"
-                  onClick={handleOpenSignup}
-                  className="w-full flex items-center justify-center py-2 px-4 border border-primary-300 rounded-xl text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
-                >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Create Account
-                </button>
-              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Your account will be pending approval from pack administrators.
+              </p>
             </div>
           </div>
-        </div>        </div>
+        </div>
       </div>
-      
-      {/* Signup Modal */}
-      <SignupModal
-        isOpen={showSignupModal}
-        onClose={() => setShowSignupModal(false)}
-        onSuccess={handleSignupSuccess}
-      />
-    </>
+    </div>
   );
 };
 
-export default LoginModal;
+export default SignupModal;

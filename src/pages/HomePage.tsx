@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, FileText, Users, ArrowRight, Compass, MessageSquare, Download, BarChart3, Shield, MessageCircle } from 'lucide-react';
+import { Calendar, MapPin, FileText, Users, ArrowRight, Compass, MessageSquare, Download, BarChart3, Shield, MessageCircle, CreditCard, UserPlus } from 'lucide-react';
 import { LoadingSpinner, SkeletonLoader } from '../components/Loading';
 import { SecurityAuditService } from '../services/securityAuditService';
 import { authService, UserRole } from '../services/authService';
 import { heroButtonService, HeroButtonConfig } from '../services/heroButtonService';
 import { usageTrackingService } from '../services/usageTrackingService';
+import SignupModal from '../components/Auth/SignupModal';
 
 const HomePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -15,6 +16,7 @@ const HomePage: React.FC = () => {
   const [heroButtons, setHeroButtons] = useState<HeroButtonConfig[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<UserRole>(UserRole.ANONYMOUS);
+  const [showSignupModal, setShowSignupModal] = useState(false);
 
   useEffect(() => {
     // Remove artificial loading delays for better performance
@@ -293,9 +295,71 @@ const HomePage: React.FC = () => {
                     <Compass className="w-5 h-5 mr-3 group-hover:rotate-12 transition-transform duration-200" />
                     Discover Locations
                   </Link>
+                  
+                  {/* Sign Up Button for Anonymous Users */}
+                  {userRole === UserRole.ANONYMOUS && (
+                    <button
+                      onClick={() => setShowSignupModal(true)}
+                      className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-semibold text-lg rounded-2xl shadow-glow-secondary hover:shadow-glow-secondary/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-secondary-300/50"
+                    >
+                      <UserPlus className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-200" />
+                      Join Pack 1703
+                      <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform duration-200" />
+                    </button>
+                  )}
                 </>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Register Buttons Section */}
+        <div className="mb-20">
+          <div className={`text-center mb-12 ${animationsTriggered ? "animate-fade-in" : ""}`}>
+            <h2 className="text-3xl font-display font-bold text-gray-900 mb-4">
+              <span className="text-gradient">Join Pack 1703</span>
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Ready to start your scouting adventure? Register with our pack and pay your dues to get started!
+            </p>
+          </div>
+
+          <div className={`flex flex-col sm:flex-row gap-6 justify-center items-center max-w-4xl mx-auto ${animationsTriggered ? "animate-slide-up" : ""}`} 
+               style={{ animationDelay: '200ms' }}>
+            
+            {/* Pay Dues Button */}
+            <a
+              href="https://square.link/u/E3afCrTJ"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold text-lg rounded-2xl shadow-glow-green hover:shadow-glow-green/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-green-300/50 w-full sm:w-auto"
+            >
+              <CreditCard className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-200" />
+              Pay Annual Dues
+              <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform duration-200" />
+            </a>
+            
+            {/* Register with Scouting America Button */}
+            <a
+              href="https://my.scouting.org/VES/OnlineReg/1.0.0/?tu=UF-MB-576paa1703"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold text-lg rounded-2xl shadow-glow-blue hover:shadow-glow-blue/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-blue-300/50 w-full sm:w-auto"
+            >
+              <UserPlus className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-200" />
+              Register with Scouting America
+              <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform duration-200" />
+            </a>
+          </div>
+
+          {/* Additional Info */}
+          <div className={`mt-8 text-center ${animationsTriggered ? "animate-fade-in" : ""}`} 
+               style={{ animationDelay: '400ms' }}>
+            <p className="text-sm text-gray-500 max-w-3xl mx-auto">
+              <strong>Pack Dues:</strong> $195 per scout (includes handbook, neckerchief, and pack activities) • 
+              <strong>Scouting America Registration:</strong> Required for all scouts to participate in official scouting activities • 
+              <strong>Lion Scouts:</strong> Pack dues are waived for Lion scouts (kindergarten age)
+            </p>
           </div>
         </div>
 
@@ -484,6 +548,17 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Signup Modal */}
+      <SignupModal
+        isOpen={showSignupModal}
+        onClose={() => setShowSignupModal(false)}
+        onSuccess={(user) => {
+          console.log('Signup successful:', user);
+          setShowSignupModal(false);
+          // The user will be automatically logged in and the page will update
+        }}
+      />
     </div>
   );
 };

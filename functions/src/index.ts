@@ -1,6 +1,8 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { secretManagerService } from './secretManagerService';
+// Import user approval functions
+import { createPendingUser, approveUser, getPendingUsers, getAuditLogs } from './userApproval';
 const Imap = require('node-imap');
 
 // Initialize Firebase Admin
@@ -597,7 +599,6 @@ export const testEmailConnection = functions.https.onCall(async (data, context) 
     // Use default email configuration if not provided
     const { 
       emailAddress = 'test@example.com', 
-      password = 'test', 
       imapServer = 'imap.gmail.com', 
       imapPort = 993 
     } = data || {};
@@ -2038,3 +2039,6 @@ export const testSecretManager = functions.https.onCall(async (request) => {
     throw new functions.https.HttpsError('internal', `Secret Manager test failed: ${error}`);
   }
 });
+
+// Export user approval functions
+export { createPendingUser, approveUser, getPendingUsers, getAuditLogs };

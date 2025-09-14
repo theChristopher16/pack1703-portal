@@ -28,6 +28,15 @@ A multi-domain web application system that serves two different organizations wi
 - **Smart Automation**: Volunteer gap analysis, theme proposals, content optimization
 - **Security**: Admin-only access, comprehensive audit logging, content moderation
 
+### **User Approval System (NEW)**
+- **Approval Workflow**: Complete user approval gating system with Firebase Auth
+- **Cloud Functions**: Automated user creation and admin approval functions
+- **Security Rules**: Firestore rules enforce approval-based access control
+- **Custom Claims**: Role-based permissions with Firebase Admin SDK
+- **Admin Interface**: React components for user management and approval
+- **Audit Logging**: Immutable records of all admin actions
+- **Role Hierarchy**: Parent → Leader → Admin → Root with proper permissions
+
 ## 🏗️ **System Architecture**
 
 ```
@@ -258,6 +267,16 @@ show collections
 ### **Cleanup**
 - Run `./destroy.sh` to remove infrastructure
 - **Warning**: This will delete all data and stop billing
+
+## 📚 **Documentation**
+
+- **[User Approval System](USER_APPROVAL_SYSTEM.md)** - Complete user approval workflow documentation
+- **[User Approval Implementation Guide](USER_APPROVAL_IMPLEMENTATION_GUIDE.md)** - Technical implementation details
+- **[API Setup Guide](API_SETUP_GUIDE.md)** - External API configuration
+- **[Enhanced Solyn Test](ENHANCED_SOLYN_TEST.md)** - Testing procedures
+- **[Wolf Watch Improvements](WOLF_WATCH_AND_SOLYN_IMPROVEMENTS.md)** - Recent enhancements
+- **[Security Summary](SECURITY-SUMMARY.md)** - Security considerations
+- **[Deployment Guide](DEPLOYMENT-GUIDE.md)** - Deployment procedures
 
 ## 📞 **Support & Contact**
 

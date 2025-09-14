@@ -38,8 +38,10 @@ export const functions = getFunctions(app, 'us-central1');
 export const auth = getAuth(app);
 
 // Configure auth persistence to LOCAL (persists across browser sessions)
-setPersistence(auth, browserLocalPersistence).catch((error) => {
-  console.error('Error setting auth persistence:', error);
+setPersistence(auth, browserLocalPersistence).then(() => {
+  console.log('✅ Firebase Auth persistence set to LOCAL');
+}).catch((error) => {
+  console.error('❌ Error setting auth persistence:', error);
 });
 
 // Initialize Analytics

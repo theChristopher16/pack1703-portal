@@ -118,15 +118,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const isAdmin = isAdminOrAbove(userRole);
   const isRootUser = isRoot(userRole);
 
-  // Debug navigation issues
-  useEffect(() => {
-    console.log('Layout: Navigation updated - User:', currentUser?.email || 'No user', 'Role:', userRole);
-    console.log('Layout: Public nav items:', publicNav.length);
-    console.log('Layout: Authenticated nav items:', authenticatedNav.length);
-    console.log('Layout: Admin nav items:', adminNav.length);
-    console.log('Layout: All nav items:', allNavItems.length);
-    console.log('Layout: Main toolbar items:', mainToolbarItems.map(item => item.name).join(', '));
-  }, [currentUser, userRole, location.pathname, publicNav.length, authenticatedNav.length, adminNav.length, allNavItems.length, mainToolbarItems]);
 
   // Organize navigation into logical groups for dropdown
   const navigationGroups = [
@@ -216,18 +207,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   ].filter(group => group.items.length > 0); // Only show groups with items
 
-  // Debug navigation
-  useEffect(() => {
-    console.log('Layout: Navigation updated', {
-      userRole,
-      currentUser: currentUser?.email || 'No user',
-      publicItems: publicNav.length,
-      authenticatedItems: authenticatedNav.length,
-      adminItems: adminNav.length,
-      systemItems: systemNav.length,
-      totalItems: allNavItems.length
-    });
-  }, [userRole, currentUser, publicNav, authenticatedNav, adminNav, systemNav, allNavItems.length]);
+  // For mobile menu, ensure we always have content to show
+  const mobileNavigationGroups = navigationGroups.length > 0 ? navigationGroups : [
+    {
+      name: 'Navigation',
+      items: publicNav,
+      icon: '🏠'
+    }
+  ];
+
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -430,7 +418,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="md:hidden">
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 rounded-xl nav-text-inactive hover:nav-text-active hover:bg-primary-50/50 transition-all duration-300"
+                className="p-2 rounded-xl nav-text-inactive hover:nav-text-active hover:bg-primary-50/50 transition-all duration-300 border border-gray-300"
               >
                 {isMobileMenuOpen ? (
                   <X className="w-6 h-6" />
@@ -442,104 +430,144 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </div>
 
-        {/* Mobile Navigation Menu - Desktop-like Structure */}
+        {/* Mobile Navigation Menu - Full Screen Overlay */}
         {isMobileMenuOpen && (
-          <div className="md:hidden fixed inset-0 top-16 z-50 bg-black/20 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}>
-            <div className="bg-white/95 backdrop-blur-md border-t border-gray-200/50 h-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
-              <div className="h-full overflow-y-auto">
-                <div className="px-4 py-2 space-y-1">
-                  {/* Navigation Groups - Same as Desktop */}
-                  {navigationGroups.map((group, groupIndex) => (
-                    <div key={group.name} className="mb-2">
-                      {/* Group Header */}
-                      <div className="px-4 py-2 border-b border-gray-300 bg-gray-200/90">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-lg">{group.icon}</span>
-                          <span className="text-xs font-bold text-gray-800 uppercase tracking-wide select-none">
-                            {group.name}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {/* Group Items */}
-                      <div className="py-1">
-                        {group.items.map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <button
-                              key={item.name}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleNavigation(item.href);
-                                setIsMobileMenuOpen(false);
-                              }}
-                              className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg cursor-pointer ${
-                                isActive(item.href)
-                                  ? 'text-primary-600 bg-primary-100 border border-primary-200 shadow-sm'
-                                  : 'text-gray-700 hover:text-primary-600 hover:bg-primary-50 hover:shadow-sm hover:border hover:border-primary-100'
-                              }`}
-                            >
-                              <Icon className="w-4 h-4 flex-shrink-0" />
-                              <span className="truncate">{item.name}</span>
-                            </button>
-                          );
-                        })}
+          <>
+            {/* Backdrop - Covers everything */}
+            <div 
+              style={{ 
+                position: 'fixed',
+                top: '0',
+                left: '0',
+                right: '0',
+                bottom: '0',
+                width: '100vw',
+                height: '100vh',
+                zIndex: 99998,
+                backgroundColor: 'rgba(0,0,0,0.5)'
+              }}
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+            {/* Mobile Menu Content */}
+            <div 
+              style={{ 
+                position: 'fixed',
+                top: '64px',
+                left: '0',
+                right: '0',
+                bottom: '0',
+                width: '100vw',
+                height: 'calc(100vh - 64px - 60px)',
+                maxHeight: 'calc(100vh - 64px - 60px)',
+                zIndex: 99999,
+                backgroundColor: 'white',
+                color: 'black',
+                padding: '16px',
+                paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
+                overflow: 'auto',
+                boxSizing: 'border-box'
+              }}
+            >
+              <div className="space-y-4">
+                {/* Navigation Groups */}
+                {mobileNavigationGroups.map((group, groupIndex) => (
+                  <div key={group.name} className="border border-gray-200 rounded-lg overflow-hidden">
+                    {/* Group Header */}
+                    <div className="bg-gray-100 px-4 py-3 border-b border-gray-200">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg">{group.icon}</span>
+                        <span className="text-sm font-bold text-gray-800 uppercase tracking-wide">
+                          {group.name}
+                        </span>
+                        <span className="text-xs text-gray-500">({group.items.length} items)</span>
                       </div>
                     </div>
-                  ))}
-                  
-                  {/* Logout Button (only when logged in) */}
-                  {currentUser && (
-                    <div className="border-t border-gray-200 mt-2 pt-2">
-                      <button
-                        onClick={async (e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          try {
-                            const { authService } = await import('../../services/authService');
-                            await authService.signOut();
+                    
+                    {/* Group Items */}
+                    <div className="bg-white">
+                      {group.items.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <button
+                            key={item.name}
+                            onClick={() => {
+                              handleNavigation(item.href);
+                              setIsMobileMenuOpen(false);
+                            }}
+                            className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 border-b border-gray-100 last:border-b-0 ${
+                              isActive(item.href)
+                                ? 'text-blue-600 bg-blue-50'
+                                : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <Icon className="w-4 h-4 flex-shrink-0" />
+                            <span className="truncate">{item.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Account Section */}
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-gray-100 px-4 py-3 border-b border-gray-200">
+                    <span className="text-sm font-bold text-gray-800 uppercase tracking-wide">Account</span>
+                  </div>
+                  <div className="bg-white">
+                    {currentUser ? (
+                      <>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const { authService } = await import('../../services/authService');
+                              await authService.signOut();
+                              setIsMobileMenuOpen(false);
+                            } catch (error) {
+                              console.error('Error logging out:', error);
+                            }
+                          }}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Logout</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleNavigation('/admin');
                             setIsMobileMenuOpen(false);
-                            console.log('User logged out successfully');
-                          } catch (error) {
-                            console.error('Error logging out:', error);
-                          }
-                        }}
-                        className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 hover:shadow-sm hover:border hover:border-red-100"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>Logout</span>
-                      </button>
-                    </div>
-                  )}
-                  
-                  {/* Login/Admin Link */}
-                  <div className="border-t border-gray-200 mt-2 pt-2">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (currentUser) {
-                          handleNavigation('/admin');
-                        } else {
+                          }}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200 border-t border-gray-100"
+                        >
+                          <Settings className="w-4 h-4" />
+                          <span>Admin Portal</span>
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => {
                           setIsLoginModalOpen(true);
-                        }
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg cursor-pointer ${
-                        isActive('/admin')
-                          ? 'text-blue-600 bg-blue-100 border border-blue-200 shadow-sm'
-                          : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 hover:shadow-sm hover:border hover:border-blue-100'
-                      }`}
-                    >
-                      <Settings className="w-4 h-4" />
-                      <span>{currentUser ? 'Admin Portal' : 'Login'}</span>
-                    </button>
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200"
+                      >
+                        <Settings className="w-4 h-4" />
+                        <span>Login</span>
+                      </button>
+                    )}
                   </div>
                 </div>
+                
+                {/* Close Button */}
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-lg transition-all duration-200"
+                >
+                  Close Menu
+                </button>
               </div>
             </div>
-          </div>
+          </>
         )}
       </header>
 

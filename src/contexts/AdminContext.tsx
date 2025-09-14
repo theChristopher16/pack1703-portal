@@ -224,53 +224,11 @@ export function AdminProvider({ children }: AdminProviderProps) {
   useEffect(() => {
     console.log('AdminContext: Setting up auth state listener');
     
-    // Set a timeout to prevent infinite loading (especially on mobile)
-    const loadingTimeout = setTimeout(() => {
-      console.log('AdminContext: Auth state timeout reached, setting loading to false');
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }, 10000); // Increased to 10 second timeout
-    
-    // Also check current auth state immediately as a fallback
-    const checkCurrentAuthState = async () => {
-      try {
-        const currentUser = await authService.getCurrentUser();
-        console.log('AdminContext: Current auth state check:', currentUser ? `User ${currentUser.email}` : 'No user');
-        
-        if (currentUser) {
-          const adminUser: AdminUser = {
-            uid: currentUser.uid,
-            email: currentUser.email,
-            displayName: currentUser.displayName || null,
-            photoURL: currentUser.photoURL || null,
-            isAdmin: currentUser.role === UserRole.ROOT || currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.VOLUNTEER,
-            role: currentUser.role as unknown as AdminRole,
-            permissions: currentUser.permissions as unknown as AdminPermission[],
-            lastLogin: currentUser.lastLoginAt || new Date(),
-            isActive: currentUser.isActive,
-          };
-          dispatch({ type: 'SET_CURRENT_USER', payload: adminUser });
-          dispatch({ type: 'SET_LOADING', payload: false });
-          clearTimeout(loadingTimeout);
-        } else {
-          // Only set loading to false if we're sure there's no user
-          // Don't clear the timeout here, let the auth state listener handle it
-          console.log('AdminContext: No current user found, waiting for auth state listener');
-        }
-      } catch (error) {
-        console.error('AdminContext: Error checking current auth state:', error);
-        dispatch({ type: 'SET_LOADING', payload: false });
-        clearTimeout(loadingTimeout);
-      }
-    };
-    
-    // Check immediately
-    checkCurrentAuthState();
+    // Remove the timeout mechanism that might interfere with auth state restoration
+    // Firebase Auth handles persistence automatically with browserLocalPersistence
     
     const unsubscribe = authService.onAuthStateChanged((user) => {
       console.log('AdminContext: Auth state changed:', user ? `User ${user.email}` : 'No user');
-      
-      // Clear the timeout since we got a response
-      clearTimeout(loadingTimeout);
       
       if (user) {
         // Convert AppUser to AdminUser
@@ -294,7 +252,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
     });
 
     return () => {
-      clearTimeout(loadingTimeout);
+      console.log('AdminContext: Cleaning up auth state listener');
       unsubscribe();
     };
   }, []);

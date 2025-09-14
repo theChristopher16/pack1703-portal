@@ -210,7 +210,9 @@ export const AdminUserManagement: React.FC = () => {
   const loadPendingUsers = async () => {
     try {
       setLoading(true);
+      console.log('Loading pending users...');
       const users = await adminService.getPendingUsers();
+      console.log('Pending users loaded:', users);
       setPendingUsers(users);
     } catch (error) {
       console.error('Error loading pending users:', error);

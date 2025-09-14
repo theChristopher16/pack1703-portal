@@ -218,6 +218,8 @@ export const getPendingUsers = onCall(async (request) => {
     const db = getFirestore();
     const auth = getAuth();
     
+    logger.info('getPendingUsers called by:', callerUid);
+    
     // Verify caller is admin
     const callerToken = await auth.getUser(callerUid);
     const callerCustomClaims = callerToken.customClaims;
@@ -226,6 +228,8 @@ export const getPendingUsers = onCall(async (request) => {
       throw new Error('Unauthorized: Admin access required');
     }
 
+    logger.info('Admin verified, getting pending users...');
+
     // Get pending users
     const pendingUsersSnapshot = await db
       .collection('users')
@@ -233,10 +237,14 @@ export const getPendingUsers = onCall(async (request) => {
       .orderBy('createdAt', 'desc')
       .get();
 
+    logger.info(`Found ${pendingUsersSnapshot.docs.length} pending users`);
+
     const pendingUsers = pendingUsersSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    logger.info('Pending users:', pendingUsers);
 
     return {
       success: true,

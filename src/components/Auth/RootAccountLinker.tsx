@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { authService, SocialProvider } from '../../services/authService';
 import { 
-  Shield, Apple, Chrome, Facebook, Github, Twitter, CheckCircle, AlertCircle, Loader2, Mail, Lock, Eye, EyeOff
+  Shield, Chrome, CheckCircle, AlertCircle, Loader2, Mail, Lock, Eye, EyeOff
 } from 'lucide-react';
 
 interface RootAccountLinkerProps {
@@ -76,39 +76,11 @@ const RootAccountLinker: React.FC<RootAccountLinkerProps> = ({ onSetupComplete }
 
   const socialProviders = [
     {
-      provider: SocialProvider.APPLE,
-      name: 'Apple',
-      icon: Apple,
-      description: 'Sign in with your Apple ID',
-      className: 'bg-black text-white hover:bg-gray-900 border-black shadow-sm hover:shadow-md font-medium'
-    },
-    {
       provider: SocialProvider.GOOGLE,
       name: 'Google',
       icon: Chrome,
       description: 'Sign in with your Google account',
       className: 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-sm hover:shadow-md font-medium'
-    },
-    {
-      provider: SocialProvider.FACEBOOK,
-      name: 'Facebook',
-      icon: Facebook,
-      description: 'Sign in with your Facebook account',
-      className: 'bg-[#1877F2] text-white hover:bg-[#166FE5] border-[#1877F2] shadow-sm hover:shadow-md font-medium'
-    },
-    {
-      provider: SocialProvider.GITHUB,
-      name: 'GitHub',
-      icon: Github,
-      description: 'Sign in with your GitHub account',
-      className: 'bg-[#24292e] text-white hover:bg-[#1a1e22] border-[#24292e] shadow-sm hover:shadow-md font-medium'
-    },
-    {
-      provider: SocialProvider.TWITTER,
-      name: 'Twitter',
-      icon: Twitter,
-      description: 'Sign in with your Twitter account',
-      className: 'bg-[#1DA1F2] text-white hover:bg-[#1a91da] border-[#1DA1F2] shadow-sm hover:shadow-md font-medium'
     }
   ];
 

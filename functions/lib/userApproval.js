@@ -169,19 +169,23 @@ exports.getPendingUsers = (0, https_1.onCall)(async (request) => {
     try {
         const db = (0, firestore_1.getFirestore)();
         const auth = (0, auth_1.getAuth)();
+        firebase_functions_1.logger.info('getPendingUsers called by:', callerUid);
         // Verify caller is admin
         const callerToken = await auth.getUser(callerUid);
         const callerCustomClaims = callerToken.customClaims;
         if (!(callerCustomClaims === null || callerCustomClaims === void 0 ? void 0 : callerCustomClaims.approved) || (callerCustomClaims === null || callerCustomClaims === void 0 ? void 0 : callerCustomClaims.role) !== UserRole.ADMIN) {
             throw new Error('Unauthorized: Admin access required');
         }
+        firebase_functions_1.logger.info('Admin verified, getting pending users...');
         // Get pending users
         const pendingUsersSnapshot = await db
             .collection('users')
             .where('status', '==', UserStatus.PENDING)
             .orderBy('createdAt', 'desc')
             .get();
+        firebase_functions_1.logger.info(`Found ${pendingUsersSnapshot.docs.length} pending users`);
         const pendingUsers = pendingUsersSnapshot.docs.map(doc => (Object.assign({ id: doc.id }, doc.data())));
+        firebase_functions_1.logger.info('Pending users:', pendingUsers);
         return {
             success: true,
             users: pendingUsers

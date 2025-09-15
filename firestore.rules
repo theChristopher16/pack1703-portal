@@ -239,11 +239,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
-    // Chat messages - authenticated users can read/write
+    // Chat messages - all authenticated users can read/write
     match /chat-messages/{messageId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && 
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
         request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
     }
     
     // Chat users - users can read their own status, admins can read all

@@ -140,7 +140,7 @@ class FeedbackService {
       
       // Check permissions
       const canViewAll = this.canViewAllFeedback();
-      const isOwner = data.userId === this.currentUser.id;
+      const isOwner = data.userId === this.currentUser.uid;
       
       if (!canViewAll && !isOwner) {
         throw new Error('Insufficient permissions to view this feedback');
@@ -193,8 +193,8 @@ class FeedbackService {
       // Create the response
       const response: Omit<FeedbackResponse, 'id'> = {
         feedbackId: responseData.feedbackId,
-        responderId: this.currentUser.id,
-        responderName: this.currentUser.name || this.currentUser.email || 'Unknown',
+        responderId: this.currentUser.uid,
+        responderName: this.currentUser.displayName || this.currentUser.email || 'Unknown',
         responderRole: this.currentUser.role || 'unknown',
         response: responseData.response,
         createdAt: new Date(),

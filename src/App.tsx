@@ -18,6 +18,7 @@ import ResourcesPage from './pages/ResourcesPage';
 import VolunteerPage from './pages/VolunteerPage';
 import FeedbackPage from './pages/FeedbackPage';
 import DataAuditPage from './pages/DataAuditPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import AnalyticsDashboard from './components/Analytics/AnalyticsDashboard';
 import AnalyticsTest from './components/Analytics/AnalyticsTest';

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { MapPin, Edit, Trash2, Plus, Search, Filter, Map } from 'lucide-react';
 import { firestoreService } from '../services/firestore';
+import { adminService } from '../services/adminService';
 
 interface Location {
   id: string;
@@ -36,20 +37,20 @@ const AdminLocations: React.FC = () => {
   const [filterImportance, setFilterImportance] = useState('all');
 
   // Fetch locations from database
+  const fetchLocations = async () => {
+    try {
+      setLoading(true);
+      const locationsData = await firestoreService.getLocations();
+      setLocations(locationsData);
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+      setLocations([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        setLoading(true);
-        const locationsData = await firestoreService.getLocations();
-        setLocations(locationsData);
-      } catch (error) {
-        console.error('Error fetching locations:', error);
-        setLocations([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchLocations();
   }, []);
 

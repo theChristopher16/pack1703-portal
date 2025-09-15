@@ -3,6 +3,7 @@ import { useAdmin } from '../contexts/AdminContext';
 import { EntityType, AdminActionType } from '../types/admin';
 import { firestoreService } from '../services/firestore';
 import { adminService } from '../services/adminService';
+import { authService } from '../services/authService';
 import { collection, query, orderBy, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { Link } from 'react-router-dom';
@@ -64,9 +65,13 @@ const AdminEvents: React.FC = () => {
   }, []);
 
   const handleCreateEvent = () => {
+    console.log('Create Event button clicked!');
+    console.log('Current modal state:', { isModalOpen, modalMode });
     setModalMode('create');
     setSelectedEvent(null);
     setIsModalOpen(true);
+    console.log('Modal should be opening...');
+    console.log('New modal state should be:', { isModalOpen: true, modalMode: 'create' });
   };
 
   const handleEditEvent = (event: Event) => {
@@ -89,21 +94,54 @@ const AdminEvents: React.FC = () => {
   };
 
   const handleSaveEvent = async (eventData: Partial<Event>) => {
+    console.log('handleSaveEvent called with:', eventData);
+    console.log('Current modal mode:', modalMode);
+    
     try {
       if (modalMode === 'create') {
+        console.log('Creating new event...');
+        
+        // Transform data to match validation schema expectations
+        const cloudFunctionData = {
+          title: eventData.title,
+          description: eventData.description,
+          startDate: new Date(eventData.startDate!), // Convert to Date object
+          endDate: new Date(eventData.endDate!), // Convert to Date object
+          startTime: eventData.startDate?.split('T')[1]?.substring(0, 5) || '09:00', // Extract time part
+          endTime: eventData.endDate?.split('T')[1]?.substring(0, 5) || '17:00', // Extract time part
+          locationId: 'default', // TODO: Implement location selection
+          category: eventData.category || 'Meeting',
+          seasonId: 'current', // TODO: Implement season selection
+          visibility: eventData.visibility || 'public',
+          sendNotification: false
+        };
+        
+        console.log('Transformed data for Cloud Function:', cloudFunctionData);
+        
+        // Debug authentication
+        const currentUser = authService.getCurrentUser();
+        console.log('Current user for event creation:', currentUser);
+        console.log('User authenticated:', !!currentUser);
+        console.log('User role:', currentUser?.role);
+        
         // Use Cloud Function to create event with proper permission checking
-        const result = await adminService.createEvent(eventData);
+        const result = await adminService.createEvent(cloudFunctionData);
+        console.log('Create event result:', result);
+        
         if (result.success) {
+          console.log('Event created successfully, refreshing events list...');
           await fetchEvents();
           setIsModalOpen(false);
           setSelectedEvent(null);
           addNotification('success', 'Event Created', 'New event has been successfully created.');
         } else {
+          console.error('Event creation failed:', result.error);
           addNotification('error', 'Creation Failed', result.error || 'Failed to create event. Please try again.');
           return;
         }
         
       } else if (modalMode === 'edit' && selectedEvent) {
+        console.log('Updating existing event...');
         // Use Cloud Function to update event with proper permission checking
         const eventToUpdate = {
           eventId: selectedEvent.id,
@@ -119,6 +157,7 @@ const AdminEvents: React.FC = () => {
         };
         
         const result = await adminService.updateEvent(selectedEvent.id, eventToUpdate.eventData);
+        console.log('Update event result:', result);
         
         if (result.success) {
           // Refresh events list to get the updated event
@@ -220,8 +259,12 @@ const AdminEvents: React.FC = () => {
 
             {/* Create Button */}
             <button
-              onClick={handleCreateEvent}
+              onClick={(e) => {
+                console.log('Button clicked!', e);
+                handleCreateEvent();
+              }}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 shadow-soft"
+              style={{ pointerEvents: 'auto', zIndex: 10 }}
             >
               <span>➕</span>
               Create Event
@@ -327,6 +370,10 @@ const AdminEvents: React.FC = () => {
       {/* Event Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          {/* Debug element to make sure modal is visible */}
+          <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'red', color: 'white', padding: '10px', zIndex: 9999 }}>
+            DEBUG: Modal is open! Mode: {modalMode}
+          </div>
           <div className="bg-white/95 backdrop-blur-sm rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/50 shadow-soft">
             <div className="p-8">
               {/* Header */}
@@ -432,7 +479,11 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted!');
+    console.log('Form data:', formData);
+    
     if (validateForm()) {
+      console.log('Form validation passed');
       const { maxParticipants, ...formDataWithoutMaxParticipants } = formData;
       const eventData: Partial<Event> = {
         ...formDataWithoutMaxParticipants,
@@ -449,7 +500,10 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) 
         eventData.maxParticipants = parseInt(maxParticipants);
       }
       
+      console.log('Calling onSave with eventData:', eventData);
       onSave(eventData);
+    } else {
+      console.log('Form validation failed');
     }
   };
 

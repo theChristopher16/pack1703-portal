@@ -1571,6 +1571,14 @@ class AuthService {
         updateData.isActive = updates.isActive;
       }
 
+      // Only admins can update role
+      if (updates.role !== undefined) {
+        if (!hasAdminPermissions) {
+          throw new Error('Insufficient permissions');
+        }
+        updateData.role = updates.role;
+      }
+
       await updateDoc(doc(db, 'users', userId), updateData);
     } catch (error) {
       console.error('Error updating user profile:', error);

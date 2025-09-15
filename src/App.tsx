@@ -4,6 +4,7 @@ import configService from './services/configService';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './contexts/ToastContext';
 import ScrollToTop from './components/ScrollToTop';
+import { versionCheckService } from './services/versionCheckService';
 
 // Components
 import Layout from './components/Layout/Layout';
@@ -65,12 +66,38 @@ function App() {
         navigator.serviceWorker.register('/sw.js')
           .then((registration) => {
             console.log('SW registered: ', registration);
+            
+            // Handle service worker updates
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // New service worker is available
+                    console.log('New service worker available');
+                    versionCheckService.forceCheck();
+                  }
+                });
+              }
+            });
           })
           .catch((registrationError) => {
             console.log('SW registration failed: ', registrationError);
           });
       });
     }
+
+    // Listen for version update events
+    const handleVersionUpdate = (event: CustomEvent) => {
+      console.log('Version update detected:', event.detail);
+    };
+
+    window.addEventListener('versionUpdate', handleVersionUpdate as EventListener);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('versionUpdate', handleVersionUpdate as EventListener);
+    };
 
     // Initialize default configurations (non-blocking)
     const initializeConfigs = async () => {

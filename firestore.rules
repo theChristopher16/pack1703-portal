@@ -354,7 +354,7 @@ service cloud.firestore {
     // Email monitor logs - admin read-only
     match /email-monitor-logs/{logId} {
       allow read: if isAdmin();
-      allow write: if false; // Email monitor logs are created by Cloud Functions only
+      allow write: if isAuthenticated(); // Allow authenticated users to log email activity
     }
     
     // Usage tracking - authenticated users can read/write their own data

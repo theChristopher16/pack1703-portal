@@ -94,8 +94,8 @@ const AdminEvents: React.FC = () => {
         const eventToCreate = {
           title: eventData.title!,
           description: eventData.description!,
-          startDate: eventData.startDate!,
-          endDate: eventData.endDate!,
+          startDate: new Date(eventData.startDate!), // Convert string to Date object
+          endDate: new Date(eventData.endDate!),     // Convert string to Date object
           startTime: '09:00', // Default time, could be made configurable
           endTime: '17:00',   // Default time, could be made configurable
           locationId: 'default', // Default location, should be made configurable

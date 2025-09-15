@@ -444,6 +444,15 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // TEST COLLECTIONS (for monitoring and testing)
+    // ============================================================================
+    
+    // Test connection collection - allow authenticated users to read/write for testing
+    match /_test_connection/{document} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // ============================================================================
     // DENY ALL OTHER ACCESS
     // ============================================================================
     

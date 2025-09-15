@@ -272,11 +272,23 @@ const DataAuditComponent: React.FC<DataAuditComponentProps> = ({ className = '' 
                       <div className="text-sm text-blue-600">Total Records</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">{userAudit.dataSummary.dataRetention.oldestRecord.split('T')[0]}</div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {userAudit.dataSummary.dataRetention.oldestRecord 
+                          ? (typeof userAudit.dataSummary.dataRetention.oldestRecord === 'string' 
+                              ? userAudit.dataSummary.dataRetention.oldestRecord.split('T')[0]
+                              : new Date(userAudit.dataSummary.dataRetention.oldestRecord).toISOString().split('T')[0])
+                          : 'N/A'}
+                      </div>
                       <div className="text-sm text-blue-600">Oldest Record</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">{userAudit.dataSummary.dataRetention.newestRecord.split('T')[0]}</div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {userAudit.dataSummary.dataRetention.newestRecord 
+                          ? (typeof userAudit.dataSummary.dataRetention.newestRecord === 'string' 
+                              ? userAudit.dataSummary.dataRetention.newestRecord.split('T')[0]
+                              : new Date(userAudit.dataSummary.dataRetention.newestRecord).toISOString().split('T')[0])
+                          : 'N/A'}
+                      </div>
                       <div className="text-sm text-blue-600">Newest Record</div>
                     </div>
                   </div>

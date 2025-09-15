@@ -279,8 +279,8 @@ class DataAuditService {
       ].filter(Boolean).sort();
 
       const dataRetention = {
-        oldestRecord: allTimestamps[0] || 'N/A',
-        newestRecord: allTimestamps[allTimestamps.length - 1] || 'N/A'
+        oldestRecord: allTimestamps[0] ? (typeof allTimestamps[0] === 'string' ? allTimestamps[0] : new Date(allTimestamps[0]).toISOString()) : 'N/A',
+        newestRecord: allTimestamps[allTimestamps.length - 1] ? (typeof allTimestamps[allTimestamps.length - 1] === 'string' ? allTimestamps[allTimestamps.length - 1] : new Date(allTimestamps[allTimestamps.length - 1]).toISOString()) : 'N/A'
       };
 
       return {

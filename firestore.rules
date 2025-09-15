@@ -13,9 +13,9 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && 
-             (request.auth.token.get('role', '') in ['admin', 'root', 'leader'] ||
+             (request.auth.token.get('role', '') in ['admin', 'root', 'volunteer'] ||
               exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'root', 'leader']);
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'root', 'volunteer']);
     }
     
     function isRoot() {

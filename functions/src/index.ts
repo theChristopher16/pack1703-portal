@@ -1180,9 +1180,6 @@ export const adminCreateEvent = functions.https.onCall(async (data: any, context
       sendNotification?: boolean;
     };
     
-    // TEMPORARILY DISABLE AUTH CHECK FOR DEBUGGING
-    console.log('DEBUG: Skipping auth check for debugging');
-    /*
     // Debug authentication context
     console.log('Debug - context.auth:', context.auth);
     console.log('Debug - context.auth.uid:', context.auth?.uid);
@@ -1193,14 +1190,12 @@ export const adminCreateEvent = functions.https.onCall(async (data: any, context
       console.log('Debug - Authentication failed: context.auth is null/undefined');
       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
     }
-    */
 
-    // TEMPORARILY USE HARDCODED USER ID FOR DEBUGGING
-    const debugUserId = 'biD4B9cWVWgOPxJlOZgGKifDJst2';
-    console.log('DEBUG: Using hardcoded user ID:', debugUserId);
+    const userId = context.auth.uid;
+    console.log('Using authenticated user ID:', userId);
 
     // Check if user has admin privileges
-    const userDoc = await db.collection('users').doc(debugUserId).get();
+    const userDoc = await db.collection('users').doc(userId).get();
     if (!userDoc.exists) {
       throw new functions.https.HttpsError('permission-denied', 'User not found');
     }
@@ -1271,7 +1266,7 @@ export const adminCreateEvent = functions.https.onCall(async (data: any, context
       currentParticipants: 0,
       createdAt: getTimestamp(),
       updatedAt: getTimestamp(),
-      createdBy: debugUserId,
+      createdBy: userId,
       status: 'active',
       visibility: eventData.visibility || 'public'
     };
@@ -1281,16 +1276,16 @@ export const adminCreateEvent = functions.https.onCall(async (data: any, context
 
     // Log admin action
     await db.collection('adminActions').add({
-      userId: debugUserId,
-      userEmail: 'christophersmithm16@gmail.com',
+      userId: userId,
+      userEmail: context.auth.token?.email || 'unknown',
       action: 'create',
       entityType: 'event',
       entityId: eventId,
       entityName: title,
       details: eventData,
       timestamp: getTimestamp(),
-      ipAddress: 'unknown',
-      userAgent: 'unknown',
+      ipAddress: context.rawRequest.ip || 'unknown',
+      userAgent: context.rawRequest.headers['user-agent'] || 'unknown',
       success: true
     });
 

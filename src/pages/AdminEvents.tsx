@@ -101,20 +101,20 @@ const AdminEvents: React.FC = () => {
       if (modalMode === 'create') {
         console.log('Creating new event...');
         
-        // Transform data to match validation schema expectations
-        const cloudFunctionData = {
-          title: eventData.title,
-          description: eventData.description,
-          startDate: new Date(eventData.startDate!), // Convert to Date object
-          endDate: new Date(eventData.endDate!), // Convert to Date object
-          startTime: eventData.startDate?.split('T')[1]?.substring(0, 5) || '09:00', // Extract time part
-          endTime: eventData.endDate?.split('T')[1]?.substring(0, 5) || '17:00', // Extract time part
-          locationId: 'default', // TODO: Implement location selection
-          category: eventData.category || 'Meeting',
-          seasonId: 'current', // TODO: Implement season selection
-          visibility: eventData.visibility || 'public',
-          sendNotification: false
-        };
+             // Transform data to match validation schema expectations
+             const cloudFunctionData = {
+               title: eventData.title,
+               description: eventData.description,
+               startDate: new Date(eventData.startDate!), // Convert to Date object
+               endDate: new Date(eventData.endDate!), // Convert to Date object
+               startTime: eventData.startDate?.split('T')[1]?.substring(0, 5) || '09:00', // Extract time part
+               endTime: eventData.endDate?.split('T')[1]?.substring(0, 5) || '17:00', // Extract time part
+               locationId: 'RwI4opwHcUx3GKKF7Ten', // Use the default location ID we created
+               category: eventData.category || 'Meeting',
+               seasonId: 'qPEnr3WZN91NhM8jOypp', // Use the default season ID we created
+               visibility: eventData.visibility || 'public',
+               sendNotification: false
+             };
         
         console.log('Transformed data for Cloud Function:', cloudFunctionData);
         

@@ -33,7 +33,10 @@ const EventDetailPage: React.FC = () => {
 
   useEffect(() => {
     const loadEventData = async () => {
+      console.log('EventDetailPage: Loading event data for ID:', id);
+      
       if (!id) {
+        console.log('EventDetailPage: No event ID provided');
         setIsLoading(false);
         return;
       }
@@ -43,27 +46,38 @@ const EventDetailPage: React.FC = () => {
         const { doc, getDoc } = await import('firebase/firestore');
         const { db } = await import('../firebase/config');
         
+        console.log('EventDetailPage: Fetching event from Firestore...');
+        
         // Load event data
         const eventRef = doc(db, 'events', id);
         const eventSnap = await getDoc(eventRef);
         
+        console.log('EventDetailPage: Event snapshot exists:', eventSnap.exists());
+        
         if (eventSnap.exists()) {
           const eventData = { id: eventSnap.id, ...eventSnap.data() } as Event;
+          console.log('EventDetailPage: Event data loaded:', eventData);
           setEvent(eventData);
           
           // Load location data if event has locationId
           if (eventData.locationId) {
+            console.log('EventDetailPage: Loading location data for ID:', eventData.locationId);
             const locationRef = doc(db, 'locations', eventData.locationId);
             const locationSnap = await getDoc(locationRef);
             
             if (locationSnap.exists()) {
               const locationData = { id: locationSnap.id, ...locationSnap.data() } as Location;
+              console.log('EventDetailPage: Location data loaded:', locationData);
               setLocation(locationData);
+            } else {
+              console.log('EventDetailPage: Location not found for ID:', eventData.locationId);
             }
           }
+        } else {
+          console.log('EventDetailPage: Event not found in Firestore for ID:', id);
         }
       } catch (error) {
-        console.error('Error loading event:', error);
+        console.error('EventDetailPage: Error loading event:', error);
       } finally {
         setIsLoading(false);
       }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, List, Filter, Download, Share2 } from 'lucide-react';
 import EventCard from '../components/Events/EventCard';
 import EventCalendar from '../components/Events/EventCalendar';
@@ -35,6 +36,7 @@ interface Event {
 }
 
 const EventsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
@@ -177,18 +179,24 @@ const EventsPage: React.FC = () => {
   };
 
   const handleEventClick = (eventId: string) => {
-    // Navigate to event detail page
-    window.location.href = `/events/${eventId}`;
+    console.log('🔗 EventsPage: Navigating to event detail page for ID:', eventId);
+    console.log('🔗 EventsPage: Current URL:', window.location.href);
+    console.log('🔗 EventsPage: Target URL:', `/events/${eventId}`);
+    navigate(`/events/${eventId}`);
   };
 
   const handleRSVP = (eventId: string) => {
-    // Navigate to event detail page with RSVP tab active
-    window.location.href = `/events/${eventId}?tab=rsvp`;
+    console.log('🎯 EventsPage: RSVP button clicked for event ID:', eventId);
+    console.log('🎯 EventsPage: Current URL:', window.location.href);
+    console.log('🎯 EventsPage: Target URL:', `/events/${eventId}?tab=rsvp`);
+    navigate(`/events/${eventId}?tab=rsvp`);
   };
 
   const handleViewDetails = (eventId: string) => {
-    // Navigate to event detail page
-    window.location.href = `/events/${eventId}`;
+    console.log('👁️ EventsPage: View Details button clicked for event ID:', eventId);
+    console.log('👁️ EventsPage: Current URL:', window.location.href);
+    console.log('👁️ EventsPage: Target URL:', `/events/${eventId}`);
+    navigate(`/events/${eventId}`);
   };
 
   const handleAddToCalendar = (event: Event) => {

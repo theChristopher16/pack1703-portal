@@ -60,6 +60,10 @@ import { MultiTenantProvider } from './contexts/MultiTenantContext';
 
 function App() {
   useEffect(() => {
+    // Force cache invalidation on app load
+    console.log('🚀 App: Starting with cache invalidation...');
+    console.log('🚀 App: Current timestamp:', new Date().toISOString());
+    
     // Register service worker for PWA
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

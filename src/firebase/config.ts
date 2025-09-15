@@ -18,6 +18,9 @@ export const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Initialize App Check for security
+// TEMPORARILY DISABLED FOR DEBUGGING - Cloud Functions authentication issue
+console.log('⚠️ App Check temporarily disabled for debugging Cloud Functions authentication');
+/*
 try {
   const recaptchaSiteKey = process.env.REACT_APP_RECAPTCHA_V3_SITE_KEY;
   
@@ -36,6 +39,7 @@ try {
   // Continue without App Check if initialization fails
   console.log('Continuing without App Check enforcement');
 }
+*/
 
 // Initialize Firestore
 export const db = getFirestore(app);

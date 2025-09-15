@@ -1134,8 +1134,16 @@ class ChatService {
     // Clear cached user data
     SessionManager.clearUserFromStorage();
     
+    // Check if current user is admin/root to initialize with admin privileges
+    const currentAuthUser = authService.getCurrentUser();
+    const isAdmin = currentAuthUser && (
+      currentAuthUser.role === 'root' || 
+      currentAuthUser.role === 'admin' || 
+      currentAuthUser.role === 'volunteer'
+    );
+    
     // Initialize with fresh user data
-    return await this.initialize();
+    return await (isAdmin ? this.initializeAsAdmin() : this.initialize());
   }
 
   private getDefaultChannels(): ChatChannel[] {

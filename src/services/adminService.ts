@@ -154,7 +154,7 @@ export class AdminService {
         ipAddress: await this.getClientIP(),
         userAgent: navigator.userAgent,
         success,
-        errorMessage
+        ...(errorMessage && { errorMessage })
       };
 
       // Add to admin actions collection
@@ -181,8 +181,8 @@ export class AdminService {
           requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         },
         success,
-        errorMessage,
-        duration: 0 // Will be calculated by the function
+        duration: 0, // Will be calculated by the function
+        ...(errorMessage && { errorMessage })
       };
 
       await addDoc(collection(db, 'auditLogs'), {

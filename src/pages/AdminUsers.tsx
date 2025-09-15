@@ -22,7 +22,8 @@ import {
   Home
 } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
-import { authService, AppUser, UserRole } from '../services/authService';
+import { authService, AppUser, UserRole, ROLE_PERMISSIONS } from '../services/authService';
+import { adminService } from '../services/adminService';
 import { Link } from 'react-router-dom';
 
 interface UserWithChildren extends AppUser {
@@ -196,23 +197,18 @@ const AdminUsers: React.FC = () => {
         address: editForm.address
       };
 
-      // Update user in auth service
-      await authService.updateUserProfile(selectedUser.uid, {
+      // Update user using Cloud Function
+      const updates = {
         displayName: editForm.displayName,
-        profile: updatedProfile
-      });
+        profile: updatedProfile,
+        role: editForm.role,
+        permissions: ROLE_PERMISSIONS[editForm.role]
+      };
 
-      // Update role if changed (only root users can do this)
-      if (editForm.role !== selectedUser.role) {
-        try {
-          await authService.updateUserRole(selectedUser.uid, editForm.role);
-        } catch (error: any) {
-          if (error.message.includes('Only root users')) {
-            await addNotification('warning', 'Role Update Restricted', 'Only root users can change user roles');
-          } else {
-            throw error;
-          }
-        }
+      const result = await adminService.updateUser(selectedUser.uid, updates);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update user');
       }
 
       await loadUsers();

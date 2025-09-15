@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import { useAdmin } from '../../contexts/AdminContext';
 import { authService, AppUser, UserRole, Permission, ROLE_PERMISSIONS } from '../../services/authService';
+import { adminService } from '../../services/adminService';
 import { AdminUserManagement } from '../UserApproval/UserApprovalComponents';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../firebase/config';
@@ -324,14 +325,18 @@ const UserManagement: React.FC = () => {
         address: editForm.address
       };
 
-      await authService.updateUserProfile(selectedUser.uid, {
+      // Use Cloud Function to update user with proper custom claims
+      const updates = {
         displayName: editForm.displayName,
-        profile: updatedProfile
-      });
+        profile: updatedProfile,
+        role: editForm.role,
+        permissions: ROLE_PERMISSIONS[editForm.role]
+      };
 
-      // Update role if changed
-      if (editForm.role !== selectedUser.role) {
-        await authService.updateUserRole(selectedUser.uid, editForm.role);
+      const result = await adminService.updateUser(selectedUser.uid, updates);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update user');
       }
 
       await addNotification('success', 'Success', 'User updated successfully');
@@ -365,8 +370,8 @@ const UserManagement: React.FC = () => {
         createForm.role
       );
 
-      // Update profile with additional information
-      await authService.updateUserProfile(newUser.uid, {
+      // Update profile with additional information using Cloud Function
+      const profileUpdates = {
         profile: {
           phone: createForm.phone,
           den: createForm.den,
@@ -374,7 +379,13 @@ const UserManagement: React.FC = () => {
           emergencyContact: createForm.emergencyContact,
           address: createForm.address
         }
-      });
+      };
+
+      const result = await adminService.updateUser(newUser.uid, profileUpdates);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update user profile');
+      }
 
       await addNotification('success', 'Success', 'User created successfully');
       setShowCreateModal(false);

@@ -29,6 +29,9 @@ export const adminFunctions = {
   updateEvent: httpsCallable(functions, 'adminUpdateEvent'),
   deleteEvent: httpsCallable(functions, 'adminDeleteEvent'),
   
+  // User management
+  updateUser: httpsCallable(functions, 'adminUpdateUser'),
+  
   // Location management
   createLocation: httpsCallable(functions, 'adminCreateLocation'),
   updateLocation: httpsCallable(functions, 'adminUpdateLocation'),
@@ -356,6 +359,26 @@ export class AdminService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await this.logAction('delete', 'event', eventId, 'Event', { reason }, false, errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  // User management operations
+  async updateUser(userId: string, updates: any): Promise<{ success: boolean; error?: string }> {
+    try {
+      const result = await adminFunctions.updateUser({ userId, updates });
+      const data = result.data as any;
+
+      if (data.success) {
+        await this.logAction('update', 'user', userId, updates.displayName || 'User', updates);
+        return { success: true };
+      } else {
+        await this.logAction('update', 'user', userId, 'User', updates, false, data.error);
+        return { success: false, error: data.error };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      await this.logAction('update', 'user', userId, 'User', updates, false, errorMessage);
       return { success: false, error: errorMessage };
     }
   }

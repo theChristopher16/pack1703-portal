@@ -12,6 +12,9 @@ admin.initializeApp();
 // Get Firestore instance
 const db = admin.firestore();
 
+// Get Auth instance
+const auth = admin.auth();
+
 // Helper function to get timestamp (works in both emulator and production)
 function getTimestamp(): any {
   try {
@@ -1023,6 +1026,139 @@ export const webSearch = functions.https.onCall(async (data, context) => {
     }
     
     throw new functions.https.HttpsError('internal', 'Failed to perform web search');
+  }
+});
+
+// Admin Cloud Function for User Management
+export const adminUpdateUser = functions.https.onCall(async (request) => {
+  try {
+    const data = request.data as {
+      userId: string;
+      updates: {
+        displayName?: string;
+        role?: string;
+        permissions?: string[];
+        isActive?: boolean;
+        profile?: any;
+      };
+    };
+    const context = request;
+    
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    // Check role-based permissions (new system) or legacy boolean fields
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
+    const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
+    
+    if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update users');
+    }
+
+    const { userId, updates } = data;
+    
+    if (!userId) {
+      throw new functions.https.HttpsError('invalid-argument', 'User ID is required');
+    }
+
+    // Check if target user exists
+    const targetUserDoc = await db.collection('users').doc(userId).get();
+    if (!targetUserDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Target user not found');
+    }
+
+    // Prepare update data
+    const updateData: any = {
+      updatedAt: getTimestamp()
+    };
+
+    if (updates.displayName !== undefined) {
+      updateData.displayName = updates.displayName;
+    }
+
+    if (updates.isActive !== undefined) {
+      updateData.isActive = updates.isActive;
+    }
+
+    if (updates.profile !== undefined) {
+      updateData.profile = updates.profile;
+    }
+
+    // Update Firestore document
+    await db.collection('users').doc(userId).update(updateData);
+
+    // Update Firebase Auth custom claims if role is being changed
+    if (updates.role !== undefined) {
+      await auth.setCustomUserClaims(userId, {
+        approved: true,
+        role: updates.role
+      });
+      
+      // Also update the role in Firestore
+      await db.collection('users').doc(userId).update({
+        role: updates.role,
+        permissions: updates.permissions || [],
+        updatedAt: getTimestamp()
+      });
+    }
+
+    // Log admin action
+    await db.collection('adminActions').add({
+      userId: context.auth.uid,
+      userEmail: context.auth.token.email || '',
+      action: 'update',
+      entityType: 'user',
+      entityId: userId,
+      entityName: updates.displayName || 'User',
+      details: updates,
+      timestamp: getTimestamp(),
+      ipAddress: context.rawRequest.ip || 'unknown',
+      userAgent: context.rawRequest.headers['user-agent'] || 'unknown',
+      success: true
+    });
+
+    return {
+      success: true,
+      message: 'User updated successfully'
+    };
+
+  } catch (error) {
+    console.error('Error in adminUpdateUser:', error);
+    
+    // Log failed action
+    try {
+      await db.collection('adminActions').add({
+        userId: request.auth?.uid || 'unknown',
+        userEmail: request.auth?.token?.email || '',
+        action: 'update',
+        entityType: 'user',
+        entityId: request.data?.userId || 'unknown',
+        entityName: 'User',
+        details: request.data?.updates || {},
+        timestamp: getTimestamp(),
+        ipAddress: request.rawRequest?.ip || 'unknown',
+        userAgent: request.rawRequest?.headers?.['user-agent'] || 'unknown',
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    } catch (logError) {
+      console.error('Error logging failed action:', logError);
+    }
+
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to update user');
   }
 });
 

@@ -36,29 +36,29 @@ const AdminEvents: React.FC = () => {
   const [filterVisibility, setFilterVisibility] = useState('all');
 
   // Fetch events from database
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      // Use direct Firestore query to get all events (not just public ones)
+      const eventsRef = collection(db, 'events');
+      const q = query(eventsRef, orderBy('startDate', 'desc'));
+      const snapshot = await getDocs(q);
+      const eventsData = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data(),
+        startDate: doc.data().startDate?.toDate?.()?.toISOString() || doc.data().startDate,
+        endDate: doc.data().endDate?.toDate?.()?.toISOString() || doc.data().endDate,
+      } as Event));
+      setEvents(eventsData);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        setLoading(true);
-        // Use direct Firestore query to get all events (not just public ones)
-        const eventsRef = collection(db, 'events');
-        const q = query(eventsRef, orderBy('startDate', 'desc'));
-        const snapshot = await getDocs(q);
-        const eventsData = snapshot.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          startDate: doc.data().startDate?.toDate?.()?.toISOString() || doc.data().startDate,
-          endDate: doc.data().endDate?.toDate?.()?.toISOString() || doc.data().endDate,
-        } as Event));
-        setEvents(eventsData);
-      } catch (error) {
-        console.error('Error fetching events:', error);
-        setEvents([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchEvents();
   }, []);
 
@@ -446,16 +446,17 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      const eventData = {
-        ...formData,
+      const { maxParticipants, ...formDataWithoutMaxParticipants } = formData;
+      const eventData: Partial<Event> = {
+        ...formDataWithoutMaxParticipants,
         currentParticipants: event?.currentParticipants || 0,
         createdAt: event?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
       
       // Only include maxParticipants if it's a valid number
-      if (formData.maxParticipants && !isNaN(parseInt(formData.maxParticipants))) {
-        eventData.maxParticipants = parseInt(formData.maxParticipants);
+      if (maxParticipants && !isNaN(parseInt(maxParticipants))) {
+        eventData.maxParticipants = parseInt(maxParticipants);
       }
       
       onSave(eventData);

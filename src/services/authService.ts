@@ -1535,7 +1535,15 @@ class AuthService {
   async updateUserProfile(userId: string, updates: Partial<AppUser>): Promise<void> {
     try {
       const currentUser = this.getCurrentUser();
-      if (!currentUser || !this.hasPermission(Permission.USER_MANAGEMENT)) {
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
+
+      // Check if user is updating their own profile or has admin permissions
+      const isOwnProfile = currentUser.uid === userId;
+      const hasAdminPermissions = this.hasPermission(Permission.USER_MANAGEMENT);
+      
+      if (!isOwnProfile && !hasAdminPermissions) {
         throw new Error('Insufficient permissions');
       }
 
@@ -1551,7 +1559,8 @@ class AuthService {
         updateData.profile = updates.profile;
       }
 
-      if (updates.isActive !== undefined) {
+      // Only admins can update isActive status
+      if (updates.isActive !== undefined && hasAdminPermissions) {
         updateData.isActive = updates.isActive;
       }
 

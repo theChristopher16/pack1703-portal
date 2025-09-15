@@ -56,16 +56,21 @@ service cloud.firestore {
     allow read: if isAdmin();
     
     // Users can update their own profile (except role and permissions)
+    // Root users can also update role, permissions, and isActive status
     allow update: if request.auth != null && 
                      request.auth.uid == userId &&
-                     !('role' in request.resource.data.diff(resource.data).affectedKeys()) &&
-                     !('permissions' in request.resource.data.diff(resource.data).affectedKeys()) &&
-                     !('isActive' in request.resource.data.diff(resource.data).affectedKeys());
+                     ((!('role' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                       !('permissions' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                       !('isActive' in request.resource.data.diff(resource.data).affectedKeys())) ||
+                      (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'root'));
     
-    // Only root users can create new users
+    // Users can create their own user document (for new signups)
+    // Root users can also create user documents for others
     allow create: if request.auth != null && 
-                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'root';
+                     (request.auth.uid == userId || 
+                      (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'root'));
     
     // Only root users can delete users
     allow delete: if request.auth != null && 

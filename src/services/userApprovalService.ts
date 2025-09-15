@@ -107,6 +107,27 @@ export class UserApprovalService {
   }
 
   /**
+   * Check if a user already exists in the system
+   */
+  async checkUserExists(email: string): Promise<{ exists: boolean; needsApproval: boolean; message?: string }> {
+    try {
+      // Try to sign in with a dummy password to check if user exists
+      // This is a bit of a hack, but Firebase doesn't provide a direct way to check if email exists
+      await signInWithEmailAndPassword(auth, email, 'dummy-password-check');
+      return { exists: true, needsApproval: false };
+    } catch (error: any) {
+      if (error.code === 'auth/user-not-found') {
+        return { exists: false, needsApproval: false };
+      } else if (error.code === 'auth/wrong-password') {
+        return { exists: true, needsApproval: false, message: 'Account exists but password is incorrect' };
+      } else if (error.code === 'auth/user-disabled') {
+        return { exists: true, needsApproval: true, message: 'Account exists but is disabled' };
+      }
+      return { exists: false, needsApproval: false };
+    }
+  }
+
+  /**
    * Sign up a new user
    */
   async signUp(email: string, password: string, displayName?: string): Promise<{ success: boolean; message: string }> {
@@ -140,6 +161,25 @@ export class UserApprovalService {
       };
     } catch (error: any) {
       console.error('Sign up error:', error);
+      
+      // Handle specific Firebase Auth errors
+      if (error.code === 'auth/email-already-in-use') {
+        return {
+          success: false,
+          message: 'An account with this email already exists. Please try signing in instead.'
+        };
+      } else if (error.code === 'auth/weak-password') {
+        return {
+          success: false,
+          message: 'Password is too weak. Please choose a stronger password.'
+        };
+      } else if (error.code === 'auth/invalid-email') {
+        return {
+          success: false,
+          message: 'Invalid email address. Please check your email and try again.'
+        };
+      }
+      
       return {
         success: false,
         message: error.message || 'Failed to create account'

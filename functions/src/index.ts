@@ -1,9 +1,10 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
-import { secretManagerService } from './secretManagerService';
+// import { secretManagerService } from './secretManagerService'; // Temporarily disabled due to Node.js version compatibility
 // Import user approval functions
 import { createPendingUser, approveUser, getPendingUsers, getAuditLogs } from './userApproval';
 import { setAdminClaims } from './setAdminClaims';
+import { testAuth } from './simpleTest';
 const Imap = require('node-imap');
 
 // Initialize Firebase Admin
@@ -2149,7 +2150,8 @@ async function sendEscalationNotification(reminder: any) {
   // This could send to admin email, create admin notification, etc.
 }
 
-// Test Secret Manager integration
+// Test Secret Manager integration - TEMPORARILY DISABLED due to Node.js version compatibility
+/*
 export const testSecretManager = functions.https.onCall(async (request) => {
   try {
     const context = request;
@@ -2196,6 +2198,7 @@ export const testSecretManager = functions.https.onCall(async (request) => {
     throw new functions.https.HttpsError('internal', `Secret Manager test failed: ${error}`);
   }
 });
+*/
 
 // Location management functions
 export const adminCreateLocation = functions.https.onCall(async (request) => {
@@ -2387,3 +2390,6 @@ export const adminUpdateLocation = functions.https.onCall(async (request) => {
 
 // Export user approval functions
 export { createPendingUser, approveUser, getPendingUsers, getAuditLogs, setAdminClaims };
+
+// Export simple test function
+export { testAuth };

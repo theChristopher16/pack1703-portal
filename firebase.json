@@ -10,7 +10,7 @@
   },
   "functions": {
     "source": "functions",
-    "runtime": "nodejs20"
+    "runtime": "nodejs18"
   },
   "hosting": [
     {

@@ -11,11 +11,10 @@
     "logs": "firebase functions:log"
   },
   "engines": {
-    "node": "20"
+    "node": "18"
   },
   "main": "lib/index.js",
   "dependencies": {
-    "@google-cloud/secret-manager": "^6.1.0",
     "@types/node-imap": "^0.9.3",
     "firebase": "^12.2.1",
     "firebase-admin": "^12.7.0",

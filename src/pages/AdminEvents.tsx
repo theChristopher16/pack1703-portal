@@ -25,6 +25,7 @@ interface Event {
 }
 
 const AdminEvents: React.FC = () => {
+  const { addNotification } = useAdmin();
   const { state, createEntity, updateEntity, deleteEntity } = useAdmin();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);

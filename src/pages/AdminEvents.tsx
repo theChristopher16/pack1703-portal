@@ -90,43 +90,17 @@ const AdminEvents: React.FC = () => {
   const handleSaveEvent = async (eventData: Partial<Event>) => {
     try {
       if (modalMode === 'create') {
-        // TEMPORARY WORKAROUND: Create event directly in Firestore
-        // This bypasses Cloud Functions until deployment issues are resolved
-        console.log('Creating event directly in Firestore (temporary workaround)');
-        
-        const eventToCreate = {
-          title: eventData.title!,
-          description: eventData.description!,
-          startDate: new Date(eventData.startDate!),
-          endDate: new Date(eventData.endDate!),
-          startTime: '09:00',
-          endTime: '17:00',
-          locationId: 'default',
-          category: eventData.category || 'Meeting',
-          seasonId: 'current',
-          visibility: eventData.visibility || 'public',
-          sendNotification: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          createdBy: 'admin', // TODO: Get actual user ID
-          isActive: true,
-          currentParticipants: 0,
-          maxParticipants: parseInt(eventData.maxParticipants?.toString() || '50')
-        };
-        
-        // Create event directly in Firestore
-        const eventsRef = collection(db, 'events');
-        const docRef = await addDoc(eventsRef, eventToCreate);
-        
-        console.log('Event created successfully with ID:', docRef.id);
-        
-        // Refresh events list to get the newly created event
-        await fetchEvents();
-        setIsModalOpen(false);
-        setSelectedEvent(null);
-        
-        // Show success message
-        alert('Event created successfully!');
+        // Use Cloud Function to create event with proper permission checking
+        const result = await adminService.createEvent(eventData);
+        if (result.success) {
+          await fetchEvents();
+          setIsModalOpen(false);
+          setSelectedEvent(null);
+          addNotification('success', 'Event Created', 'New event has been successfully created.');
+        } else {
+          addNotification('error', 'Creation Failed', result.error || 'Failed to create event. Please try again.');
+          return;
+        }
         
       } else if (modalMode === 'edit' && selectedEvent) {
         // Use Cloud Function to update event with proper permission checking
@@ -157,7 +131,7 @@ const AdminEvents: React.FC = () => {
       }
     } catch (error) {
       console.error('Error saving event:', error);
-      // You could add a toast notification here
+      addNotification('error', 'Save Failed', 'Failed to save event. Please try again.');
     }
   };
 

@@ -183,7 +183,7 @@ function getRolePermissions(role: UserRole): string[] {
  * Callable function to create a pending user document
  * This should be called after Firebase Auth user creation
  */
-export const createPendingUser = onCall(async (request) => {
+export const createPendingUser = onCall(async (request: any) => {
   const { userId, email, displayName } = request.data;
 
   if (!userId || !email) {
@@ -231,7 +231,7 @@ export const createPendingUser = onCall(async (request) => {
 /**
  * Callable function for admins to approve or deny users
  */
-export const approveUser = onCall(async (request) => {
+export const approveUser = onCall(async (request: any) => {
   const { userId, action, role, reason } = request.data;
   const callerUid = request.auth?.uid;
 
@@ -348,7 +348,7 @@ export const approveUser = onCall(async (request) => {
 /**
  * Callable function to get pending users (admin only)
  */
-export const getPendingUsers = onCall(async (request) => {
+export const getPendingUsers = onCall(async (request: any) => {
   const callerUid = request.auth?.uid;
 
   if (!callerUid) {
@@ -406,7 +406,7 @@ export const getPendingUsers = onCall(async (request) => {
 /**
  * Callable function to get audit logs (admin only)
  */
-export const getAuditLogs = onCall(async (request) => {
+export const getAuditLogs = onCall(async (request: any) => {
   const callerUid = request.auth?.uid;
   const { limit = 50 } = request.data || {};
 

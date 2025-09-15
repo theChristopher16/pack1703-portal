@@ -146,7 +146,7 @@ function sanitizeInput(input: string): string {
 }
 
 // 1. Submit RSVP Function
-export const submitRSVP = functions.https.onCall(async (data: RSVPSubmission, context) => {
+export const submitRSVP = functions.https.onCall(async (data: RSVPSubmission, context: functions.https.CallableContext) => {
   try {
     // Check App Check (required for production)
     if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
@@ -239,7 +239,7 @@ export const submitRSVP = functions.https.onCall(async (data: RSVPSubmission, co
 });
 
 // 2. Submit Feedback Function
-export const submitFeedback = functions.https.onCall(async (data: FeedbackSubmission, context) => {
+export const submitFeedback = functions.https.onCall(async (data: FeedbackSubmission, context: functions.https.CallableContext) => {
   try {
     // Check App Check (required for production)
     if (process.env.FUNCTIONS_EMULATOR !== 'true' && !context.app) {
@@ -298,7 +298,7 @@ export const submitFeedback = functions.https.onCall(async (data: FeedbackSubmis
 });
 
 // 3. Claim Volunteer Role Function
-export const claimVolunteerRole = functions.https.onCall(async (request) => {
+export const claimVolunteerRole = functions.https.onCall(async (request: any) => {
   try {
     const data = request.data as VolunteerSignup;
     const context = request;
@@ -386,7 +386,7 @@ export const claimVolunteerRole = functions.https.onCall(async (request) => {
 });
 
 // 4. ICS Feed Generator Function
-export const icsFeed = functions.https.onCall(async (request) => {
+export const icsFeed = functions.https.onCall(async (request: any) => {
   try {
     const data = request.data as {
       season?: string;
@@ -471,7 +471,7 @@ export const icsFeed = functions.https.onCall(async (request) => {
 });
 
 // 5. Weather Proxy Function
-export const weatherProxy = functions.https.onCall(async (request) => {
+export const weatherProxy = functions.https.onCall(async (request: any) => {
   try {
     const data = request.data as {
       latitude: number;
@@ -520,7 +520,7 @@ export const weatherProxy = functions.https.onCall(async (request) => {
 });
 
 // 6. Moderation Digest Function (runs daily)
-export const moderationDigest = functions.pubsub.schedule('0 9 * * *').onRun(async (context) => {
+export const moderationDigest = functions.pubsub.schedule('0 9 * * *').onRun(async (context: functions.EventContext) => {
   try {
     // Get pending submissions from the last 24 hours
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -565,7 +565,7 @@ export const moderationDigest = functions.pubsub.schedule('0 9 * * *').onRun(asy
 });
 
 // 7. Hello World Function (for testing)
-export const helloWorld = functions.https.onCall(async (data, context) => {
+export const helloWorld = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   try {
     return {
       message: 'Hello from Firebase Cloud Functions!',
@@ -583,7 +583,7 @@ export const helloWorld = functions.https.onCall(async (data, context) => {
 });
 
 // 8. Email Monitoring Functions
-export const testEmailConnection = functions.https.onCall(async (data, context) => {
+export const testEmailConnection = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   try {
     // Check authentication
     if (!context.auth) {
@@ -626,7 +626,7 @@ export const testEmailConnection = functions.https.onCall(async (data, context) 
   }
 });
 
-export const fetchNewEmails = functions.https.onCall(async (data, context) => {
+export const fetchNewEmails = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   try {
     // Check authentication
     if (!context.auth) {
@@ -799,7 +799,7 @@ function parseEmail(rawEmail: string): { from: string; to: string; subject: stri
 }
 
 // Cloud function to safely fetch URL content for Wolf Watch emails
-export const fetchUrlContent = functions.https.onCall(async (request) => {
+export const fetchUrlContent = functions.https.onCall(async (request: any) => {
   try {
     const data = request.data as { url: string };
     const { url } = data;
@@ -902,7 +902,7 @@ export const fetchUrlContent = functions.https.onCall(async (request) => {
 });
 
 // Cloud function to perform web searches for event enhancement
-export const webSearch = functions.https.onCall(async (data, context) => {
+export const webSearch = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   try {
     const { query, maxResults = 5 } = data as { query: string; maxResults?: number };
     
@@ -1031,7 +1031,7 @@ export const webSearch = functions.https.onCall(async (data, context) => {
 });
 
 // Admin Cloud Function for User Management
-export const adminUpdateUser = functions.https.onCall(async (request) => {
+export const adminUpdateUser = functions.https.onCall(async (request: any) => {
   try {
     const data = request.data as {
       userId: string;
@@ -1164,7 +1164,7 @@ export const adminUpdateUser = functions.https.onCall(async (request) => {
 });
 
 // Admin Cloud Functions for Event Management
-export const adminCreateEvent = functions.https.onCall(async (request) => {
+export const adminCreateEvent = functions.https.onCall(async (request: any) => {
   try {
     const data = request.data as {
       title: string;
@@ -1319,7 +1319,7 @@ export const adminCreateEvent = functions.https.onCall(async (request) => {
   }
 });
 
-export const adminUpdateEvent = functions.https.onCall(async (request) => {
+export const adminUpdateEvent = functions.https.onCall(async (request: any) => {
   try {
     const data = request.data as { eventId: string; eventData: any };
     const context = request;
@@ -1443,7 +1443,7 @@ export const adminUpdateEvent = functions.https.onCall(async (request) => {
   }
 });
 
-export const adminDeleteEvent = functions.https.onCall(async (request) => {
+export const adminDeleteEvent = functions.https.onCall(async (request: any) => {
   try {
     const data = request.data as { eventId: string; reason?: string };
     const context = request;
@@ -1530,7 +1530,7 @@ export const adminDeleteEvent = functions.https.onCall(async (request) => {
 // Temporarily disabled due to firebase-admin/ai import issue
 // import GeminiService from './geminiService';
 
-export const aiGenerateContent = functions.https.onCall(async (request) => {
+export const aiGenerateContent = functions.https.onCall(async (request: any) => {
   try {
     const data = request.data as {
       type: string;
@@ -1651,7 +1651,7 @@ export const aiGenerateContent = functions.https.onCall(async (request) => {
 });
 
 // Test GPT-5 Connection Function
-export const testAIConnection = functions.https.onCall(async (data, context) => {
+export const testAIConnection = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   try {
     // Check authentication
     if (!context.auth) {
@@ -1702,7 +1702,7 @@ export const testAIConnection = functions.https.onCall(async (data, context) => 
 });
 
 // System Command Function for Root Users
-export const systemCommand = functions.https.onCall(async (data, context) => {
+export const systemCommand = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   try {
     
     // Check authentication
@@ -1899,7 +1899,7 @@ export const systemCommand = functions.https.onCall(async (data, context) => {
 // ============================================================================
 
 // Process scheduled reminders every 5 minutes
-export const processScheduledReminders = functions.pubsub.schedule('every 5 minutes').onRun(async (context) => {
+export const processScheduledReminders = functions.pubsub.schedule('every 5 minutes').onRun(async (context: functions.EventContext) => {
   try {
     console.log('🔔 Processing scheduled reminders...');
     
@@ -1952,7 +1952,7 @@ export const processScheduledReminders = functions.pubsub.schedule('every 5 minu
 });
 
 // Process overdue reminders daily at 9 AM
-export const processOverdueReminders = functions.pubsub.schedule('0 9 * * *').onRun(async (context) => {
+export const processOverdueReminders = functions.pubsub.schedule('0 9 * * *').onRun(async (context: functions.EventContext) => {
   try {
     console.log('⏰ Processing overdue reminders...');
     
@@ -2201,7 +2201,7 @@ export const testSecretManager = functions.https.onCall(async (request) => {
 */
 
 // Location management functions
-export const adminCreateLocation = functions.https.onCall(async (request) => {
+export const adminCreateLocation = functions.https.onCall(async (request: any) => {
   try {
     const context = request;
     const data = request.data;
@@ -2296,7 +2296,7 @@ export const adminCreateLocation = functions.https.onCall(async (request) => {
   }
 });
 
-export const adminUpdateLocation = functions.https.onCall(async (request) => {
+export const adminUpdateLocation = functions.https.onCall(async (request: any) => {
   try {
     const context = request;
     const data = request.data;

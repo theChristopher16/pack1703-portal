@@ -2,7 +2,7 @@ import { onCall } from 'firebase-functions/v2/https';
 import { getAuth } from 'firebase-admin/auth';
 import { logger } from 'firebase-functions';
 
-export const setAdminClaims = onCall(async (request) => {
+export const setAdminClaims = onCall(async (request: any) => {
   const { userId } = request.data;
   const callerUid = request.auth?.uid;
 

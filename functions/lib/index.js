@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setAdminClaims = exports.getAuditLogs = exports.getPendingUsers = exports.approveUser = exports.createPendingUser = exports.testSecretManager = exports.processOverdueReminders = exports.processScheduledReminders = exports.systemCommand = exports.testAIConnection = exports.aiGenerateContent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.adminCreateEvent = exports.adminUpdateUser = exports.webSearch = exports.fetchUrlContent = exports.fetchNewEmails = exports.testEmailConnection = exports.helloWorld = exports.moderationDigest = exports.weatherProxy = exports.icsFeed = exports.claimVolunteerRole = exports.submitFeedback = exports.submitRSVP = void 0;
+exports.testAuth = exports.setAdminClaims = exports.getAuditLogs = exports.getPendingUsers = exports.approveUser = exports.createPendingUser = exports.adminUpdateLocation = exports.adminCreateLocation = exports.processOverdueReminders = exports.processScheduledReminders = exports.systemCommand = exports.testAIConnection = exports.aiGenerateContent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.adminCreateEvent = exports.adminUpdateUser = exports.webSearch = exports.fetchUrlContent = exports.fetchNewEmails = exports.testEmailConnection = exports.helloWorld = exports.moderationDigest = exports.weatherProxy = exports.icsFeed = exports.claimVolunteerRole = exports.submitFeedback = exports.submitRSVP = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
-const secretManagerService_1 = require("./secretManagerService");
+// import { secretManagerService } from './secretManagerService'; // Temporarily disabled due to Node.js version compatibility
 // Import user approval functions
 const userApproval_1 = require("./userApproval");
 Object.defineProperty(exports, "createPendingUser", { enumerable: true, get: function () { return userApproval_1.createPendingUser; } });
@@ -12,6 +12,8 @@ Object.defineProperty(exports, "getPendingUsers", { enumerable: true, get: funct
 Object.defineProperty(exports, "getAuditLogs", { enumerable: true, get: function () { return userApproval_1.getAuditLogs; } });
 const setAdminClaims_1 = require("./setAdminClaims");
 Object.defineProperty(exports, "setAdminClaims", { enumerable: true, get: function () { return setAdminClaims_1.setAdminClaims; } });
+const simpleTest_1 = require("./simpleTest");
+Object.defineProperty(exports, "testAuth", { enumerable: true, get: function () { return simpleTest_1.testAuth; } });
 const Imap = require('node-imap');
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -1709,45 +1711,215 @@ async function sendEscalationNotification(reminder) {
     // TODO: Implement escalation notification
     // This could send to admin email, create admin notification, etc.
 }
-// Test Secret Manager integration
-exports.testSecretManager = functions.https.onCall(async (request) => {
+// Test Secret Manager integration - TEMPORARILY DISABLED due to Node.js version compatibility
+/*
+export const testSecretManager = functions.https.onCall(async (request) => {
+  try {
+    const context = request;
+    
+    // Check App Check (skip in emulator and development for testing)
+    if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
+      throw new functions.https.HttpsError('unauthenticated', 'App Check required');
+    }
+
+    functions.logger.info('🧪 Testing Secret Manager integration...');
+    
+    const apiKeys = await secretManagerService.getAllApiKeys();
+    
+    // Return summary (without exposing actual keys)
+    const summary = {
+      admin: {
+        googleMaps: apiKeys.ADMIN.GOOGLE_MAPS ? '✅ Configured' : '❌ Missing',
+        openWeather: apiKeys.ADMIN.OPENWEATHER ? '✅ Configured' : '❌ Missing',
+        googlePlaces: apiKeys.ADMIN.GOOGLE_PLACES ? '✅ Configured' : '❌ Missing',
+      },
+      user: {
+        googleMaps: apiKeys.USER.GOOGLE_MAPS ? '✅ Configured' : '❌ Missing',
+        openWeather: apiKeys.USER.OPENWEATHER ? '✅ Configured' : '❌ Missing',
+        googlePlaces: apiKeys.USER.GOOGLE_PLACES ? '✅ Configured' : '❌ Missing',
+      },
+      shared: {
+        phoneValidation: apiKeys.PHONE_VALIDATION ? '✅ Configured' : '❌ Missing',
+        tenor: apiKeys.TENOR ? '✅ Configured' : '❌ Missing',
+        recaptcha: apiKeys.RECAPTCHA.SITE_KEY ? '✅ Configured' : '❌ Missing',
+      },
+      cacheStats: secretManagerService.getCacheStats()
+    };
+
+    functions.logger.info('✅ Secret Manager test completed successfully');
+    
+    return {
+      success: true,
+      message: 'Secret Manager integration working correctly',
+      summary
+    };
+
+  } catch (error) {
+    functions.logger.error('❌ Secret Manager test failed:', error);
+    throw new functions.https.HttpsError('internal', `Secret Manager test failed: ${error}`);
+  }
+});
+*/
+// Location management functions
+exports.adminCreateLocation = functions.https.onCall(async (request) => {
+    var _a, _b;
     try {
         const context = request;
-        // Check App Check (skip in emulator and development for testing)
-        if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
-            throw new functions.https.HttpsError('unauthenticated', 'App Check required');
+        const data = request.data;
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
         }
-        functions.logger.info('🧪 Testing Secret Manager integration...');
-        const apiKeys = await secretManagerService_1.secretManagerService.getAllApiKeys();
-        // Return summary (without exposing actual keys)
-        const summary = {
-            admin: {
-                googleMaps: apiKeys.ADMIN.GOOGLE_MAPS ? '✅ Configured' : '❌ Missing',
-                openWeather: apiKeys.ADMIN.OPENWEATHER ? '✅ Configured' : '❌ Missing',
-                googlePlaces: apiKeys.ADMIN.GOOGLE_PLACES ? '✅ Configured' : '❌ Missing',
-            },
-            user: {
-                googleMaps: apiKeys.USER.GOOGLE_MAPS ? '✅ Configured' : '❌ Missing',
-                openWeather: apiKeys.USER.OPENWEATHER ? '✅ Configured' : '❌ Missing',
-                googlePlaces: apiKeys.USER.GOOGLE_PLACES ? '✅ Configured' : '❌ Missing',
-            },
-            shared: {
-                phoneValidation: apiKeys.PHONE_VALIDATION ? '✅ Configured' : '❌ Missing',
-                tenor: apiKeys.TENOR ? '✅ Configured' : '❌ Missing',
-                recaptcha: apiKeys.RECAPTCHA.SITE_KEY ? '✅ Configured' : '❌ Missing',
-            },
-            cacheStats: secretManagerService_1.secretManagerService.getCacheStats()
+        // Check if user has admin privileges
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError('permission-denied', 'User not found');
+        }
+        const userData = userDoc.data();
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'volunteer';
+        const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
+        const hasLocationPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('location_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
+        if (!hasAdminRole && !hasLegacyPermissions && !hasLocationPermission) {
+            throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to create locations');
+        }
+        // Validate required fields
+        if (!data.name || !data.address || !data.city || !data.state) {
+            throw new functions.https.HttpsError('invalid-argument', 'Missing required fields: name, address, city, state');
+        }
+        // Create location document
+        const locationData = {
+            name: data.name,
+            address: data.address,
+            city: data.city,
+            state: data.state,
+            zipCode: data.zipCode || '',
+            category: data.category || 'other',
+            importance: data.importance || 'medium',
+            parking: data.parking || 'free',
+            notes: data.notes || '',
+            privateNotes: data.privateNotes || '',
+            isActive: data.isActive !== false,
+            createdAt: getTimestamp(),
+            updatedAt: getTimestamp(),
+            createdBy: context.auth.uid
         };
-        functions.logger.info('✅ Secret Manager test completed successfully');
+        const locationRef = await db.collection('locations').add(locationData);
+        // Log admin action
+        await db.collection('adminActions').add({
+            userId: context.auth.uid,
+            userEmail: (userData === null || userData === void 0 ? void 0 : userData.email) || 'unknown',
+            action: 'create',
+            entityType: 'location',
+            entityId: locationRef.id,
+            entityName: data.name,
+            details: { locationData },
+            timestamp: getTimestamp(),
+            success: true
+        });
         return {
             success: true,
-            message: 'Secret Manager integration working correctly',
-            summary
+            locationId: locationRef.id,
+            message: 'Location created successfully'
         };
     }
     catch (error) {
-        functions.logger.error('❌ Secret Manager test failed:', error);
-        throw new functions.https.HttpsError('internal', `Secret Manager test failed: ${error}`);
+        functions.logger.error('Error creating location:', error);
+        // Log failed admin action
+        if (request.auth) {
+            try {
+                await db.collection('adminActions').add({
+                    userId: request.auth.uid,
+                    action: 'create',
+                    entityType: 'location',
+                    details: { error: error instanceof Error ? error.message : 'Unknown error' },
+                    timestamp: getTimestamp(),
+                    success: false
+                });
+            }
+            catch (logError) {
+                functions.logger.error('Failed to log admin action:', logError);
+            }
+        }
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to create location');
+    }
+});
+exports.adminUpdateLocation = functions.https.onCall(async (request) => {
+    var _a, _b, _c, _d;
+    try {
+        const context = request;
+        const data = request.data;
+        const { locationId, locationData } = data;
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        // Check if user has admin privileges
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError('permission-denied', 'User not found');
+        }
+        const userData = userDoc.data();
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'volunteer';
+        const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
+        const hasLocationPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('location_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
+        if (!hasAdminRole && !hasLegacyPermissions && !hasLocationPermission) {
+            throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update locations');
+        }
+        if (!locationId) {
+            throw new functions.https.HttpsError('invalid-argument', 'Location ID is required');
+        }
+        // Check if location exists
+        const locationRef = db.collection('locations').doc(locationId);
+        const locationDoc = await locationRef.get();
+        if (!locationDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'Location not found');
+        }
+        // Update location document
+        const updateData = Object.assign(Object.assign({}, locationData), { updatedAt: getTimestamp(), updatedBy: context.auth.uid });
+        await locationRef.update(updateData);
+        // Log admin action
+        await db.collection('adminActions').add({
+            userId: context.auth.uid,
+            userEmail: (userData === null || userData === void 0 ? void 0 : userData.email) || 'unknown',
+            action: 'update',
+            entityType: 'location',
+            entityId: locationId,
+            entityName: locationData.name || ((_c = locationDoc.data()) === null || _c === void 0 ? void 0 : _c.name) || 'Unknown',
+            details: { updateData },
+            timestamp: getTimestamp(),
+            success: true
+        });
+        return {
+            success: true,
+            message: 'Location updated successfully'
+        };
+    }
+    catch (error) {
+        functions.logger.error('Error updating location:', error);
+        // Log failed admin action
+        if (request.auth) {
+            try {
+                await db.collection('adminActions').add({
+                    userId: request.auth.uid,
+                    action: 'update',
+                    entityType: 'location',
+                    entityId: ((_d = request.data) === null || _d === void 0 ? void 0 : _d.locationId) || 'unknown',
+                    details: { error: error instanceof Error ? error.message : 'Unknown error' },
+                    timestamp: getTimestamp(),
+                    success: false
+                });
+            }
+            catch (logError) {
+                functions.logger.error('Failed to log admin action:', logError);
+            }
+        }
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to update location');
     }
 });
 //# sourceMappingURL=index.js.map

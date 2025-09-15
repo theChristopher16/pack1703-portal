@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 
 // Simple test function to check authentication
-export const testAuth = functions.https.onCall(async (request) => {
+export const testAuth = functions.https.onCall(async (request: any) => {
   try {
     const context = request;
     

@@ -208,6 +208,14 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     category: 'admin',
     description: 'Manage pack lists and inventories'
   },
+  {
+    name: 'Feedback Management',
+    href: '/admin/feedback',
+    icon: MessageSquare,
+    roles: [UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.ROOT],
+    category: 'admin',
+    description: 'Review and respond to feedback'
+  },
 
   // SYSTEM ITEMS (root only)
   {

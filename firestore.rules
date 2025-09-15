@@ -141,12 +141,24 @@ service cloud.firestore {
         request.resource.data.userId == request.auth.uid;
     }
     
-    // Feedback - users can only access their own feedback (no admin access)
+    // Feedback - users can access their own feedback, den leaders+ can read all and respond
     match /feedback/{feedbackId} {
+      // Users can read their own feedback
       allow read: if isAuthenticated() && 
         resource.data.userId == request.auth.uid;
+      // Den leaders and up can read all feedback
+      allow read: if isAuthenticated() && 
+        (request.auth.token.get('role', '') in ['volunteer', 'admin', 'root'] ||
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['volunteer', 'admin', 'root']);
+      // Users can create their own feedback
       allow create: if isAuthenticated() && 
         request.resource.data.userId == request.auth.uid;
+      // Den leaders and up can update feedback (add responses)
+      allow update: if isAuthenticated() && 
+        (request.auth.token.get('role', '') in ['volunteer', 'admin', 'root'] ||
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['volunteer', 'admin', 'root']);
     }
     
     // Volunteer signups - users can only access their own signups

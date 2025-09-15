@@ -4,28 +4,16 @@ import {
   Send, 
   CheckCircle, 
   AlertCircle, 
-  Search
+  Search,
+  User,
+  Calendar,
+  Tag
 } from 'lucide-react';
 import { authService } from '../services/authService';
 import { useAdmin } from '../contexts/AdminContext';
-
-interface FeedbackSubmission {
-  id: string;
-  category: 'suggestion' | 'question' | 'concern' | 'praise' | 'bug' | 'general';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  title: string;
-  message: string;
-  familyName: string;
-  email?: string;
-  phone?: string;
-  eventId?: string;
-  eventTitle?: string;
-  status: 'submitted' | 'reviewing' | 'in-progress' | 'resolved' | 'closed';
-  adminResponse?: string;
-  adminResponseDate?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import { feedbackService } from '../services/feedbackService';
+import { FeedbackSubmission } from '../types/feedback';
+import { FeedbackResponsesList } from '../components/Feedback/FeedbackResponseComponents';
 
 const FeedbackPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'submit' | 'history'>('submit');
@@ -40,9 +28,10 @@ const FeedbackPage: React.FC = () => {
       setActiveTab('submit');
     }
   }, [user, activeTab]);
+  
   const [formData, setFormData] = useState({
     category: 'general' as FeedbackSubmission['category'],
-    priority: 'medium' as FeedbackSubmission['priority'],
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
     title: '',
     message: '',
     familyName: '',
@@ -57,41 +46,39 @@ const FeedbackPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
-  // Load user submissions from Firebase
+  // Load user submissions from Firebase using the new service
   useEffect(() => {
     const loadUserSubmissions = async () => {
       if (!user) return;
       
       try {
-        // Import Firebase functions
-        const { collection, query, where, getDocs, orderBy } = await import('firebase/firestore');
-        const { db } = await import('../firebase/config');
-        
-        // Query user's feedback submissions
-        const feedbackRef = collection(db, 'feedback');
-        const q = query(
-          feedbackRef, 
-          where('userId', '==', user.uid),
-          orderBy('createdAt', 'desc')
-        );
-        
-        const snapshot = await getDocs(q);
-        const submissions = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as FeedbackSubmission[];
-        
+        setIsLoadingHistory(true);
+        const submissions = await feedbackService.getUserFeedback();
         setUserSubmissions(submissions);
       } catch (error) {
         console.error('Error loading user submissions:', error);
         // Fallback to empty array if error
         setUserSubmissions([]);
+      } finally {
+        setIsLoadingHistory(false);
       }
     };
 
     loadUserSubmissions();
   }, [user]);
+
+  // Format date helper
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  };
 
   const categories = [
     { id: 'suggestion', name: 'Suggestion', color: 'bg-blue-100 text-blue-800', icon: '💡' },
@@ -506,86 +493,91 @@ const FeedbackPage: React.FC = () => {
 
             {/* Submissions List */}
             <div className="space-y-4">
-              {filteredSubmissions.map((submission) => (
-                <div key={submission.id} className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-soft">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center flex-1">
-                      <MessageSquare className="h-5 w-5 text-primary-600 mr-2" />
-                      <h3 className="text-lg font-semibold text-gray-800 flex-1">{submission.title}</h3>
-                    </div>
-                    <div className="ml-2">
-                      {getStatusIcon(submission.status)}
-                    </div>
-                  </div>
-
-                  {/* Message */}
-                  <p className="text-gray-600 mb-4">{submission.message}</p>
-
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(submission.category)}`}>
-                      {categories.find(c => c.id === submission.category)?.icon} {categories.find(c => c.id === submission.category)?.name}
-                    </span>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(submission.priority)}`}>
-                      {priorities.find(p => p.id === submission.priority)?.name}
-                    </span>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(submission.status)}`}>
-                      {statuses.find(s => s.id === submission.status)?.name}
-                    </span>
-                  </div>
-
-                  {/* Details */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
-                    <div>
-                      <span className="font-medium">Family:</span> {submission.familyName}
-                    </div>
-                    <div>
-                      <span className="font-medium">Submitted:</span> {new Date(submission.createdAt).toLocaleDateString()}
-                    </div>
-                    {submission.email && (
-                      <div>
-                        <span className="font-medium">Email:</span> {submission.email}
+              {isLoadingHistory ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                  <p className="mt-2 text-sm text-gray-600">Loading your feedback...</p>
+                </div>
+              ) : filteredSubmissions.length === 0 ? (
+                <div className="text-center py-12">
+                  <MessageSquare className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-800">No submissions found</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {searchTerm || selectedCategory !== 'all' || selectedStatus !== 'all'
+                      ? 'Try adjusting your search or filters.'
+                      : 'You haven\'t submitted any feedback yet.'}
+                  </p>
+                </div>
+              ) : (
+                filteredSubmissions.map((submission) => (
+                  <div key={submission.id} className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-soft">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center flex-1">
+                        <MessageSquare className="h-5 w-5 text-primary-600 mr-2" />
+                        <h3 className="text-lg font-semibold text-gray-800 flex-1">{submission.title}</h3>
                       </div>
-                    )}
-                    {submission.eventTitle && (
-                      <div>
-                        <span className="font-medium">Event:</span> {submission.eventTitle}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Admin Response */}
-                  {submission.adminResponse && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                      <div className="flex items-center mb-2">
-                        <CheckCircle className="h-4 w-4 text-blue-600 mr-2" />
-                        <span className="text-sm font-medium text-blue-800">Admin Response</span>
-                        {submission.adminResponseDate && (
-                          <span className="text-xs text-blue-600 ml-2">
-                            {new Date(submission.adminResponseDate).toLocaleDateString()}
-                          </span>
+                      <div className="ml-2 flex items-center gap-2">
+                        {submission.hasResponse ? (
+                          <div className="flex items-center gap-1 text-green-600">
+                            <CheckCircle className="w-4 h-4" />
+                            <span className="text-sm">Responded</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-orange-600">
+                            <AlertCircle className="w-4 h-4" />
+                            <span className="text-sm">Pending</span>
+                          </div>
                         )}
                       </div>
-                      <p className="text-sm text-blue-700">{submission.adminResponse}</p>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
 
-            {/* No Results */}
-            {filteredSubmissions.length === 0 && (
-              <div className="text-center py-12">
-                <MessageSquare className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-800">No submissions found</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  {searchTerm || selectedCategory !== 'all' || selectedStatus !== 'all'
-                    ? 'Try adjusting your search or filters.'
-                    : 'You haven\'t submitted any feedback yet.'}
-                </p>
-              </div>
-            )}
+                    {/* Message */}
+                    <p className="text-gray-600 mb-4">{submission.message}</p>
+
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(submission.category)}`}>
+                        {categories.find(c => c.id === submission.category)?.icon} {categories.find(c => c.id === submission.category)?.name}
+                      </span>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(submission.priority)}`}>
+                        {priorities.find(p => p.id === submission.priority)?.name}
+                      </span>
+                    </div>
+
+                    {/* Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
+                      <div className="flex items-center gap-1">
+                        <User className="w-4 h-4" />
+                        <span className="font-medium">Submitted by:</span> {submission.userName}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        <span className="font-medium">Date:</span> {formatDate(submission.createdAt)}
+                      </div>
+                      {submission.rating && (
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">Rating:</span> {submission.rating}/5
+                        </div>
+                      )}
+                      {submission.responseCount && submission.responseCount > 0 && (
+                        <div className="flex items-center gap-1">
+                          <MessageSquare className="w-4 h-4" />
+                          <span className="font-medium">Responses:</span> {submission.responseCount}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Responses */}
+                    {submission.responses && submission.responses.length > 0 && (
+                      <div className="mt-4">
+                        <FeedbackResponsesList responses={submission.responses} />
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
       </div>

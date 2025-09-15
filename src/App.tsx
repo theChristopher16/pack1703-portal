@@ -48,6 +48,7 @@ import RootAccountSetup from './pages/RootAccountSetup';
 import HackerTab from './pages/HackerTab';
 import AdminSettings from './pages/AdminSettings';
 import UserProfile from './pages/UserProfile';
+import FeedbackManagementPage from './pages/FeedbackManagementPage';
 import AdminReminders from './pages/AdminReminders';
 import DatabaseMonitor from './components/Admin/DatabaseMonitor';
 import SystemMonitor from './components/Admin/SystemMonitor';
@@ -127,6 +128,7 @@ function App() {
           <Route path="/admin/fundraising" element={<Layout><AdminOnly><AdminFundraising /></AdminOnly></Layout>} />
           <Route path="/admin/finances" element={<Layout><AdminOnly><AdminFinances /></AdminOnly></Layout>} />
           <Route path="/admin/users" element={<Layout><AdminOnly><UserManagement /></AdminOnly></Layout>} />
+          <Route path="/admin/feedback" element={<Layout><AdminOnly><FeedbackManagementPage /></AdminOnly></Layout>} />
           <Route path="/admin/permissions-audit" element={<Layout><AdminOnly><AdminPermissionsAudit /></AdminOnly></Layout>} />
           <Route path="/admin/reminders" element={<Layout><AdminOnly><AdminReminders /></AdminOnly></Layout>} />
           

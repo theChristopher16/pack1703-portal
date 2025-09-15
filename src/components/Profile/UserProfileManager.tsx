@@ -30,7 +30,7 @@ import {
   Plus,
   Minus
 } from 'lucide-react';
-import { authService, AppUser, UserRole, Permission, SocialProvider } from '../../services/authService';
+import { authService, AppUser, UserRole, Permission, SocialProvider, SELECTABLE_ROLES } from '../../services/authService';
 // import { useAuth } from '../../contexts/AuthContext';
 
 interface UserProfileManagerProps {
@@ -760,7 +760,7 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
                     disabled={!isEditMode}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50"
                   >
-                    {Object.values(UserRole).map(role => (
+                    {SELECTABLE_ROLES.map(role => (
                       <option key={role} value={role}>
                         {role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </option>

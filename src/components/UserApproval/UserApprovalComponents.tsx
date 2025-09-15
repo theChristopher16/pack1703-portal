@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { userApprovalService, adminService, UserStatus, UserRole } from '../../services/userApprovalService';
+import { SELECTABLE_ROLES } from '../../services/authService';
 import { CheckCircle, XCircle, Clock, User, Mail, Shield, AlertCircle } from 'lucide-react';
 
 /**
@@ -334,9 +335,11 @@ export const AdminUserManagement: React.FC = () => {
                   onChange={(e) => setApprovalRole(e.target.value as UserRole)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value={UserRole.PARENT}>Parent</option>
-                  <option value={UserRole.LEADER}>Leader</option>
-                  <option value={UserRole.ADMIN}>Admin</option>
+                  {SELECTABLE_ROLES.map(role => (
+                    <option key={role} value={role}>
+                      {role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </option>
+                  ))}
                 </select>
               </div>
               

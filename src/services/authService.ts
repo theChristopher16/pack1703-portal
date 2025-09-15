@@ -312,6 +312,13 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   [UserRole.ROOT]: 'System owner - complete system access'
 };
 
+// Selectable roles for UI components (excludes system-only roles)
+export const SELECTABLE_ROLES: UserRole[] = [
+  UserRole.PARENT,
+  UserRole.VOLUNTEER,
+  UserRole.ADMIN
+];
+
 // User interface with enhanced profile data
 export interface AppUser {
   uid: string;

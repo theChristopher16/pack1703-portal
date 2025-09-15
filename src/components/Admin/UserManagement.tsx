@@ -42,7 +42,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { useAdmin } from '../../contexts/AdminContext';
-import { authService, AppUser, UserRole, Permission, ROLE_PERMISSIONS } from '../../services/authService';
+import { authService, AppUser, UserRole, Permission, ROLE_PERMISSIONS, SELECTABLE_ROLES } from '../../services/authService';
 import { adminService } from '../../services/adminService';
 import { AdminUserManagement } from '../UserApproval/UserApprovalComponents';
 import { httpsCallable } from 'firebase/functions';
@@ -523,7 +523,7 @@ const UserManagement: React.FC = () => {
             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="all">All Roles</option>
-            {Object.values(UserRole).map(role => (
+            {SELECTABLE_ROLES.map(role => (
               <option key={role} value={role}>
                 {role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
               </option>
@@ -814,7 +814,7 @@ const UserManagement: React.FC = () => {
                     onChange={(e) => setCreateForm({...createForm, role: e.target.value as UserRole})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
-                    {Object.values(UserRole).map(role => (
+                    {SELECTABLE_ROLES.map(role => (
                       <option key={role} value={role}>
                         {role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </option>
@@ -958,7 +958,7 @@ const UserManagement: React.FC = () => {
                     onChange={(e) => setEditForm({...editForm, role: e.target.value as UserRole})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
-                    {Object.values(UserRole).map(role => (
+                    {SELECTABLE_ROLES.map(role => (
                       <option key={role} value={role}>
                         {role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </option>

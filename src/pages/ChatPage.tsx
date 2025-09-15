@@ -748,7 +748,13 @@ const ChatPage: React.FC = () => {
         }
         
         // Initialize chat service with new user data
+        // Check if user is admin/root to initialize with admin privileges
+        const isAdmin = state.currentUser?.isAdmin || state.currentUser?.role === 'root' || state.currentUser?.role === 'admin' || state.currentUser?.role === 'volunteer';
+        
         const user = await chatService.reinitialize();
+        if (isAdmin) {
+          user.isAdmin = true;
+        }
         console.log('Current user reinitialized:', user);
         setCurrentUser(user);
         
@@ -813,8 +819,12 @@ const ChatPage: React.FC = () => {
         
         // Initialize chat service and get current user
         console.log('Initializing chat service...');
+        
+        // Check if user is admin/root to initialize with admin privileges
+        const isAdmin = state.currentUser?.isAdmin || state.currentUser?.role === 'root' || state.currentUser?.role === 'admin' || state.currentUser?.role === 'volunteer';
+        
         const user = await Promise.race([
-          chatService.initialize(),
+          isAdmin ? chatService.initializeAsAdmin() : chatService.initialize(),
           timeoutPromise
         ]) as ChatUser;
         console.log('Current user initialized:', user);

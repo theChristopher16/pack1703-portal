@@ -111,6 +111,14 @@
         { "fieldPath": "userType", "mode": "ASCENDING" },
         { "fieldPath": "pinnedAt", "mode": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "chat-channels",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isActive", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -97,6 +97,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         ['Events', 'Announcements', 'Locations', 'Volunteer'].includes(item.name)
       );
       const chatItem = authenticatedNav.find(item => item.name === 'Chat');
+      const profileItem = authenticatedNav.find(item => item.name === 'Profile');
       const otherItems = publicNav.filter(item => 
         !['Events', 'Announcements', 'Locations', 'Volunteer', 'Home'].includes(item.name)
       );
@@ -104,8 +105,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       return [
         ...mainContentItems,
         ...(chatItem ? [chatItem] : []),
+        ...(profileItem ? [profileItem] : []),
         ...otherItems
-      ].slice(0, 4);
+      ].slice(0, 5); // Increased from 4 to 5 to include Profile
     } else {
       // For anonymous users, show public items
       return publicNav.slice(0, 4);
@@ -132,6 +134,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         item.href === '/chat' || item.href === '/feedback'
       ),
       icon: '💬'
+    },
+    {
+      name: 'Account',
+      items: authenticatedNav.filter(item => 
+        item.href === '/profile'
+      ),
+      icon: '👤'
     },
     {
       name: 'Resources',

@@ -47,6 +47,7 @@ import JoinPage from './pages/JoinPage';
 import RootAccountSetup from './pages/RootAccountSetup';
 import HackerTab from './pages/HackerTab';
 import AdminSettings from './pages/AdminSettings';
+import UserProfile from './pages/UserProfile';
 import AdminReminders from './pages/AdminReminders';
 import DatabaseMonitor from './components/Admin/DatabaseMonitor';
 import SystemMonitor from './components/Admin/SystemMonitor';
@@ -134,6 +135,9 @@ function App() {
           <Route path="/admin/cost-management" element={<Layout><RootOnly><AdminCostManagement /></RootOnly></Layout>} />
           <Route path="/admin/multi-tenant" element={<Layout><RootOnly><MultiTenantManagement /></RootOnly></Layout>} />
           <Route path="/admin/settings" element={<Layout><RootOnly><AdminSettings /></RootOnly></Layout>} />
+          
+          {/* User Profile Route */}
+          <Route path="/profile" element={<Layout><AuthenticatedOnly><UserProfile /></AuthenticatedOnly></Layout>} />
           <Route path="/admin/soc" element={<Layout><RootOnly><HackerTab /></RootOnly></Layout>} />
           <Route path="/admin/database" element={<Layout><RootOnly><DatabaseMonitor /></RootOnly></Layout>} />
           <Route path="/admin/system" element={<Layout><RootOnly><SystemMonitor /></RootOnly></Layout>} />

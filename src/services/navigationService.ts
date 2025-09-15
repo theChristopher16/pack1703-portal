@@ -28,7 +28,8 @@ import {
   Globe,
   Lock,
   Eye,
-  Zap
+  Zap,
+  User
 } from 'lucide-react';
 
 export interface NavigationItem {
@@ -85,6 +86,14 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
 
   // AUTHENTICATED ITEMS (require login)
+  {
+    name: 'Profile',
+    href: '/profile',
+    icon: User,
+    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.ROOT, UserRole.AI_ASSISTANT],
+    category: 'authenticated',
+    description: 'Manage your profile and account settings'
+  },
   {
     name: 'Chat',
     href: '/chat',

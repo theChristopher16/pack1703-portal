@@ -137,10 +137,16 @@ const FeedbackPage: React.FC = () => {
       // Add to local state for immediate UI update
       const newSubmission: FeedbackSubmission = {
         id: docRef.id,
+        userId: user?.uid || '',
+        userName: user?.displayName || user?.email || 'Anonymous',
+        userEmail: user?.email || '',
         ...formData,
-        status: 'submitted',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        rating: 0,
+        ipHash: 'anonymous',
+        userAgent: navigator.userAgent,
+        timestamp: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       
       setUserSubmissions(prev => [newSubmission, ...prev]);
@@ -173,12 +179,11 @@ const FeedbackPage: React.FC = () => {
   const filteredSubmissions = userSubmissions.filter(submission => {
     const matchesSearch = submission.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          submission.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         submission.familyName.toLowerCase().includes(searchTerm.toLowerCase());
+                          submission.userName.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = selectedCategory === 'all' || submission.category === selectedCategory;
-    const matchesStatus = selectedStatus === 'all' || submission.status === selectedStatus;
     
-    return matchesSearch && matchesCategory && matchesStatus;
+    return matchesSearch && matchesCategory;
   });
 
   const getCategoryColor = (categoryId: string) => {
@@ -539,9 +544,6 @@ const FeedbackPage: React.FC = () => {
                     <div className="flex flex-wrap gap-2 mb-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(submission.category)}`}>
                         {categories.find(c => c.id === submission.category)?.icon} {categories.find(c => c.id === submission.category)?.name}
-                      </span>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(submission.priority)}`}>
-                        {priorities.find(p => p.id === submission.priority)?.name}
                       </span>
                     </div>
 

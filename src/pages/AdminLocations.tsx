@@ -80,26 +80,33 @@ const AdminLocations: React.FC = () => {
   const handleSaveLocation = async (locationData: Partial<Location>) => {
     try {
       if (modalMode === 'create') {
-        // TODO: Implement Firebase create
-        const newLocation: Location = {
-          ...locationData as Location,
-          id: Date.now().toString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        setLocations(prev => [...prev, newLocation]);
-        addNotification('success', 'Location Created', 'New location has been successfully created.');
+        // Create location in Firebase
+        const result = await adminService.createLocation(locationData);
+        
+        if (result.success) {
+          // Refresh locations list to get the newly created location
+          await fetchLocations();
+          addNotification('success', 'Location Created', 'New location has been successfully created.');
+        } else {
+          addNotification('error', 'Creation Failed', result.error || 'Failed to create location. Please try again.');
+          return;
+        }
       } else {
-        // TODO: Implement Firebase update
-        setLocations(prev => prev.map(loc => 
-          loc.id === selectedLocation?.id 
-            ? { ...loc, ...locationData, updatedAt: new Date().toISOString() }
-            : loc
-        ));
-        addNotification('success', 'Location Updated', 'Location has been successfully updated.');
+        // Update location in Firebase
+        const result = await adminService.updateLocation(selectedLocation?.id!, locationData);
+        
+        if (result.success) {
+          // Refresh locations list to get the updated location
+          await fetchLocations();
+          addNotification('success', 'Location Updated', 'Location has been successfully updated.');
+        } else {
+          addNotification('error', 'Update Failed', result.error || 'Failed to update location. Please try again.');
+          return;
+        }
       }
       setIsModalOpen(false);
     } catch (error) {
+      console.error('Error saving location:', error);
       addNotification('error', 'Save Failed', 'Failed to save location. Please try again.');
     }
   };

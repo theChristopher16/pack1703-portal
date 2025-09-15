@@ -134,7 +134,7 @@ const DataAuditPage: React.FC = () => {
             </a>
             <span className="text-gray-400 hidden sm:inline">•</span>
             <a 
-              href="/terms-of-service"
+              href="/terms"
               className="text-primary-600 hover:text-primary-700 font-medium"
             >
               Terms of Service

@@ -29,7 +29,7 @@ import {
 import { costManagementService, UsageMetrics, CostAlert } from '../../services/costManagementService';
 import { useAdmin } from '../../contexts/AdminContext';
 import systemMonitorService from '../../services/systemMonitorService';
-import { AdminRole } from '../../types/admin';
+import { useToast } from '../../contexts/ToastContext';
 
 interface CostManagementProps {
   className?: string;
@@ -37,6 +37,7 @@ interface CostManagementProps {
 
 const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
   const { state } = useAdmin();
+  const { showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [currentUsage, setCurrentUsage] = useState<UsageMetrics | null>(null);
   const [historicalData, setHistoricalData] = useState<UsageMetrics[]>([]);
@@ -54,20 +55,20 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
     }
   }, [state.currentUser]);
 
-  // Check admin access - allow access to root and super-admin roles
+  // Check admin access - show toast and redirect if not authorized
+  useEffect(() => {
+    if (!state.currentUser?.isAdmin && state.currentUser?.role !== 'root' && state.currentUser?.role !== 'super-admin') {
+      showError('Access Denied', 'You don\'t have permission to access cost management features. Admin or Root access required.');
+      // Redirect to admin dashboard after showing toast
+      setTimeout(() => {
+        window.history.back();
+      }, 2000);
+    }
+  }, [state.currentUser, showError]);
+
+  // Don't render if user doesn't have access
   if (!state.currentUser?.isAdmin && state.currentUser?.role !== 'root' && state.currentUser?.role !== 'super-admin') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-gray-100/30 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-            <p className="text-gray-600">You don't have permission to access cost management features.</p>
-            <p className="text-sm text-gray-500 mt-2">Admin or Root access required</p>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const loadCostData = async () => {

@@ -18,7 +18,7 @@ import ResourcesPage from './pages/ResourcesPage';
 import VolunteerPage from './pages/VolunteerPage';
 import FeedbackPage from './pages/FeedbackPage';
 import DataAuditPage from './pages/DataAuditPage';
-import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
 import AnalyticsDashboard from './components/Analytics/AnalyticsDashboard';
 import AnalyticsTest from './components/Analytics/AnalyticsTest';
 import FormsDemoPage from './pages/FormsDemoPage';
@@ -107,6 +107,7 @@ function App() {
           <Route path="/resources" element={<Layout><ResourcesPage /></Layout>} />
           <Route path="/volunteer" element={<Layout><VolunteerPage /></Layout>} />
           <Route path="/privacy" element={<Layout><PrivacyPolicyPage /></Layout>} />
+          <Route path="/terms" element={<Layout><TermsOfServicePage /></Layout>} />
           <Route path="/join/:inviteId" element={<JoinPage />} />
           
           {/* Authenticated Routes */}
@@ -128,7 +129,9 @@ function App() {
           <Route path="/admin/fundraising" element={<Layout><AdminOnly><AdminFundraising /></AdminOnly></Layout>} />
           <Route path="/admin/finances" element={<Layout><AdminOnly><AdminFinances /></AdminOnly></Layout>} />
           <Route path="/admin/users" element={<Layout><AdminOnly><UserManagement /></AdminOnly></Layout>} />
-          <Route path="/admin/feedback" element={<Layout><AdminOnly><FeedbackManagementPage /></AdminOnly></Layout>} />
+          {/* Temporarily disabled for build
+        <Route path="/admin/feedback" element={<Layout><AdminOnly><FeedbackManagementPage /></AdminOnly></Layout>} />
+        */}
           <Route path="/admin/permissions-audit" element={<Layout><AdminOnly><AdminPermissionsAudit /></AdminOnly></Layout>} />
           <Route path="/admin/reminders" element={<Layout><AdminOnly><AdminReminders /></AdminOnly></Layout>} />
           

@@ -815,7 +815,7 @@ const ChatPage: React.FC = () => {
         console.log('Initializing chat service...');
         
         // Check if user is admin/root to initialize with admin privileges
-        const isAdmin = state.currentUser?.isAdmin || state.currentUser?.role === 'root' || state.currentUser?.role === 'admin' || state.currentUser?.role === 'volunteer';
+        const isAdmin = state.currentUser?.isAdmin || state.currentUser?.role === 'root' || state.currentUser?.role === 'super-admin' || state.currentUser?.role === 'content-admin';
         
         const user = await Promise.race([
           isAdmin ? chatService.initializeAsAdmin() : chatService.initialize(),

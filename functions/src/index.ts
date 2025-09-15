@@ -2197,5 +2197,193 @@ export const testSecretManager = functions.https.onCall(async (request) => {
   }
 });
 
+// Location management functions
+export const adminCreateLocation = functions.https.onCall(async (request) => {
+  try {
+    const context = request;
+    const data = request.data;
+    
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'volunteer';
+    const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
+    const hasLocationPermission = userData?.permissions?.includes('location_management') || userData?.permissions?.includes('system_admin');
+    
+    if (!hasAdminRole && !hasLegacyPermissions && !hasLocationPermission) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to create locations');
+    }
+
+    // Validate required fields
+    if (!data.name || !data.address || !data.city || !data.state) {
+      throw new functions.https.HttpsError('invalid-argument', 'Missing required fields: name, address, city, state');
+    }
+
+    // Create location document
+    const locationData = {
+      name: data.name,
+      address: data.address,
+      city: data.city,
+      state: data.state,
+      zipCode: data.zipCode || '',
+      category: data.category || 'other',
+      importance: data.importance || 'medium',
+      parking: data.parking || 'free',
+      notes: data.notes || '',
+      privateNotes: data.privateNotes || '',
+      isActive: data.isActive !== false,
+      createdAt: getTimestamp(),
+      updatedAt: getTimestamp(),
+      createdBy: context.auth.uid
+    };
+
+    const locationRef = await db.collection('locations').add(locationData);
+
+    // Log admin action
+    await db.collection('adminActions').add({
+      userId: context.auth.uid,
+      userEmail: userData?.email || 'unknown',
+      action: 'create',
+      entityType: 'location',
+      entityId: locationRef.id,
+      entityName: data.name,
+      details: { locationData },
+      timestamp: getTimestamp(),
+      success: true
+    });
+
+    return {
+      success: true,
+      locationId: locationRef.id,
+      message: 'Location created successfully'
+    };
+
+  } catch (error) {
+    functions.logger.error('Error creating location:', error);
+    
+    // Log failed admin action
+    if (request.auth) {
+      try {
+        await db.collection('adminActions').add({
+          userId: request.auth.uid,
+          action: 'create',
+          entityType: 'location',
+          details: { error: error instanceof Error ? error.message : 'Unknown error' },
+          timestamp: getTimestamp(),
+          success: false
+        });
+      } catch (logError) {
+        functions.logger.error('Failed to log admin action:', logError);
+      }
+    }
+
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to create location');
+  }
+});
+
+export const adminUpdateLocation = functions.https.onCall(async (request) => {
+  try {
+    const context = request;
+    const data = request.data;
+    const { locationId, locationData } = data;
+    
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'volunteer';
+    const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
+    const hasLocationPermission = userData?.permissions?.includes('location_management') || userData?.permissions?.includes('system_admin');
+    
+    if (!hasAdminRole && !hasLegacyPermissions && !hasLocationPermission) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update locations');
+    }
+
+    if (!locationId) {
+      throw new functions.https.HttpsError('invalid-argument', 'Location ID is required');
+    }
+
+    // Check if location exists
+    const locationRef = db.collection('locations').doc(locationId);
+    const locationDoc = await locationRef.get();
+    
+    if (!locationDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Location not found');
+    }
+
+    // Update location document
+    const updateData = {
+      ...locationData,
+      updatedAt: getTimestamp(),
+      updatedBy: context.auth.uid
+    };
+
+    await locationRef.update(updateData);
+
+    // Log admin action
+    await db.collection('adminActions').add({
+      userId: context.auth.uid,
+      userEmail: userData?.email || 'unknown',
+      action: 'update',
+      entityType: 'location',
+      entityId: locationId,
+      entityName: locationData.name || locationDoc.data()?.name || 'Unknown',
+      details: { updateData },
+      timestamp: getTimestamp(),
+      success: true
+    });
+
+    return {
+      success: true,
+      message: 'Location updated successfully'
+    };
+
+  } catch (error) {
+    functions.logger.error('Error updating location:', error);
+    
+    // Log failed admin action
+    if (request.auth) {
+      try {
+        await db.collection('adminActions').add({
+          userId: request.auth.uid,
+          action: 'update',
+          entityType: 'location',
+          entityId: request.data?.locationId || 'unknown',
+          details: { error: error instanceof Error ? error.message : 'Unknown error' },
+          timestamp: getTimestamp(),
+          success: false
+        });
+      } catch (logError) {
+        functions.logger.error('Failed to log admin action:', logError);
+      }
+    }
+
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to update location');
+  }
+});
+
 // Export user approval functions
 export { createPendingUser, approveUser, getPendingUsers, getAuditLogs, setAdminClaims };

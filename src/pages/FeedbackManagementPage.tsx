@@ -12,14 +12,14 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-import { feedbackService } from '../../services/feedbackService';
-import { useAdmin } from '../../contexts/AdminContext';
-import { FeedbackSubmission, FeedbackFilters } from '../../types/feedback';
+import { feedbackService } from '../services/feedbackService';
+import { useAdmin } from '../contexts/AdminContext';
+import { FeedbackSubmission, FeedbackFilters } from '../types/feedback';
 import { 
   FeedbackResponseForm, 
   FeedbackResponseItem, 
   FeedbackResponsesList 
-} from './FeedbackResponseComponents';
+} from '../components/Feedback/FeedbackResponseComponents';
 
 const FeedbackManagementPage: React.FC = () => {
   const { state } = useAdmin();

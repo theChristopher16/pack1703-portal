@@ -67,7 +67,7 @@ class FeedbackService {
             createdAt: r.createdAt?.toDate() || new Date(),
             updatedAt: r.updatedAt?.toDate() || new Date()
           }))
-        });
+        } as FeedbackSubmission);
       });
 
       return feedback;
@@ -89,7 +89,7 @@ class FeedbackService {
       const feedbackRef = collection(db, 'feedback');
       const q = query(
         feedbackRef, 
-        where('userId', '==', this.currentUser.id),
+        where('userId', '==', this.currentUser.uid),
         orderBy('createdAt', 'desc')
       );
 
@@ -110,7 +110,7 @@ class FeedbackService {
             createdAt: r.createdAt?.toDate() || new Date(),
             updatedAt: r.updatedAt?.toDate() || new Date()
           }))
-        });
+        } as FeedbackSubmission);
       });
 
       return feedback;

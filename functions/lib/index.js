@@ -792,6 +792,7 @@ exports.webSearch = functions.https.onCall(async (data, context) => {
 });
 // Admin Cloud Functions for Event Management
 exports.adminCreateEvent = functions.https.onCall(async (request) => {
+    var _a;
     try {
         const data = request.data;
         const context = request;
@@ -805,7 +806,11 @@ exports.adminCreateEvent = functions.https.onCall(async (request) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        if (!(userData === null || userData === void 0 ? void 0 : userData.isAdmin) && !(userData === null || userData === void 0 ? void 0 : userData.isDenLeader) && !(userData === null || userData === void 0 ? void 0 : userData.isCubmaster)) {
+        // Check role-based permissions (new system) or legacy boolean fields
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
+        const hasEventManagementPermission = (_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('event_management');
+        if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
             throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to create events');
         }
         // Validate required fields
@@ -899,6 +904,7 @@ exports.adminCreateEvent = functions.https.onCall(async (request) => {
     }
 });
 exports.adminUpdateEvent = functions.https.onCall(async (request) => {
+    var _a;
     try {
         const data = request.data;
         const context = request;
@@ -912,7 +918,11 @@ exports.adminUpdateEvent = functions.https.onCall(async (request) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        if (!(userData === null || userData === void 0 ? void 0 : userData.isAdmin) && !(userData === null || userData === void 0 ? void 0 : userData.isDenLeader) && !(userData === null || userData === void 0 ? void 0 : userData.isCubmaster)) {
+        // Check role-based permissions (new system) or legacy boolean fields
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
+        const hasEventManagementPermission = (_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('event_management');
+        if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
             throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update events');
         }
         const { eventId, eventData } = data;
@@ -994,6 +1004,7 @@ exports.adminUpdateEvent = functions.https.onCall(async (request) => {
     }
 });
 exports.adminDeleteEvent = functions.https.onCall(async (request) => {
+    var _a;
     try {
         const data = request.data;
         const context = request;
@@ -1007,7 +1018,11 @@ exports.adminDeleteEvent = functions.https.onCall(async (request) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        if (!(userData === null || userData === void 0 ? void 0 : userData.isAdmin) && !(userData === null || userData === void 0 ? void 0 : userData.isDenLeader) && !(userData === null || userData === void 0 ? void 0 : userData.isCubmaster)) {
+        // Check role-based permissions (new system) or legacy boolean fields
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
+        const hasEventManagementPermission = (_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('event_management');
+        if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
             throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to delete events');
         }
         const { eventId, reason } = data;
@@ -1061,6 +1076,7 @@ exports.adminDeleteEvent = functions.https.onCall(async (request) => {
 // Temporarily disabled due to firebase-admin/ai import issue
 // import GeminiService from './geminiService';
 exports.aiGenerateContent = functions.https.onCall(async (request) => {
+    var _a, _b;
     try {
         const data = request.data;
         const context = request;
@@ -1074,7 +1090,11 @@ exports.aiGenerateContent = functions.https.onCall(async (request) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        if (!(userData === null || userData === void 0 ? void 0 : userData.isAdmin) && !(userData === null || userData === void 0 ? void 0 : userData.isDenLeader) && !(userData === null || userData === void 0 ? void 0 : userData.isCubmaster)) {
+        // Check role-based permissions (new system) or legacy boolean fields
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
+        const hasAIPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('ai_access')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
+        if (!hasAdminRole && !hasLegacyPermissions && !hasAIPermission) {
             throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to use AI features');
         }
         const { type, prompt, eventData, announcementData } = data;

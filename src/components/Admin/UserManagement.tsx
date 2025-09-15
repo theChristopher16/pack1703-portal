@@ -480,15 +480,13 @@ const UserManagement: React.FC = () => {
           <p className="text-gray-600">Manage pack members, roles, and permissions</p>
         </div>
         <div className="flex gap-2">
-          {state.currentUser?.role !== 'super-admin' && state.currentUser?.role !== 'root' && (
-            <button
-              onClick={handleSetAdminClaims}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-            >
-              <Shield className="w-4 h-4" />
-              Set Admin Claims
-            </button>
-          )}
+          <button
+            onClick={handleSetAdminClaims}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <Shield className="w-4 h-4" />
+            Set Admin Claims
+          </button>
         </div>
       </div>
 

@@ -172,17 +172,17 @@ service cloud.firestore {
     // PUBLIC DATA - Readable by all authenticated users
     // ============================================================================
     
-    // Events - public read for non-private events, admin write
+    // Events - public read for non-private events, authenticated users can write
     match /events/{eventId} {
       allow read: if resource.data.visibility == 'public' || 
                      (isAuthenticated() && resource.data.visibility == 'link-only') ||
                      isAdmin();
-      allow write: if isAdmin() &&
+      allow write: if isAuthenticated() &&
                       isValidString(resource.data.title, 200) &&
                       isValidString(resource.data.description, 2000) &&
-                      isValidTimestamp(resource.data.start) &&
-                      isValidTimestamp(resource.data.end) &&
-                      resource.data.start < resource.data.end;
+                      isValidTimestamp(resource.data.startDate) &&
+                      isValidTimestamp(resource.data.endDate) &&
+                      resource.data.startDate < resource.data.endDate;
     }
     
     // Allow aggregation queries on events collection for admins

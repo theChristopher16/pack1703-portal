@@ -1056,7 +1056,12 @@ export const adminCreateEvent = functions.https.onCall(async (request) => {
     }
 
     const userData = userDoc.data();
-    if (!userData?.isAdmin && !userData?.isDenLeader && !userData?.isCubmaster) {
+    // Check role-based permissions (new system) or legacy boolean fields
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
+    const hasEventManagementPermission = userData?.permissions?.includes('event_management');
+    
+    if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to create events');
     }
 
@@ -1194,7 +1199,12 @@ export const adminUpdateEvent = functions.https.onCall(async (request) => {
     }
 
     const userData = userDoc.data();
-    if (!userData?.isAdmin && !userData?.isDenLeader && !userData?.isCubmaster) {
+    // Check role-based permissions (new system) or legacy boolean fields
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
+    const hasEventManagementPermission = userData?.permissions?.includes('event_management');
+    
+    if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update events');
     }
 
@@ -1313,7 +1323,12 @@ export const adminDeleteEvent = functions.https.onCall(async (request) => {
     }
 
     const userData = userDoc.data();
-    if (!userData?.isAdmin && !userData?.isDenLeader && !userData?.isCubmaster) {
+    // Check role-based permissions (new system) or legacy boolean fields
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
+    const hasEventManagementPermission = userData?.permissions?.includes('event_management');
+    
+    if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to delete events');
     }
 
@@ -1400,7 +1415,12 @@ export const aiGenerateContent = functions.https.onCall(async (request) => {
     }
 
     const userData = userDoc.data();
-    if (!userData?.isAdmin && !userData?.isDenLeader && !userData?.isCubmaster) {
+    // Check role-based permissions (new system) or legacy boolean fields
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
+    const hasAIPermission = userData?.permissions?.includes('ai_access') || userData?.permissions?.includes('system_admin');
+    
+    if (!hasAdminRole && !hasLegacyPermissions && !hasAIPermission) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to use AI features');
     }
 

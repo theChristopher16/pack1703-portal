@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { EntityType, AdminActionType } from '../types/admin';
 import { firestoreService } from '../services/firestore';
-import { collection, query, orderBy, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { adminService } from '../services/adminService';
+import { collection, query, orderBy, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Home } from 'lucide-react';
@@ -89,49 +90,62 @@ const AdminEvents: React.FC = () => {
   const handleSaveEvent = async (eventData: Partial<Event>) => {
     try {
       if (modalMode === 'create') {
-        // Create event directly in Firestore
-        const eventsRef = collection(db, 'events');
+        // Use Cloud Function to create event with proper permission checking
         const eventToCreate = {
-          ...eventData,
-          startDate: new Date(eventData.startDate!),
-          endDate: new Date(eventData.endDate!),
-          currentParticipants: 0,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          title: eventData.title!,
+          description: eventData.description!,
+          startDate: eventData.startDate!,
+          endDate: eventData.endDate!,
+          startTime: '09:00', // Default time, could be made configurable
+          endTime: '17:00',   // Default time, could be made configurable
+          locationId: 'default', // Default location, should be made configurable
+          category: eventData.category || 'Meeting',
+          seasonId: 'current', // Default season, should be made configurable
           visibility: eventData.visibility || 'public',
-          status: 'active'
+          sendNotification: false
         };
         
-        const docRef = await addDoc(eventsRef, eventToCreate);
-        const newEvent: Event = {
-          id: docRef.id,
-          ...eventData,
-          currentParticipants: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        } as Event;
-        setEvents([newEvent, ...events]); // Add to beginning since we're ordering by desc
-      } else if (selectedEvent) {
-        // Update event directly in Firestore
-        const eventRef = doc(db, 'events', selectedEvent.id);
+        const result = await adminService.createEvent(eventToCreate);
+        
+        if (result.success) {
+          // Refresh events list to get the newly created event
+          await fetchEvents();
+          setIsModalOpen(false);
+          setSelectedEvent(null);
+        } else {
+          console.error('Error creating event:', result.error);
+          throw new Error(result.error || 'Failed to create event');
+        }
+      } else if (modalMode === 'edit' && selectedEvent) {
+        // Use Cloud Function to update event with proper permission checking
         const eventToUpdate = {
-          ...eventData,
-          startDate: new Date(eventData.startDate!),
-          endDate: new Date(eventData.endDate!),
-          updatedAt: new Date()
+          eventId: selectedEvent.id,
+          eventData: {
+            title: eventData.title!,
+            description: eventData.description!,
+            startDate: eventData.startDate!,
+            endDate: eventData.endDate!,
+            category: eventData.category || 'Meeting',
+            visibility: eventData.visibility || 'public',
+            maxParticipants: eventData.maxParticipants
+          }
         };
         
-        await updateDoc(eventRef, eventToUpdate);
-        const updatedEvent: Event = {
-          ...selectedEvent,
-          ...eventData,
-          updatedAt: new Date().toISOString()
-        } as Event;
-        setEvents(events.map(e => e.id === selectedEvent.id ? updatedEvent : e));
+        const result = await adminService.updateEvent(selectedEvent.id, eventToUpdate.eventData);
+        
+        if (result.success) {
+          // Refresh events list to get the updated event
+          await fetchEvents();
+          setIsModalOpen(false);
+          setSelectedEvent(null);
+        } else {
+          console.error('Error updating event:', result.error);
+          throw new Error(result.error || 'Failed to update event');
+        }
       }
-      setIsModalOpen(false);
     } catch (error) {
       console.error('Error saving event:', error);
+      // You could add a toast notification here
     }
   };
 
@@ -432,13 +446,19 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      onSave({
+      const eventData = {
         ...formData,
-        maxParticipants: formData.maxParticipants && !isNaN(parseInt(formData.maxParticipants)) ? parseInt(formData.maxParticipants) : undefined,
         currentParticipants: event?.currentParticipants || 0,
         createdAt: event?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      });
+      };
+      
+      // Only include maxParticipants if it's a valid number
+      if (formData.maxParticipants && !isNaN(parseInt(formData.maxParticipants))) {
+        eventData.maxParticipants = parseInt(formData.maxParticipants);
+      }
+      
+      onSave(eventData);
     }
   };
 

@@ -267,7 +267,7 @@ class DataAuditService {
         systemLogs: systemLogsData.length
       };
 
-      // Find oldest and newest records
+      // Find oldest and newest records with proper date validation
       const allTimestamps = [
         ...eventsData.map(e => e.createdAt),
         ...volunteerSignupsData.map(v => v.createdAt),
@@ -276,11 +276,28 @@ class DataAuditService {
         ...rsvpsData.map(r => r.createdAt),
         ...analyticsData.map(a => a.timestamp),
         ...systemLogsData.map(s => s.timestamp)
-      ].filter(Boolean).sort();
+      ].filter(Boolean).filter(timestamp => {
+        // Filter out invalid dates
+        const date = new Date(timestamp);
+        return !isNaN(date.getTime());
+      }).sort();
+
+      const formatTimestamp = (timestamp: any): string => {
+        if (!timestamp) return 'N/A';
+        
+        try {
+          const date = new Date(timestamp);
+          if (isNaN(date.getTime())) return 'N/A';
+          return date.toISOString();
+        } catch (error) {
+          console.warn('Invalid timestamp:', timestamp, error);
+          return 'N/A';
+        }
+      };
 
       const dataRetention = {
-        oldestRecord: allTimestamps[0] ? (typeof allTimestamps[0] === 'string' ? allTimestamps[0] : new Date(allTimestamps[0]).toISOString()) : 'N/A',
-        newestRecord: allTimestamps[allTimestamps.length - 1] ? (typeof allTimestamps[allTimestamps.length - 1] === 'string' ? allTimestamps[allTimestamps.length - 1] : new Date(allTimestamps[allTimestamps.length - 1]).toISOString()) : 'N/A'
+        oldestRecord: allTimestamps[0] ? formatTimestamp(allTimestamps[0]) : 'N/A',
+        newestRecord: allTimestamps[allTimestamps.length - 1] ? formatTimestamp(allTimestamps[allTimestamps.length - 1]) : 'N/A'
       };
 
       return {

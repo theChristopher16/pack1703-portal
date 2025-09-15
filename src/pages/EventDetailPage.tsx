@@ -93,6 +93,18 @@ const EventDetailPage: React.FC = () => {
     });
   };
 
+  const formatTimeFromString = (timeString: string) => {
+    if (!timeString) return '';
+    const [hours, minutes] = timeString.split(':');
+    const date = new Date();
+    date.setHours(parseInt(hours), parseInt(minutes));
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
   const getCategoryColor = (category: string) => {
     const colors = {
       pack: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -123,19 +135,19 @@ const EventDetailPage: React.FC = () => {
     let startDate: Date;
     let endDate: Date;
     
-    // Handle Firestore Timestamp or Date objects
-    if (event.start && typeof event.start === 'object' && 'toDate' in event.start) {
-      startDate = event.start.toDate();
-    } else if (event.start) {
-      startDate = new Date(event.start as any);
+    // Handle Firestore Timestamp or Date objects - use startDate/endDate fields
+    if (event.startDate && typeof event.startDate === 'object' && 'toDate' in event.startDate) {
+      startDate = event.startDate.toDate();
+    } else if (event.startDate) {
+      startDate = new Date(event.startDate as any);
     } else {
       startDate = new Date();
     }
     
-    if (event.end && typeof event.end === 'object' && 'toDate' in event.end) {
-      endDate = event.end.toDate();
-    } else if (event.end) {
-      endDate = new Date(event.end as any);
+    if (event.endDate && typeof event.endDate === 'object' && 'toDate' in event.endDate) {
+      endDate = event.endDate.toDate();
+    } else if (event.endDate) {
+      endDate = new Date(event.endDate as any);
     } else {
       endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Default to 1 hour later
     }
@@ -281,11 +293,11 @@ const EventDetailPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div className="flex items-center space-x-2 text-gray-600">
               <Calendar className="w-5 h-5" />
-              <span>{formatDate(event.start)}</span>
+              <span>{formatDate(event.startDate)}</span>
             </div>
             <div className="flex items-center space-x-2 text-gray-600">
               <Clock className="w-5 h-5" />
-              <span>{formatTime(event.start)} - {formatTime(event.end)}</span>
+              <span>{formatTimeFromString(event.startTime)} - {formatTimeFromString(event.endTime)}</span>
             </div>
             <div className="flex items-center space-x-2 text-gray-600">
               <MapPin className="w-5 h-5" />
@@ -413,7 +425,7 @@ const EventDetailPage: React.FC = () => {
               <RSVPForm 
                 eventId={event?.id || ''}
                 eventTitle={event?.title || ''}
-                eventDate={event?.start ? formatDate(event.start) : ''}
+                eventDate={event?.startDate ? formatDate(event.startDate) : ''}
                 maxCapacity={event?.capacity || undefined}
                 currentRSVPs={0} // TODO: Get actual RSVP count from Firestore
               />

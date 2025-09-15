@@ -29,8 +29,10 @@ export interface Event {
   seasonId: string; // Reference to /seasons/{seasonId}
   title: string;
   category: EventCategory;
-  start: Timestamp;
-  end: Timestamp;
+  startDate: Timestamp; // Updated to match Cloud Function data
+  endDate: Timestamp;   // Updated to match Cloud Function data
+  startTime: string;    // Added time fields from Cloud Function
+  endTime: string;      // Added time fields from Cloud Function
   locationId: string; // Reference to /locations/{locationId}
   description: string; // Markdown allowed, sanitize on render
   packingList: string[]; // Keys into /lists or inline strings
@@ -39,6 +41,9 @@ export interface Event {
   capacity: number | null;
   visibility: EventVisibility;
   denTags: string[]; // e.g., ["Wolf", "Bear"]
+  currentParticipants: number; // Added from Cloud Function
+  createdBy: string; // Added from Cloud Function
+  status: string; // Added from Cloud Function
   updatedAt: Timestamp;
   createdAt: Timestamp;
 }

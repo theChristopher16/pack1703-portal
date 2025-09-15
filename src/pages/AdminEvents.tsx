@@ -449,6 +449,9 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) 
       const { maxParticipants, ...formDataWithoutMaxParticipants } = formData;
       const eventData: Partial<Event> = {
         ...formDataWithoutMaxParticipants,
+        // Convert string dates to Date objects
+        startDate: new Date(formData.startDate).toISOString(),
+        endDate: new Date(formData.endDate).toISOString(),
         currentParticipants: event?.currentParticipants || 0,
         createdAt: event?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()

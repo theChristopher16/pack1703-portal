@@ -306,14 +306,25 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
     
-    // Admin actions - admin read-only
+    // Admin actions - admins can write for logging
     match /adminActions/{actionId} {
       allow read: if isAdmin();
-      allow write: if false; // Admin actions are created by Cloud Functions only
+      allow write: if isAdmin();
     }
     
     // Allow aggregation queries on admin actions collection for admins
     match /adminActions {
+      allow read: if isAdmin();
+    }
+    
+    // Audit logs - admins can write for logging
+    match /auditLogs/{auditId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // Allow aggregation queries on audit logs collection for admins
+    match /auditLogs {
       allow read: if isAdmin();
     }
     

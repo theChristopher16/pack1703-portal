@@ -13,9 +13,9 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && 
-             (request.auth.token.get('role', '') in ['admin', 'root'] ||
+             (request.auth.token.get('role', '') in ['admin', 'root', 'leader'] ||
               exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'root']);
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'root', 'leader']);
     }
     
     function isRoot() {
@@ -258,6 +258,19 @@ service cloud.firestore {
       allow write: if isAdmin() &&
                       isValidString(resource.data.name, 100) &&
                       isValidString(resource.data.description, 500);
+    }
+
+    // Resources - public read, admin write
+    match /resources/{resourceId} {
+      allow read: if true; // Public resources
+      allow write: if isAdmin() &&
+                      isValidString(resource.data.title, 200) &&
+                      isValidString(resource.data.description, 1000);
+    }
+    
+    // Allow aggregation queries on resources collection for admins
+    match /resources {
+      allow read: if isAdmin();
     }
 
     // ============================================================================

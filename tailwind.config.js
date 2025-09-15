@@ -95,11 +95,11 @@ module.exports = {
         }
       },
       
-      // Typography - Futura Font Family
+      // Typography - Jost Font Family (Futura alternative)
       fontFamily: {
-        'sans': ['Futura', 'system-ui', 'sans-serif'], // Primary font - Futura
-        'display': ['Futura', 'system-ui', 'sans-serif'], // Display font - Futura
-        'body': ['Futura', 'system-ui', 'sans-serif'], // Body font - Futura
+        'sans': ['Jost', 'system-ui', 'sans-serif'], // Primary font - Jost (Futura alternative)
+        'display': ['Jost', 'system-ui', 'sans-serif'], // Display font - Jost (Futura alternative)
+        'body': ['Jost', 'system-ui', 'sans-serif'], // Body font - Jost (Futura alternative)
         'mono': ['JetBrains Mono', 'Fira Code', 'monospace'], // Tech feel
       },
       

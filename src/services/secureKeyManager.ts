@@ -172,11 +172,7 @@ class SecureKeyManager {
         required: true,
         description: 'reCAPTCHA v3 site key'
       },
-      'REACT_APP_RECAPTCHA_V3_SECRET_KEY': {
-        name: 'recaptcha-secret-key',
-        required: true,
-        description: 'reCAPTCHA v3 secret key'
-      },
+      // SECRET_KEY removed - should only be used in Cloud Functions, not client-side
 
       // Vertex AI / Google AI Keys
       'REACT_APP_GOOGLE_AI_API_KEY': {

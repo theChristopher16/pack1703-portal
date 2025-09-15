@@ -48,12 +48,59 @@
   // ]
   "indexes": [
     {
+      "collectionGroup": "feedback",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "events",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "visibility", "mode": "ASCENDING" },
-        { "fieldPath": "startDate", "mode": "ASCENDING" },
-        { "fieldPath": "__name__", "mode": "ASCENDING" }
+        { "fieldPath": "startDate", "mode": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "chat-users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isOnline", "mode": "ASCENDING" },
+        { "fieldPath": "lastSeen", "mode": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "chat-messages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "channelId", "mode": "ASCENDING" },
+        { "fieldPath": "timestamp", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "chat-messages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "senderId", "mode": "ASCENDING" },
+        { "fieldPath": "timestamp", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "packLists",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isActive", "mode": "ASCENDING" },
+        { "fieldPath": "updatedAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
       ]
     }
   ],

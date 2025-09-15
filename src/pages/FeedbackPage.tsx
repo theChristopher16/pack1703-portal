@@ -7,6 +7,7 @@ import {
   Search
 } from 'lucide-react';
 import { authService } from '../services/authService';
+import { useAdmin } from '../contexts/AdminContext';
 
 interface FeedbackSubmission {
   id: string;
@@ -27,16 +28,11 @@ interface FeedbackSubmission {
 }
 
 const FeedbackPage: React.FC = () => {
-  const [user, setUser] = useState(authService.getCurrentUser());
   const [activeTab, setActiveTab] = useState<'submit' | 'history'>('submit');
   
-  // Listen for auth state changes
-  useEffect(() => {
-    const unsubscribe = authService.onAuthStateChanged((currentUser) => {
-      setUser(currentUser);
-    });
-    return unsubscribe;
-  }, []);
+  // Use AdminContext instead of direct auth service
+  const { state: adminState } = useAdmin();
+  const user = adminState.currentUser;
   
   // Redirect to submit tab if user is not logged in and tries to access history
   useEffect(() => {

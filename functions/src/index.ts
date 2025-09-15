@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin';
 import { secretManagerService } from './secretManagerService';
 // Import user approval functions
 import { createPendingUser, approveUser, getPendingUsers, getAuditLogs } from './userApproval';
+import { setAdminClaims } from './setAdminClaims';
 const Imap = require('node-imap');
 
 // Initialize Firebase Admin
@@ -2041,4 +2042,4 @@ export const testSecretManager = functions.https.onCall(async (request) => {
 });
 
 // Export user approval functions
-export { createPendingUser, approveUser, getPendingUsers, getAuditLogs };
+export { createPendingUser, approveUser, getPendingUsers, getAuditLogs, setAdminClaims };

@@ -111,20 +111,28 @@ export class UserApprovalService {
    */
   async signUp(email: string, password: string, displayName?: string): Promise<{ success: boolean; message: string }> {
     try {
+      console.log('🔐 UserApprovalService: Starting signup process for:', email);
+      
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+      
+      console.log('🔐 UserApprovalService: Firebase Auth user created:', user.uid);
 
       // Update display name if provided
       if (displayName) {
         await updateProfile(user, { displayName });
+        console.log('🔐 UserApprovalService: Display name updated');
       }
 
       // Create pending user document via Cloud Function
-      await createPendingUserFunction({
+      console.log('🔐 UserApprovalService: Calling createPendingUser Cloud Function...');
+      const result = await createPendingUserFunction({
         userId: user.uid,
         email: user.email,
         displayName: displayName || user.displayName || ''
       });
+      
+      console.log('🔐 UserApprovalService: createPendingUser result:', result.data);
 
       return {
         success: true,
@@ -238,7 +246,9 @@ export class AdminService {
    */
   async getPendingUsers(): Promise<PendingUser[]> {
     try {
+      console.log('🔐 UserApprovalService: Getting pending users...');
       const result = await getPendingUsersFunction();
+      console.log('🔐 UserApprovalService: getPendingUsers result:', result.data);
       return (result.data as any)?.users || [];
     } catch (error) {
       console.error('Error getting pending users:', error);

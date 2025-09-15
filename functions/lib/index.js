@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAuditLogs = exports.getPendingUsers = exports.approveUser = exports.createPendingUser = exports.testSecretManager = exports.processOverdueReminders = exports.processScheduledReminders = exports.systemCommand = exports.testAIConnection = exports.aiGenerateContent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.adminCreateEvent = exports.webSearch = exports.fetchUrlContent = exports.fetchNewEmails = exports.testEmailConnection = exports.helloWorld = exports.moderationDigest = exports.weatherProxy = exports.icsFeed = exports.claimVolunteerRole = exports.submitFeedback = exports.submitRSVP = void 0;
+exports.setAdminClaims = exports.getAuditLogs = exports.getPendingUsers = exports.approveUser = exports.createPendingUser = exports.testSecretManager = exports.processOverdueReminders = exports.processScheduledReminders = exports.systemCommand = exports.testAIConnection = exports.aiGenerateContent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.adminCreateEvent = exports.webSearch = exports.fetchUrlContent = exports.fetchNewEmails = exports.testEmailConnection = exports.helloWorld = exports.moderationDigest = exports.weatherProxy = exports.icsFeed = exports.claimVolunteerRole = exports.submitFeedback = exports.submitRSVP = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 const secretManagerService_1 = require("./secretManagerService");
@@ -10,6 +10,8 @@ Object.defineProperty(exports, "createPendingUser", { enumerable: true, get: fun
 Object.defineProperty(exports, "approveUser", { enumerable: true, get: function () { return userApproval_1.approveUser; } });
 Object.defineProperty(exports, "getPendingUsers", { enumerable: true, get: function () { return userApproval_1.getPendingUsers; } });
 Object.defineProperty(exports, "getAuditLogs", { enumerable: true, get: function () { return userApproval_1.getAuditLogs; } });
+const setAdminClaims_1 = require("./setAdminClaims");
+Object.defineProperty(exports, "setAdminClaims", { enumerable: true, get: function () { return setAdminClaims_1.setAdminClaims; } });
 const Imap = require('node-imap');
 // Initialize Firebase Admin
 admin.initializeApp();

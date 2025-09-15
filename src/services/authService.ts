@@ -321,6 +321,7 @@ export interface AppUser {
   role: UserRole;
   permissions: Permission[];
   isActive: boolean;
+  status?: 'pending' | 'approved' | 'denied';
   createdAt: Date;
   updatedAt: Date;
   lastLoginAt?: Date;
@@ -476,9 +477,10 @@ class AuthService {
       role: userData.role,
       permissions: userData.permissions || [],
       isActive: userData.isActive,
-      createdAt: userData.createdAt.toDate(),
-      updatedAt: userData.updatedAt.toDate(),
-      lastLoginAt: userData.lastLoginAt?.toDate(),
+      status: userData.status,
+      createdAt: userData.createdAt?.toDate ? userData.createdAt.toDate() : userData.createdAt,
+      updatedAt: userData.updatedAt?.toDate ? userData.updatedAt.toDate() : userData.updatedAt,
+      lastLoginAt: userData.lastLoginAt?.toDate ? userData.lastLoginAt.toDate() : userData.lastLoginAt,
       authProvider: userData.authProvider,
       profile: userData.profile
     };
@@ -746,6 +748,30 @@ class AuthService {
       let appUser: AppUser;
       try {
         appUser = await this.getUserFromFirestore(firebaseUser.uid);
+        
+        // Check Firebase Auth custom claims for approval status
+        const idTokenResult = await firebaseUser.getIdTokenResult();
+        const customClaims = idTokenResult.claims;
+        
+        // If user has custom claims, check approval status
+        if (customClaims && typeof customClaims.approved === 'boolean') {
+          if (!customClaims.approved) {
+            // Sign out the user immediately if they're not approved
+            await signOut(this.auth);
+            throw new Error('Your account is pending approval. Please wait for pack leadership to approve your account before signing in.');
+          }
+        } else {
+          // For users without custom claims, check Firestore status
+          if (appUser.status === 'pending') {
+            await signOut(this.auth);
+            throw new Error('Your account is pending approval. Please wait for pack leadership to approve your account before signing in.');
+          }
+          
+          if (appUser.status === 'denied') {
+            await signOut(this.auth);
+            throw new Error('Your account has been denied. Please contact pack leadership for more information.');
+          }
+        }
       } catch (error) {
         // User doesn't exist, create them
         appUser = await this.createUserFromFirebaseUser(firebaseUser);
@@ -898,6 +924,30 @@ class AuthService {
       
       // Get user data from Firestore
       const appUser = await this.getUserFromFirestore(firebaseUser.uid);
+      
+      // Check Firebase Auth custom claims for approval status
+      const idTokenResult = await firebaseUser.getIdTokenResult();
+      const customClaims = idTokenResult.claims;
+      
+      // If user has custom claims, check approval status
+      if (customClaims && typeof customClaims.approved === 'boolean') {
+        if (!customClaims.approved) {
+          // Sign out the user immediately if they're not approved
+          await signOut(this.auth);
+          throw new Error('Your account is pending approval. Please wait for pack leadership to approve your account before signing in.');
+        }
+      } else {
+        // For users without custom claims, check Firestore status
+        if (appUser.status === 'pending') {
+          await signOut(this.auth);
+          throw new Error('Your account is pending approval. Please wait for pack leadership to approve your account before signing in.');
+        }
+        
+        if (appUser.status === 'denied') {
+          await signOut(this.auth);
+          throw new Error('Your account has been denied. Please contact pack leadership for more information.');
+        }
+      }
       
       // Update last login time
       await updateDoc(doc(db, 'users', firebaseUser.uid), {
@@ -1395,9 +1445,10 @@ class AuthService {
           authProvider: data.authProvider,
           permissions: data.permissions || [],
           isActive: data.isActive ?? true,
-          createdAt: data.createdAt?.toDate(),
-          updatedAt: data.updatedAt?.toDate(),
-          lastLoginAt: data.lastLoginAt?.toDate(),
+          status: data.status,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : data.updatedAt,
+          lastLoginAt: data.lastLoginAt?.toDate ? data.lastLoginAt.toDate() : data.lastLoginAt,
           profile: data.profile || {}
         };
       }
@@ -1420,20 +1471,27 @@ class AuthService {
       const usersQuery = query(collection(db, 'users'));
       const snapshot = await getDocs(usersQuery);
       
-      return snapshot.docs.map(doc => ({
-        uid: doc.id,
-        email: doc.data().email,
-        displayName: doc.data().displayName,
-        role: doc.data().role,
-        photoURL: doc.data().photoURL,
-        authProvider: doc.data().authProvider,
-        permissions: doc.data().permissions || [],
-        isActive: doc.data().isActive ?? true,
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate(),
-        lastLoginAt: doc.data().lastLoginAt?.toDate(),
-        profile: doc.data().profile || {}
-      }));
+      // Filter out pending and denied users - only show approved users
+      return snapshot.docs
+        .map(doc => ({
+          uid: doc.id,
+          email: doc.data().email,
+          displayName: doc.data().displayName,
+          role: doc.data().role,
+          photoURL: doc.data().photoURL,
+          authProvider: doc.data().authProvider,
+          permissions: doc.data().permissions || [],
+          isActive: doc.data().isActive ?? true,
+          status: doc.data().status,
+          createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : doc.data().createdAt,
+          updatedAt: doc.data().updatedAt?.toDate ? doc.data().updatedAt.toDate() : doc.data().updatedAt,
+          lastLoginAt: doc.data().lastLoginAt?.toDate ? doc.data().lastLoginAt.toDate() : doc.data().lastLoginAt,
+          profile: doc.data().profile || {}
+        }))
+        .filter(user => {
+          // Only show users who are approved or don't have a status (existing users)
+          return !user.status || user.status === 'approved';
+        });
     } catch (error: any) {
       console.error('Error getting users:', error);
       throw error;

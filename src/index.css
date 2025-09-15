@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import Futura Font */
-@import url('https://fonts.googleapis.com/css2?family=Futura:wght@400;500;600;700&display=swap');
+/* Import Jost Font (Futura alternative) */
+@import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
 /* Base Styles */
@@ -13,7 +13,7 @@
   }
   
 body {
-    font-family: 'Futura', system-ui, -apple-system, sans-serif;
+    font-family: 'Jost', system-ui, -apple-system, sans-serif;
     background: linear-gradient(135deg, #FAFAFA 0%, #F0F8F0 50%, #E8F5E8 100%);
     min-height: 100vh;
     color: #2E2E2E !important;

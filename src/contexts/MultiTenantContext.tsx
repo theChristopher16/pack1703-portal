@@ -124,24 +124,12 @@ export function MultiTenantProvider({ children }: MultiTenantProviderProps) {
   const [state, dispatch] = useReducer(multiTenantReducer, initialState);
 
   // Initialize multi-tenant state when user changes
+  // Note: We don't set up our own auth listener here since AdminContext already handles auth state
+  // Instead, we'll rely on the AdminContext to trigger our state updates when needed
   useEffect(() => {
-    const unsubscribe = authService.onAuthStateChanged((user) => {
-      if (user) {
-        // Load user's organizations and available categories
-        loadUserOrganizations();
-        loadCategories();
-      } else {
-        // Clear multi-tenant state when user logs out
-        dispatch({ type: 'SET_CURRENT_CATEGORY', payload: null });
-        dispatch({ type: 'SET_CURRENT_ORGANIZATION', payload: null });
-        dispatch({ type: 'SET_USER_ORGANIZATIONS', payload: [] });
-        dispatch({ type: 'SET_AVAILABLE_CATEGORIES', payload: [] });
-        dispatch({ type: 'SET_CROSS_ORGANIZATION_COLLABORATIONS', payload: [] });
-        dispatch({ type: 'SET_AI_COLLABORATION_SESSIONS', payload: [] });
-      }
-    });
-
-    return () => unsubscribe();
+    // This effect will be triggered when the component mounts
+    // The actual auth state management is handled by AdminContext
+    console.log('MultiTenantContext: Component mounted, auth state managed by AdminContext');
   }, []);
 
   // Category operations

@@ -6,6 +6,7 @@ import { SecurityAuditService } from '../services/securityAuditService';
 import { authService, UserRole } from '../services/authService';
 import { heroButtonService, HeroButtonConfig } from '../services/heroButtonService';
 import { usageTrackingService } from '../services/usageTrackingService';
+import { useAdmin } from '../contexts/AdminContext';
 import SignupModal from '../components/Auth/SignupModal';
 
 const HomePage: React.FC = () => {
@@ -14,9 +15,12 @@ const HomePage: React.FC = () => {
   const [isDownloadingAudit, setIsDownloadingAudit] = useState(false);
   const [animationsTriggered, setAnimationsTriggered] = useState(false);
   const [heroButtons, setHeroButtons] = useState<HeroButtonConfig[]>([]);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [userRole, setUserRole] = useState<UserRole>(UserRole.ANONYMOUS);
   const [showSignupModal, setShowSignupModal] = useState(false);
+  
+  // Use AdminContext instead of direct auth service
+  const { state: adminState } = useAdmin();
+  const currentUser = adminState.currentUser;
+  const userRole = currentUser ? (currentUser.role as UserRole) : UserRole.ANONYMOUS;
 
   useEffect(() => {
     // Remove artificial loading delays for better performance
@@ -31,41 +35,33 @@ const HomePage: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Listen for authentication changes and load hero buttons
+  // Load hero buttons when user changes (via AdminContext)
   useEffect(() => {
-    const unsubscribe = authService.onAuthStateChanged((user) => {
-      setCurrentUser(user);
-      const role = user?.role || UserRole.ANONYMOUS;
-      setUserRole(role);
-      
-      // Load personalized hero buttons only if user is authenticated
-      if (user) {
-        loadHeroButtons(user.uid, role);
-      } else {
-        // For anonymous users, use default buttons without analytics
-        setHeroButtons([
-          {
-            name: 'Events',
-            href: '/events',
-            icon: 'Calendar',
-            description: 'View upcoming pack events',
-            color: 'blue',
-            priority: 1
-          },
-          {
-            name: 'Locations',
-            href: '/locations',
-            icon: 'MapPin',
-            description: 'Find meeting locations',
-            color: 'green',
-            priority: 2
-          }
-        ]);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
+    if (currentUser) {
+      // Load personalized hero buttons for authenticated users
+      loadHeroButtons(currentUser.uid, userRole);
+    } else {
+      // For anonymous users, use default buttons without analytics
+      setHeroButtons([
+        {
+          name: 'Events',
+          href: '/events',
+          icon: 'Calendar',
+          description: 'View upcoming pack events',
+          color: 'blue',
+          priority: 1
+        },
+        {
+          name: 'Locations',
+          href: '/locations',
+          icon: 'MapPin',
+          description: 'Find meeting locations',
+          color: 'green',
+          priority: 2
+        }
+      ]);
+    }
+  }, [currentUser, userRole]);
 
   // Track homepage visit
   useEffect(() => {

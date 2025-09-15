@@ -479,7 +479,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         <span className="text-sm font-bold text-gray-800 uppercase tracking-wide">
                           {group.name}
                         </span>
-                        <span className="text-xs text-gray-500">({group.items.length} items)</span>
                       </div>
                     </div>
                     

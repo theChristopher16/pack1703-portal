@@ -3,7 +3,7 @@
 // Updated: 2025-09-10T22:25:00Z
 
 // Production-friendly logging
-const isDevelopment = process.env.NODE_ENV === 'development';
+const isDevelopment = false; // Service workers don't have access to process.env
 
 function log(message, ...args) {
   if (isDevelopment) {

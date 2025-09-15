@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { volunteerService, VolunteerNeed, VolunteerSignup } from '../services/volunteerService';
 import { authService } from '../services/authService';
+import { useAdmin } from '../contexts/AdminContext';
 
 const VolunteerPage: React.FC = () => {
   const [volunteerNeeds, setVolunteerNeeds] = useState<VolunteerNeed[]>([]);
@@ -20,7 +21,10 @@ const VolunteerPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedPriority, setSelectedPriority] = useState('all');
   const [showOnlyAvailable, setShowOnlyAvailable] = useState(false);
-  const [currentUser, setCurrentUser] = useState(authService.getCurrentUser());
+  
+  // Use AdminContext instead of direct auth service
+  const { state: adminState } = useAdmin();
+  const currentUser = adminState.currentUser;
 
   // Load volunteer needs and user signups
   useEffect(() => {
@@ -46,14 +50,6 @@ const VolunteerPage: React.FC = () => {
 
     loadData();
   }, [currentUser]);
-
-  // Listen for auth state changes
-  useEffect(() => {
-    const unsubscribe = authService.onAuthStateChanged((user) => {
-      setCurrentUser(user);
-    });
-    return unsubscribe;
-  }, []);
 
   const categories = [
     { id: 'all', name: 'All Categories', color: 'bg-gray-100 text-gray-800' },

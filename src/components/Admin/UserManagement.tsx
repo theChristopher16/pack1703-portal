@@ -44,6 +44,8 @@ import {
 import { useAdmin } from '../../contexts/AdminContext';
 import { authService, AppUser, UserRole, Permission, ROLE_PERMISSIONS } from '../../services/authService';
 import { AdminUserManagement } from '../UserApproval/UserApprovalComponents';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../firebase/config';
 
 interface UserWithChildren extends AppUser {
   children?: UserWithChildren[];
@@ -400,6 +402,31 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  const handleSetAdminClaims = async () => {
+    try {
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser) {
+        await addNotification('error', 'Error', 'No user logged in');
+        return;
+      }
+
+      const setAdminClaimsFunction = httpsCallable(functions, 'setAdminClaims');
+      
+      const result = await setAdminClaimsFunction({
+        userId: currentUser.uid
+      });
+      
+      await addNotification('success', 'Success', 'Admin claims set successfully! Please refresh the page.');
+      console.log('Admin claims set:', result.data);
+      
+      // Refresh the page to reload with new claims
+      window.location.reload();
+    } catch (error) {
+      console.error('Error setting admin claims:', error);
+      await addNotification('error', 'Error', 'Failed to set admin claims');
+    }
+  };
+
   const getRoleIcon = (role: UserRole) => {
     switch (role) {
       case UserRole.ROOT: return <Crown className="w-4 h-4 text-yellow-600" />;
@@ -451,6 +478,17 @@ const UserManagement: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
           <p className="text-gray-600">Manage pack members, roles, and permissions</p>
+        </div>
+        <div className="flex gap-2">
+          {state.currentUser?.role !== 'super-admin' && state.currentUser?.role !== 'root' && (
+            <button
+              onClick={handleSetAdminClaims}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <Shield className="w-4 h-4" />
+              Set Admin Claims
+            </button>
+          )}
         </div>
       </div>
 
@@ -651,15 +689,17 @@ const UserManagement: React.FC = () => {
                           >
                             <Edit className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setShowDeleteModal(true);
-                            }}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {user.role !== 'root' && (
+                            <button
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setShowDeleteModal(true);
+                              }}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

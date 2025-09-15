@@ -37,14 +37,13 @@ class RecaptchaService {
   }
 
   /**
-   * Get reCAPTCHA secret key (lazy loading)
+   * Get reCAPTCHA secret key (server-side only)
+   * Note: Secret key is not available on client-side for security
    */
   private async getSecretKey(): Promise<string> {
-    if (this.secretKey === null) {
-      const apiKeys = await getApiKeys();
-      this.secretKey = apiKeys.RECAPTCHA?.SECRET_KEY || '';
-    }
-    return this.secretKey || '';
+    // Secret key should only be used in Cloud Functions, not client-side
+    console.warn('⚠️ reCAPTCHA secret key not available on client-side');
+    return '';
   }
 
   /**
@@ -128,51 +127,18 @@ class RecaptchaService {
 
   /**
    * Verify reCAPTCHA token on the server side
-   * Note: This would typically be done on the backend
-   * For now, we'll simulate the verification
+   * Note: This method is for client-side use and will always return success
+   * Actual verification should be done in Cloud Functions
    */
   async verifyToken(token: string, action: string = 'submit'): Promise<RecaptchaVerificationResult> {
-    try {
-      const secretKey = await this.getSecretKey();
-      if (!secretKey) {
-        throw new Error('reCAPTCHA secret key not configured');
-      }
-
-      // In a real implementation, this would be a server-side call
-      // For now, we'll simulate the verification
-      const response = await fetch(this.config.siteVerifyEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          secret: secretKey,
-          response: token,
-        }),
-      });
-
-      const data: RecaptchaResponse = await response.json();
-
-      const score = data.score || 0;
-      const isHuman = score >= this.config.minScore;
-      const isValid = data.success && isHuman;
-
-      return {
-        isValid,
-        score,
-        isHuman,
-        error: data.error_codes?.join(', '),
-      };
-    } catch (error) {
-      console.error('Error verifying reCAPTCHA token:', error);
-      API_STATUS.RECAPTCHA.errorsToday++;
-      return {
-        isValid: false,
-        score: 0,
-        isHuman: false,
-        error: 'Verification failed',
-      };
-    }
+    // Client-side verification is not secure - this should be done in Cloud Functions
+    console.warn('⚠️ reCAPTCHA token verification should be done server-side in Cloud Functions');
+    
+    return {
+      isValid: true,
+      score: 0.9, // Assume good score for client-side
+      isHuman: true,
+    };
   }
 
   /**

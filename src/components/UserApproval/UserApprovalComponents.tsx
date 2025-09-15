@@ -290,7 +290,7 @@ export const AdminUserManagement: React.FC = () => {
                       <span>{user.email}</span>
                     </div>
                     <p className="text-xs text-gray-500">
-                      Joined: {new Date(user.createdAt?.toDate()).toLocaleDateString()}
+                      Joined: {user.createdAt instanceof Date ? user.createdAt.toLocaleDateString() : new Date(user.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>

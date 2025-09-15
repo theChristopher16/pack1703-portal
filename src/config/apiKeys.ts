@@ -42,7 +42,7 @@ const initializeKeys = async () => {
       TENOR: process.env.REACT_APP_TENOR_API_KEY || '',
       RECAPTCHA: {
         SITE_KEY: process.env.REACT_APP_RECAPTCHA_V3_SITE_KEY || '',
-        SECRET_KEY: process.env.REACT_APP_RECAPTCHA_V3_SECRET_KEY || '',
+        // SECRET_KEY removed from client-side - only used in Cloud Functions
       },
     };
     console.log('🔑 API keys loaded from environment variables');

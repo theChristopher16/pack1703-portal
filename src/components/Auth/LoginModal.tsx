@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mail, Lock, Eye, EyeOff, Shield, UserPlus } from 'lucide-react';
+import { X, Mail, Lock, Eye, EyeOff, Shield, UserPlus, Key } from 'lucide-react';
 import { authService } from '../../services/authService';
 import SocialLogin from './SocialLogin';
 import SignupModal from './SignupModal';
@@ -20,6 +20,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSignupModal, setShowSignupModal] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
 
   // Initialize reCAPTCHA
   const { isLoaded: recaptchaLoaded, execute: executeRecaptcha } = useRecaptcha({
@@ -86,6 +90,42 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
 
   const handleOpenSignup = () => {
     setShowSignupModal(true);
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!resetEmail) {
+      setResetMessage('Please enter your email address');
+      return;
+    }
+
+    setResetLoading(true);
+    setResetMessage(null);
+
+    try {
+      await authService.sendPasswordResetEmail(resetEmail);
+      setResetMessage('Password reset email sent! Check your inbox for instructions.');
+      setResetEmail('');
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      setResetMessage(error.message || 'Failed to send reset email. Please try again.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleOpenResetPassword = () => {
+    setShowResetPassword(true);
+    setResetMessage(null);
+    setError(null);
+  };
+
+  const handleBackToLogin = () => {
+    setShowResetPassword(false);
+    setResetEmail('');
+    setResetMessage(null);
+    setError(null);
   };
 
   if (!isOpen) return null;
@@ -200,6 +240,17 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
                 </div>
               </div>
 
+              {/* Forgot Password Link */}
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={handleOpenResetPassword}
+                  className="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors duration-200"
+                >
+                  Forgot your password?
+                </button>
+              </div>
+
               {/* Error Message */}
               {error && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
@@ -223,6 +274,81 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
                 )}
               </button>
             </form>
+
+            {/* Reset Password Form */}
+            {showResetPassword && (
+              <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div className="flex items-center space-x-2 mb-4">
+                  <Key className="w-5 h-5 text-primary-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Reset Password</h3>
+                </div>
+                
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div>
+                    <label htmlFor="resetEmail" className="block text-sm font-medium text-gray-700 mb-2">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        id="resetEmail"
+                        name="resetEmail"
+                        type="email"
+                        autoComplete="email"
+                        required
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
+                        placeholder="Enter your email address"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Reset Message */}
+                  {resetMessage && (
+                    <div className={`p-3 rounded-xl ${
+                      resetMessage.includes('sent') 
+                        ? 'bg-green-50 border border-green-200' 
+                        : 'bg-red-50 border border-red-200'
+                    }`}>
+                      <p className={`text-sm ${
+                        resetMessage.includes('sent') 
+                          ? 'text-green-600' 
+                          : 'text-red-600'
+                      }`}>
+                        {resetMessage}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex space-x-3">
+                    <button
+                      type="button"
+                      onClick={handleBackToLogin}
+                      className="flex-1 py-2 px-4 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
+                    >
+                      Back to Login
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={resetLoading}
+                      className="flex-1 flex justify-center py-2 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                    >
+                      {resetLoading ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Sending...</span>
+                        </div>
+                      ) : (
+                        'Send Reset Email'
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
 
             {/* Footer */}
             <div className="mt-6 text-center">

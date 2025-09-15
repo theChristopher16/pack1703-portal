@@ -162,11 +162,10 @@ export const approveUser = onCall(async (request) => {
         role: role
       });
     } else {
-      // Remove any existing claims for denied users
-      await auth.setCustomUserClaims(userId, {
-        approved: false,
-        role: null
-      });
+      // For denied users, delete their Firebase Auth account entirely
+      // This prevents them from accessing the system at all
+      await auth.deleteUser(userId);
+      logger.info(`Firebase Auth user deleted for denied user: ${userId}`);
     }
 
     // Create audit log
@@ -234,15 +233,20 @@ export const getPendingUsers = onCall(async (request) => {
     const pendingUsersSnapshot = await db
       .collection('users')
       .where('status', '==', UserStatus.PENDING)
-      .orderBy('createdAt', 'desc')
       .get();
 
     logger.info(`Found ${pendingUsersSnapshot.docs.length} pending users`);
 
-    const pendingUsers = pendingUsersSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const pendingUsers = pendingUsersSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        // Convert Firestore Timestamps to JavaScript Dates
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
+        approvedAt: data.approvedAt?.toDate ? data.approvedAt.toDate() : data.approvedAt
+      };
+    });
 
     logger.info('Pending users:', pendingUsers);
 

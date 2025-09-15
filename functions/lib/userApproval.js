@@ -5,12 +5,15 @@ const https_1 = require("firebase-functions/v2/https");
 const auth_1 = require("firebase-admin/auth");
 const firestore_1 = require("firebase-admin/firestore");
 const firebase_functions_1 = require("firebase-functions");
-// User roles enum
+// User roles enum - Updated to match AuthService
 var UserRole;
 (function (UserRole) {
+    UserRole["ANONYMOUS"] = "anonymous";
     UserRole["PARENT"] = "parent";
-    UserRole["LEADER"] = "leader";
+    UserRole["VOLUNTEER"] = "volunteer";
     UserRole["ADMIN"] = "admin";
+    UserRole["ROOT"] = "root";
+    UserRole["AI_ASSISTANT"] = "ai_assistant";
 })(UserRole || (exports.UserRole = UserRole = {}));
 // User status enum
 var UserStatus;
@@ -19,6 +22,139 @@ var UserStatus;
     UserStatus["APPROVED"] = "approved";
     UserStatus["DENIED"] = "denied";
 })(UserStatus || (exports.UserStatus = UserStatus = {}));
+// Role permissions mapping - matches AuthService
+const ROLE_PERMISSIONS = {
+    [UserRole.ANONYMOUS]: [
+        'read_content',
+        'scout_content',
+        'scout_events'
+    ],
+    [UserRole.PARENT]: [
+        'read_content',
+        'create_content',
+        'update_content',
+        'family_management',
+        'family_events',
+        'family_rsvp',
+        'family_volunteer',
+        'scout_content',
+        'scout_events',
+        'scout_chat',
+        'chat_read',
+        'chat_write'
+    ],
+    [UserRole.VOLUNTEER]: [
+        'read_content',
+        'create_content',
+        'update_content',
+        'family_management',
+        'family_events',
+        'family_rsvp',
+        'family_volunteer',
+        'den_content',
+        'den_events',
+        'den_members',
+        'den_chat_management',
+        'den_announcements',
+        'scout_content',
+        'scout_events',
+        'scout_chat',
+        'chat_read',
+        'chat_write'
+    ],
+    [UserRole.ADMIN]: [
+        'read_content',
+        'create_content',
+        'update_content',
+        'delete_content',
+        'family_management',
+        'family_events',
+        'family_rsvp',
+        'family_volunteer',
+        'den_content',
+        'den_events',
+        'den_members',
+        'den_chat_management',
+        'den_announcements',
+        'pack_management',
+        'event_management',
+        'location_management',
+        'announcement_management',
+        'financial_management',
+        'fundraising_management',
+        'all_den_access',
+        'scout_content',
+        'scout_events',
+        'scout_chat',
+        'chat_read',
+        'chat_write',
+        'chat_management',
+        'user_management',
+        'role_management',
+        'system_config',
+        'cost_management',
+        'cost_analytics',
+        'cost_alerts'
+    ],
+    [UserRole.ROOT]: [
+        'read_content',
+        'create_content',
+        'update_content',
+        'delete_content',
+        'family_management',
+        'family_events',
+        'family_rsvp',
+        'family_volunteer',
+        'den_content',
+        'den_events',
+        'den_members',
+        'den_chat_management',
+        'den_announcements',
+        'pack_management',
+        'event_management',
+        'location_management',
+        'announcement_management',
+        'financial_management',
+        'fundraising_management',
+        'all_den_access',
+        'scout_content',
+        'scout_events',
+        'scout_chat',
+        'chat_read',
+        'chat_write',
+        'chat_management',
+        'user_management',
+        'role_management',
+        'system_config',
+        'system_admin',
+        'cost_management',
+        'cost_analytics',
+        'cost_alerts'
+    ],
+    [UserRole.AI_ASSISTANT]: [
+        'read_content',
+        'create_content',
+        'update_content',
+        'family_management',
+        'family_events',
+        'family_rsvp',
+        'family_volunteer',
+        'den_content',
+        'den_events',
+        'den_members',
+        'den_chat_management',
+        'den_announcements',
+        'scout_content',
+        'scout_events',
+        'scout_chat',
+        'chat_read',
+        'chat_write'
+    ]
+};
+// Helper function to get permissions for a role
+function getRolePermissions(role) {
+    return ROLE_PERMISSIONS[role] || [];
+}
 /**
  * Callable function to create a pending user document
  * This should be called after Firebase Auth user creation
@@ -42,6 +178,7 @@ exports.createPendingUser = (0, https_1.onCall)(async (request) => {
             displayName: displayName || '',
             status: UserStatus.PENDING,
             role: UserRole.PARENT,
+            permissions: getRolePermissions(UserRole.PARENT), // Set default permissions
             createdAt: firestore_1.FieldValue.serverTimestamp(),
             approvedAt: null,
             approvedBy: null
@@ -110,6 +247,8 @@ exports.approveUser = (0, https_1.onCall)(async (request) => {
         };
         if (action === 'approve') {
             updateData.role = role;
+            // Set permissions based on role
+            updateData.permissions = getRolePermissions(role);
         }
         await db.collection('users').doc(userId).update(updateData);
         // Set custom claims for approved users

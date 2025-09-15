@@ -3,11 +3,14 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 
-// User roles enum
+// User roles enum - Updated to match AuthService
 export enum UserRole {
+  ANONYMOUS = 'anonymous',
   PARENT = 'parent',
-  LEADER = 'leader',
-  ADMIN = 'admin'
+  VOLUNTEER = 'volunteer',
+  ADMIN = 'admin',
+  ROOT = 'root',
+  AI_ASSISTANT = 'ai_assistant'
 }
 
 // User status enum
@@ -23,6 +26,7 @@ export interface UserDocument {
   displayName: string;
   status: UserStatus;
   role: UserRole;
+  permissions: string[];
   createdAt: FieldValue;
   approvedAt: FieldValue | null;
   approvedBy: string | null;
@@ -38,6 +42,141 @@ export interface AdminAuditLog {
   role?: UserRole;
   timestamp: FieldValue;
   reason?: string;
+}
+
+// Role permissions mapping - matches AuthService
+const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
+  [UserRole.ANONYMOUS]: [
+    'read_content',
+    'scout_content',
+    'scout_events'
+  ],
+  [UserRole.PARENT]: [
+    'read_content',
+    'create_content',
+    'update_content',
+    'family_management',
+    'family_events',
+    'family_rsvp',
+    'family_volunteer',
+    'scout_content',
+    'scout_events',
+    'scout_chat',
+    'chat_read',
+    'chat_write'
+  ],
+  [UserRole.VOLUNTEER]: [
+    'read_content',
+    'create_content',
+    'update_content',
+    'family_management',
+    'family_events',
+    'family_rsvp',
+    'family_volunteer',
+    'den_content',
+    'den_events',
+    'den_members',
+    'den_chat_management',
+    'den_announcements',
+    'scout_content',
+    'scout_events',
+    'scout_chat',
+    'chat_read',
+    'chat_write'
+  ],
+  [UserRole.ADMIN]: [
+    'read_content',
+    'create_content',
+    'update_content',
+    'delete_content',
+    'family_management',
+    'family_events',
+    'family_rsvp',
+    'family_volunteer',
+    'den_content',
+    'den_events',
+    'den_members',
+    'den_chat_management',
+    'den_announcements',
+    'pack_management',
+    'event_management',
+    'location_management',
+    'announcement_management',
+    'financial_management',
+    'fundraising_management',
+    'all_den_access',
+    'scout_content',
+    'scout_events',
+    'scout_chat',
+    'chat_read',
+    'chat_write',
+    'chat_management',
+    'user_management',
+    'role_management',
+    'system_config',
+    'cost_management',
+    'cost_analytics',
+    'cost_alerts'
+  ],
+  [UserRole.ROOT]: [
+    'read_content',
+    'create_content',
+    'update_content',
+    'delete_content',
+    'family_management',
+    'family_events',
+    'family_rsvp',
+    'family_volunteer',
+    'den_content',
+    'den_events',
+    'den_members',
+    'den_chat_management',
+    'den_announcements',
+    'pack_management',
+    'event_management',
+    'location_management',
+    'announcement_management',
+    'financial_management',
+    'fundraising_management',
+    'all_den_access',
+    'scout_content',
+    'scout_events',
+    'scout_chat',
+    'chat_read',
+    'chat_write',
+    'chat_management',
+    'user_management',
+    'role_management',
+    'system_config',
+    'system_admin',
+    'cost_management',
+    'cost_analytics',
+    'cost_alerts'
+  ],
+  [UserRole.AI_ASSISTANT]: [
+    'read_content',
+    'create_content',
+    'update_content',
+    'family_management',
+    'family_events',
+    'family_rsvp',
+    'family_volunteer',
+    'den_content',
+    'den_events',
+    'den_members',
+    'den_chat_management',
+    'den_announcements',
+    'scout_content',
+    'scout_events',
+    'scout_chat',
+    'chat_read',
+    'chat_write'
+  ]
+};
+
+// Helper function to get permissions for a role
+function getRolePermissions(role: UserRole): string[] {
+  return ROLE_PERMISSIONS[role] || [];
 }
 
 /**
@@ -67,6 +206,7 @@ export const createPendingUser = onCall(async (request) => {
       displayName: displayName || '',
       status: UserStatus.PENDING,
       role: UserRole.PARENT,
+      permissions: getRolePermissions(UserRole.PARENT), // Set default permissions
       createdAt: FieldValue.serverTimestamp(),
       approvedAt: null,
       approvedBy: null
@@ -151,6 +291,8 @@ export const approveUser = onCall(async (request) => {
 
     if (action === 'approve') {
       updateData.role = role;
+      // Set permissions based on role
+      updateData.permissions = getRolePermissions(role);
     }
 
     await db.collection('users').doc(userId).update(updateData);

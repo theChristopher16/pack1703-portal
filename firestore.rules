@@ -449,9 +449,7 @@ service cloud.firestore {
     // DENY ALL OTHER ACCESS
     // ============================================================================
     
-    // Deny all other access
-    match /{document=**} {
-      allow read, write: if false;
-    }
+    // Note: Removed overly broad catch-all rule that was blocking all access
+    // Specific rules above handle all necessary access patterns
   }
 }

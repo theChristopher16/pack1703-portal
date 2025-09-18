@@ -1029,6 +1029,43 @@ class AuthService {
     return this.currentUser !== null;
   }
 
+  // Check if there's a valid auth token (for refresh logic)
+  hasValidAuthToken(): boolean {
+    // Check if Firebase Auth has a current user (this includes persisted tokens)
+    return this.auth.currentUser !== null;
+  }
+
+  // Get auth token for API calls
+  async getAuthToken(): Promise<string | null> {
+    try {
+      const user = this.auth.currentUser;
+      if (user) {
+        return await user.getIdToken();
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting auth token:', error);
+      return null;
+    }
+  }
+
+  // Check if user needs to re-authenticate (token expired or invalid)
+  async needsReAuthentication(): Promise<boolean> {
+    try {
+      const user = this.auth.currentUser;
+      if (!user) {
+        return true; // No user means needs authentication
+      }
+
+      // Try to get a fresh token
+      const token = await user.getIdToken(true); // Force refresh
+      return !token;
+    } catch (error) {
+      console.error('Error checking re-authentication:', error);
+      return true; // On error, assume needs re-authentication
+    }
+  }
+
   // Wait for auth state to be initialized
   async waitForAuthState(): Promise<AppUser | null> {
     return new Promise((resolve) => {

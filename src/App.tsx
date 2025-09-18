@@ -9,6 +9,7 @@ import { versionCheckService } from './services/versionCheckService';
 // Components
 import Layout from './components/Layout/Layout';
 import { AdminOnly, RootOnly, AuthenticatedOnly } from './components/Auth/RoleGuard';
+import RefreshHandler from './components/Auth/RefreshHandler';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -50,7 +51,6 @@ import RootAccountSetup from './pages/RootAccountSetup';
 import HackerTab from './pages/HackerTab';
 import AdminSettings from './pages/AdminSettings';
 import UserProfile from './pages/UserProfile';
-import FeedbackManagementPage from './pages/FeedbackManagementPage';
 import AdminReminders from './pages/AdminReminders';
 import DatabaseMonitor from './components/Admin/DatabaseMonitor';
 import SystemMonitor from './components/Admin/SystemMonitor';
@@ -128,8 +128,9 @@ function App() {
         <AdminProvider>
           <MultiTenantProvider>
             <Router>
-              <ScrollToTop />
-            <Routes>
+              <RefreshHandler>
+                <ScrollToTop />
+              <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Layout><HomePage /></Layout>} />
           <Route path="/events" element={<Layout><EventsPage /></Layout>} />
@@ -187,6 +188,7 @@ function App() {
           
           <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
           </Routes>
+              </RefreshHandler>
                 </Router>
               </MultiTenantProvider>
             </AdminProvider>

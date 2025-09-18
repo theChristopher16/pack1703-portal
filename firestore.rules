@@ -13,16 +13,12 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && 
-             (request.auth.token.get('role', '') in ['admin', 'root', 'volunteer'] ||
-              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'root', 'volunteer']);
+             request.auth.token.get('role', '') in ['admin', 'root', 'volunteer'];
     }
     
     function isRoot() {
       return isAuthenticated() && 
-             (request.auth.token.get('role', '') == 'root' ||
-              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'root');
+             request.auth.token.get('role', '') == 'root';
     }
     
     function isValidTimestamp(ts) {
@@ -62,20 +58,17 @@ service cloud.firestore {
                      ((!('role' in request.resource.data.diff(resource.data).affectedKeys()) &&
                        !('permissions' in request.resource.data.diff(resource.data).affectedKeys()) &&
                        !('isActive' in request.resource.data.diff(resource.data).affectedKeys())) ||
-                      (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'root'));
+                      request.auth.token.get('role', '') == 'root');
     
     // Users can create their own user document (for new signups)
     // Root users can also create user documents for others
     allow create: if request.auth != null && 
                      (request.auth.uid == userId || 
-                      (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'root'));
+                      request.auth.token.get('role', '') == 'root');
     
     // Only root users can delete users
     allow delete: if request.auth != null && 
-                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'root';
+                    request.auth.token.get('role', '') == 'root';
   }
   
     // Allow aggregation queries on users collection for admins
@@ -148,17 +141,13 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid;
       // Den leaders and up can read all feedback
       allow read: if isAuthenticated() && 
-        (request.auth.token.get('role', '') in ['volunteer', 'admin', 'root'] ||
-         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['volunteer', 'admin', 'root']);
+        request.auth.token.get('role', '') in ['volunteer', 'admin', 'root'];
       // Users can create their own feedback
       allow create: if isAuthenticated() && 
         request.resource.data.userId == request.auth.uid;
       // Den leaders and up can update feedback (add responses)
       allow update: if isAuthenticated() && 
-        (request.auth.token.get('role', '') in ['volunteer', 'admin', 'root'] ||
-         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['volunteer', 'admin', 'root']);
+        request.auth.token.get('role', '') in ['volunteer', 'admin', 'root'];
     }
     
     // Volunteer signups - users can only access their own signups

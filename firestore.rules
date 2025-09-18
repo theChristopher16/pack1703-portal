@@ -72,9 +72,13 @@ service cloud.firestore {
   }
   
     // Allow aggregation queries on users collection for admins
-  match /users {
-    allow read: if isAdmin();
-  }
+    // Also allow limited queries for new user creation (checking if first user)
+    match /users {
+      allow read: if isAdmin();
+      // Allow users to check if collection is empty (for first user detection)
+      allow read: if isAuthenticated() && 
+                     request.query.limit <= 1;
+    }
   
   // Allow aggregation queries on announcements collection for admins
   match /announcements {

@@ -164,6 +164,8 @@ const EventsPage: React.FC = () => {
           
           console.log('Events loaded successfully via fallback:', transformedEvents.length);
           console.log('Raw event IDs:', rawEvents.map(e => e.id));
+          console.log('Transformed event IDs:', transformedEvents.map(e => e.id));
+          console.log('First event details:', transformedEvents[0]);
           
         } catch (fallbackError) {
           console.error('Fallback also failed:', fallbackError);
@@ -274,6 +276,8 @@ const EventsPage: React.FC = () => {
   };
 
   const handleViewDetails = (eventId: string) => {
+    console.log('handleViewDetails called with eventId:', eventId);
+    console.log('Navigating to:', `/events/${eventId}`);
     // Navigate to event detail page
     window.location.href = `/events/${eventId}`;
   };

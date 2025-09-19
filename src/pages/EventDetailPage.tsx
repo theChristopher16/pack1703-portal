@@ -18,6 +18,7 @@ import RSVPForm from '../components/Forms/RSVPForm';
 
 const EventDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  console.log('EventDetailPage received id:', id);
   const [event, setEvent] = useState<any>(null);
   const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,9 +44,17 @@ const EventDetailPage: React.FC = () => {
         const { doc, getDoc } = await import('firebase/firestore');
         const { db } = await import('../firebase/config');
         
+        console.log('EventDetailPage: Fetching event with id:', id);
+        
         // Load event data
         const eventRef = doc(db, 'events', id);
+        console.log('EventDetailPage: Event ref path:', eventRef.path);
         const eventSnap = await getDoc(eventRef);
+        
+        console.log('EventDetailPage: Event exists:', eventSnap.exists());
+        if (eventSnap.exists()) {
+          console.log('EventDetailPage: Event data:', eventSnap.data());
+        }
         
         if (eventSnap.exists()) {
           const eventData = { id: eventSnap.id, ...eventSnap.data() } as any;

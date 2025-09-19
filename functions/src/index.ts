@@ -2396,8 +2396,116 @@ export const adminUpdateLocation = functions.https.onCall(async (request: any) =
   }
 });
 
+// Admin Delete User Function
+const adminDeleteUser = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    const { userId, reason } = data;
+    
+    if (!userId) {
+      throw new functions.https.HttpsError('invalid-argument', 'User ID is required');
+    }
+
+    // Check if requesting user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin';
+    const hasLegacyPermissions = userData?.isAdmin || userData?.isCubmaster;
+    const hasUserManagementPermission = userData?.permissions?.includes('user_management');
+    
+    if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to delete users');
+    }
+
+    // Prevent deleting self
+    if (userId === context.auth.uid) {
+      throw new functions.https.HttpsError('invalid-argument', 'Cannot delete your own account');
+    }
+
+    // Check if target user exists
+    const targetUserDoc = await db.collection('users').doc(userId).get();
+    if (!targetUserDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'User not found');
+    }
+
+    const targetUserData = targetUserDoc.data();
+    
+    // Prevent deleting root users (unless you're also root)
+    if (targetUserData?.role === 'root' && userData?.role !== 'root') {
+      throw new functions.https.HttpsError('permission-denied', 'Cannot delete root users');
+    }
+
+    // Delete user from Firestore
+    await db.collection('users').doc(userId).delete();
+
+    // Delete user from Firebase Auth (requires admin SDK)
+    try {
+      await auth.deleteUser(userId);
+      functions.logger.info(`Firebase Auth user deleted: ${userId}`);
+    } catch (authError) {
+      functions.logger.warn(`Failed to delete Firebase Auth user ${userId}:`, authError);
+      // Continue even if Firebase Auth deletion fails - Firestore deletion is the main concern
+    }
+
+    // Log admin action
+    await db.collection('adminActions').add({
+      userId: context.auth.uid,
+      userEmail: userData?.email || 'unknown',
+      action: 'delete',
+      entityType: 'user',
+      entityId: userId,
+      entityName: targetUserData?.displayName || targetUserData?.email || 'Unknown',
+      details: { 
+        reason: reason || 'No reason provided',
+        deletedUserRole: targetUserData?.role,
+        deletedUserEmail: targetUserData?.email
+      },
+      timestamp: getTimestamp(),
+      success: true
+    });
+
+    return {
+      success: true,
+      message: 'User deleted successfully'
+    };
+
+  } catch (error) {
+    functions.logger.error('Error deleting user:', error);
+    
+    // Log failed admin action
+    if (context.auth) {
+      try {
+        await db.collection('adminActions').add({
+          userId: context.auth.uid,
+          action: 'delete',
+          entityType: 'user',
+          entityId: data?.userId || 'unknown',
+          details: { error: error instanceof Error ? error.message : 'Unknown error' },
+          timestamp: getTimestamp(),
+          success: false
+        });
+      } catch (logError) {
+        functions.logger.error('Failed to log admin action:', logError);
+      }
+    }
+
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to delete user');
+  }
+});
+
 // Export user approval functions
-export { createPendingUser, approveUser, getPendingUsers, getAuditLogs, setAdminClaims };
+export { createPendingUser, approveUser, getPendingUsers, getAuditLogs, setAdminClaims, adminDeleteUser };
 
 // Export simple test function
 export { testAuth };

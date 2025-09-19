@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.testAuth = exports.setAdminClaims = exports.getAuditLogs = exports.getPendingUsers = exports.approveUser = exports.createPendingUser = exports.adminUpdateLocation = exports.adminCreateLocation = exports.processOverdueReminders = exports.processScheduledReminders = exports.systemCommand = exports.testAIConnection = exports.aiGenerateContent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.adminCreateEvent = exports.adminUpdateUser = exports.webSearch = exports.fetchUrlContent = exports.fetchNewEmails = exports.testEmailConnection = exports.helloWorld = exports.moderationDigest = exports.weatherProxy = exports.icsFeed = exports.claimVolunteerRole = exports.submitFeedback = exports.submitRSVP = void 0;
+exports.testAuth = exports.adminDeleteUser = exports.setAdminClaims = exports.getAuditLogs = exports.getPendingUsers = exports.approveUser = exports.createPendingUser = exports.adminUpdateLocation = exports.adminCreateLocation = exports.processOverdueReminders = exports.processScheduledReminders = exports.systemCommand = exports.testAIConnection = exports.aiGenerateContent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.adminCreateEvent = exports.adminUpdateUser = exports.webSearch = exports.fetchUrlContent = exports.fetchNewEmails = exports.testEmailConnection = exports.helloWorld = exports.moderationDigest = exports.weatherProxy = exports.icsFeed = exports.claimVolunteerRole = exports.submitFeedback = exports.submitRSVP = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 // import { secretManagerService } from './secretManagerService'; // Temporarily disabled due to Node.js version compatibility
@@ -903,28 +903,22 @@ exports.adminUpdateUser = functions.https.onCall(async (request) => {
 });
 // Admin Cloud Functions for Event Management
 exports.adminCreateEvent = functions.https.onCall(async (data, context) => {
-    var _a;
+    var _a, _b, _c, _d;
     try {
         const eventData = data;
-        // TEMPORARILY DISABLE AUTH CHECK FOR DEBUGGING
-        console.log('DEBUG: Skipping auth check for debugging');
-        /*
         // Debug authentication context
         console.log('Debug - context.auth:', context.auth);
-        console.log('Debug - context.auth.uid:', context.auth?.uid);
-        console.log('Debug - context.auth.token:', context.auth?.token);
-        
+        console.log('Debug - context.auth.uid:', (_a = context.auth) === null || _a === void 0 ? void 0 : _a.uid);
+        console.log('Debug - context.auth.token:', (_b = context.auth) === null || _b === void 0 ? void 0 : _b.token);
         // Check authentication
         if (!context.auth) {
-          console.log('Debug - Authentication failed: context.auth is null/undefined');
-          throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+            console.log('Debug - Authentication failed: context.auth is null/undefined');
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
         }
-        */
-        // TEMPORARILY USE HARDCODED USER ID FOR DEBUGGING
-        const debugUserId = 'biD4B9cWVWgOPxJlOZgGKifDJst2';
-        console.log('DEBUG: Using hardcoded user ID:', debugUserId);
+        const userId = context.auth.uid;
+        console.log('Using authenticated user ID:', userId);
         // Check if user has admin privileges
-        const userDoc = await db.collection('users').doc(debugUserId).get();
+        const userDoc = await db.collection('users').doc(userId).get();
         if (!userDoc.exists) {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
@@ -932,7 +926,7 @@ exports.adminCreateEvent = functions.https.onCall(async (data, context) => {
         // Check role-based permissions (new system) or legacy boolean fields
         const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
-        const hasEventManagementPermission = (_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('event_management');
+        const hasEventManagementPermission = (_c = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _c === void 0 ? void 0 : _c.includes('event_management');
         if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
             throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to create events');
         }
@@ -975,21 +969,21 @@ exports.adminCreateEvent = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('already-exists', 'An event with this title, date, and location already exists');
         }
         // Create event document
-        const eventDoc = Object.assign(Object.assign({}, eventData), { startDate: startDateTime, endDate: endDateTime, currentParticipants: 0, createdAt: getTimestamp(), updatedAt: getTimestamp(), createdBy: debugUserId, status: 'active', visibility: eventData.visibility || 'public' });
+        const eventDoc = Object.assign(Object.assign({}, eventData), { startDate: startDateTime, endDate: endDateTime, currentParticipants: 0, createdAt: getTimestamp(), updatedAt: getTimestamp(), createdBy: userId, status: 'active', visibility: eventData.visibility || 'public' });
         const eventRef = await db.collection('events').add(eventDoc);
         const eventId = eventRef.id;
         // Log admin action
         await db.collection('adminActions').add({
-            userId: debugUserId,
-            userEmail: 'christophersmithm16@gmail.com',
+            userId: userId,
+            userEmail: ((_d = context.auth.token) === null || _d === void 0 ? void 0 : _d.email) || 'unknown',
             action: 'create',
             entityType: 'event',
             entityId: eventId,
             entityName: title,
             details: eventData,
             timestamp: getTimestamp(),
-            ipAddress: 'unknown',
-            userAgent: 'unknown',
+            ipAddress: context.rawRequest.ip || 'unknown',
+            userAgent: context.rawRequest.headers['user-agent'] || 'unknown',
             success: true
         });
         // Send notification to chat if enabled
@@ -1934,4 +1928,100 @@ exports.adminUpdateLocation = functions.https.onCall(async (request) => {
         throw new functions.https.HttpsError('internal', 'Failed to update location');
     }
 });
+// Admin Delete User Function
+const adminDeleteUser = functions.https.onCall(async (data, context) => {
+    var _a;
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        const { userId, reason } = data;
+        if (!userId) {
+            throw new functions.https.HttpsError('invalid-argument', 'User ID is required');
+        }
+        // Check if requesting user has admin privileges
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError('permission-denied', 'User not found');
+        }
+        const userData = userDoc.data();
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin';
+        const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
+        const hasUserManagementPermission = (_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management');
+        if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
+            throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to delete users');
+        }
+        // Prevent deleting self
+        if (userId === context.auth.uid) {
+            throw new functions.https.HttpsError('invalid-argument', 'Cannot delete your own account');
+        }
+        // Check if target user exists
+        const targetUserDoc = await db.collection('users').doc(userId).get();
+        if (!targetUserDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'User not found');
+        }
+        const targetUserData = targetUserDoc.data();
+        // Prevent deleting root users (unless you're also root)
+        if ((targetUserData === null || targetUserData === void 0 ? void 0 : targetUserData.role) === 'root' && (userData === null || userData === void 0 ? void 0 : userData.role) !== 'root') {
+            throw new functions.https.HttpsError('permission-denied', 'Cannot delete root users');
+        }
+        // Delete user from Firestore
+        await db.collection('users').doc(userId).delete();
+        // Delete user from Firebase Auth (requires admin SDK)
+        try {
+            await auth.deleteUser(userId);
+            functions.logger.info(`Firebase Auth user deleted: ${userId}`);
+        }
+        catch (authError) {
+            functions.logger.warn(`Failed to delete Firebase Auth user ${userId}:`, authError);
+            // Continue even if Firebase Auth deletion fails - Firestore deletion is the main concern
+        }
+        // Log admin action
+        await db.collection('adminActions').add({
+            userId: context.auth.uid,
+            userEmail: (userData === null || userData === void 0 ? void 0 : userData.email) || 'unknown',
+            action: 'delete',
+            entityType: 'user',
+            entityId: userId,
+            entityName: (targetUserData === null || targetUserData === void 0 ? void 0 : targetUserData.displayName) || (targetUserData === null || targetUserData === void 0 ? void 0 : targetUserData.email) || 'Unknown',
+            details: {
+                reason: reason || 'No reason provided',
+                deletedUserRole: targetUserData === null || targetUserData === void 0 ? void 0 : targetUserData.role,
+                deletedUserEmail: targetUserData === null || targetUserData === void 0 ? void 0 : targetUserData.email
+            },
+            timestamp: getTimestamp(),
+            success: true
+        });
+        return {
+            success: true,
+            message: 'User deleted successfully'
+        };
+    }
+    catch (error) {
+        functions.logger.error('Error deleting user:', error);
+        // Log failed admin action
+        if (context.auth) {
+            try {
+                await db.collection('adminActions').add({
+                    userId: context.auth.uid,
+                    action: 'delete',
+                    entityType: 'user',
+                    entityId: (data === null || data === void 0 ? void 0 : data.userId) || 'unknown',
+                    details: { error: error instanceof Error ? error.message : 'Unknown error' },
+                    timestamp: getTimestamp(),
+                    success: false
+                });
+            }
+            catch (logError) {
+                functions.logger.error('Failed to log admin action:', logError);
+            }
+        }
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to delete user');
+    }
+});
+exports.adminDeleteUser = adminDeleteUser;
 //# sourceMappingURL=index.js.map

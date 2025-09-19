@@ -28,10 +28,10 @@ import {
   where, 
   getDocs,
   serverTimestamp,
-  deleteDoc,
   writeBatch
 } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../firebase/config';
 
 // User roles and permissions - Simplified and intuitive
 export enum UserRole {
@@ -1400,8 +1400,8 @@ class AuthService {
     }
   }
 
-  // Delete user (root only) - immediately removes all access
-  async deleteUser(userId: string): Promise<boolean> {
+  // Delete user (root only) - uses Cloud Function for secure deletion
+  async deleteUser(userId: string, reason?: string): Promise<boolean> {
     try {
       const currentUser = this.getCurrentUser();
       if (!currentUser || currentUser.role !== UserRole.ROOT) {
@@ -1413,21 +1413,15 @@ class AuthService {
         throw new Error('Cannot delete your own account');
       }
 
-      // Delete from Firestore first
-      await deleteDoc(doc(db, 'users', userId));
+      // Use Cloud Function for secure user deletion
+      const adminDeleteUserFunction = httpsCallable(functions, 'adminDeleteUser');
       
-      // Revoke Firebase Auth token (if user is currently logged in)
-      try {
-        await this.auth.currentUser?.getIdToken(true);
-      } catch (error) {
-        // User might not be logged in, which is fine
-        console.log('User not currently logged in');
-      }
+      const result = await adminDeleteUserFunction({
+        userId: userId,
+        reason: reason || 'No reason provided'
+      });
 
-      // Delete from Firebase Auth (requires admin SDK in production)
-      // For now, we'll just delete from Firestore and let the user's session expire
-      // In production, you'd want to use Firebase Admin SDK to delete the auth user
-
+      console.log('User deleted successfully:', result.data);
       return true;
     } catch (error: any) {
       console.error('Error deleting user:', error);

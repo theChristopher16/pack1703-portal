@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Calendar, Users, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Calendar, Users, CheckCircle, AlertCircle, Loader2, LogIn } from 'lucide-react';
 import { submitRSVP } from '../../services/firestore';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { formValidator, SecurityMetadata } from '../../services/security';
 import { rsvpFormSchema } from '../../types/validation';
+import { useAdmin } from '../../contexts/AdminContext';
+import LoginModal from '../Auth/LoginModal';
 
 interface RSVPFormProps {
   eventId: string;
@@ -47,10 +49,15 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
   onError,
   className = ''
 }) => {
+  const { state } = useAdmin();
   const analytics = useAnalytics();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  
+  // Check if user is authenticated
+  const isAuthenticated = !!state.currentUser;
 
   // Form state
   const [formData, setFormData] = useState<Partial<RSVPData>>({
@@ -264,6 +271,37 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
         <p className="text-red-600">
           This event has reached its maximum capacity. Please check back later for cancellations or consider joining the waitlist.
         </p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className={`bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center ${className}`}>
+        <LogIn className="w-12 h-12 text-blue-500 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-blue-700 mb-2">Login Required</h3>
+        <p className="text-blue-600 mb-4">
+          Please log in to your account to RSVP for this event. This helps us keep track of attendance and send you important updates.
+        </p>
+        <button
+          onClick={() => setShowLoginModal(true)}
+          className="px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-200 transform hover:scale-105 shadow-glow-primary/50"
+        >
+          <LogIn className="w-5 h-5 mr-2 inline" />
+          Login to RSVP
+        </button>
+        
+        {/* Login Modal */}
+        {showLoginModal && (
+          <LoginModal
+            isOpen={showLoginModal}
+            onClose={() => setShowLoginModal(false)}
+            onSuccess={() => {
+              setShowLoginModal(false);
+              // The component will re-render and show the form
+            }}
+          />
+        )}
       </div>
     );
   }

@@ -35,6 +35,7 @@ interface EventCardProps {
   onViewDetails: (eventId: string) => void;
   onAddToCalendar: (event: Event) => void;
   onShare: (event: Event) => void;
+  isAuthenticated?: boolean;
 }
 
 const EventCard: React.FC<EventCardProps> = ({ 
@@ -42,7 +43,8 @@ const EventCard: React.FC<EventCardProps> = ({
   onRSVP, 
   onViewDetails, 
   onAddToCalendar, 
-  onShare 
+  onShare,
+  isAuthenticated = true
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -247,9 +249,13 @@ const EventCard: React.FC<EventCardProps> = ({
           {/* Primary Actions */}
           <button
             onClick={() => onRSVP(event.id)}
-            className="flex-1 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-medium rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-200 transform hover:scale-105 shadow-glow-primary/50"
+            className={`flex-1 px-4 py-2 font-medium rounded-xl transition-all duration-200 transform hover:scale-105 ${
+              isAuthenticated 
+                ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 shadow-glow-primary/50'
+                : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-gray-500 hover:to-gray-600 shadow-glow-gray/50'
+            }`}
           >
-            RSVP Now
+            {isAuthenticated ? 'RSVP Now' : 'Login to RSVP'}
           </button>
           
           <button

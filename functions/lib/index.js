@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.testAuth = exports.setAdminClaims = exports.getAuditLogs = exports.getPendingUsers = exports.approveUser = exports.createPendingUser = exports.adminUpdateLocation = exports.adminCreateLocation = exports.processOverdueReminders = exports.processScheduledReminders = exports.systemCommand = exports.testAIConnection = exports.aiGenerateContent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.adminCreateEvent = exports.adminUpdateUser = exports.webSearch = exports.fetchUrlContent = exports.fetchNewEmails = exports.testEmailConnection = exports.helloWorld = exports.moderationDigest = exports.weatherProxy = exports.icsFeed = exports.claimVolunteerRole = exports.submitFeedback = exports.submitRSVP = void 0;
+exports.testAuth = exports.searchEvents = exports.getEventsOptimized = exports.setAdminClaims = exports.getAuditLogs = exports.getPendingUsers = exports.approveUser = exports.createPendingUser = exports.adminUpdateLocation = exports.adminCreateLocation = exports.processOverdueReminders = exports.processScheduledReminders = exports.systemCommand = exports.testAIConnection = exports.aiGenerateContent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.adminCreateEvent = exports.adminUpdateUser = exports.webSearch = exports.fetchUrlContent = exports.fetchNewEmails = exports.testEmailConnection = exports.helloWorld = exports.moderationDigest = exports.weatherProxy = exports.icsFeed = exports.claimVolunteerRole = exports.submitFeedback = exports.submitRSVP = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 // import { secretManagerService } from './secretManagerService'; // Temporarily disabled due to Node.js version compatibility
@@ -1932,6 +1932,167 @@ exports.adminUpdateLocation = functions.https.onCall(async (request) => {
             throw error;
         }
         throw new functions.https.HttpsError('internal', 'Failed to update location');
+    }
+});
+// Optimized Event Fetching Cloud Function
+exports.getEventsOptimized = functions.https.onCall(async (data, context) => {
+    try {
+        const { limit = 20, offset = 0, category, season, denTags, startDate, endDate, includePrivate = false } = data;
+        // Check App Check (skip in emulator and development for testing)
+        if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
+            throw new functions.https.HttpsError('unauthenticated', 'App Check required');
+        }
+        // Build optimized query
+        let query = db.collection('events');
+        // Add visibility filter unless including private events
+        if (!includePrivate) {
+            query = query.where('visibility', '==', 'public');
+        }
+        // Add category filter if specified
+        if (category && category !== 'all') {
+            query = query.where('category', '==', category);
+        }
+        // Add season filter if specified
+        if (season && season !== 'all') {
+            query = query.where('season', '==', season);
+        }
+        // Add date range filter if specified
+        if (startDate) {
+            const startDateTime = new Date(startDate);
+            query = query.where('startDate', '>=', startDateTime);
+        }
+        if (endDate) {
+            const endDateTime = new Date(endDate);
+            query = query.where('endDate', '<=', endDateTime);
+        }
+        // Order by start date and apply pagination
+        query = query.orderBy('startDate', 'asc').limit(limit).offset(offset);
+        const snapshot = await query.get();
+        // Transform data efficiently
+        const events = snapshot.docs.map((doc) => {
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+            const data = doc.data();
+            return {
+                id: doc.id,
+                title: data.title,
+                description: data.description,
+                startDate: ((_c = (_b = (_a = data.startDate) === null || _a === void 0 ? void 0 : _a.toDate) === null || _b === void 0 ? void 0 : _b.call(_a)) === null || _c === void 0 ? void 0 : _c.toISOString()) || data.startDate,
+                endDate: ((_f = (_e = (_d = data.endDate) === null || _d === void 0 ? void 0 : _d.toDate) === null || _e === void 0 ? void 0 : _e.call(_d)) === null || _f === void 0 ? void 0 : _f.toISOString()) || data.endDate,
+                startTime: data.startTime,
+                endTime: data.endTime,
+                location: data.location,
+                locationId: data.locationId,
+                category: data.category,
+                season: data.season,
+                seasonId: data.seasonId,
+                denTags: data.denTags || [],
+                maxCapacity: data.maxCapacity,
+                currentRSVPs: data.currentRSVPs || 0,
+                visibility: data.visibility,
+                status: data.status,
+                createdAt: ((_j = (_h = (_g = data.createdAt) === null || _g === void 0 ? void 0 : _g.toDate) === null || _h === void 0 ? void 0 : _h.call(_g)) === null || _j === void 0 ? void 0 : _j.toISOString()) || data.createdAt,
+                updatedAt: ((_m = (_l = (_k = data.updatedAt) === null || _k === void 0 ? void 0 : _k.toDate) === null || _l === void 0 ? void 0 : _l.call(_k)) === null || _m === void 0 ? void 0 : _m.toISOString()) || data.updatedAt
+            };
+        });
+        // Get total count for pagination (separate query for efficiency)
+        let countQuery = db.collection('events');
+        if (!includePrivate) {
+            countQuery = countQuery.where('visibility', '==', 'public');
+        }
+        if (category && category !== 'all') {
+            countQuery = countQuery.where('category', '==', category);
+        }
+        if (season && season !== 'all') {
+            countQuery = countQuery.where('season', '==', season);
+        }
+        const countSnapshot = await countQuery.get();
+        const totalCount = countSnapshot.size;
+        return {
+            success: true,
+            events,
+            pagination: {
+                limit,
+                offset,
+                totalCount,
+                hasMore: offset + limit < totalCount
+            },
+            filters: {
+                category,
+                season,
+                denTags,
+                startDate,
+                endDate
+            }
+        };
+    }
+    catch (error) {
+        console.error('Error fetching events:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to fetch events');
+    }
+});
+// Event Search Cloud Function with Full-Text Search
+exports.searchEvents = functions.https.onCall(async (data, context) => {
+    try {
+        const { query: searchQuery, limit = 10, category, season } = data;
+        // Check App Check (skip in emulator and development for testing)
+        if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
+            throw new functions.https.HttpsError('unauthenticated', 'App Check required');
+        }
+        if (!searchQuery || searchQuery.trim().length < 2) {
+            throw new functions.https.HttpsError('invalid-argument', 'Search query must be at least 2 characters');
+        }
+        // Build search query
+        let query = db.collection('events')
+            .where('visibility', '==', 'public')
+            .where('status', '==', 'active');
+        // Add filters
+        if (category && category !== 'all') {
+            query = query.where('category', '==', category);
+        }
+        if (season && season !== 'all') {
+            query = query.where('season', '==', season);
+        }
+        const snapshot = await query.get();
+        // Client-side text search (Firestore doesn't have full-text search)
+        const searchTerms = searchQuery.toLowerCase().split(' ').filter(term => term.length > 0);
+        const matchingEvents = snapshot.docs
+            .map(doc => {
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+            const data = doc.data();
+            // Calculate relevance score
+            let score = 0;
+            searchTerms.forEach(term => {
+                var _a;
+                if (data.title.toLowerCase().includes(term))
+                    score += 10;
+                if (data.description.toLowerCase().includes(term))
+                    score += 5;
+                if (data.location.toLowerCase().includes(term))
+                    score += 3;
+                if ((_a = data.denTags) === null || _a === void 0 ? void 0 : _a.some((tag) => tag.toLowerCase().includes(term)))
+                    score += 2;
+            });
+            return Object.assign(Object.assign({ id: doc.id }, data), { startDate: ((_c = (_b = (_a = data.startDate) === null || _a === void 0 ? void 0 : _a.toDate) === null || _b === void 0 ? void 0 : _b.call(_a)) === null || _c === void 0 ? void 0 : _c.toISOString()) || data.startDate, endDate: ((_f = (_e = (_d = data.endDate) === null || _d === void 0 ? void 0 : _d.toDate) === null || _e === void 0 ? void 0 : _e.call(_d)) === null || _f === void 0 ? void 0 : _f.toISOString()) || data.endDate, createdAt: ((_j = (_h = (_g = data.createdAt) === null || _g === void 0 ? void 0 : _g.toDate) === null || _h === void 0 ? void 0 : _h.call(_g)) === null || _j === void 0 ? void 0 : _j.toISOString()) || data.createdAt, updatedAt: ((_m = (_l = (_k = data.updatedAt) === null || _k === void 0 ? void 0 : _k.toDate) === null || _l === void 0 ? void 0 : _l.call(_k)) === null || _m === void 0 ? void 0 : _m.toISOString()) || data.updatedAt, relevanceScore: score });
+        })
+            .filter(event => event.relevanceScore > 0)
+            .sort((a, b) => b.relevanceScore - a.relevanceScore)
+            .slice(0, limit);
+        return {
+            success: true,
+            events: matchingEvents,
+            query: searchQuery,
+            totalResults: matchingEvents.length
+        };
+    }
+    catch (error) {
+        console.error('Error searching events:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to search events');
     }
 });
 //# sourceMappingURL=index.js.map

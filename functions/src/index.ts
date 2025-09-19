@@ -2404,5 +2404,225 @@ export const adminUpdateLocation = functions.https.onCall(async (request: any) =
 // Export user approval functions
 export { createPendingUser, approveUser, getPendingUsers, getAuditLogs, setAdminClaims };
 
+// Optimized Event Fetching Cloud Function
+export const getEventsOptimized = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    const { 
+      limit = 20, 
+      offset = 0, 
+      category, 
+      season, 
+      denTags, 
+      startDate, 
+      endDate,
+      includePrivate = false 
+    } = data as {
+      limit?: number;
+      offset?: number;
+      category?: string;
+      season?: string;
+      denTags?: string[];
+      startDate?: string;
+      endDate?: string;
+      includePrivate?: boolean;
+    };
+
+    // Check App Check (skip in emulator and development for testing)
+    if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
+      throw new functions.https.HttpsError('unauthenticated', 'App Check required');
+    }
+
+    // Build optimized query
+    let query: any = db.collection('events');
+    
+    // Add visibility filter unless including private events
+    if (!includePrivate) {
+      query = query.where('visibility', '==', 'public');
+    }
+    
+    // Add category filter if specified
+    if (category && category !== 'all') {
+      query = query.where('category', '==', category);
+    }
+    
+    // Add season filter if specified
+    if (season && season !== 'all') {
+      query = query.where('season', '==', season);
+    }
+    
+    // Add date range filter if specified
+    if (startDate) {
+      const startDateTime = new Date(startDate);
+      query = query.where('startDate', '>=', startDateTime);
+    }
+    
+    if (endDate) {
+      const endDateTime = new Date(endDate);
+      query = query.where('endDate', '<=', endDateTime);
+    }
+    
+    // Order by start date and apply pagination
+    query = query.orderBy('startDate', 'asc').limit(limit).offset(offset);
+
+    const snapshot = await query.get();
+    
+    // Transform data efficiently
+    const events = snapshot.docs.map((doc: admin.firestore.QueryDocumentSnapshot) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        title: data.title,
+        description: data.description,
+        startDate: data.startDate?.toDate?.()?.toISOString() || data.startDate,
+        endDate: data.endDate?.toDate?.()?.toISOString() || data.endDate,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        location: data.location,
+        locationId: data.locationId,
+        category: data.category,
+        season: data.season,
+        seasonId: data.seasonId,
+        denTags: data.denTags || [],
+        maxCapacity: data.maxCapacity,
+        currentRSVPs: data.currentRSVPs || 0,
+        visibility: data.visibility,
+        status: data.status,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
+      };
+    });
+
+    // Get total count for pagination (separate query for efficiency)
+    let countQuery: any = db.collection('events');
+    if (!includePrivate) {
+      countQuery = countQuery.where('visibility', '==', 'public');
+    }
+    if (category && category !== 'all') {
+      countQuery = countQuery.where('category', '==', category);
+    }
+    if (season && season !== 'all') {
+      countQuery = countQuery.where('season', '==', season);
+    }
+    
+    const countSnapshot = await countQuery.get();
+    const totalCount = countSnapshot.size;
+
+    return {
+      success: true,
+      events,
+      pagination: {
+        limit,
+        offset,
+        totalCount,
+        hasMore: offset + limit < totalCount
+      },
+      filters: {
+        category,
+        season,
+        denTags,
+        startDate,
+        endDate
+      }
+    };
+
+  } catch (error) {
+    console.error('Error fetching events:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to fetch events');
+  }
+});
+
+// Event Search Cloud Function with Full-Text Search
+export const searchEvents = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    const { 
+      query: searchQuery, 
+      limit = 10,
+      category,
+      season 
+    } = data as {
+      query: string;
+      limit?: number;
+      category?: string;
+      season?: string;
+    };
+
+    // Check App Check (skip in emulator and development for testing)
+    if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
+      throw new functions.https.HttpsError('unauthenticated', 'App Check required');
+    }
+
+    if (!searchQuery || searchQuery.trim().length < 2) {
+      throw new functions.https.HttpsError('invalid-argument', 'Search query must be at least 2 characters');
+    }
+
+    // Build search query
+    let query = db.collection('events')
+      .where('visibility', '==', 'public')
+      .where('status', '==', 'active');
+
+    // Add filters
+    if (category && category !== 'all') {
+      query = query.where('category', '==', category);
+    }
+    
+    if (season && season !== 'all') {
+      query = query.where('season', '==', season);
+    }
+
+    const snapshot = await query.get();
+    
+    // Client-side text search (Firestore doesn't have full-text search)
+    const searchTerms = searchQuery.toLowerCase().split(' ').filter(term => term.length > 0);
+    
+    const matchingEvents = snapshot.docs
+      .map(doc => {
+        const data = doc.data();
+        
+        // Calculate relevance score
+        let score = 0;
+        searchTerms.forEach(term => {
+          if (data.title.toLowerCase().includes(term)) score += 10;
+          if (data.description.toLowerCase().includes(term)) score += 5;
+          if (data.location.toLowerCase().includes(term)) score += 3;
+          if (data.denTags?.some((tag: string) => tag.toLowerCase().includes(term))) score += 2;
+        });
+        
+        return {
+          id: doc.id,
+          ...data,
+          startDate: data.startDate?.toDate?.()?.toISOString() || data.startDate,
+          endDate: data.endDate?.toDate?.()?.toISOString() || data.endDate,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+          relevanceScore: score
+        };
+      })
+      .filter(event => event.relevanceScore > 0)
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, limit);
+
+    return {
+      success: true,
+      events: matchingEvents,
+      query: searchQuery,
+      totalResults: matchingEvents.length
+    };
+
+  } catch (error) {
+    console.error('Error searching events:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to search events');
+  }
+});
+
 // Export simple test function
 export { testAuth };

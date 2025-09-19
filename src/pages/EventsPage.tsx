@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, List, Filter, Download, Share2 } from 'lucide-react';
+import { Calendar, List, Filter, Download, Share2, LogIn, User } from 'lucide-react';
 import EventCard from '../components/Events/EventCard';
 import EventCalendar from '../components/Events/EventCalendar';
 import EventFilters, { EventFiltersData as EventFiltersType } from '../components/Events/EventFilters';
 import { firestoreService } from '../services/firestore';
+import { functions } from '../firebase/config';
+import { httpsCallable } from 'firebase/functions';
+import { useAdmin } from '../contexts/AdminContext';
+import LoginModal from '../components/Auth/LoginModal';
 // import { analytics } from '../services/analytics';
 
 interface Event {
@@ -35,6 +39,7 @@ interface Event {
 }
 
 const EventsPage: React.FC = () => {
+  const { state } = useAdmin();
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
@@ -42,8 +47,12 @@ const EventsPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [usingFallbackData, setUsingFallbackData] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  
+  // Check if user is authenticated
+  const isAuthenticated = !!state.currentUser;
 
-  // Load events from Firebase
+  // Load events from Firebase using optimized Cloud Function
   useEffect(() => {
     const loadEvents = async () => {
       // setIsLoading(true);
@@ -51,50 +60,102 @@ const EventsPage: React.FC = () => {
       setUsingFallbackData(false);
       
       try {
-        // Load real events from Firebase
-        const firebaseEvents = await firestoreService.getEvents();
+        // Use optimized Cloud Function for better performance
+        const getEventsOptimized = httpsCallable(functions, 'getEventsOptimized');
+        const result = await getEventsOptimized({
+          limit: 50, // Load more events initially
+          offset: 0,
+          includePrivate: false
+        });
         
-        // Transform Firebase data to match our interface
-        const transformedEvents: Event[] = firebaseEvents.map((firebaseEvent: any) => ({
-          id: firebaseEvent.id,
-          title: firebaseEvent.title,
-          date: firebaseEvent.startDate?.toDate?.()?.toISOString()?.split('T')[0] || firebaseEvent.startDate,
-          startTime: firebaseEvent.startTime || '00:00',
-          endTime: firebaseEvent.endTime || '00:00',
-          location: {
-            name: firebaseEvent.locationName || firebaseEvent.location || 'TBD',
-            address: firebaseEvent.address || 'Address TBD',
-            coordinates: firebaseEvent.coordinates || undefined
-          },
-          category: firebaseEvent.category || 'pack-wide',
-          denTags: firebaseEvent.denTags || [],
-          maxCapacity: firebaseEvent.maxCapacity || null,
-          currentRSVPs: firebaseEvent.currentRSVPs || 0,
-          description: firebaseEvent.description || '',
-          packingList: firebaseEvent.packingList || [],
-          fees: firebaseEvent.fees || null,
-          contactEmail: firebaseEvent.contactEmail || 'cubmaster@sfpack1703.com',
-          isOvernight: firebaseEvent.isOvernight || false,
-          requiresPermission: firebaseEvent.requiresPermission || false,
-          attachments: firebaseEvent.attachments || []
-        }));
-        
-        setEvents(transformedEvents);
-        setFilteredEvents(transformedEvents);
-        
-        // Track successful data load
-        console.log('Events loaded successfully:', transformedEvents.length);
+        if ((result.data as any).success) {
+          const firebaseEvents = (result.data as any).events;
+          
+          // Transform Firebase data to match our interface
+          const transformedEvents: Event[] = firebaseEvents.map((firebaseEvent: any) => ({
+            id: firebaseEvent.id,
+            title: firebaseEvent.title,
+            date: firebaseEvent.startDate?.split('T')[0] || firebaseEvent.startDate,
+            startTime: firebaseEvent.startTime || '00:00',
+            endTime: firebaseEvent.endTime || '00:00',
+            location: {
+              name: firebaseEvent.locationName || firebaseEvent.location || 'TBD',
+              address: firebaseEvent.address || 'Address TBD',
+              coordinates: firebaseEvent.coordinates || undefined
+            },
+            category: firebaseEvent.category || 'pack-wide',
+            denTags: firebaseEvent.denTags || [],
+            maxCapacity: firebaseEvent.maxCapacity || null,
+            currentRSVPs: firebaseEvent.currentRSVPs || 0,
+            description: firebaseEvent.description || '',
+            packingList: firebaseEvent.packingList || [],
+            fees: firebaseEvent.fees || null,
+            contactEmail: firebaseEvent.contactEmail || 'cubmaster@sfpack1703.com',
+            isOvernight: firebaseEvent.isOvernight || false,
+            requiresPermission: firebaseEvent.requiresPermission || false,
+            attachments: firebaseEvent.attachments || []
+          }));
+          
+          setEvents(transformedEvents);
+          setFilteredEvents(transformedEvents);
+          
+          // Track successful data load
+          console.log('Events loaded successfully via Cloud Function:', transformedEvents.length);
+          console.log('Pagination info:', (result.data as any).pagination);
+          
+        } else {
+          throw new Error('Cloud Function returned unsuccessful result');
+        }
         
       } catch (error) {
         console.error('Error loading events:', error);
         
-        // No fallback data - show empty state
-        setEvents([]);
-        setFilteredEvents([]);
-        setError('Unable to load events. Please try again later.');
-        
-        // Track error
-        console.log('Failed to load events from database');
+        // Fallback to direct Firestore query if Cloud Function fails
+        try {
+          console.log('Falling back to direct Firestore query...');
+          const firebaseEvents = await firestoreService.getEvents();
+          
+          // Transform Firebase data to match our interface
+          const transformedEvents: Event[] = firebaseEvents.map((firebaseEvent: any) => ({
+            id: firebaseEvent.id,
+            title: firebaseEvent.title,
+            date: firebaseEvent.startDate?.toDate?.()?.toISOString()?.split('T')[0] || firebaseEvent.startDate,
+            startTime: firebaseEvent.startTime || '00:00',
+            endTime: firebaseEvent.endTime || '00:00',
+            location: {
+              name: firebaseEvent.locationName || firebaseEvent.location || 'TBD',
+              address: firebaseEvent.address || 'Address TBD',
+              coordinates: firebaseEvent.coordinates || undefined
+            },
+            category: firebaseEvent.category || 'pack-wide',
+            denTags: firebaseEvent.denTags || [],
+            maxCapacity: firebaseEvent.maxCapacity || null,
+            currentRSVPs: firebaseEvent.currentRSVPs || 0,
+            description: firebaseEvent.description || '',
+            packingList: firebaseEvent.packingList || [],
+            fees: firebaseEvent.fees || null,
+            contactEmail: firebaseEvent.contactEmail || 'cubmaster@sfpack1703.com',
+            isOvernight: firebaseEvent.isOvernight || false,
+            requiresPermission: firebaseEvent.requiresPermission || false,
+            attachments: firebaseEvent.attachments || []
+          }));
+          
+          setEvents(transformedEvents);
+          setFilteredEvents(transformedEvents);
+          
+          console.log('Events loaded successfully via fallback:', transformedEvents.length);
+          
+        } catch (fallbackError) {
+          console.error('Fallback also failed:', fallbackError);
+          
+          // No fallback data - show empty state
+          setEvents([]);
+          setFilteredEvents([]);
+          setError('Unable to load events. Please try again later.');
+          
+          // Track error
+          console.log('Failed to load events from both Cloud Function and database');
+        }
       } finally {
         // setIsLoading(false);
       }
@@ -182,6 +243,12 @@ const EventsPage: React.FC = () => {
   };
 
   const handleRSVP = (eventId: string) => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
+    
     // Navigate to event detail page with RSVP tab active
     window.location.href = `/events/${eventId}?tab=rsvp`;
   };
@@ -426,6 +493,7 @@ const EventsPage: React.FC = () => {
                     onViewDetails={handleViewDetails}
                     onAddToCalendar={handleAddToCalendar}
                     onShare={handleShare}
+                    isAuthenticated={isAuthenticated}
                   />
                 ))}
               </div>
@@ -461,6 +529,18 @@ const EventsPage: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Login Modal */}
+      {showLoginModal && (
+        <LoginModal
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          onSuccess={() => {
+            setShowLoginModal(false);
+            // Optionally refresh the page or update state
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -18,7 +18,7 @@ import RSVPForm from '../components/Forms/RSVPForm';
 
 const EventDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [event, setEvent] = useState<Event | null>(null);
+  const [event, setEvent] = useState<any>(null);
   const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'details' | 'rsvp' | 'map'>('details');
@@ -48,7 +48,7 @@ const EventDetailPage: React.FC = () => {
         const eventSnap = await getDoc(eventRef);
         
         if (eventSnap.exists()) {
-          const eventData = { id: eventSnap.id, ...eventSnap.data() } as Event;
+          const eventData = { id: eventSnap.id, ...eventSnap.data() } as any;
           setEvent(eventData);
           
           // Load location data if event has locationId
@@ -93,6 +93,16 @@ const EventDetailPage: React.FC = () => {
     });
   };
 
+  const formatTimeFromString = (timeString: string) => {
+    if (!timeString) return '';
+    // Convert "23:00" to "11:00 PM"
+    const [hours, minutes] = timeString.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
   const getCategoryColor = (category: string) => {
     const colors = {
       pack: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -124,18 +134,18 @@ const EventDetailPage: React.FC = () => {
     let endDate: Date;
     
     // Handle Firestore Timestamp or Date objects
-    if (event.start && typeof event.start === 'object' && 'toDate' in event.start) {
-      startDate = event.start.toDate();
-    } else if (event.start) {
-      startDate = new Date(event.start as any);
+    if (event.startDate && typeof event.startDate === 'object' && 'toDate' in event.startDate) {
+      startDate = event.startDate.toDate();
+    } else if (event.startDate) {
+      startDate = new Date(event.startDate as any);
     } else {
       startDate = new Date();
     }
     
-    if (event.end && typeof event.end === 'object' && 'toDate' in event.end) {
-      endDate = event.end.toDate();
-    } else if (event.end) {
-      endDate = new Date(event.end as any);
+    if (event.endDate && typeof event.endDate === 'object' && 'toDate' in event.endDate) {
+      endDate = event.endDate.toDate();
+    } else if (event.endDate) {
+      endDate = new Date(event.endDate as any);
     } else {
       endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Default to 1 hour later
     }
@@ -281,20 +291,20 @@ const EventDetailPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div className="flex items-center space-x-2 text-gray-600">
               <Calendar className="w-5 h-5" />
-              <span>{formatDate(event.start)}</span>
+              <span>{formatDate(event.startDate)}</span>
             </div>
             <div className="flex items-center space-x-2 text-gray-600">
               <Clock className="w-5 h-5" />
-              <span>{formatTime(event.start)} - {formatTime(event.end)}</span>
+              <span>{formatTimeFromString(event.startTime)} - {formatTimeFromString(event.endTime)}</span>
             </div>
             <div className="flex items-center space-x-2 text-gray-600">
               <MapPin className="w-5 h-5" />
               <span>{location?.name || 'Location TBD'}</span>
             </div>
-            {event.capacity && (
+            {event.currentRSVPs && (
               <div className="flex items-center space-x-2 text-gray-600">
                 <Users className="w-5 h-5" />
-                <span>Capacity: {event.capacity} families</span>
+                <span>RSVPs: {event.currentRSVPs}</span>
               </div>
             )}
           </div>
@@ -303,7 +313,7 @@ const EventDetailPage: React.FC = () => {
             <div className="flex items-center space-x-2">
               <Tag className="w-5 h-5 text-gray-600" />
               <div className="flex flex-wrap gap-2">
-                {event.denTags.map((tag, index) => (
+                {event.denTags.map((tag: string, index: number) => (
                   <span
                     key={index}
                     className="px-3 py-1 bg-accent/10 text-accent text-sm rounded-full border border-accent/20"
@@ -359,7 +369,7 @@ const EventDetailPage: React.FC = () => {
                   <div>
                     <h3 className="text-lg font-display font-semibold text-text mb-3">Packing List</h3>
                     <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {event.packingList.map((item, index) => (
+                      {event.packingList.map((item: string, index: number) => (
                         <li key={index} className="flex items-center space-x-2 text-gray-600">
                           <span className="w-2 h-2 bg-primary rounded-full"></span>
                           <span>{item}</span>
@@ -373,7 +383,7 @@ const EventDetailPage: React.FC = () => {
                   <div>
                     <h3 className="text-lg font-display font-semibold text-text mb-3">Attachments</h3>
                     <div className="space-y-2">
-                      {event.attachments.map((attachment, index) => (
+                      {event.attachments.map((attachment: any, index: number) => (
                         <a
                           key={index}
                           href={attachment.url}
@@ -413,9 +423,9 @@ const EventDetailPage: React.FC = () => {
               <RSVPForm 
                 eventId={event?.id || ''}
                 eventTitle={event?.title || ''}
-                eventDate={event?.start ? formatDate(event.start) : ''}
-                maxCapacity={event?.capacity || undefined}
-                currentRSVPs={0} // TODO: Get actual RSVP count from Firestore
+                eventDate={event?.startDate ? formatDate(event.startDate) : ''}
+                maxCapacity={event?.currentRSVPs || undefined}
+                currentRSVPs={event?.currentRSVPs || 0}
               />
             )}
 

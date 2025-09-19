@@ -115,7 +115,26 @@ const EventsPage: React.FC = () => {
           console.log('Falling back to direct Firestore query...');
           const firebaseEvents = await firestoreService.getEvents();
           
-          // Transform Firebase data to match our interface
+          // Use raw Firestore data structure (same as EventDetailPage expects)
+          const rawEvents: any[] = firebaseEvents.map((firebaseEvent: any) => ({
+            id: firebaseEvent.id,
+            title: firebaseEvent.title,
+            startDate: firebaseEvent.startDate,
+            endDate: firebaseEvent.endDate,
+            startTime: firebaseEvent.startTime,
+            endTime: firebaseEvent.endTime,
+            locationId: firebaseEvent.locationId,
+            category: firebaseEvent.category,
+            denTags: firebaseEvent.denTags || [],
+            currentRSVPs: firebaseEvent.currentRSVPs || 0,
+            description: firebaseEvent.description || '',
+            packingList: firebaseEvent.packingList || [],
+            attachments: firebaseEvent.attachments || [],
+            visibility: firebaseEvent.visibility,
+            status: firebaseEvent.status
+          }));
+          
+          // Also create transformed events for the EventsPage interface
           const transformedEvents: Event[] = firebaseEvents.map((firebaseEvent: any) => ({
             id: firebaseEvent.id,
             title: firebaseEvent.title,
@@ -144,6 +163,7 @@ const EventsPage: React.FC = () => {
           setFilteredEvents(transformedEvents);
           
           console.log('Events loaded successfully via fallback:', transformedEvents.length);
+          console.log('Raw event IDs:', rawEvents.map(e => e.id));
           
         } catch (fallbackError) {
           console.error('Fallback also failed:', fallbackError);

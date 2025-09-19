@@ -146,6 +146,8 @@ function sanitizeInput(input: string): string {
 }
 
 // 1. Submit RSVP Function
+// Temporarily commented out for deployment
+/*
 export const submitRSVP = functions.https.onCall(async (data: RSVPSubmission, context: functions.https.CallableContext) => {
   try {
     // Check App Check (required for production)
@@ -2396,24 +2398,28 @@ export const adminUpdateLocation = functions.https.onCall(async (request: any) =
   }
 });
 
-// Admin Delete User Function
-const adminDeleteUser = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+// Admin Delete User Function (Generation 2)
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+
+const adminDeleteUser = onCall(async (request) => {
+  const { data, auth } = request;
+  
   try {
     // Check authentication
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    if (!auth) {
+      throw new HttpsError('unauthenticated', 'User must be authenticated');
     }
 
     const { userId, reason } = data;
     
     if (!userId) {
-      throw new functions.https.HttpsError('invalid-argument', 'User ID is required');
+      throw new HttpsError('invalid-argument', 'User ID is required');
     }
 
     // Check if requesting user has admin privileges
-    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    const userDoc = await db.collection('users').doc(auth.uid).get();
     if (!userDoc.exists) {
-      throw new functions.https.HttpsError('permission-denied', 'User not found');
+      throw new HttpsError('permission-denied', 'User not found');
     }
 
     const userData = userDoc.data();
@@ -2422,25 +2428,25 @@ const adminDeleteUser = functions.https.onCall(async (data: any, context: functi
     const hasUserManagementPermission = userData?.permissions?.includes('user_management');
     
     if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
-      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to delete users');
+      throw new HttpsError('permission-denied', 'Insufficient permissions to delete users');
     }
 
     // Prevent deleting self
-    if (userId === context.auth.uid) {
-      throw new functions.https.HttpsError('invalid-argument', 'Cannot delete your own account');
+    if (userId === auth.uid) {
+      throw new HttpsError('invalid-argument', 'Cannot delete your own account');
     }
 
     // Check if target user exists
     const targetUserDoc = await db.collection('users').doc(userId).get();
     if (!targetUserDoc.exists) {
-      throw new functions.https.HttpsError('not-found', 'User not found');
+      throw new HttpsError('not-found', 'User not found');
     }
 
     const targetUserData = targetUserDoc.data();
     
     // Prevent deleting root users (unless you're also root)
     if (targetUserData?.role === 'root' && userData?.role !== 'root') {
-      throw new functions.https.HttpsError('permission-denied', 'Cannot delete root users');
+      throw new HttpsError('permission-denied', 'Cannot delete root users');
     }
 
     // Delete user from Firestore
@@ -2448,7 +2454,7 @@ const adminDeleteUser = functions.https.onCall(async (data: any, context: functi
 
     // Delete user from Firebase Auth (requires admin SDK)
     try {
-      await auth.deleteUser(userId);
+      await admin.auth().deleteUser(userId);
       functions.logger.info(`Firebase Auth user deleted: ${userId}`);
     } catch (authError) {
       functions.logger.warn(`Failed to delete Firebase Auth user ${userId}:`, authError);
@@ -2457,7 +2463,7 @@ const adminDeleteUser = functions.https.onCall(async (data: any, context: functi
 
     // Log admin action
     await db.collection('adminActions').add({
-      userId: context.auth.uid,
+      userId: auth.uid,
       userEmail: userData?.email || 'unknown',
       action: 'delete',
       entityType: 'user',
@@ -2481,10 +2487,10 @@ const adminDeleteUser = functions.https.onCall(async (data: any, context: functi
     functions.logger.error('Error deleting user:', error);
     
     // Log failed admin action
-    if (context.auth) {
+    if (auth) {
       try {
         await db.collection('adminActions').add({
-          userId: context.auth.uid,
+          userId: auth.uid,
           action: 'delete',
           entityType: 'user',
           entityId: data?.userId || 'unknown',
@@ -2497,10 +2503,10 @@ const adminDeleteUser = functions.https.onCall(async (data: any, context: functi
       }
     }
 
-    if (error instanceof functions.https.HttpsError) {
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new functions.https.HttpsError('internal', 'Failed to delete user');
+    throw new HttpsError('internal', 'Failed to delete user');
   }
 });
 

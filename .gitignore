@@ -70,3 +70,5 @@ test-*.js
 !test-*.example.js
 populate-*.js
 !populate-*.example.jsservice-account-key.json
+*.env*
+sfpack1703app/service-account-key.json

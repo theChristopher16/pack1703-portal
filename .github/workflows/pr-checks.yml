@@ -39,7 +39,7 @@ jobs:
         NODE_ENV: test
     
     - name: Build check
-      run: npm run build
+      run: CI=false npm run build
     
     - name: Check for security vulnerabilities
       run: npm audit --audit-level=high

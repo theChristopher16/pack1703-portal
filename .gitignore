@@ -69,4 +69,4 @@ Thumbs.db
 test-*.js
 !test-*.example.js
 populate-*.js
-!populate-*.example.js
+!populate-*.example.jsservice-account-key.json

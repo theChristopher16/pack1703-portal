@@ -38,11 +38,22 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
     setError(null);
 
     try {
+      // Use popup for all social providers
       const user = await authService.signInWithSocial(provider);
       onSuccess?.(user);
     } catch (error: any) {
       console.error(`Error signing in with ${provider}:`, error);
-      const errorMessage = error.message || `Failed to sign in with ${provider}`;
+      let errorMessage = error.message || `Failed to sign in with ${provider}`;
+      
+      // Provide more helpful error messages for common issues
+      if (error.message?.includes('Popup blocked')) {
+        errorMessage = 'Popup blocked by browser. Please allow popups for this site and try again.';
+      } else if (error.message?.includes('cancelled')) {
+        errorMessage = 'Login cancelled. Please try again if you want to sign in.';
+      } else if (error.message?.includes('account-exists-with-different-credential')) {
+        errorMessage = 'An account already exists with this email using a different sign-in method.';
+      }
+      
       setError(errorMessage);
       onError?.(errorMessage);
     } finally {
@@ -169,6 +180,13 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
             </button>
           </>
         )}
+
+        {/* Popup Notice */}
+        <div className="text-center">
+          <p className="text-xs text-gray-500 mb-2">
+            <strong>Note:</strong> If the login popup doesn't appear, please check that popups are allowed for this site.
+          </p>
+        </div>
 
         {/* Privacy Notice */}
         <div className="text-center">

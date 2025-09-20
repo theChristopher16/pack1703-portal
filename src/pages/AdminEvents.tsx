@@ -16,6 +16,7 @@ interface Event {
   startDate: string;
   endDate: string;
   location: string;
+  locationId?: string; // Add locationId for Firestore compatibility
   category: string;
   visibility: 'public' | 'link-only' | 'private';
   maxParticipants?: number;
@@ -426,7 +427,7 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) 
     description: event?.description || '',
     startDate: event?.startDate ? event.startDate.slice(0, 16) : '',
     endDate: event?.endDate ? event.endDate.slice(0, 16) : '',
-    location: event?.location || '',
+    location: event?.location || event?.locationId || '', // Handle both location and locationId
     category: event?.category || 'Meeting',
     visibility: event?.visibility || 'public',
     maxParticipants: event?.maxParticipants ? event.maxParticipants.toString() : '',

@@ -1,6 +1,6 @@
 // Service Worker for Pack 1703 Families Portal
 // Implements proper cache invalidation and update handling
-// Updated: 2025-01-27
+// Updated: 2025-09-19T20:39:25Z
 
 const CACHE_NAME = 'pack1703-portal-v1';
 const STATIC_CACHE_NAME = 'pack1703-static-v1';
@@ -86,8 +86,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Strategy: Cache First for static assets, Network First for dynamic content
-  if (isStaticAsset(request)) {
+  // Strategy: Network First for JS/CSS (to get updates), Cache First for other static assets
+  if (isJavaScriptOrCSS(request)) {
+    event.respondWith(networkFirst(request));
+  } else if (isStaticAsset(request)) {
     event.respondWith(cacheFirst(request));
   } else if (isDynamicContent(request)) {
     event.respondWith(networkFirst(request));
@@ -163,12 +165,20 @@ function staleWhileRevalidate(request) {
 }
 
 // Helper functions to determine content type
+function isJavaScriptOrCSS(request) {
+  const url = new URL(request.url);
+  return (
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.startsWith('/static/js/') ||
+    url.pathname.startsWith('/static/css/')
+  );
+}
+
 function isStaticAsset(request) {
   const url = new URL(request.url);
   return (
     url.pathname.startsWith('/static/') ||
-    url.pathname.endsWith('.js') ||
-    url.pathname.endsWith('.css') ||
     url.pathname.endsWith('.png') ||
     url.pathname.endsWith('.jpg') ||
     url.pathname.endsWith('.jpeg') ||

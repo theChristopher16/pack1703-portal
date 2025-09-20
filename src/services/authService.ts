@@ -16,6 +16,7 @@ import {
   GithubAuthProvider,
   TwitterAuthProvider,
   linkWithPopup,
+  unlink
   // linkWithRedirect
 } from 'firebase/auth';
 import { 
@@ -414,10 +415,14 @@ class AuthService {
   }
 
   constructor() {
-    // Only initialize Firebase-dependent features if not in test environment
-    if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'test') {
+    console.log('🔐 AuthService: Constructor called');
+    // Initialize Firebase features in all environments except explicit test mode
+    if (typeof process === 'undefined' || process.env.NODE_ENV !== 'test') {
+      console.log('🔐 AuthService: Initializing Firebase features...');
       this.initializeAuthStateListener();
-      this.handleRedirectResult();
+      this.handleRedirectResult(); // Always check for redirect results as fallback
+    } else {
+      console.log('🔐 AuthService: Skipping Firebase initialization (test environment)');
     }
   }
 
@@ -427,12 +432,20 @@ class AuthService {
     
     onAuthStateChanged(this.auth, async (firebaseUser: FirebaseUser | null) => {
       console.log('🔐 AuthService: Auth state changed:', firebaseUser ? `User ${firebaseUser.email} (${firebaseUser.uid})` : 'No user');
+      console.log('🔐 AuthService: Firebase user details:', firebaseUser ? {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        providerData: firebaseUser.providerData.map(p => p.providerId),
+        emailVerified: firebaseUser.emailVerified
+      } : null);
       
       if (firebaseUser) {
         try {
           // Only try to access Firestore if user is authenticated
           const appUser = await this.getUserFromFirestore(firebaseUser.uid);
           this.currentUser = appUser;
+          console.log('🔐 AuthService: User loaded from Firestore:', appUser.email);
           this.notifyAuthStateListeners(appUser);
         } catch (error) {
           console.error('AuthService: Error fetching user data:', error);
@@ -440,6 +453,7 @@ class AuthService {
           try {
             const appUser = await this.createUserFromFirebaseUser(firebaseUser);
             this.currentUser = appUser;
+            console.log('🔐 AuthService: User created in Firestore:', appUser.email);
             this.notifyAuthStateListeners(appUser);
           } catch (createError) {
             console.error('AuthService: Error creating user:', createError);
@@ -450,6 +464,7 @@ class AuthService {
         }
       } else {
         this.currentUser = null;
+        console.log('🔐 AuthService: No user logged in, setting currentUser to null');
         this.notifyAuthStateListeners(null);
       }
     });
@@ -457,14 +472,97 @@ class AuthService {
 
   // Handle redirect result for social login
   private async handleRedirectResult() {
+    console.log('🔐 AuthService: Current URL before checking redirect result:', window.location.href);
+    console.log('🔐 AuthService: Checking for redirect result...');
+    
+    // Check if we're coming from a Google redirect by looking at URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasGoogleParams = urlParams.has('code') || urlParams.has('state') || urlParams.has('error');
+    console.log('🔐 AuthService: Has Google redirect params:', hasGoogleParams);
+    console.log('🔐 AuthService: URL params:', Object.fromEntries(urlParams.entries()));
+    
+    // Check for error parameters that might indicate a redirect issue
+    if (urlParams.has('error')) {
+      console.log('🔐 AuthService: ERROR - Redirect error detected:', urlParams.get('error'));
+      console.log('🔐 AuthService: Error description:', urlParams.get('error_description'));
+    }
+    
+    // Add a small delay to ensure the redirect is fully processed
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
     try {
       const result = await getRedirectResult(this.auth);
+      console.log('🔐 AuthService: Redirect result:', result ? 'Found' : 'None');
+      
       if (result) {
         // User signed in via redirect
-        console.log('User signed in via redirect:', result.user);
+        console.log('🔐 AuthService: User signed in via redirect:', result.user.email, result.user.uid);
+        console.log('🔐 AuthService: Provider data:', result.providerId);
+        
+        // Get or create user data from Firestore
+        let appUser: AppUser;
+        try {
+          console.log('🔐 AuthService: Attempting to get user from Firestore...');
+          appUser = await this.getUserFromFirestore(result.user.uid);
+          console.log('🔐 AuthService: User found in Firestore:', appUser.email);
+          
+          // Check Firebase Auth custom claims for approval status
+          const idTokenResult = await result.user.getIdTokenResult();
+          const customClaims = idTokenResult.claims;
+          console.log('🔐 AuthService: Custom claims:', customClaims);
+          
+          // If user has custom claims, check approval status
+          if (customClaims && typeof customClaims.approved === 'boolean') {
+            if (!customClaims.approved) {
+              // Sign out the user immediately if they're not approved
+              await signOut(this.auth);
+              throw new Error('Your account is pending approval. Please wait for pack leadership to approve your account before signing in.');
+            }
+          } else {
+            // For users without custom claims, check Firestore status
+            if (appUser.status === 'pending') {
+              await signOut(this.auth);
+              throw new Error('Your account is pending approval. Please wait for pack leadership to approve your account before signing in.');
+            }
+            
+            if (appUser.status === 'denied') {
+              await signOut(this.auth);
+              throw new Error('Your account has been denied. Please contact pack leadership for more information.');
+            }
+          }
+        } catch (error) {
+          // User doesn't exist, create them
+          console.log('🔐 AuthService: User not found in Firestore, creating new user...');
+          appUser = await this.createUserFromFirebaseUser(result.user);
+          console.log('🔐 AuthService: New user created:', appUser.email);
+        }
+        
+        // Update last login time
+        console.log('🔐 AuthService: Updating last login time...');
+        await updateDoc(doc(db, 'users', result.user.uid), {
+          lastLoginAt: serverTimestamp()
+        });
+
+        this.currentUser = appUser;
+        this.notifyAuthStateListeners(appUser);
+        
+        console.log('🔐 AuthService: Redirect authentication completed successfully');
+      } else {
+        console.log('🔐 AuthService: No redirect result found');
+        console.log('🔐 AuthService: Current URL after no redirect result:', window.location.href);
+        console.log('🔐 AuthService: URL search params:', window.location.search);
+        console.log('🔐 AuthService: URL hash:', window.location.hash);
+        
+        // If we have Google redirect params but no result, there might be an issue
+        if (hasGoogleParams) {
+          console.log('🔐 AuthService: WARNING - Google redirect params detected but no result found');
+          console.log('🔐 AuthService: This might indicate a redirect processing issue');
+        }
       }
-    } catch (error) {
-      console.error('Error handling redirect result:', error);
+    } catch (error: any) {
+      console.error('🔐 AuthService: Error handling redirect result:', error);
+      console.error('🔐 AuthService: Error details:', error.message);
+      console.error('🔐 AuthService: Error stack:', error.stack);
     }
   }
 
@@ -748,17 +846,49 @@ class AuthService {
           throw new Error('Unsupported social provider');
       }
 
-      const result = await signInWithPopup(this.auth, authProvider);
-      const firebaseUser = result.user;
+      // Use popup for social login
+      console.log(`🔐 AuthService: Attempting popup sign-in with ${provider}`);
+      console.log('🔐 AuthService: Auth instance:', this.auth);
+      console.log('🔐 AuthService: Auth provider:', authProvider);
+      
+      let result;
+      try {
+        result = await signInWithPopup(this.auth, authProvider);
+        console.log('🔐 AuthService: Popup sign-in successful:', result.user.email);
+      } catch (popupError: any) {
+        console.error('🔐 AuthService: Popup sign-in failed:', popupError);
+        console.error('🔐 AuthService: Error code:', popupError.code);
+        console.error('🔐 AuthService: Error message:', popupError.message);
+        
+        // Handle specific popup errors with better user feedback
+        if (popupError.code === 'auth/popup-blocked') {
+          throw new Error('Popup blocked by browser. Please allow popups for this site and try again.');
+        } else if (popupError.code === 'auth/popup-closed-by-user') {
+          throw new Error('Login cancelled. Please try again if you want to sign in.');
+        } else if (popupError.code === 'auth/cancelled-popup-request') {
+          throw new Error('Login cancelled. Please try again.');
+        } else if (popupError.code === 'auth/account-exists-with-different-credential') {
+          throw new Error('An account already exists with this email using a different sign-in method. Please use the original sign-in method or contact support.');
+        } else if (popupError.code === 'auth/operation-not-allowed') {
+          throw new Error('This sign-in method is not enabled. Please contact support.');
+        } else if (popupError.code === 'auth/too-many-requests') {
+          throw new Error('Too many failed attempts. Please try again later.');
+        }
+        
+        // For other errors, provide a generic message
+        throw new Error(`Sign-in failed: ${popupError.message || 'Please try again.'}`);
+      }
       
       // Get or create user data from Firestore
       let appUser: AppUser;
       try {
-        appUser = await this.getUserFromFirestore(firebaseUser.uid);
+        appUser = await this.getUserFromFirestore(result.user.uid);
+        console.log('🔐 AuthService: User found in Firestore:', appUser.email);
         
         // Check Firebase Auth custom claims for approval status
-        const idTokenResult = await firebaseUser.getIdTokenResult();
+        const idTokenResult = await result.user.getIdTokenResult();
         const customClaims = idTokenResult.claims;
+        console.log('🔐 AuthService: Custom claims:', customClaims);
         
         // If user has custom claims, check approval status
         if (customClaims && typeof customClaims.approved === 'boolean') {
@@ -781,11 +911,13 @@ class AuthService {
         }
       } catch (error) {
         // User doesn't exist, create them
-        appUser = await this.createUserFromFirebaseUser(firebaseUser);
+        console.log('🔐 AuthService: User not found in Firestore, creating new user...');
+        appUser = await this.createUserFromFirebaseUser(result.user);
+        console.log('🔐 AuthService: New user created:', appUser.email);
       }
       
       // Update last login time
-      await updateDoc(doc(db, 'users', firebaseUser.uid), {
+      await updateDoc(doc(db, 'users', result.user.uid), {
         lastLoginAt: serverTimestamp()
       });
 
@@ -794,7 +926,7 @@ class AuthService {
       
       return appUser;
     } catch (error) {
-      console.error('Error signing in with social provider:', error);
+      console.error('🔐 AuthService: Error signing in with social provider:', error);
       throw error;
     }
   }
@@ -1265,10 +1397,12 @@ class AuthService {
 
   // Add auth state listener
   onAuthStateChanged(listener: (user: AppUser | null) => void): () => void {
+    console.log('🔐 AuthService: Adding auth state listener');
     this.authStateListeners.push(listener);
     
     // Return unsubscribe function
     return () => {
+      console.log('🔐 AuthService: Removing auth state listener');
       const index = this.authStateListeners.indexOf(listener);
       if (index > -1) {
         this.authStateListeners.splice(index, 1);
@@ -1593,6 +1727,22 @@ class AuthService {
     }
 
     try {
+      // Check if the account is already linked
+      const user = this.auth.currentUser;
+      if (!user) {
+        throw new Error('No authenticated user');
+      }
+
+      const providerId = this.getProviderId(provider);
+      const isAlreadyLinked = user.providerData.some((providerData: any) => 
+        providerData.providerId === providerId
+      );
+
+      if (isAlreadyLinked) {
+        console.log(`🔐 Account already linked with ${providerId}`);
+        return; // Account is already linked, no need to do anything
+      }
+
       let authProvider;
       
       switch (provider) {
@@ -1621,6 +1771,103 @@ class AuthService {
       await linkWithPopup(this.auth.currentUser!, authProvider);
     } catch (error) {
       console.error('Error linking social account:', error);
+      throw error;
+    }
+  }
+
+  // Helper method to get provider ID
+  private getProviderId(provider: SocialProvider): string {
+    switch (provider) {
+      case SocialProvider.GOOGLE:
+        return 'google.com';
+      case SocialProvider.APPLE:
+        return 'apple.com';
+      case SocialProvider.FACEBOOK:
+        return 'facebook.com';
+      case SocialProvider.GITHUB:
+        return 'github.com';
+      case SocialProvider.TWITTER:
+        return 'twitter.com';
+      case SocialProvider.MICROSOFT:
+        return 'microsoft.com';
+      default:
+        throw new Error('Unsupported social provider');
+    }
+  }
+
+  // Check if a social account is already linked
+  isSocialAccountLinked(provider: SocialProvider): boolean {
+    if (!this.auth.currentUser) {
+      return false;
+    }
+
+    const providerId = this.getProviderId(provider);
+    return this.auth.currentUser.providerData.some((providerData: any) => 
+      providerData.providerId === providerId
+    );
+  }
+
+  // Get list of linked providers
+  getLinkedProviders(): string[] {
+    if (!this.auth.currentUser) {
+      return [];
+    }
+
+    return this.auth.currentUser.providerData.map((providerData: any) => providerData.providerId);
+  }
+
+  // Unlink a social account
+  async unlinkSocialAccount(provider: SocialProvider): Promise<void> {
+    if (!this.auth.currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    try {
+      const providerId = this.getProviderId(provider);
+      console.log(`🔐 AuthService: Attempting to unlink ${providerId}`);
+      
+      // Check if the account is actually linked
+      const isLinked = this.isSocialAccountLinked(provider);
+      if (!isLinked) {
+        console.log(`🔐 Account is not linked with ${providerId}`);
+        return; // Account is not linked, no need to do anything
+      }
+
+      // Unlink the provider
+      await unlink(this.auth.currentUser, providerId);
+      console.log(`🔐 AuthService: Successfully unlinked ${providerId}`);
+      
+      // Refresh the user token to get updated provider data
+      await this.auth.currentUser.reload();
+      
+    } catch (error) {
+      console.error('🔐 AuthService: Error unlinking social account:', error);
+      throw error;
+    }
+  }
+
+  // Unlink and re-link a social account (useful for troubleshooting)
+  async relinkSocialAccount(provider: SocialProvider): Promise<void> {
+    if (!this.auth.currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    try {
+      console.log(`🔐 AuthService: Relinking ${provider} account`);
+      
+      // First unlink the account
+      await this.unlinkSocialAccount(provider);
+      
+      // Wait a moment for the unlink to complete
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Then re-link the account
+      await this.linkSocialAccount(provider);
+      
+      console.log(`🔐 AuthService: Successfully relinked ${provider} account`);
+      
+    } catch (error) {
+      console.error('🔐 AuthService: Error relinking social account:', error);
       throw error;
     }
   }

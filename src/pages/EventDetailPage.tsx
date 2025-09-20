@@ -16,9 +16,12 @@ import { Event, Location } from '../types';
 import { LoadingSpinner } from '../components/Loading';
 import RSVPForm from '../components/Forms/RSVPForm';
 
-const EventDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  console.log('EventDetailPage received id:', id);
+  const EventDetailPage: React.FC = () => {
+    const { eventId } = useParams<{ eventId: string }>();
+    console.log('EventDetailPage received eventId:', eventId);
+    console.log('EventDetailPage URL:', window.location.href);
+    console.log('EventDetailPage pathname:', window.location.pathname);
+    console.log('EventDetailPage search params:', window.location.search);
   const [event, setEvent] = useState<any>(null);
   const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,23 +36,23 @@ const EventDetailPage: React.FC = () => {
   }, [searchParams]);
 
   useEffect(() => {
-    const loadEventData = async () => {
-      if (!id) {
-        setIsLoading(false);
-        return;
-      }
+  const loadEventData = async () => {
+    if (!eventId) {
+      setIsLoading(false);
+      return;
+    }
 
-      try {
-        // Import Firebase functions
-        const { doc, getDoc } = await import('firebase/firestore');
-        const { db } = await import('../firebase/config');
-        
-        console.log('EventDetailPage: Fetching event with id:', id);
-        
-        // Load event data
-        const eventRef = doc(db, 'events', id);
-        console.log('EventDetailPage: Event ref path:', eventRef.path);
-        const eventSnap = await getDoc(eventRef);
+    try {
+      // Import Firebase functions
+      const { doc, getDoc } = await import('firebase/firestore');
+      const { db } = await import('../firebase/config');
+      
+      console.log('EventDetailPage: Fetching event with eventId:', eventId);
+      
+      // Load event data
+      const eventRef = doc(db, 'events', eventId);
+      console.log('EventDetailPage: Event ref path:', eventRef.path);
+      const eventSnap = await getDoc(eventRef);
         
         console.log('EventDetailPage: Event exists:', eventSnap.exists());
         if (eventSnap.exists()) {
@@ -79,7 +82,7 @@ const EventDetailPage: React.FC = () => {
     };
 
     loadEventData();
-  }, [id]);
+  }, [eventId]);
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'TBD';
@@ -222,13 +225,13 @@ const EventDetailPage: React.FC = () => {
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-surface py-12">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-2xl font-display font-bold text-text mb-4">
+            <h1 className="text-2xl font-display font-bold text-black mb-4">
               Event Not Found
             </h1>
-            <p className="text-gray-600 mb-6">
+            <p className="text-black mb-6">
               The event you're looking for doesn't exist or has been removed.
             </p>
             <Link
@@ -245,7 +248,17 @@ const EventDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-surface py-12">
+    <div className="min-h-screen py-12" style={{background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'}}>
+      <style>{`
+        .force-black-text {
+          color: #000000 !important;
+          text-shadow: none !important;
+        }
+        .force-black-text * {
+          color: #000000 !important;
+          text-shadow: none !important;
+        }
+      `}</style>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Back Button */}
         <div className="mb-6">
@@ -259,7 +272,7 @@ const EventDetailPage: React.FC = () => {
         </div>
 
         {/* Event Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft border border-gray-200 dark:border-gray-700 p-6 mb-8">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8" style={{backgroundColor: '#ffffff', boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'}}>
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-3">
               <span className="text-4xl">{getCategoryIcon(event.category)}</span>
@@ -278,14 +291,14 @@ const EventDetailPage: React.FC = () => {
             <div className="flex space-x-2">
               <button
                 onClick={downloadICS}
-                className="inline-flex items-center px-3 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors duration-200"
+                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-200 transform hover:scale-105 shadow-glow-primary/50"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Add to Calendar
               </button>
               <button
                 onClick={shareEvent}
-                className="inline-flex items-center px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
+                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-200 transform hover:scale-105 shadow-glow-gray/50"
               >
                 <Share2 className="w-4 h-4 mr-2" />
                 Share
@@ -293,25 +306,25 @@ const EventDetailPage: React.FC = () => {
             </div>
           </div>
 
-          <h1 className="text-3xl font-display font-bold text-text mb-4">
+          <h1 className="text-3xl font-display font-bold mb-4" style={{color: '#000000', textShadow: 'none', fontWeight: 'bold'}}>
             {event.title}
           </h1>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="flex items-center space-x-2 text-gray-600">
+            <div className="flex items-center space-x-2 text-black !text-black" style={{color: '#000000'}}>
               <Calendar className="w-5 h-5" />
               <span>{formatDate(event.startDate)}</span>
             </div>
-            <div className="flex items-center space-x-2 text-gray-600">
+            <div className="flex items-center space-x-2 text-black !text-black" style={{color: '#000000'}}>
               <Clock className="w-5 h-5" />
               <span>{formatTimeFromString(event.startTime)} - {formatTimeFromString(event.endTime)}</span>
             </div>
-            <div className="flex items-center space-x-2 text-gray-600">
+            <div className="flex items-center space-x-2 text-black !text-black" style={{color: '#000000'}}>
               <MapPin className="w-5 h-5" />
               <span>{location?.name || 'Location TBD'}</span>
             </div>
             {event.currentRSVPs && (
-              <div className="flex items-center space-x-2 text-gray-600">
+              <div className="flex items-center space-x-2 text-black !text-black" style={{color: '#000000'}}>
                 <Users className="w-5 h-5" />
                 <span>RSVPs: {event.currentRSVPs}</span>
               </div>
@@ -320,12 +333,13 @@ const EventDetailPage: React.FC = () => {
 
           {event.denTags && event.denTags.length > 0 && (
             <div className="flex items-center space-x-2">
-              <Tag className="w-5 h-5 text-gray-600" />
+              <Tag className="w-5 h-5 text-black !text-black" style={{color: '#000000'}} />
               <div className="flex flex-wrap gap-2">
                 {event.denTags.map((tag: string, index: number) => (
                   <span
                     key={index}
-                    className="px-3 py-1 bg-accent/10 text-accent text-sm rounded-full border border-accent/20"
+                    className="px-3 py-1 bg-accent/10 text-black !text-black text-sm rounded-full border border-accent/20"
+                    style={{color: '#000000'}}
                   >
                     {tag}
                   </span>
@@ -336,7 +350,7 @@ const EventDetailPage: React.FC = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft border border-gray-200 dark:border-gray-700 mb-8">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-8" style={{backgroundColor: '#ffffff', boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'}}>
           <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="flex space-x-8 px-6">
               {[
@@ -352,7 +366,7 @@ const EventDetailPage: React.FC = () => {
                     className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
                       activeTab === tab.id
                         ? 'border-primary text-primary'
-                        : 'border-transparent text-gray-600 hover:text-text hover:border-gray-300'
+                        : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                     }`}
                   >
                     <Icon className="w-4 h-4 inline mr-2" />
@@ -368,18 +382,18 @@ const EventDetailPage: React.FC = () => {
             {activeTab === 'details' && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-display font-semibold text-text mb-3">Description</h3>
-                  <p className="text-gray-600 leading-relaxed">
+                  <h3 className="text-lg font-display font-semibold text-black !text-black mb-3" style={{color: '#000000'}}>Description</h3>
+                  <p className="text-black !text-black leading-relaxed" style={{color: '#000000'}}>
                     {event.description}
                   </p>
                 </div>
 
                 {event.packingList && event.packingList.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-display font-semibold text-text mb-3">Packing List</h3>
+                    <h3 className="text-lg font-display font-semibold text-black !text-black mb-3" style={{color: '#000000'}}>Packing List</h3>
                     <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {event.packingList.map((item: string, index: number) => (
-                        <li key={index} className="flex items-center space-x-2 text-gray-600">
+                        <li key={index} className="flex items-center space-x-2 text-black !text-black" style={{color: '#000000'}}>
                           <span className="w-2 h-2 bg-primary rounded-full"></span>
                           <span>{item}</span>
                         </li>
@@ -390,7 +404,7 @@ const EventDetailPage: React.FC = () => {
 
                 {event.attachments && event.attachments.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-display font-semibold text-text mb-3">Attachments</h3>
+                    <h3 className="text-lg font-display font-semibold text-black !text-black mb-3" style={{color: '#000000'}}>Attachments</h3>
                     <div className="space-y-2">
                       {event.attachments.map((attachment: any, index: number) => (
                         <a
@@ -409,17 +423,17 @@ const EventDetailPage: React.FC = () => {
 
                 {location && (
                   <div>
-                    <h3 className="text-lg font-display font-semibold text-text mb-3">Location Details</h3>
-                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                      <h4 className="font-medium text-text mb-2">{location.name}</h4>
-                      <p className="text-gray-600 mb-3">{location.address}</p>
+                    <h3 className="text-lg font-display font-semibold text-black !text-black mb-3" style={{color: '#000000'}}>Location Details</h3>
+                    <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm" style={{backgroundColor: '#ffffff', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'}}>
+                      <h4 className="font-medium text-black !text-black mb-2" style={{color: '#000000'}}>{location.name}</h4>
+                      <p className="text-black !text-black mb-3" style={{color: '#000000'}}>{location.address}</p>
                       {location.notesPublic && (
-                        <p className="text-gray-600 text-sm">{location.notesPublic}</p>
+                        <p className="text-black !text-black text-sm" style={{color: '#000000'}}>{location.notesPublic}</p>
                       )}
                       {location.parking?.text && (
-                        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-                          <h5 className="font-medium text-text text-sm mb-1">Parking</h5>
-                          <p className="text-gray-600 text-sm">{location.parking.text}</p>
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <h5 className="font-medium text-black !text-black text-sm mb-1" style={{color: '#000000'}}>Parking</h5>
+                          <p className="text-black !text-black text-sm" style={{color: '#000000'}}>{location.parking.text}</p>
                         </div>
                       )}
                     </div>
@@ -440,21 +454,35 @@ const EventDetailPage: React.FC = () => {
 
             {activeTab === 'map' && (
               <div className="text-center py-12">
-                <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-display font-semibold text-text mb-2">Interactive Map</h3>
-                <p className="text-gray-600 mb-6">
-                  Map integration coming soon! This will show the event location with directions.
-                </p>
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 max-w-md mx-auto">
-                  <p className="text-sm text-gray-600">
-                    Features planned:
+                <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm max-w-2xl mx-auto" style={{backgroundColor: '#ffffff', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'}}>
+                  <MapPin className="w-16 h-16 text-primary mx-auto mb-4" />
+                  <h3 className="text-lg font-display font-semibold text-black !text-black mb-2" style={{color: '#000000'}}>Interactive Map</h3>
+                  <p className="text-black !text-black mb-6" style={{color: '#000000'}}>
+                    Map integration coming soon! This will show the event location with directions.
                   </p>
-                  <ul className="text-sm text-gray-600 mt-2 space-y-1">
-                    <li>• Interactive map with location pin</li>
-                    <li>• Directions from your location</li>
-                    <li>• Parking information overlay</li>
-                    <li>• Mobile-friendly navigation</li>
-                  </ul>
+                  <div className="bg-white rounded-lg p-4 max-w-md mx-auto border border-gray-200 shadow-sm" style={{backgroundColor: '#ffffff', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'}}>
+                    <p className="text-sm text-black !text-black font-medium mb-3" style={{color: '#000000'}}>
+                      Features planned:
+                    </p>
+                    <ul className="text-sm text-black !text-black space-y-1 text-left" style={{color: '#000000'}}>
+                      <li className="flex items-center">
+                        <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
+                        Interactive map with location pin
+                      </li>
+                      <li className="flex items-center">
+                        <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
+                        Directions from your location
+                      </li>
+                      <li className="flex items-center">
+                        <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
+                        Parking information overlay
+                      </li>
+                      <li className="flex items-center">
+                        <span className="w-2 h-2 bg-primary rounded-full mr-3"></span>
+                        Mobile-friendly navigation
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             )}

@@ -27,6 +27,8 @@ import FormsDemoPage from './pages/FormsDemoPage';
 import CloudFunctionsTestPage from './pages/CloudFunctionsTestPage';
 import NotFoundPage from './pages/NotFoundPage';
 import EventDetailPage from './pages/EventDetailPage';
+import TestNavigation from './pages/TestNavigation';
+import AuthDebugPage from './pages/AuthDebugPage';
 
 // Admin Pages
 import AdminDashboard from './pages/AdminDashboard';
@@ -130,6 +132,8 @@ function App() {
           <Route path="/" element={<Layout><HomePage /></Layout>} />
           <Route path="/events" element={<Layout><EventsPage /></Layout>} />
           <Route path="/events/:eventId" element={<Layout><EventDetailPage /></Layout>} />
+          <Route path="/test-navigation" element={<TestNavigation />} />
+          <Route path="/auth-debug" element={<AuthDebugPage />} />
           <Route path="/locations" element={<Layout><LocationsPage /></Layout>} />
           <Route path="/announcements" element={<Layout><AnnouncementsPage /></Layout>} />
           <Route path="/resources" element={<Layout><ResourcesPage /></Layout>} />

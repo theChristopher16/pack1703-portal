@@ -259,7 +259,11 @@ const EventCard: React.FC<EventCardProps> = ({
           </button>
           
           <button
-            onClick={() => onViewDetails(event.id)}
+            onClick={() => {
+              console.log('EventCard: View Details clicked for event ID:', event.id);
+              console.log('EventCard: Full event object:', event);
+              onViewDetails(event.id);
+            }}
             className="px-4 py-2 bg-white border-2 border-primary-300 text-primary-600 font-medium rounded-xl hover:bg-primary-50 hover:border-primary-400 transition-all duration-200"
           >
             View Details

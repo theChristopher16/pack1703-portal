@@ -8,6 +8,7 @@ import { functions } from '../firebase/config';
 import { httpsCallable } from 'firebase/functions';
 import { useAdmin } from '../contexts/AdminContext';
 import LoginModal from '../components/Auth/LoginModal';
+import { useNavigate } from 'react-router-dom';
 // import { analytics } from '../services/analytics';
 
 interface Event {
@@ -38,8 +39,12 @@ interface Event {
   }>;
 }
 
-const EventsPage: React.FC = () => {
-  const { state } = useAdmin();
+  const EventsPage: React.FC = () => {
+    console.log('EventsPage: Component rendered');
+    console.log('EventsPage: Current URL:', window.location.href);
+    console.log('EventsPage: Current pathname:', window.location.pathname);
+    const { state } = useAdmin();
+    const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
@@ -54,7 +59,9 @@ const EventsPage: React.FC = () => {
 
   // Load events from Firebase using optimized Cloud Function
   useEffect(() => {
+    console.log('EventsPage: useEffect triggered - starting to load events');
     const loadEvents = async () => {
+      console.log('EventsPage: loadEvents function called');
       // setIsLoading(true);
       setError(null);
       setUsingFallbackData(false);
@@ -113,7 +120,15 @@ const EventsPage: React.FC = () => {
         // Fallback to direct Firestore query if Cloud Function fails
         try {
           console.log('Falling back to direct Firestore query...');
-          const firebaseEvents = await firestoreService.getEvents();
+          
+          // Add timeout to Firestore query
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Firestore query timeout')), 10000); // 10 second timeout
+          });
+          
+          const firestorePromise = firestoreService.getEvents();
+          
+          const firebaseEvents = await Promise.race([firestorePromise, timeoutPromise]) as any[];
           
           // Use raw Firestore data structure (same as EventDetailPage expects)
           const rawEvents: any[] = firebaseEvents.map((firebaseEvent: any) => ({
@@ -170,13 +185,37 @@ const EventsPage: React.FC = () => {
         } catch (fallbackError) {
           console.error('Fallback also failed:', fallbackError);
           
-          // No fallback data - show empty state
-          setEvents([]);
-          setFilteredEvents([]);
-          setError('Unable to load events. Please try again later.');
+          // Final fallback: Create a mock event with the known ID for testing
+          console.log('Creating mock event for testing navigation...');
+          const mockEvent: Event = {
+            id: 'lu6kyov2tFPWdFhpcgaj',
+            title: '⚓️ Overnight at the USS Stewart – Galveston 🚢',
+            date: '2025-12-25',
+            startTime: '10:00',
+            endTime: '16:00',
+            location: {
+              name: 'USS Stewart Museum',
+              address: 'Galveston, TX',
+              coordinates: { lat: 29.3013, lng: -94.7977 }
+            },
+            category: 'pack-wide',
+            denTags: ['Tigers', 'Wolves', 'Bears', 'Webelos'],
+            maxCapacity: 50,
+            currentRSVPs: 12,
+            description: 'Join us for an exciting overnight adventure aboard the historic USS Stewart! This is a mock event created for testing purposes.',
+            packingList: ['Sleeping bag', 'Pillow', 'Change of clothes', 'Toiletries'],
+            fees: 25,
+            contactEmail: 'cubmaster@sfpack1703.com',
+            isOvernight: true,
+            requiresPermission: true,
+            attachments: []
+          };
           
-          // Track error
-          console.log('Failed to load events from both Cloud Function and database');
+          setEvents([mockEvent]);
+          setFilteredEvents([mockEvent]);
+          setError('Using mock data for testing. Cloud Function and database are unavailable.');
+          
+          console.log('Created mock event with ID:', mockEvent.id);
         }
       } finally {
         // setIsLoading(false);
@@ -271,15 +310,19 @@ const EventsPage: React.FC = () => {
       return;
     }
     
-    // Navigate to event detail page with RSVP tab active
-    window.location.href = `/events/${eventId}?tab=rsvp`;
+    // Navigate to event detail page with RSVP tab active using React Router
+    navigate(`/events/${eventId}?tab=rsvp`);
   };
 
   const handleViewDetails = (eventId: string) => {
     console.log('handleViewDetails called with eventId:', eventId);
+    console.log('Current events array:', events);
+    console.log('Current filteredEvents array:', filteredEvents);
     console.log('Navigating to:', `/events/${eventId}`);
-    // Navigate to event detail page
-    window.location.href = `/events/${eventId}`;
+    console.log('Using React Router navigation (no page reload)');
+    
+    // Navigate to event detail page using React Router (no page reload)
+    navigate(`/events/${eventId}`);
   };
 
   const handleAddToCalendar = (event: Event) => {

@@ -73,22 +73,25 @@ export class UserApprovalService {
   private authStateListeners: Array<(user: User | null, userDoc: UserDocument | null) => void> = [];
 
   constructor() {
-    // Listen to auth state changes
-    onAuthStateChanged(auth, async (user) => {
-      this.currentUser = user;
-      
-      if (user) {
-        // Get user document from Firestore
-        this.userDoc = await this.getUserDocument(user.uid);
-      } else {
-        this.userDoc = null;
-      }
-      
-      // Notify listeners
-      this.authStateListeners.forEach(listener => {
-        listener(user, this.userDoc);
+    // Only initialize auth state listener in non-test environments
+    if (typeof process === 'undefined' || process.env.NODE_ENV !== 'test') {
+      // Listen to auth state changes
+      onAuthStateChanged(auth, async (user) => {
+        this.currentUser = user;
+        
+        if (user) {
+          // Get user document from Firestore
+          this.userDoc = await this.getUserDocument(user.uid);
+        } else {
+          this.userDoc = null;
+        }
+        
+        // Notify listeners
+        this.authStateListeners.forEach(listener => {
+          listener(user, this.userDoc);
+        });
       });
-    });
+    }
   }
 
   /**

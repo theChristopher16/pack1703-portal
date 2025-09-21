@@ -224,21 +224,36 @@ export function AdminProvider({ children }: AdminProviderProps) {
   useEffect(() => {
     console.log('AdminContext: Setting up auth state listener');
     
-    // Remove the timeout mechanism that might interfere with auth state restoration
-    // Firebase Auth handles persistence automatically with browserLocalPersistence
+    // Set a timeout to ensure loading state doesn't persist indefinitely
+    const loadingTimeout = setTimeout(() => {
+      console.log('AdminContext: Loading timeout reached, setting loading to false');
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }, 5000); // 5 second timeout
     
     const unsubscribe = authService.onAuthStateChanged((user) => {
       console.log('AdminContext: Auth state changed:', user ? `User ${user.email}` : 'No user');
       
+      // Clear the loading timeout since we got a response
+      clearTimeout(loadingTimeout);
+      
       if (user) {
-        // Convert AppUser to AdminUser
+        // Convert AppUser to AdminUser with proper role mapping
+        const roleMap: { [key: string]: AdminRole } = {
+          'root': 'root',
+          'admin': 'super-admin', 
+          'volunteer': 'moderator',
+          'parent': 'viewer',
+          'anonymous': 'viewer',
+          'ai_assistant': 'moderator' // Map AI assistant to moderator level
+        };
+        
         const adminUser: AdminUser = {
           uid: user.uid,
           email: user.email,
           displayName: user.displayName || null,
           photoURL: user.photoURL || null,
           isAdmin: user.role === UserRole.ROOT || user.role === UserRole.ADMIN || user.role === UserRole.VOLUNTEER,
-          role: user.role as unknown as AdminRole,
+          role: roleMap[user.role] || 'parent',
           permissions: user.permissions as unknown as AdminPermission[],
           lastLogin: user.lastLoginAt || new Date(),
           isActive: user.isActive,
@@ -253,6 +268,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
 
     return () => {
       console.log('AdminContext: Cleaning up auth state listener');
+      clearTimeout(loadingTimeout);
       unsubscribe();
     };
   }, []);

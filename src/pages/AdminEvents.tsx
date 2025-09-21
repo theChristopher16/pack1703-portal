@@ -149,8 +149,10 @@ const AdminEvents: React.FC = () => {
           eventData: {
             title: eventData.title!,
             description: eventData.description!,
-            startDate: eventData.startDate!,
-            endDate: eventData.endDate!,
+            startDate: new Date(eventData.startDate!), // Convert to Date object
+            endDate: new Date(eventData.endDate!), // Convert to Date object
+            startTime: eventData.startDate?.split('T')[1]?.substring(0, 5) || '09:00', // Extract time part
+            endTime: eventData.endDate?.split('T')[1]?.substring(0, 5) || '17:00', // Extract time part
             category: eventData.category || 'Meeting',
             visibility: eventData.visibility || 'public',
             maxParticipants: eventData.maxParticipants

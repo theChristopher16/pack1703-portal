@@ -24,6 +24,18 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
   const currentUser = state.currentUser;
   const userRole = (currentUser?.role as UserRole) || UserRole.ANONYMOUS;
 
+  // Show loading spinner while authentication state is being determined
+  if (state.isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Check if user has access to the route
   if (route && !hasAccessToRoute(userRole, route)) {
     // If user is not authenticated, redirect to home

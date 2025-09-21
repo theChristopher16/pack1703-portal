@@ -1,0 +1,45 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches: [ main ]
+  pull_request_target:
+    branches: [ main ]
+
+jobs:
+  pr-validation:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Set up test environment
+      run: |
+        echo "NODE_ENV=test" >> $GITHUB_ENV
+        echo "CI=true" >> $GITHUB_ENV
+    
+    - name: Run TypeScript type checking
+      run: npx tsc --noEmit
+    
+    - name: Run linting
+      run: npm run lint
+    
+    - name: Run tests
+      run: npm test -- --watchAll=false --testTimeout=120000 --verbose --maxWorkers=2
+      env:
+        CI: true
+        NODE_ENV: test
+    
+    - name: Build check
+      run: CI=false npm run build
+    
+    - name: Check for security vulnerabilities
+      run: npm audit --audit-level=critical

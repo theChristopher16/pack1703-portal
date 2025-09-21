@@ -46,7 +46,7 @@ import AdminFinances from './pages/AdminFinances';
 import AdminCostManagement from './pages/AdminCostManagement';
 import MultiTenantManagement from './pages/MultiTenantManagement';
 import UserManagement from './components/Admin/UserManagement';
-import ChatPage from './pages/ChatPage';
+import ChatPageWrapper from './pages/ChatPageWrapper';
 import JoinPage from './pages/JoinPage';
 import RootAccountSetup from './pages/RootAccountSetup';
 import HackerTab from './pages/HackerTab';
@@ -147,7 +147,7 @@ function App() {
           <Route path="/join/:inviteId" element={<JoinPage />} />
           
           {/* Authenticated Routes */}
-          <Route path="/chat" element={<Layout><AuthenticatedOnly><ChatPage /></AuthenticatedOnly></Layout>} />
+          <Route path="/chat" element={<Layout><AuthenticatedOnly><ChatPageWrapper /></AuthenticatedOnly></Layout>} />
           <Route path="/feedback" element={<Layout><AuthenticatedOnly><FeedbackPage /></AuthenticatedOnly></Layout>} />
           <Route path="/data-audit" element={<Layout><AuthenticatedOnly><DataAuditPage /></AuthenticatedOnly></Layout>} />
           

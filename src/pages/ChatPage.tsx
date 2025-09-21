@@ -53,6 +53,7 @@ interface RichTextState {
 }
 
 const ChatPage: React.FC = () => {
+  // All hooks must be called at the top level
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [users, setUsers] = useState<ChatUser[]>([]);
   const [channels, setChannels] = useState<ChatChannel[]>([]);
@@ -70,11 +71,47 @@ const ChatPage: React.FC = () => {
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   
+  // Rich text state
+  const [richTextState, setRichTextState] = useState<RichTextState>({
+    isBold: false,
+    isItalic: false,
+    isUnderline: false,
+    isStrikethrough: false,
+    isCode: false,
+    selectedColor: 'inherit',
+    selectedText: '',
+    cursorPosition: { start: 0, end: 0 },
+  });
+  
+  const [showRichToolbar, setShowRichToolbar] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showGifPicker, setShowGifPicker] = useState(false);
+  const [gifs, setGifs] = useState<TenorGif[]>([]);
+  const [gifSearchQuery, setGifSearchQuery] = useState('');
+  const [isLoadingGifs, setIsLoadingGifs] = useState(false);
+  const [gifSearchResults, setGifSearchResults] = useState<TenorGif[]>([]);
+  const [showGifSearch, setShowGifSearch] = useState(false);
+  const [gifApiStatus, setGifApiStatus] = useState<string>('Loading...');
+  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { showSuccess, showError, showInfo } = useToast();
+  
   // Get authentication state from AdminContext
   const { state } = useAdmin();
   const isAuthenticated = !!state.currentUser;
   const userRole = state.currentUser?.role as UserRole || UserRole.ANONYMOUS;
   const authLoading = state.isLoading;
+  
+  // Handle successful login
+  const handleLoginSuccess = (user: any) => {
+    console.log('Login successful:', user);
+    setIsLoginModalOpen(false);
+    // The AdminContext will automatically update the currentUser state
+  };
   
   // Show loading spinner while authentication state is being determined
   if (authLoading) {
@@ -107,47 +144,11 @@ const ChatPage: React.FC = () => {
         <LoginModal
           isOpen={isLoginModalOpen}
           onClose={() => setIsLoginModalOpen(false)}
-          onLoginSuccess={handleLoginSuccess}
+          onSuccess={handleLoginSuccess}
         />
       </div>
     );
   }
-  
-  // Handle successful login
-  const handleLoginSuccess = (user: any) => {
-    console.log('Login successful:', user);
-    setIsLoginModalOpen(false);
-    // The AdminContext will automatically update the currentUser state
-  };
-  
-  // Rich text state
-  const [richTextState, setRichTextState] = useState<RichTextState>({
-    isBold: false,
-    isItalic: false,
-    isUnderline: false,
-    isStrikethrough: false,
-    isCode: false,
-    selectedColor: 'inherit',
-    selectedText: '',
-    cursorPosition: { start: 0, end: 0 },
-  });
-  
-  const [showRichToolbar, setShowRichToolbar] = useState(false);
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [showGifPicker, setShowGifPicker] = useState(false);
-  const [gifs, setGifs] = useState<TenorGif[]>([]);
-  const [gifSearchQuery, setGifSearchQuery] = useState('');
-  const [isLoadingGifs, setIsLoadingGifs] = useState(false);
-  const [gifSearchResults, setGifSearchResults] = useState<TenorGif[]>([]);
-  const [showGifSearch, setShowGifSearch] = useState(false);
-  const [gifApiStatus, setGifApiStatus] = useState<string>('Loading...');
-  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
-  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { showSuccess, showError, showInfo } = useToast();
 
   // Den emoji mapping
   const denEmojis: Record<string, string> = {

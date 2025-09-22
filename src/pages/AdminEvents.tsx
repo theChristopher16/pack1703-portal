@@ -139,7 +139,7 @@ const AdminEvents: React.FC = () => {
                category: eventData.category || 'Meeting',
                seasonId: 'qPEnr3WZN91NhM8jOypp', // Use the default season ID we created
                visibility: eventData.visibility || 'public',
-               maxCapacity: eventData.maxParticipants ? parseInt(eventData.maxParticipants.toString()) : undefined, // Fix: use maxCapacity instead of maxParticipants
+               maxCapacity: eventData.maxParticipants ? parseInt(eventData.maxParticipants.toString()) : null, // Use null instead of undefined
                sendNotification: false
              };
         

@@ -112,9 +112,36 @@ async function testCloudFunctions() {
       }
     }
 
-    // Test 5: Submit RSVP (requires auth)
+    // Test 5: Admin Update Event (requires auth) - CRITICAL TEST
     if (user) {
-      console.log('\n📋 Test 5: Submit RSVP Function');
+      console.log('\n📋 Test 5: Admin Update Event Function');
+      try {
+        const adminUpdateEvent = httpsCallable(functions, 'adminUpdateEvent');
+        const testUpdateData = {
+          eventId: 'test-event-id',
+          eventData: {
+            title: 'Updated Test Event from CI/CD',
+            description: 'This event was updated by the CI/CD pipeline',
+            maxCapacity: 25,
+            location: 'Updated Test Location'
+          }
+        };
+        const result = await adminUpdateEvent(testUpdateData);
+        console.log('✅ Admin Update Event:', result.data.message);
+      } catch (error) {
+        if (error.code === 'functions/unauthenticated') {
+          console.log('✅ Admin Update Event correctly requires authentication');
+        } else if (error.code === 'functions/permission-denied') {
+          console.log('✅ Admin Update Event correctly requires permissions');
+        } else {
+          console.error('❌ Admin Update Event failed:', error.message);
+        }
+      }
+    }
+
+    // Test 6: Submit RSVP (requires auth)
+    if (user) {
+      console.log('\n📋 Test 6: Submit RSVP Function');
       try {
         const submitRSVP = httpsCallable(functions, 'submitRSVP');
         const testRSVPData = {

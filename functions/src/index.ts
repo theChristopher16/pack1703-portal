@@ -1334,24 +1334,42 @@ export const adminUpdateEvent = functions.https.onCall(async (request: any) => {
     const data = request.data as { eventId: string; eventData: any };
     const context = request;
     
+    // Debug authentication context
+    console.log('Debug adminUpdateEvent - context.auth:', context.auth);
+    console.log('Debug adminUpdateEvent - context.auth.uid:', context.auth?.uid);
+    console.log('Debug adminUpdateEvent - context.auth.token:', context.auth?.token);
+    
     // Check authentication
     if (!context.auth) {
+      console.log('Debug adminUpdateEvent - Authentication failed: context.auth is null/undefined');
       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
     }
 
     // Check if user has admin privileges
     const userDoc = await db.collection('users').doc(context.auth.uid).get();
     if (!userDoc.exists) {
+      console.log('Debug adminUpdateEvent - User not found in Firestore:', context.auth.uid);
       throw new functions.https.HttpsError('permission-denied', 'User not found');
     }
 
     const userData = userDoc.data();
+    console.log('Debug adminUpdateEvent - User data:', userData);
+    console.log('Debug adminUpdateEvent - User role:', userData?.role);
+    console.log('Debug adminUpdateEvent - User isAdmin:', userData?.isAdmin);
+    console.log('Debug adminUpdateEvent - User isDenLeader:', userData?.isDenLeader);
+    console.log('Debug adminUpdateEvent - User isCubmaster:', userData?.isCubmaster);
+    
     // Check role-based permissions (new system) or legacy boolean fields
     const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasEventManagementPermission = userData?.permissions?.includes('event_management');
     
+    console.log('Debug adminUpdateEvent - hasAdminRole:', hasAdminRole);
+    console.log('Debug adminUpdateEvent - hasLegacyPermissions:', hasLegacyPermissions);
+    console.log('Debug adminUpdateEvent - hasEventManagementPermission:', hasEventManagementPermission);
+    
     if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
+      console.log('Debug adminUpdateEvent - Permission denied for user:', context.auth.uid);
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update events');
     }
 

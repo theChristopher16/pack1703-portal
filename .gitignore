@@ -68,6 +68,7 @@ Thumbs.db
 # Test files that might contain keys
 test-*.js
 !test-*.example.js
+!test-cloud-functions-access.js
 populate-*.js
 !populate-*.example.jsservice-account-key.json
 *.env*

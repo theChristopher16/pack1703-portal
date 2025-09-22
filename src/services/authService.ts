@@ -910,6 +910,7 @@ class AuthService {
         console.log('🔐 AuthService: Popup error, trying redirect fallback');
         await signInWithRedirect(this.auth, authProvider);
         throw new Error('REDIRECT_IN_PROGRESS');
+      }
     } catch (error) {
       console.error('🔐 AuthService: Error signing in with social provider:', error);
       throw error;

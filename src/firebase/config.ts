@@ -18,18 +18,20 @@ export const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Initialize App Check for security
+// TEMPORARILY DISABLED - App Check is blocking authentication due to reCAPTCHA errors
+// TODO: Fix reCAPTCHA configuration and re-enable App Check
 try {
   const recaptchaSiteKey = process.env.REACT_APP_RECAPTCHA_V3_SITE_KEY;
   
-  if (recaptchaSiteKey) {
+  if (recaptchaSiteKey && false) { // Temporarily disabled
     // Initialize App Check with reCAPTCHA v3
     initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(recaptchaSiteKey),
+      provider: new ReCaptchaV3Provider(recaptchaSiteKey as string),
       isTokenAutoRefreshEnabled: true
     });
     console.log('✅ Firebase App Check initialized with reCAPTCHA v3');
   } else {
-    console.warn('⚠️ reCAPTCHA site key not configured - App Check disabled');
+    console.warn('⚠️ App Check temporarily disabled to allow authentication');
   }
 } catch (error) {
   console.warn('❌ App Check initialization failed:', error);

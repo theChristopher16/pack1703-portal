@@ -18,7 +18,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [userRole, setUserRole] = useState<UserRole>(UserRole.ANONYMOUS);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -48,7 +48,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       setUserRole(roleMap[state.currentUser.role] || UserRole.PARENT);
     } else {
       setCurrentUser(null);
-      setUserRole(UserRole.ANONYMOUS);
+      setUserRole(null);
     }
   }, [state.currentUser]);
 
@@ -94,10 +94,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   
   // Separate navigation by category for better organization
-  const publicNav = getNavigationByCategory(userRole, 'public');
-  const authenticatedNav = getNavigationByCategory(userRole, 'authenticated');
-  const adminNav = getNavigationByCategory(userRole, 'admin');
-  const systemNav = getNavigationByCategory(userRole, 'system');
+  const publicNav = getNavigationByCategory(userRole || UserRole.PARENT, 'public');
+  const authenticatedNav = getNavigationByCategory(userRole || UserRole.PARENT, 'authenticated');
+  const adminNav = getNavigationByCategory(userRole || UserRole.PARENT, 'admin');
+  const systemNav = getNavigationByCategory(userRole || UserRole.PARENT, 'system');
   
   // Combine all navigation items
   const allNavItems = [...publicNav, ...authenticatedNav, ...adminNav, ...systemNav];
@@ -130,8 +130,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const mainToolbarItems = getMainToolbarItems();
   
   // Check if user has admin privileges
-  const isAdmin = isAdminOrAbove(userRole);
-  const isRootUser = isRoot(userRole);
+  const isAdmin = userRole ? isAdminOrAbove(userRole) : false;
+  const isRootUser = userRole ? isRoot(userRole) : false;
 
 
   // Organize navigation into logical groups for dropdown

@@ -68,7 +68,7 @@ class UsageTrackingService {
         return;
       }
 
-      const userRole = currentUser.role || UserRole.ANONYMOUS;
+      const userRole = currentUser.role || UserRole.PARENT;
       const userId = currentUser.uid;
 
       // Create or update component usage record

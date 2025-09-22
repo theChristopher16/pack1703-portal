@@ -188,4 +188,4 @@ exports.helloWorld = functions.https.onCall(async (data, context) => {
         timestamp: new Date().toISOString()
     };
 });
-//# sourceMappingURL=index.js.map
+//# sourceMappingURL=emergency-functions.js.map

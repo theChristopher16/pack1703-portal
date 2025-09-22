@@ -243,7 +243,6 @@ export function AdminProvider({ children }: AdminProviderProps) {
           'admin': 'super-admin', 
           'volunteer': 'moderator',
           'parent': 'viewer',
-          'anonymous': 'viewer',
           'ai_assistant': 'moderator' // Map AI assistant to moderator level
         };
         

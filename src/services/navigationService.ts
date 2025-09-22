@@ -48,7 +48,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Home',
     href: '/',
     icon: Home,
-    roles: [UserRole.ANONYMOUS, UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.ROOT, UserRole.AI_ASSISTANT],
+    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.ROOT, UserRole.AI_ASSISTANT],
     category: 'public',
     description: 'Main dashboard and overview'
   },
@@ -56,7 +56,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Events',
     href: '/events',
     icon: Calendar,
-    roles: [UserRole.ANONYMOUS, UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.ROOT, UserRole.AI_ASSISTANT],
+    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.ROOT, UserRole.AI_ASSISTANT],
     category: 'public',
     description: 'Upcoming pack events and activities'
   },
@@ -64,7 +64,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Announcements',
     href: '/announcements',
     icon: MessageSquare,
-    roles: [UserRole.ANONYMOUS, UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.ROOT, UserRole.AI_ASSISTANT],
+    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.ROOT, UserRole.AI_ASSISTANT],
     category: 'public',
     description: 'Pack news and updates'
   },
@@ -72,7 +72,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Locations',
     href: '/locations',
     icon: MapPin,
-    roles: [UserRole.ANONYMOUS, UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.ROOT, UserRole.AI_ASSISTANT],
+    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.ROOT, UserRole.AI_ASSISTANT],
     category: 'public',
     description: 'Meeting places and venues'
   },
@@ -80,7 +80,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Volunteer',
     href: '/volunteer',
     icon: Users,
-    roles: [UserRole.ANONYMOUS, UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.ROOT, UserRole.AI_ASSISTANT],
+    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.ROOT, UserRole.AI_ASSISTANT],
     category: 'public',
     description: 'Volunteer opportunities'
   },
@@ -314,7 +314,6 @@ export const hasAccessToRoute = (role: UserRole, route: string): boolean => {
 // Helper function to get the highest role level for a user
 export const getRoleLevel = (role: UserRole): number => {
   const hierarchy: Record<UserRole, number> = {
-    [UserRole.ANONYMOUS]: 0,
     [UserRole.PARENT]: 1,
     [UserRole.VOLUNTEER]: 2,
     [UserRole.AI_ASSISTANT]: 2.5,

@@ -73,3 +73,8 @@ jobs:
         channelId: live
         projectId: pack1703-portal
         entryPoint: .
+    
+    - name: Test Cloud Functions accessibility after deployment
+      run: node test-cloud-functions-access.js
+      env:
+        NODE_ENV: production

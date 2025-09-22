@@ -43,3 +43,8 @@ jobs:
     
     - name: Check for security vulnerabilities
       run: npm audit --audit-level=critical
+    
+    - name: Test Cloud Functions accessibility
+      run: node test-cloud-functions-access.js
+      env:
+        NODE_ENV: production

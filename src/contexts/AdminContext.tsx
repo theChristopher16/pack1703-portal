@@ -224,11 +224,14 @@ export function AdminProvider({ children }: AdminProviderProps) {
   useEffect(() => {
     console.log('AdminContext: Setting up auth state listener');
     
+    // Set loading to false immediately to prevent loading screen issues
+    dispatch({ type: 'SET_LOADING', payload: false });
+    
     // Set a timeout to ensure loading state doesn't persist indefinitely
     const loadingTimeout = setTimeout(() => {
       console.log('AdminContext: Loading timeout reached, setting loading to false');
       dispatch({ type: 'SET_LOADING', payload: false });
-    }, 5000); // 5 second timeout
+    }, 2000); // Reduced to 2 seconds
     
     const unsubscribe = authService.onAuthStateChanged((user) => {
       console.log('AdminContext: Auth state changed:', user ? `User ${user.email}` : 'No user');

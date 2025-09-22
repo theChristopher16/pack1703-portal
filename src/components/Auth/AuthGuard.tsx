@@ -11,19 +11,9 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const { state } = useAdmin();
   const { currentUser, isLoading } = state;
 
-  // Show loading spinner while authentication state is being determined
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-6"></div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Loading Pack Portal</h2>
-          <p className="text-gray-600">Please wait while we verify your access...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // REMOVED LOADING SCREEN - User requested to remove it
+  // The loading screen was causing page reloads and poor UX
+  
   // If no user is authenticated, show login page
   if (!currentUser) {
     return (

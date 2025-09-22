@@ -66,7 +66,7 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
       onError?.(errorMessage);
     } finally {
       // Only clear loading if not redirecting
-      if (error?.message !== 'REDIRECT_IN_PROGRESS') {
+      if ((error as any)?.message !== 'REDIRECT_IN_PROGRESS') {
         setIsLoading(null);
       }
     }

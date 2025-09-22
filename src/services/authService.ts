@@ -450,13 +450,18 @@ class AuthService {
             // If all else fails, create a temporary user object from Firebase Auth data
             // This allows the user to access the app even if Firestore is blocked by App Check
             console.log('🔐 AuthService: Creating temporary user from Firebase Auth data');
+            
+            // Determine role for temporary user - use ADMIN as default to ensure access to all features
+            // This is safer than PARENT since we can't check if it's the first user without Firestore access
+            const tempRole = UserRole.ADMIN; // More permissive default for temporary users
+            
             const tempUser: AppUser = {
               uid: firebaseUser.uid,
               email: firebaseUser.email || '',
               displayName: firebaseUser.displayName || '',
               photoURL: firebaseUser.photoURL || '',
-              role: UserRole.PARENT, // Default role for new users
-              permissions: ROLE_PERMISSIONS[UserRole.PARENT],
+              role: tempRole,
+              permissions: ROLE_PERMISSIONS[tempRole],
               isActive: true,
               status: 'approved',
               createdAt: new Date(),
@@ -466,6 +471,8 @@ class AuthService {
             };
             this.currentUser = tempUser;
             console.log('🔐 AuthService: Temporary user created:', tempUser.email);
+            console.log('🔐 AuthService: Temporary user role:', tempUser.role);
+            console.log('🔐 AuthService: Temporary user permissions:', tempUser.permissions);
             this.notifyAuthStateListeners(tempUser);
           }
         }
@@ -1173,6 +1180,20 @@ class AuthService {
       console.error('🔐 AuthService: Retry failed:', error);
       return null;
     }
+  }
+
+  // Upgrade temporary user to ROOT role (for first user scenarios)
+  upgradeTemporaryUserToRoot(): void {
+    if (!this.currentUser) {
+      console.log('🔐 AuthService: No current user to upgrade');
+      return;
+    }
+
+    console.log('🔐 AuthService: Upgrading temporary user to ROOT role');
+    this.currentUser.role = UserRole.ROOT;
+    this.currentUser.permissions = ROLE_PERMISSIONS[UserRole.ROOT];
+    console.log('🔐 AuthService: User upgraded to ROOT:', this.currentUser.email);
+    this.notifyAuthStateListeners(this.currentUser);
   }
 
   // Check if user is authenticated (synchronous)

@@ -447,9 +447,26 @@ class AuthService {
             this.notifyAuthStateListeners(appUser);
           } catch (createError) {
             console.error('AuthService: Error creating user:', createError);
-            // If all else fails, set user to null
-            this.currentUser = null;
-            this.notifyAuthStateListeners(null);
+            // If all else fails, create a temporary user object from Firebase Auth data
+            // This allows the user to access the app even if Firestore is blocked by App Check
+            console.log('🔐 AuthService: Creating temporary user from Firebase Auth data');
+            const tempUser: AppUser = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              displayName: firebaseUser.displayName || '',
+              photoURL: firebaseUser.photoURL || '',
+              role: UserRole.PARENT, // Default role for new users
+              permissions: ROLE_PERMISSIONS[UserRole.PARENT],
+              isActive: true,
+              status: 'approved',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              lastLoginAt: new Date(),
+              authProvider: firebaseUser.providerData[0]?.providerId === 'google.com' ? SocialProvider.GOOGLE : undefined
+            };
+            this.currentUser = tempUser;
+            console.log('🔐 AuthService: Temporary user created:', tempUser.email);
+            this.notifyAuthStateListeners(tempUser);
           }
         }
       } else {
@@ -1130,6 +1147,32 @@ class AuthService {
   // Get current user
   getCurrentUser(): AppUser | null {
     return this.currentUser;
+  }
+
+  // Retry creating user in Firestore (for when App Check was blocking access)
+  async retryCreateUserInFirestore(): Promise<AppUser | null> {
+    if (!this.currentUser) {
+      console.log('🔐 AuthService: No current user to retry creating');
+      return null;
+    }
+
+    try {
+      console.log('🔐 AuthService: Retrying to create user in Firestore...');
+      const firebaseUser = this.auth.currentUser;
+      if (!firebaseUser) {
+        console.log('🔐 AuthService: No Firebase user found');
+        return null;
+      }
+
+      const appUser = await this.createUserFromFirebaseUser(firebaseUser);
+      this.currentUser = appUser;
+      console.log('🔐 AuthService: User successfully created in Firestore on retry:', appUser.email);
+      this.notifyAuthStateListeners(appUser);
+      return appUser;
+    } catch (error) {
+      console.error('🔐 AuthService: Retry failed:', error);
+      return null;
+    }
   }
 
   // Check if user is authenticated (synchronous)

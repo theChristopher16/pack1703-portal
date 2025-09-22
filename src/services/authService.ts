@@ -810,64 +810,95 @@ class AuthService {
     
     return { isValid: true };
   }
+  // Get auth provider for a given social provider
+  private getAuthProvider(provider: SocialProvider) {
+    switch (provider) {
+      case SocialProvider.GOOGLE:
+        const googleProvider = new GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+        return googleProvider;
+      case SocialProvider.APPLE:
+        const appleProvider = new OAuthProvider('apple.com');
+        appleProvider.addScope('email');
+        appleProvider.addScope('name');
+        return appleProvider;
+      case SocialProvider.FACEBOOK:
+        const facebookProvider = new FacebookAuthProvider();
+        facebookProvider.addScope('email');
+        facebookProvider.addScope('public_profile');
+        return facebookProvider;
+      case SocialProvider.GITHUB:
+        const githubProvider = new GithubAuthProvider();
+        githubProvider.addScope('user:email');
+        return githubProvider;
+      case SocialProvider.TWITTER:
+        return new TwitterAuthProvider();
+      case SocialProvider.MICROSOFT:
+        const microsoftProvider = new OAuthProvider('microsoft.com');
+        microsoftProvider.addScope('email');
+        microsoftProvider.addScope('profile');
+        return microsoftProvider;
+      default:
+        throw new Error('Unsupported social provider');
+    }
+  }
+
   async signInWithSocial(provider: SocialProvider): Promise<AppUser> {
     try {
-      let authProvider;
+      console.log(`🔐 AuthService: Attempting modern authentication with ${provider}`);
       
-      switch (provider) {
-        case SocialProvider.GOOGLE:
-          authProvider = new GoogleAuthProvider();
-          authProvider.addScope('email');
-          authProvider.addScope('profile');
-          break;
-        case SocialProvider.APPLE:
-          authProvider = new OAuthProvider('apple.com');
-          authProvider.addScope('email');
-          authProvider.addScope('name');
-          break;
-        case SocialProvider.FACEBOOK:
-          authProvider = new FacebookAuthProvider();
-          authProvider.addScope('email');
-          authProvider.addScope('public_profile');
-          break;
-        case SocialProvider.GITHUB:
-          authProvider = new GithubAuthProvider();
-          authProvider.addScope('user:email');
-          break;
-        case SocialProvider.TWITTER:
-          authProvider = new TwitterAuthProvider();
-          break;
-        case SocialProvider.MICROSOFT:
-          authProvider = new OAuthProvider('microsoft.com');
-          authProvider.addScope('email');
-          authProvider.addScope('profile');
-          break;
-        default:
-          throw new Error('Unsupported social provider');
-      }
-
-      // Use popup for social login
-      console.log(`🔐 AuthService: Attempting popup sign-in with ${provider}`);
-      console.log('🔐 AuthService: Auth instance:', this.auth);
-      console.log('🔐 AuthService: Auth provider:', authProvider);
+      const authProvider = this.getAuthProvider(provider);
       
-      let result;
+      // First try popup (faster UX when it works)
       try {
-        result = await signInWithPopup(this.auth, authProvider);
+        console.log('🔐 AuthService: Trying popup authentication...');
+        const result = await signInWithPopup(this.auth, authProvider);
         console.log('🔐 AuthService: Popup sign-in successful:', result.user.email);
-      } catch (popupError: any) {
-        console.error('🔐 AuthService: Popup sign-in failed:', popupError);
-        console.error('🔐 AuthService: Error code:', popupError.code);
-        console.error('🔐 AuthService: Error message:', popupError.message);
         
-        // Handle specific popup errors with better user feedback
-        if (popupError.code === 'auth/popup-blocked') {
-          throw new Error('Popup blocked by browser. Please allow popups for this site and try again.');
-        } else if (popupError.code === 'auth/popup-closed-by-user') {
-          throw new Error('Login cancelled. Please try again if you want to sign in.');
-        } else if (popupError.code === 'auth/cancelled-popup-request') {
-          throw new Error('Login cancelled. Please try again.');
-        } else if (popupError.code === 'auth/account-exists-with-different-credential') {
+        // Get or create user data from Firestore
+        let appUser: AppUser;
+        try {
+          appUser = await this.getUserFromFirestore(result.user.uid);
+          console.log('🔐 AuthService: User found in Firestore:', appUser.email);
+          
+          // Check Firebase Auth custom claims for approval status
+          const idTokenResult = await result.user.getIdTokenResult();
+          const customClaims = idTokenResult.claims;
+          console.log('🔐 AuthService: Custom claims:', customClaims);
+          
+          // If user has custom claims, check approval status
+          if (customClaims && typeof customClaims.approved === 'boolean') {
+            if (!customClaims.approved) {
+              // Sign out the user immediately if they're not approved
+              await this.signOut();
+              throw new Error('Your account is pending approval. Please contact an administrator.');
+            }
+          }
+          
+          return appUser;
+        } catch (firestoreError: any) {
+          console.log('🔐 AuthService: User not found in Firestore, creating new user...');
+          return await this.createUserFromFirebaseUser(result.user);
+        }
+      } catch (popupError: any) {
+        console.log('🔐 AuthService: Popup failed, falling back to redirect:', popupError.code);
+        
+        // If popup is blocked or user cancelled, use redirect (more reliable)
+        if (popupError.code === 'auth/popup-blocked' || 
+            popupError.code === 'auth/popup-closed-by-user' ||
+            popupError.code === 'auth/cancelled-popup-request') {
+          
+          console.log('🔐 AuthService: Using redirect flow for better reliability');
+          await signInWithRedirect(this.auth, authProvider);
+          
+          // The redirect will handle the rest, so we don't return here
+          // The user will be redirected and then redirected back
+          throw new Error('REDIRECT_IN_PROGRESS');
+        }
+        
+        // For other popup errors, provide specific feedback
+        if (popupError.code === 'auth/account-exists-with-different-credential') {
           throw new Error('An account already exists with this email using a different sign-in method. Please use the original sign-in method or contact support.');
         } else if (popupError.code === 'auth/operation-not-allowed') {
           throw new Error('This sign-in method is not enabled. Please contact support.');
@@ -875,56 +906,10 @@ class AuthService {
           throw new Error('Too many failed attempts. Please try again later.');
         }
         
-        // For other errors, provide a generic message
-        throw new Error(`Sign-in failed: ${popupError.message || 'Please try again.'}`);
-      }
-      
-      // Get or create user data from Firestore
-      let appUser: AppUser;
-      try {
-        appUser = await this.getUserFromFirestore(result.user.uid);
-        console.log('🔐 AuthService: User found in Firestore:', appUser.email);
-        
-        // Check Firebase Auth custom claims for approval status
-        const idTokenResult = await result.user.getIdTokenResult();
-        const customClaims = idTokenResult.claims;
-        console.log('🔐 AuthService: Custom claims:', customClaims);
-        
-        // If user has custom claims, check approval status
-        if (customClaims && typeof customClaims.approved === 'boolean') {
-          if (!customClaims.approved) {
-            // Sign out the user immediately if they're not approved
-            await signOut(this.auth);
-            throw new Error('Your account is pending approval. Please wait for pack leadership to approve your account before signing in.');
-          }
-        } else {
-          // For users without custom claims, check Firestore status
-          if (appUser.status === 'pending') {
-            await signOut(this.auth);
-            throw new Error('Your account is pending approval. Please wait for pack leadership to approve your account before signing in.');
-          }
-          
-          if (appUser.status === 'denied') {
-            await signOut(this.auth);
-            throw new Error('Your account has been denied. Please contact pack leadership for more information.');
-          }
-        }
-      } catch (error) {
-        // User doesn't exist, create them
-        console.log('🔐 AuthService: User not found in Firestore, creating new user...');
-        appUser = await this.createUserFromFirebaseUser(result.user);
-        console.log('🔐 AuthService: New user created:', appUser.email);
-      }
-      
-      // Update last login time
-      await updateDoc(doc(db, 'users', result.user.uid), {
-        lastLoginAt: serverTimestamp()
-      });
-
-      this.currentUser = appUser;
-      this.notifyAuthStateListeners(appUser);
-      
-      return appUser;
+        // For other errors, try redirect as fallback
+        console.log('🔐 AuthService: Popup error, trying redirect fallback');
+        await signInWithRedirect(this.auth, authProvider);
+        throw new Error('REDIRECT_IN_PROGRESS');
     } catch (error) {
       console.error('🔐 AuthService: Error signing in with social provider:', error);
       throw error;

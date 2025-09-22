@@ -21,6 +21,12 @@ service cloud.firestore {
              request.auth.token.get('role', '') == 'root';
     }
     
+    // TEMPORARY: Allow all authenticated users to read public data when App Check blocks access
+    // This is a temporary workaround for App Check enforcement issues
+    function isAuthenticatedUser() {
+      return isAuthenticated();
+    }
+    
     function isValidTimestamp(ts) {
       return ts is timestamp && 
              ts > timestamp.date(2024, 1, 1) &&

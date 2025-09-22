@@ -137,11 +137,8 @@ export const updateUserRole = functions.https.onCall(async (data: any, context: 
 });
 
 // CRITICAL: Admin update event function
-export const adminUpdateEvent = functions.https.onCall(async (request: any) => {
+export const adminUpdateEvent = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   try {
-    const data = request.data as { eventId: string; eventData: any };
-    const context = request;
-    
     // Check authentication
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');

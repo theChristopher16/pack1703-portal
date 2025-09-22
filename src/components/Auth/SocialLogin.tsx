@@ -38,16 +38,24 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
     setError(null);
 
     try {
-      // Use popup for all social providers
+      // Use modern authentication flow (popup with redirect fallback)
       const user = await authService.signInWithSocial(provider);
       onSuccess?.(user);
     } catch (error: any) {
       console.error(`Error signing in with ${provider}:`, error);
+      
+      // Handle redirect in progress
+      if (error.message === 'REDIRECT_IN_PROGRESS') {
+        // Show loading state while redirect happens
+        setError('Redirecting to sign in...');
+        return; // Don't clear loading state, let redirect handle it
+      }
+      
       let errorMessage = error.message || `Failed to sign in with ${provider}`;
       
       // Provide more helpful error messages for common issues
       if (error.message?.includes('Popup blocked')) {
-        errorMessage = 'Popup blocked by browser. Please allow popups for this site and try again.';
+        errorMessage = 'Popup blocked by browser. Using redirect instead...';
       } else if (error.message?.includes('cancelled')) {
         errorMessage = 'Login cancelled. Please try again if you want to sign in.';
       } else if (error.message?.includes('account-exists-with-different-credential')) {
@@ -57,7 +65,10 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
       setError(errorMessage);
       onError?.(errorMessage);
     } finally {
-      setIsLoading(null);
+      // Only clear loading if not redirecting
+      if ((error as any)?.message !== 'REDIRECT_IN_PROGRESS') {
+        setIsLoading(null);
+      }
     }
   };
 
@@ -181,10 +192,10 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
           </>
         )}
 
-        {/* Popup Notice */}
+        {/* Modern Authentication Notice */}
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-2">
-            <strong>Note:</strong> If the login popup doesn't appear, please check that popups are allowed for this site.
+            <strong>Modern Authentication:</strong> We'll try a popup first, then automatically use redirect if needed.
           </p>
         </div>
 

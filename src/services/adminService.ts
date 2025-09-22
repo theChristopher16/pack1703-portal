@@ -141,6 +141,11 @@ export class AdminService {
     if (!this.currentUser) return;
 
     try {
+      // Filter out undefined values from details to prevent Firestore errors
+      const cleanDetails = details ? Object.fromEntries(
+        Object.entries(details).filter(([_, value]) => value !== undefined)
+      ) : {};
+
       const adminAction: AdminAction = {
         id: `action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         userId: this.currentUser.uid,
@@ -149,7 +154,7 @@ export class AdminService {
         entityType,
         entityId,
         entityName,
-        details: details || {},
+        details: cleanDetails,
         timestamp: new Date(),
         ipAddress: await this.getClientIP(),
         userAgent: navigator.userAgent,
@@ -173,7 +178,7 @@ export class AdminService {
         entityType,
         entityId,
         entityName,
-        newValues: details,
+        newValues: cleanDetails,
         metadata: {
           ipAddress: await this.getClientIP(),
           userAgent: navigator.userAgent,

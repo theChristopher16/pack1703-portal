@@ -231,13 +231,16 @@ export function AdminProvider({ children }: AdminProviderProps) {
     const loadingTimeout = setTimeout(() => {
       console.log('AdminContext: Loading timeout reached, setting loading to false');
       dispatch({ type: 'SET_LOADING', payload: false });
-    }, 2000); // Reduced to 2 seconds
+    }, 1000); // Reduced to 1 second for faster response
     
     const unsubscribe = authService.onAuthStateChanged((user) => {
       console.log('AdminContext: Auth state changed:', user ? `User ${user.email}` : 'No user');
       
       // Clear the loading timeout since we got a response
       clearTimeout(loadingTimeout);
+      
+      // Set loading to false immediately when we get auth state
+      dispatch({ type: 'SET_LOADING', payload: false });
       
       if (user) {
         // Convert AppUser to AdminUser with proper role mapping

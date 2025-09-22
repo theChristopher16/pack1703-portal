@@ -24,18 +24,9 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
   const currentUser = state.currentUser;
   const userRole = currentUser?.role as UserRole;
 
-  // Show loading spinner while authentication state is being determined
-  if (state.isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // REMOVED LOADING CHECK - This was causing redirects
+  // The AuthGuard already handles authentication, so we don't need to check again
+  
   // If no user is authenticated, redirect to home (which will show login)
   if (!currentUser || !userRole) {
     return <Navigate to="/" replace />;

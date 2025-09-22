@@ -18,7 +18,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [userRole, setUserRole] = useState<UserRole>(UserRole.ANONYMOUS);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -48,7 +48,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       setUserRole(roleMap[state.currentUser.role] || UserRole.PARENT);
     } else {
       setCurrentUser(null);
-      setUserRole(UserRole.ANONYMOUS);
+      setUserRole(null);
     }
   }, [state.currentUser]);
 

@@ -419,7 +419,7 @@ const UserManagement: React.FC = () => {
       case UserRole.ADMIN: return <Shield className="w-4 h-4 text-red-600" />;
       case UserRole.VOLUNTEER: return <Star className="w-4 h-4 text-green-600" />;
       case UserRole.PARENT: return <Heart className="w-4 h-4 text-purple-600" />;
-      case UserRole.ANONYMOUS: return <UserCheck className="w-4 h-4 text-gray-400" />;
+      case UserRole.AI_ASSISTANT: return <UserCheck className="w-4 h-4 text-blue-500" />;
       default: return <User className="w-4 h-4" />;
     }
   };
@@ -430,7 +430,7 @@ const UserManagement: React.FC = () => {
       case UserRole.ADMIN: return 'bg-red-100 text-red-800 border-red-200';
       case UserRole.VOLUNTEER: return 'bg-green-100 text-green-800 border-green-200';
       case UserRole.PARENT: return 'bg-purple-100 text-purple-800 border-purple-200';
-      case UserRole.ANONYMOUS: return 'bg-gray-50 text-gray-600 border-gray-100';
+      case UserRole.AI_ASSISTANT: return 'bg-blue-100 text-blue-800 border-blue-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };

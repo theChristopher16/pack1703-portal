@@ -20,7 +20,7 @@ const HomePage: React.FC = () => {
   // Use AdminContext instead of direct auth service
   const { state: adminState } = useAdmin();
   const currentUser = adminState.currentUser;
-  const userRole = currentUser ? (currentUser.role as UserRole) : UserRole.ANONYMOUS;
+  const userRole = currentUser ? (currentUser.role as UserRole) : null;
 
   useEffect(() => {
     // Remove artificial loading delays for better performance
@@ -77,7 +77,7 @@ const HomePage: React.FC = () => {
     } catch (error) {
       console.error('Error loading hero buttons:', error);
       // Fallback to default buttons
-      const fallbackButtons = await heroButtonService.getHeroButtons('anonymous', UserRole.ANONYMOUS);
+      const fallbackButtons = await heroButtonService.getHeroButtons('parent', UserRole.PARENT);
       setHeroButtons(fallbackButtons);
     }
   };
@@ -293,7 +293,7 @@ const HomePage: React.FC = () => {
                   </Link>
                   
                   {/* Sign Up Button for Anonymous Users */}
-                  {userRole === UserRole.ANONYMOUS && (
+                  {!userRole && (
                     <button
                       onClick={() => setShowSignupModal(true)}
                       className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-semibold text-lg rounded-2xl shadow-glow-secondary hover:shadow-glow-secondary/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-secondary-300/50"

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAdmin } from '../contexts/AdminContext';
-import SocialLogin from './Auth/SocialLogin';
+import { useAdmin } from '../../contexts/AdminContext';
+import SocialLogin from './SocialLogin';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -49,7 +49,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                 // Authentication success will be handled by AdminContext
                 console.log('Authentication successful');
               }}
-              onError={(error) => {
+              onError={(error: string) => {
                 console.error('Authentication error:', error);
               }}
               showEmailOption={true}

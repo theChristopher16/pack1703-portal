@@ -437,16 +437,23 @@ class AuthService {
           this.currentUser = appUser;
           console.log('🔐 AuthService: User loaded from Firestore:', appUser.email);
           this.notifyAuthStateListeners(appUser);
-        } catch (error) {
+        } catch (error: any) {
           console.error('AuthService: Error fetching user data:', error);
+          console.log('AuthService: Error type:', typeof error);
+          console.log('AuthService: Error message:', error.message);
+          console.log('AuthService: Error code:', error.code);
           // If user doesn't exist in Firestore or permission denied, create them with default role
           try {
+            console.log('AuthService: Attempting to create user in Firestore...');
             const appUser = await this.createUserFromFirebaseUser(firebaseUser);
             this.currentUser = appUser;
             console.log('🔐 AuthService: User created in Firestore:', appUser.email);
             this.notifyAuthStateListeners(appUser);
-          } catch (createError) {
+          } catch (createError: any) {
             console.error('AuthService: Error creating user:', createError);
+            console.log('AuthService: Create error type:', typeof createError);
+            console.log('AuthService: Create error message:', createError.message);
+            console.log('AuthService: Create error code:', createError.code);
             // If all else fails, create a temporary user object from Firebase Auth data
             // This allows the user to access the app even if Firestore is blocked by App Check
             console.log('🔐 AuthService: Creating temporary user from Firebase Auth data');
@@ -454,6 +461,14 @@ class AuthService {
             // Determine role for temporary user - use ADMIN as default to ensure access to all features
             // This is safer than PARENT since we can't check if it's the first user without Firestore access
             const tempRole = UserRole.ADMIN; // More permissive default for temporary users
+            
+            console.log('AuthService: Creating temporary user with role:', tempRole);
+            console.log('AuthService: Firebase user data:', {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL
+            });
             
             const tempUser: AppUser = {
               uid: firebaseUser.uid,
@@ -469,11 +484,15 @@ class AuthService {
               lastLoginAt: new Date(),
               authProvider: firebaseUser.providerData[0]?.providerId === 'google.com' ? SocialProvider.GOOGLE : undefined
             };
+            
+            console.log('AuthService: Temporary user object created:', tempUser);
             this.currentUser = tempUser;
             console.log('🔐 AuthService: Temporary user created:', tempUser.email);
             console.log('🔐 AuthService: Temporary user role:', tempUser.role);
             console.log('🔐 AuthService: Temporary user permissions:', tempUser.permissions);
+            console.log('AuthService: About to notify auth state listeners...');
             this.notifyAuthStateListeners(tempUser);
+            console.log('AuthService: Auth state listeners notified successfully');
           }
         }
       } else {

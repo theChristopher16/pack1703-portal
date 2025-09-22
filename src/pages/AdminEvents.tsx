@@ -102,6 +102,31 @@ const AdminEvents: React.FC = () => {
       if (modalMode === 'create') {
         console.log('Creating new event...');
         
+        // Handle location - create or find location ID
+        let locationId = 'RwI4opwHcUx3GKKF7Ten'; // Default location ID
+        
+        if (eventData.location && eventData.location.trim()) {
+          try {
+            // Try to create a new location with the provided name
+            const locationResult = await adminService.createLocation({
+              name: eventData.location.trim(),
+              address: '', // Will be filled in later
+              category: 'other',
+              notesPublic: `Location created for event: ${eventData.title}`,
+              isImportant: false
+            });
+            
+            if (locationResult.success && locationResult.locationId) {
+              locationId = locationResult.locationId;
+              console.log('Created new location with ID:', locationId);
+            } else {
+              console.warn('Failed to create location, using default:', locationResult.error);
+            }
+          } catch (error) {
+            console.warn('Error creating location, using default:', error);
+          }
+        }
+        
              // Transform data to match validation schema expectations
              const cloudFunctionData = {
                title: eventData.title,
@@ -110,10 +135,11 @@ const AdminEvents: React.FC = () => {
                endDate: new Date(eventData.endDate!), // Convert to Date object
                startTime: eventData.startDate?.split('T')[1]?.substring(0, 5) || '09:00', // Extract time part
                endTime: eventData.endDate?.split('T')[1]?.substring(0, 5) || '17:00', // Extract time part
-               locationId: 'RwI4opwHcUx3GKKF7Ten', // Use the default location ID we created
+               locationId: locationId, // Use created or default location ID
                category: eventData.category || 'Meeting',
                seasonId: 'qPEnr3WZN91NhM8jOypp', // Use the default season ID we created
                visibility: eventData.visibility || 'public',
+               maxCapacity: eventData.maxParticipants ? parseInt(eventData.maxParticipants.toString()) : undefined, // Fix: use maxCapacity instead of maxParticipants
                sendNotification: false
              };
         
@@ -155,7 +181,7 @@ const AdminEvents: React.FC = () => {
             endTime: eventData.endDate?.split('T')[1]?.substring(0, 5) || '17:00', // Extract time part
             category: eventData.category || 'Meeting',
             visibility: eventData.visibility || 'public',
-            maxParticipants: eventData.maxParticipants
+            maxCapacity: eventData.maxParticipants ? parseInt(eventData.maxParticipants.toString()) : undefined // Fix: use maxCapacity instead of maxParticipants
           }
         };
         

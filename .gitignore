@@ -71,6 +71,7 @@ test-*.js
 !test-cloud-functions-access.js
 !test-cloud-functions-comprehensive.js
 !test-auth-flow.js
+!test-auth-enforcement.js
 populate-*.js
 !populate-*.example.jsservice-account-key.json
 *.env*

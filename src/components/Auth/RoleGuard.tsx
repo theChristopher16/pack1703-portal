@@ -22,7 +22,7 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
   // Get current user from admin context
   const { state } = useAdmin();
   const currentUser = state.currentUser;
-  const userRole = (currentUser?.role as UserRole) || UserRole.ANONYMOUS;
+  const userRole = currentUser?.role as UserRole;
 
   // Show loading spinner while authentication state is being determined
   if (state.isLoading) {
@@ -36,29 +36,22 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
     );
   }
 
+  // If no user is authenticated, redirect to home (which will show login)
+  if (!currentUser || !userRole) {
+    return <Navigate to="/" replace />;
+  }
+
   // Check if user has access to the route
   if (route && !hasAccessToRoute(userRole, route)) {
-    // If user is not authenticated, redirect to home
-    if (userRole === UserRole.ANONYMOUS) {
-      return <Navigate to="/" replace />;
-    }
     return <Navigate to={fallbackPath} replace />;
   }
 
   // Check specific role requirements
   if (requiredRole && userRole !== requiredRole) {
-    // If user is not authenticated, redirect to home
-    if (userRole === UserRole.ANONYMOUS) {
-      return <Navigate to="/" replace />;
-    }
     return <Navigate to={fallbackPath} replace />;
   }
 
   if (requiredRoles && !requiredRoles.includes(userRole)) {
-    // If user is not authenticated, redirect to home
-    if (userRole === UserRole.ANONYMOUS) {
-      return <Navigate to="/" replace />;
-    }
     return <Navigate to={fallbackPath} replace />;
   }
 

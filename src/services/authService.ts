@@ -36,7 +36,6 @@ import { db, functions } from '../firebase/config';
 
 // User roles and permissions - Simplified and intuitive
 export enum UserRole {
-  ANONYMOUS = 'anonymous',    // Default - no account
   PARENT = 'parent',          // Family account (default after signup)
   VOLUNTEER = 'volunteer',    // Active volunteers
   ADMIN = 'admin',            // Pack administrators
@@ -46,7 +45,6 @@ export enum UserRole {
 
 // Role hierarchy - each role inherits permissions from roles below it
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
-  [UserRole.ANONYMOUS]: 0,
   [UserRole.PARENT]: 1,
   [UserRole.VOLUNTEER]: 2,
   [UserRole.ADMIN]: 3,
@@ -117,11 +115,6 @@ export enum SocialProvider {
 
 // Role to permissions mapping
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
-  [UserRole.ANONYMOUS]: [
-    Permission.READ_CONTENT,
-    Permission.SCOUT_CONTENT,
-    Permission.SCOUT_EVENTS
-  ],
   [UserRole.PARENT]: [
     Permission.READ_CONTENT,
     Permission.CREATE_CONTENT,
@@ -285,7 +278,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 
 // Role color configuration (object format for UI components)
 export const ROLE_COLORS: Record<UserRole, { bg: string; text: string; border: string }> = {
-  [UserRole.ANONYMOUS]: { bg: '#f3f4f6', text: '#1f2937', border: '#d1d5db' },
   [UserRole.PARENT]: { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' },
   [UserRole.VOLUNTEER]: { bg: '#dcfce7', text: '#166534', border: '#86efac' },
   [UserRole.AI_ASSISTANT]: { bg: '#e0f2fe', text: '#0c4a6e', border: '#7dd3fc' },
@@ -295,7 +287,6 @@ export const ROLE_COLORS: Record<UserRole, { bg: string; text: string; border: s
 
 // Role display names
 export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
-  [UserRole.ANONYMOUS]: 'Anonymous',
   [UserRole.PARENT]: 'Parent',
   [UserRole.VOLUNTEER]: 'Volunteer',
   [UserRole.AI_ASSISTANT]: 'AI Assistant',
@@ -305,7 +296,6 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
 
 // Role descriptions
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  [UserRole.ANONYMOUS]: 'No account - limited access',
   [UserRole.PARENT]: 'Family account - manage family events and RSVPs',
   [UserRole.VOLUNTEER]: 'Active volunteer - den-specific management',
   [UserRole.AI_ASSISTANT]: 'AI assistant - event management and content creation',
@@ -1250,7 +1240,7 @@ class AuthService {
       [Permission.CHAT_MANAGEMENT]: UserRole.VOLUNTEER,
       
       // General permissions
-      [Permission.READ_CONTENT]: UserRole.ANONYMOUS,
+      [Permission.READ_CONTENT]: UserRole.PARENT,
       [Permission.CREATE_CONTENT]: UserRole.PARENT,
       [Permission.UPDATE_CONTENT]: UserRole.VOLUNTEER,
       [Permission.DELETE_CONTENT]: UserRole.ADMIN,

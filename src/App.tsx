@@ -9,6 +9,7 @@ import { versionCheckService } from './services/versionCheckService';
 // Components
 import Layout from './components/Layout/Layout';
 import { AdminOnly, RootOnly, AuthenticatedOnly } from './components/Auth/RoleGuard';
+import AuthGuard from './components/Auth/AuthGuard';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -129,9 +130,10 @@ function App() {
       <ToastProvider>
         <AdminProvider>
           <MultiTenantProvider>
-            <Router>
-              <ScrollToTop />
-            <Routes>
+            <AuthGuard>
+              <Router>
+                <ScrollToTop />
+                <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Layout><HomePage /></Layout>} />
           <Route path="/events" element={<Layout><EventsPage /></Layout>} />
@@ -192,6 +194,7 @@ function App() {
           <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
           </Routes>
                 </Router>
+              </AuthGuard>
               </MultiTenantProvider>
             </AdminProvider>
       </ToastProvider>

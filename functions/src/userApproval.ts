@@ -5,7 +5,6 @@ import { logger } from 'firebase-functions';
 
 // User roles enum - Updated to match AuthService
 export enum UserRole {
-  ANONYMOUS = 'anonymous',
   PARENT = 'parent',
   VOLUNTEER = 'volunteer',
   ADMIN = 'admin',
@@ -46,11 +45,6 @@ export interface AdminAuditLog {
 
 // Role permissions mapping - matches AuthService
 const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
-  [UserRole.ANONYMOUS]: [
-    'read_content',
-    'scout_content',
-    'scout_events'
-  ],
   [UserRole.PARENT]: [
     'read_content',
     'create_content',

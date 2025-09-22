@@ -163,7 +163,7 @@ const initialChatState: ChatState = {
   messageListRef: null,
   hasNewMessages: false,
   isAuthenticated: false,
-  userRole: UserRole.ANONYMOUS,
+  userRole: UserRole.PARENT,
   authLoading: true,
   richTextState: {
     isBold: false,

@@ -33,8 +33,8 @@ const RoleBadge: React.FC<RoleBadgeProps> = ({
         return '🤝';
       case UserRole.PARENT:
         return '👨‍👩‍👧‍👦';
-      case UserRole.ANONYMOUS:
-        return '👤';
+      case UserRole.AI_ASSISTANT:
+        return '🤖';
       default:
         return '👤';
     }

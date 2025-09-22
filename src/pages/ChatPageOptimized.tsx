@@ -107,7 +107,7 @@ const ChatPage: React.FC = () => {
         actions.setCurrentUser(currentUser);
       } else {
         actions.setAuthenticated(false);
-        actions.setUserRole(UserRole.ANONYMOUS);
+        actions.setUserRole(UserRole.PARENT);
         actions.setCurrentUser(null);
       }
       actions.setAuthLoading(false);

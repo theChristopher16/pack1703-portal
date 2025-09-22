@@ -501,9 +501,8 @@ const AdminUsers: React.FC = () => {
               <option value="all">All Roles</option>
               <option value={UserRole.ROOT}>Root</option>
               <option value={UserRole.ADMIN}>Admin</option>
-                                <option value={UserRole.VOLUNTEER}>Volunteer</option>
-                                <option value={UserRole.PARENT}>Parent</option>
-                  <option value={UserRole.ANONYMOUS}>Anonymous</option>
+              <option value={UserRole.VOLUNTEER}>Volunteer</option>
+              <option value={UserRole.PARENT}>Parent</option>
             </select>
             
             <select

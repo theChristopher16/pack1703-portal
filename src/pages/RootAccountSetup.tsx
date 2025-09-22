@@ -7,7 +7,7 @@ import { UserRole } from '../services/authService';
 const RootAccountSetup: React.FC = () => {
   const { state } = useAdmin();
   const currentUser = state.currentUser;
-  const userRole = (currentUser?.role as UserRole) || UserRole.ANONYMOUS;
+  const userRole = (currentUser?.role as UserRole) || UserRole.PARENT;
 
   // Only allow root users to access this page
   if (userRole !== UserRole.ROOT) {

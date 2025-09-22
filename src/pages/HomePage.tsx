@@ -37,7 +37,7 @@ const HomePage: React.FC = () => {
 
   // Load hero buttons when user changes (via AdminContext)
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && userRole) {
       // Load personalized hero buttons for authenticated users
       loadHeroButtons(currentUser.uid, userRole);
     } else {
@@ -124,14 +124,14 @@ const HomePage: React.FC = () => {
   };
 
   // Get available components for the current user's role
-  const quickActions = heroButtonService.getAvailableComponents(userRole).map((config, index) => ({
+  const quickActions = userRole ? heroButtonService.getAvailableComponents(userRole).map((config, index) => ({
     name: config.name,
     description: config.description,
     href: config.href,
     icon: getIconComponent(config.icon),
     color: config.color,
     delay: `animate-delay-${(index + 1) * 100}`
-  }));
+  })) : [];
 
   const scoutingFeatures = [
     {

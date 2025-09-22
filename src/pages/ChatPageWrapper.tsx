@@ -1,36 +1,25 @@
 import React from 'react';
 import { useAdmin } from '../contexts/AdminContext';
-import { UserRole } from '../services/authService';
 
 const ChatPageWrapper: React.FC = () => {
   const { state } = useAdmin();
   const isAuthenticated = !!state.currentUser;
-  const authLoading = state.isLoading;
 
-  // Show loading spinner while authentication state is being determined
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading chat...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show login prompt if not authenticated
+  // REMOVED LOADING CHECK - This was causing redirects
+  // The AuthGuard already handles authentication, so we don't need to check again
+  
+  // Show login prompt if not authenticated (shouldn't happen due to AuthGuard)
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Login Required</h2>
-          <p className="text-gray-600 mb-6">Please log in to access the chat.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Authentication Error</h2>
+          <p className="text-gray-600 mb-6">There was an issue with authentication. Please try refreshing the page.</p>
           <button
-            onClick={() => window.location.href = '/'}
+            onClick={() => window.location.reload()}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Go to Home
+            Refresh Page
           </button>
         </div>
       </div>
@@ -44,6 +33,7 @@ const ChatPageWrapper: React.FC = () => {
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Chat Coming Soon</h2>
         <p className="text-gray-600 mb-6">The chat feature is temporarily disabled while we fix some technical issues.</p>
         <p className="text-sm text-gray-500">You are logged in as: {state.currentUser?.email}</p>
+        <p className="text-sm text-gray-500">Role: {state.currentUser?.role}</p>
       </div>
     </div>
   );

@@ -239,11 +239,11 @@ export function AdminProvider({ children }: AdminProviderProps) {
       if (user) {
         // Convert AppUser to AdminUser with proper role mapping
         const roleMap: { [key: string]: AdminRole } = {
-          'root': 'root',
-          'admin': 'super-admin', 
-          'volunteer': 'moderator',
-          'parent': 'viewer',
-          'ai_assistant': 'moderator' // Map AI assistant to moderator level
+          [UserRole.ROOT]: 'root',
+          [UserRole.ADMIN]: 'super-admin', 
+          [UserRole.VOLUNTEER]: 'moderator',
+          [UserRole.PARENT]: 'viewer',
+          [UserRole.AI_ASSISTANT]: 'moderator' // Map AI assistant to moderator level
         };
         
         const adminUser: AdminUser = {
@@ -252,11 +252,15 @@ export function AdminProvider({ children }: AdminProviderProps) {
           displayName: user.displayName || null,
           photoURL: user.photoURL || null,
           isAdmin: user.role === UserRole.ROOT || user.role === UserRole.ADMIN || user.role === UserRole.VOLUNTEER,
-          role: roleMap[user.role] || 'parent',
+          role: roleMap[user.role] || 'viewer',
           permissions: user.permissions as unknown as AdminPermission[],
           lastLogin: user.lastLoginAt || new Date(),
           isActive: user.isActive,
         };
+        
+        console.log('AdminContext: Mapped user role:', user.role, '->', adminUser.role);
+        console.log('AdminContext: User isAdmin:', adminUser.isAdmin);
+        console.log('AdminContext: User permissions:', adminUser.permissions);
         dispatch({ type: 'SET_CURRENT_USER', payload: adminUser });
       } else {
         dispatch({ type: 'SET_CURRENT_USER', payload: null });

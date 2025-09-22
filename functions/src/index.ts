@@ -7,6 +7,17 @@ import { setAdminClaims } from './setAdminClaims';
 import { testAuth } from './simpleTest';
 const Imap = require('node-imap');
 
+// CORS configuration
+const cors = require('cors')({
+  origin: [
+    'https://pack1703-portal.web.app',
+    'https://pack1703-portal.firebaseapp.com',
+    'http://localhost:3000',
+    'http://localhost:3001'
+  ],
+  credentials: true
+});
+
 // Initialize Firebase Admin
 admin.initializeApp();
 

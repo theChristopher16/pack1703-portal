@@ -266,7 +266,7 @@ const EventDetailPage: React.FC = () => {
         </div>
 
         {/* Event Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft border border-gray-200 dark:border-gray-700 p-6 mb-8">
+        <div className="bg-white rounded-xl shadow-soft border border-gray-200 p-6 mb-8">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-3">
               <span className="text-4xl">{getCategoryIcon(event.category)}</span>
@@ -292,7 +292,7 @@ const EventDetailPage: React.FC = () => {
               </button>
               <button
                 onClick={shareEvent}
-                className="inline-flex items-center px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
+                className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200"
               >
                 <Share2 className="w-4 h-4 mr-2" />
                 Share
@@ -343,8 +343,8 @@ const EventDetailPage: React.FC = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft border border-gray-200 dark:border-gray-700 mb-8">
-          <div className="border-b border-gray-200 dark:border-gray-700">
+        <div className="bg-white rounded-xl shadow-soft border border-gray-200 mb-8">
+          <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6">
               {[
                 { id: 'details', label: 'Details', icon: FileText },
@@ -417,14 +417,14 @@ const EventDetailPage: React.FC = () => {
                 {location && (
                   <div>
                     <h3 className="text-lg font-display font-semibold text-text mb-3">Location Details</h3>
-                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div className="bg-gray-50 rounded-lg p-4">
                       <h4 className="font-medium text-text mb-2">{location.name}</h4>
                       <p className="text-gray-600 mb-3">{location.address}</p>
                       {location.notesPublic && (
                         <p className="text-gray-600 text-sm">{location.notesPublic}</p>
                       )}
                       {location.parking?.text && (
-                        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                        <div className="mt-3 pt-3 border-t border-gray-200">
                           <h5 className="font-medium text-text text-sm mb-1">Parking</h5>
                           <p className="text-gray-600 text-sm">{location.parking.text}</p>
                         </div>
@@ -452,7 +452,7 @@ const EventDetailPage: React.FC = () => {
                 <p className="text-gray-600 mb-6">
                   Map integration coming soon! This will show the event location with directions.
                 </p>
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 max-w-md mx-auto">
+                <div className="bg-gray-50 rounded-lg p-4 max-w-md mx-auto">
                   <p className="text-sm text-gray-600">
                     Features planned:
                   </p>

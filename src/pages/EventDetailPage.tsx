@@ -17,7 +17,7 @@ import { LoadingSpinner } from '../components/Loading';
 import RSVPForm from '../components/Forms/RSVPForm';
 
 const EventDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { eventId } = useParams<{ eventId: string }>();
   const [event, setEvent] = useState<Event | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,9 +33,9 @@ const EventDetailPage: React.FC = () => {
 
   useEffect(() => {
     const loadEventData = async () => {
-      console.log('EventDetailPage: Loading event data for ID:', id);
+      console.log('EventDetailPage: Loading event data for ID:', eventId);
       
-      if (!id) {
+      if (!eventId) {
         console.log('EventDetailPage: No event ID provided');
         setIsLoading(false);
         return;
@@ -49,7 +49,7 @@ const EventDetailPage: React.FC = () => {
         console.log('EventDetailPage: Fetching event from Firestore...');
         
         // Load event data
-        const eventRef = doc(db, 'events', id);
+        const eventRef = doc(db, 'events', eventId);
         const eventSnap = await getDoc(eventRef);
         
         console.log('EventDetailPage: Event snapshot exists:', eventSnap.exists());
@@ -74,7 +74,7 @@ const EventDetailPage: React.FC = () => {
             }
           }
         } else {
-          console.log('EventDetailPage: Event not found in Firestore for ID:', id);
+          console.log('EventDetailPage: Event not found in Firestore for ID:', eventId);
         }
       } catch (error) {
         console.error('EventDetailPage: Error loading event:', error);
@@ -84,7 +84,7 @@ const EventDetailPage: React.FC = () => {
     };
 
     loadEventData();
-  }, [id]);
+  }, [eventId]);
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'TBD';

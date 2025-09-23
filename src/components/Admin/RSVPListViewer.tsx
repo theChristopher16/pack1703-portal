@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, X, Download, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 
 interface RSVPData {
@@ -48,24 +48,30 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
       setLoading(true);
       setError(null);
 
+      console.log('RSVPListViewer: Loading RSVPs for event:', eventId);
+
       // Query RSVPs for this event
       const rsvpsQuery = query(
         collection(db, 'rsvps'),
-        where('eventId', '==', eventId),
-        orderBy('submittedAt', 'desc')
+        where('eventId', '==', eventId)
       );
 
+      console.log('RSVPListViewer: Executing query...');
       const rsvpsSnapshot = await getDocs(rsvpsQuery);
+      console.log('RSVPListViewer: Query successful, found', rsvpsSnapshot.size, 'RSVPs');
+      
       const rsvpsData: RSVPData[] = [];
 
       rsvpsSnapshot.forEach((doc) => {
         const data = doc.data();
+        console.log('RSVPListViewer: Processing RSVP:', doc.id, data);
         rsvpsData.push({
           id: doc.id,
           ...data
         } as RSVPData);
       });
 
+      console.log('RSVPListViewer: Processed', rsvpsData.length, 'RSVPs');
       setRsvps(rsvpsData);
     } catch (error) {
       console.error('Error loading RSVPs:', error);

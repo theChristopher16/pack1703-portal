@@ -91,7 +91,9 @@ service cloud.firestore {
     // RSVPs - Authenticated users can create/read their own, admins can read all
     match /rsvps/{rsvpId} {
       allow read: if isAuthenticated() && 
-                     (resource.data.userId == request.auth.uid || isAdmin());
+                     (resource.data.userId == request.auth.uid || 
+                      resource.data.userEmail == request.auth.token.email || 
+                      isAdmin());
       allow create: if isAuthenticated() && // Authentication required for RSVP
                        resource.data.userId == request.auth.uid &&
                        isValidString(resource.data.familyName, 100) &&

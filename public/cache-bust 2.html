@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cache Bust - Pack 1703 Portal</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Cache Bust Tool</h1>
+        <p>This tool will clear all browser caches and reload the application with the latest version.</p>
+        
+        <div class="status" id="status">
+            Ready to clear cache...
+        </div>
+        
+        <button onclick="clearAllCaches()">Clear All Caches & Reload</button>
+        <button onclick="window.location.href='/'">Go to Home Page</button>
+        
+        <div style="margin-top: 30px; font-size: 14px; opacity: 0.8;">
+            <p>If you're still seeing old content after clearing cache:</p>
+            <ul style="text-align: left; display: inline-block;">
+                <li>Try hard refresh: Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac)</li>
+                <li>Clear browser data manually</li>
+                <li>Try incognito/private browsing mode</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        async function clearAllCaches() {
+            updateStatus('Clearing caches...');
+            
+            try {
+                // Clear service worker cache
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                        updateStatus('Service worker unregistered...');
+                    }
+                }
+                
+                // Clear all caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(cacheName => caches.delete(cacheName))
+                    );
+                    updateStatus('Browser caches cleared...');
+                }
+                
+                // Clear localStorage and sessionStorage
+                localStorage.clear();
+                sessionStorage.clear();
+                updateStatus('Local storage cleared...');
+                
+                // Force reload with cache bypass
+                updateStatus('Reloading with fresh content...');
+                setTimeout(() => {
+                    window.location.href = '/?v=' + Date.now();
+                }, 1000);
+                
+            } catch (error) {
+                updateStatus('Error clearing cache: ' + error.message);
+                console.error('Cache clear error:', error);
+            }
+        }
+
+        // Auto-clear cache on page load
+        window.addEventListener('load', () => {
+            updateStatus('Page loaded. Click button to clear cache.');
+        });
+    </script>
+</body>
+</html>

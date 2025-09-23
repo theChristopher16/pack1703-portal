@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firestore Permission Diagnostic Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        .warning { color: orange; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        #output { white-space: pre-wrap; font-family: monospace; background: #f5f5f5; padding: 15px; margin: 10px 0; max-height: 600px; overflow-y: auto; border: 1px solid #ccc; }
+        .step { margin: 10px 0; padding: 10px; background: #f8f9fa; border-left: 4px solid #007bff; }
+    </style>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, getDoc, collection, query, limit, getDocs, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBIBpkVqhPAJNYjymD-eK1n3ZuLwn9rf8g",
+            authDomain: "pack1703-portal.firebaseapp.com",
+            projectId: "pack1703-portal",
+            storageBucket: "pack1703-portal.firebasestorage.app",
+            messagingSenderId: "869412763535",
+            appId: "1:869412763535:web:94b3b1ccc756ddfe92bdfa"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        class DiagnosticTool {
+            constructor() {
+                this.results = [];
+                this.currentUser = null;
+            }
+
+            log(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                const logMessage = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+                console.log(logMessage);
+                this.results.push({ timestamp, type, message });
+                this.updateOutput();
+            }
+
+            updateOutput() {
+                const output = document.getElementById('output');
+                output.textContent = this.results.map(r => 
+                    `[${r.timestamp}] ${r.type.toUpperCase()}: ${r.message}`
+                ).join('\n');
+                output.scrollTop = output.scrollHeight;
+            }
+
+            async testStep(stepName, testFunction) {
+                this.log(`\n=== ${stepName} ===`);
+                try {
+                    await testFunction();
+                } catch (error) {
+                    this.log(`❌ ${stepName} failed: ${error.code} - ${error.message}`, 'error');
+                    this.log(`Full error: ${JSON.stringify(error)}`, 'error');
+                }
+            }
+
+            async testUnauthenticatedAccess() {
+                this.log('Testing unauthenticated access...');
+                
+                // Test 1: Try to read users collection without auth
+                try {
+                    const usersRef = collection(db, 'users');
+                    const q = query(usersRef, limit(1));
+                    await getDocs(q);
+                    this.log('❌ ERROR: Unauthenticated access to users collection was allowed', 'error');
+                } catch (error) {
+                    this.log(`✅ Expected: Unauthenticated access denied - ${error.code}`, 'success');
+                }
+
+                // Test 2: Try to read a specific user document without auth
+                try {
+                    const userDocRef = doc(db, 'users', 'test-user-id');
+                    await getDoc(userDocRef);
+                    this.log('❌ ERROR: Unauthenticated access to user document was allowed', 'error');
+                } catch (error) {
+                    this.log(`✅ Expected: Unauthenticated access to user document denied - ${error.code}`, 'success');
+                }
+            }
+
+            async testAuthenticatedAccess() {
+                if (!this.currentUser) {
+                    this.log('❌ No authenticated user for testing', 'error');
+                    return;
+                }
+
+                this.log(`Testing authenticated access for: ${this.currentUser.email} (${this.currentUser.uid})`);
+
+                // Test 1: Get custom claims
+                try {
+                    const idTokenResult = await this.currentUser.getIdTokenResult();
+                    this.log(`Custom claims: ${JSON.stringify(idTokenResult.claims)}`);
+                    this.log(`Role from claims: ${idTokenResult.claims.role || 'none'}`);
+                } catch (error) {
+                    this.log(`❌ Failed to get custom claims: ${error.code}`, 'error');
+                }
+
+                // Test 2: Try to read user's own document
+                try {
+                    this.log('Testing read access to own user document...');
+                    const userDocRef = doc(db, 'users', this.currentUser.uid);
+                    const userDoc = await getDoc(userDocRef);
+                    
+                    if (userDoc.exists()) {
+                        this.log('✅ User document exists', 'success');
+                        this.log(`User data: ${JSON.stringify(userDoc.data())}`);
+                    } else {
+                        this.log('❌ User document does not exist - this is likely the problem!', 'error');
+                        await this.testUserCreation();
+                    }
+                } catch (error) {
+                    this.log(`❌ Failed to read user document: ${error.code} - ${error.message}`, 'error');
+                    this.log('This is the exact error you are experiencing!', 'error');
+                }
+            }
+
+            async testUserCreation() {
+                this.log('Testing user document creation...');
+                
+                try {
+                    // Test 1: Check if first user (this was failing before)
+                    this.log('Testing first user detection query...');
+                    const usersQuery = query(collection(db, 'users'), limit(1));
+                    const usersSnapshot = await getDocs(usersQuery);
+                    const isFirstUser = usersSnapshot.empty;
+                    this.log(`✅ First user check successful. Is first user: ${isFirstUser}`, 'success');
+
+                    // Test 2: Create user document
+                    this.log('Testing user document creation...');
+                    const userData = {
+                        email: this.currentUser.email,
+                        displayName: this.currentUser.displayName || 'User',
+                        photoURL: this.currentUser.photoURL || undefined,
+                        role: isFirstUser ? 'root' : 'parent',
+                        permissions: isFirstUser ? ['system_admin'] : ['family_management'],
+                        isActive: true,
+                        authProvider: 'google',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                        lastLoginAt: serverTimestamp()
+                    };
+                    
+                    const userDocRef = doc(db, 'users', this.currentUser.uid);
+                    await setDoc(userDocRef, userData);
+                    this.log('✅ User document created successfully', 'success');
+                    
+                    // Test 3: Verify document was created
+                    const newUserDoc = await getDoc(userDocRef);
+                    if (newUserDoc.exists()) {
+                        this.log('✅ User document verified after creation', 'success');
+                    } else {
+                        this.log('❌ User document not found after creation', 'error');
+                    }
+
+                } catch (error) {
+                    this.log(`❌ User creation failed: ${error.code} - ${error.message}`, 'error');
+                    this.log('This is likely the root cause of your permission error!', 'error');
+                }
+            }
+
+            async testAdminAccess() {
+                if (!this.currentUser) {
+                    this.log('❌ No authenticated user for admin testing', 'error');
+                    return;
+                }
+
+                try {
+                    const idTokenResult = await this.currentUser.getIdTokenResult();
+                    const role = idTokenResult.claims.role;
+                    
+                    if (!role || !['admin', 'root', 'volunteer'].includes(role)) {
+                        this.log('User is not an admin, skipping admin tests', 'info');
+                        return;
+                    }
+
+                    this.log(`Testing admin access for role: ${role}`);
+
+                    // Test admin read access to users collection
+                    try {
+                        const allUsersQuery = query(collection(db, 'users'), limit(5));
+                        const allUsersSnapshot = await getDocs(allUsersQuery);
+                        this.log(`✅ Admin can read users collection: ${allUsersSnapshot.size} documents`, 'success');
+                    } catch (error) {
+                        this.log(`❌ Admin cannot read users collection: ${error.code}`, 'error');
+                    }
+
+                } catch (error) {
+                    this.log(`❌ Admin access test failed: ${error.code}`, 'error');
+                }
+            }
+
+            async runAllTests() {
+                this.log('🚀 Starting Firestore Permission Diagnostic');
+                this.log(`Firebase Project: ${firebaseConfig.projectId}`);
+                
+                await this.testStep('UNAUTHENTICATED ACCESS', () => this.testUnauthenticatedAccess());
+                
+                if (this.currentUser) {
+                    await this.testStep('AUTHENTICATED ACCESS', () => this.testAuthenticatedAccess());
+                    await this.testStep('ADMIN ACCESS', () => this.testAdminAccess());
+                } else {
+                    this.log('⚠️ No authenticated user - please sign in to test authenticated access', 'warning');
+                }
+
+                this.log('\n=== DIAGNOSTIC COMPLETE ===');
+                const errorCount = this.results.filter(r => r.type === 'error').length;
+                const successCount = this.results.filter(r => r.type === 'success').length;
+                this.log(`Total tests: ${this.results.length}`);
+                this.log(`Successes: ${successCount}`);
+                this.log(`Errors: ${errorCount}`);
+                
+                if (errorCount > 0) {
+                    this.log('\n=== ERRORS FOUND ===');
+                    this.results.filter(r => r.type === 'error').forEach(error => {
+                        this.log(`- ${error.message}`);
+                    });
+                }
+            }
+        }
+
+        const diagnosticTool = new DiagnosticTool();
+
+        // Monitor auth state changes
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                diagnosticTool.log(`🔐 User signed in: ${user.email}`, 'success');
+                diagnosticTool.currentUser = user;
+            } else {
+                diagnosticTool.log('🔐 User signed out', 'info');
+                diagnosticTool.currentUser = null;
+            }
+        });
+
+        // Global functions for buttons
+        window.loginWithGoogle = async () => {
+            try {
+                const provider = new GoogleAuthProvider();
+                await signInWithPopup(auth, provider);
+                diagnosticTool.log('✅ Google login successful', 'success');
+            } catch (error) {
+                diagnosticTool.log(`❌ Google login failed: ${error.code} - ${error.message}`, 'error');
+            }
+        };
+
+        window.logout = async () => {
+            try {
+                await signOut(auth);
+                diagnosticTool.log('✅ Logout successful', 'success');
+            } catch (error) {
+                diagnosticTool.log(`❌ Logout failed: ${error.code}`, 'error');
+            }
+        };
+
+        window.runDiagnostic = async () => {
+            await diagnosticTool.runAllTests();
+        };
+
+        window.clearResults = () => {
+            diagnosticTool.results = [];
+            diagnosticTool.updateOutput();
+        };
+    </script>
+</head>
+<body>
+    <h1>🔍 Firestore Permission Diagnostic Tool</h1>
+    
+    <div class="test-section">
+        <h3>Authentication</h3>
+        <button onclick="loginWithGoogle()">Login with Google</button>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Diagnostic Tests</h3>
+        <button onclick="runDiagnostic()">Run Full Diagnostic</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Instructions</h3>
+        <div class="step">
+            <strong>Step 1:</strong> Click "Login with Google" to authenticate
+        </div>
+        <div class="step">
+            <strong>Step 2:</strong> Click "Run Full Diagnostic" to test all permissions
+        </div>
+        <div class="step">
+            <strong>Step 3:</strong> Review the results below to identify the exact issue
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>Diagnostic Results</h3>
+        <div id="output">Click "Run Full Diagnostic" to start testing...</div>
+    </div>
+</body>
+</html>
+
+
+

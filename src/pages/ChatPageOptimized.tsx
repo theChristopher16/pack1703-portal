@@ -1,15 +1,16 @@
 import React, { useEffect, useRef } from 'react';
-import { 
-  Send, MessageCircle, Settings, User, Search, Smile, Share2, 
-  Bold, Italic, Underline, Loader2, Camera, Palette, Type, 
+import {
+  Send, MessageCircle, Settings, User, Search, Smile, Share2,
+  Bold, Italic, Underline, Loader2, Camera, Palette, Type,
   List, Code, Quote, Link, Image, AtSign, Hash, Star, Lock
 } from 'lucide-react';
 import chatService, { ChatUser, ChatMessage, ChatChannel } from '../services/chatService';
 import tenorService, { TenorGif } from '../services/tenorService';
 import { useToast } from '../contexts/ToastContext';
-import { authService, UserRole } from '../services/authService';
+import { authService, UserRole, Permission } from '../services/authService';
 import ProfilePicture from '../components/ui/ProfilePicture';
 import { useChatState } from '../hooks/useOptimizedState';
+import { useAdmin } from '../contexts/AdminContext';
 
 // Rich text formatting utilities
 const FORMATTING_PATTERNS = {
@@ -42,47 +43,116 @@ const TEXT_COLORS = [
 const ChatPage: React.FC = () => {
   // Use optimized state management instead of 20+ useState hooks
   const { state, actions, selectors } = useChatState();
-  
+  // Get authentication context
+  const { state: adminState } = useAdmin();
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showSuccess, showError, showInfo } = useToast();
 
+  // Get current authenticated user from AdminContext
+  const currentUser = adminState.currentUser;
+  const isAuthenticated = adminState.isAuthenticated;
+  const userPermissions = currentUser?.permissions || [];
+
+  // Events-based filtering logic (similar to EventCalendar filtering)
+  const applyEventsBasedFiltering = (channels: ChatChannel[]) => {
+    // Filter channels based on user role and den access (similar to events filtering)
+    let filteredChannels = channels;
+
+    if (currentUser) {
+      // Apply den-based filtering similar to events
+      const userDen = currentUser.profile?.den;
+
+      if (userDen && currentUser.role === 'moderator') {
+        // Den leaders can see their den channels plus general channels
+        filteredChannels = channels.filter(channel =>
+          channel.denType === 'pack' ||
+          channel.denType === 'general' ||
+          channel.id === 'general' ||
+          channel.denType === userDen.toLowerCase()
+        );
+      } else if (currentUser.role === 'super-admin' || currentUser.role === 'root') {
+        // Admins see all channels
+        filteredChannels = channels;
+      } else {
+        // Regular users see general and pack channels
+        filteredChannels = channels.filter(channel =>
+          channel.denType === 'pack' ||
+          channel.denType === 'general' ||
+          channel.id === 'general'
+        );
+      }
+    }
+
+    actions.setChannels(filteredChannels);
+
+    // Set default channel based on user permissions and role
+    const defaultChannel = filteredChannels.find(c =>
+      currentUser?.role === 'super-admin' || currentUser?.role === 'root'
+        ? c.id === 'general'
+        : c.id === 'general'
+    ) || filteredChannels[0];
+
+    if (defaultChannel) {
+      actions.setSelectedChannel(defaultChannel.id);
+    }
+  };
+
   // Initialize chat service and load data
   useEffect(() => {
+    if (!isAuthenticated || !currentUser) {
+      actions.setLoading(false);
+      return;
+    }
+
     const initializeChat = async () => {
       try {
         actions.setLoading(true);
-        
-        // Initialize chat service
-        await chatService.initialize();
-        
-        // Load initial data
-        const [channels, users] = await Promise.all([
-          chatService.getChannels(),
-          chatService.getAllUsers()
-        ]);
-        
-        actions.setChannels(channels);
-        actions.setUsers(users);
+
+        // Check if user has chat permissions
+        const hasChatReadPermission = userPermissions.includes(Permission.CHAT_READ);
+        const hasChatWritePermission = userPermissions.includes(Permission.CHAT_WRITE);
+
+        if (!hasChatReadPermission) {
+          actions.setError('You do not have permission to access chat');
+          actions.setLoading(false);
+          return;
+        }
+
+        // Initialize chat service with authenticated user
+        const isAdmin = currentUser.role === 'root' || currentUser.role === 'super-admin';
+        const chatUser = await (isAdmin ? chatService.initializeAsAdmin() : chatService.initialize());
+
+        actions.setCurrentUser(chatUser);
+
+        // Load channels based on user permissions
+        const channels = await chatService.getChannels();
+
+        // Filter channels based on user permissions and den access
+        let filteredChannels = channels;
+
+        if (!hasChatWritePermission) {
+          // Read-only users can only see general channels
+          filteredChannels = channels.filter(channel =>
+            channel.id === 'general' || channel.id === 'announcements'
+          );
+        } else if (currentUser.role === 'moderator') {
+          // Den leaders can see their den channels plus general
+          filteredChannels = channels.filter(channel =>
+            channel.denType === 'pack' ||
+            channel.denType === 'general' ||
+            channel.id === 'general'
+          );
+        }
+
+        actions.setChannels(filteredChannels);
+        actions.setUsers(await chatService.getOnlineUsers());
         actions.setConnected(true);
-        
-        // TODO: Set up real-time listeners when available
-        // chatService.onMessage((message) => {
-        //   actions.addMessage(message);
-        // });
-        
-        // chatService.onUserUpdate((user) => {
-        //   actions.setUsers(prev => 
-        //     prev.map(u => u.id === user.id ? user : u)
-        //   );
-        // });
-        
-        // chatService.onChannelUpdate((channel) => {
-        //   actions.setChannels(prev => 
-        //     prev.map(c => c.id === channel.id ? channel : c)
-        //   );
-        // });
-        
+
+        // Apply events-based filtering logic
+        applyEventsBasedFiltering(filteredChannels);
+
       } catch (error) {
         console.error('Failed to initialize chat:', error);
         actions.setError('Failed to connect to chat service');
@@ -92,7 +162,7 @@ const ChatPage: React.FC = () => {
     };
 
     initializeChat();
-  }, [actions]);
+  }, [actions, isAuthenticated, currentUser, userPermissions]);
 
   // Handle authentication state changes
   useEffect(() => {
@@ -100,11 +170,11 @@ const ChatPage: React.FC = () => {
       if (user) {
         actions.setAuthenticated(true);
         actions.setUserRole(user.role);
-        
+
         // Reinitialize chat service with authenticated user
         await chatService.reinitialize();
-        const currentUser = await chatService.getCurrentUser();
-        actions.setCurrentUser(currentUser);
+        const chatUser = await chatService.getCurrentUser();
+        actions.setCurrentUser(chatUser);
       } else {
         actions.setAuthenticated(false);
         actions.setUserRole(UserRole.PARENT);
@@ -142,25 +212,32 @@ const ChatPage: React.FC = () => {
 
   // Handle sending messages
   const handleSendMessage = async () => {
-    if (!state.newMessage.trim() || !selectors.canSendMessage) return;
+    if (!state.newMessage.trim() || !selectors.canSendMessage || !currentUser) return;
+
+    // Check if user has write permission
+    const hasChatWritePermission = userPermissions.includes(Permission.CHAT_WRITE);
+    if (!hasChatWritePermission) {
+      showError('You do not have permission to send messages');
+      return;
+    }
 
     try {
-      const message: ChatMessage = {
-        id: Date.now().toString(),
-        message: state.newMessage,
-        userId: state.currentUser!.id,
-        userName: state.currentUser!.name,
-        channelId: state.selectedChannel,
-        timestamp: new Date(),
-        isSystem: false,
-        isAdmin: state.currentUser!.isAdmin || false,
-        reactions: []
-      };
-
       await chatService.sendMessage(state.selectedChannel, state.newMessage);
       actions.setNewMessage('');
       actions.setUploadedImages([]);
-      
+
+      // Track chat usage analytics
+      try {
+        await (await import('../services/analyticsService')).default.trackChatUsage('message_sent', {
+          channel: state.selectedChannel,
+          messageLength: state.newMessage.length,
+          hasImages: state.uploadedImages.length > 0,
+          imageCount: state.uploadedImages.length
+        });
+      } catch (analyticsError) {
+        console.warn('Failed to track chat usage:', analyticsError);
+      }
+
       showSuccess('Message sent successfully');
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -289,13 +366,60 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  // Render loading state
-  if (state.isLoading) {
+  // Show loading state while checking authentication or initializing chat
+  if (adminState.isLoading || state.isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="flex items-center space-x-2">
           <Loader2 className="w-6 h-6 animate-spin" />
           <span>Loading chat...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show authentication required message if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="mb-6">
+            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-primary-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h1>
+            <p className="text-gray-600">
+              Chat is only available to registered pack members. Please sign in to access the chat system.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                // Open login modal - this should be handled by the parent component
+                window.location.href = '/login';
+              }}
+              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => window.location.href = '/'}
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-lg transition-colors"
+            >
+              Back to Home
+            </button>
+          </div>
+
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+            <h3 className="text-sm font-semibold text-blue-900 mb-2">Why is authentication required?</h3>
+            <ul className="text-xs text-blue-800 text-left space-y-1">
+              <li>• Protects family privacy and conversations</li>
+              <li>• Ensures only pack members can participate</li>
+              <li>• Maintains appropriate content standards</li>
+              <li>• Allows den-specific channel access</li>
+            </ul>
+          </div>
         </div>
       </div>
     );
@@ -307,7 +431,7 @@ const ChatPage: React.FC = () => {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="text-red-500 mb-2">Error: {state.error}</div>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
@@ -349,43 +473,55 @@ const ChatPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Channels List */}
+        {/* Channels List (using optimized grouped channels) */}
         <div className="flex-1 overflow-y-auto">
-          {state.channels
-            .filter(channel => 
-              channel.name.toLowerCase().includes(state.searchQuery.toLowerCase())
+          {Object.entries(selectors.groupedChannels)
+            .filter(([denType, denChannels]) =>
+              // Filter by search query efficiently
+              denChannels.some(channel =>
+                channel.name.toLowerCase().includes(state.searchQuery.toLowerCase())
+              )
             )
-            .map(channel => (
-              <div
-                key={channel.id}
-                onClick={() => handleChannelSelect(channel.id)}
-                className={`p-3 hover:bg-gray-50 cursor-pointer border-l-4 ${
-                  state.selectedChannel === channel.id 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-transparent'
-                }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <Hash className="w-4 h-4 text-gray-400" />
-                  <span className="font-medium">{channel.name}</span>
-                </div>
-                <p className="text-sm text-gray-500 mt-1">{channel.description}</p>
-              </div>
-            ))}
+            .map(([denType, denChannels]) =>
+              denChannels
+                .filter(channel =>
+                  channel.name.toLowerCase().includes(state.searchQuery.toLowerCase())
+                )
+                .map(channel => (
+                  <div
+                    key={channel.id}
+                    onClick={() => handleChannelSelect(channel.id)}
+                    className={`p-3 hover:bg-gray-50 cursor-pointer border-l-4 ${
+                      state.selectedChannel === channel.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Hash className="w-4 h-4 text-gray-400" />
+                      <span className="font-medium">{channel.name}</span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">{channel.description}</p>
+                  </div>
+                ))
+            )}
         </div>
 
         {/* User Info */}
-        {state.currentUser && (
+        {currentUser && (
           <div className="p-4 border-t border-gray-200">
             <div className="flex items-center space-x-3">
               <ProfilePicture
-                src={state.currentUser.photoURL}
-                alt={state.currentUser.name}
+                src={currentUser.photoURL}
+                alt={currentUser.displayName || currentUser.email}
                 size="sm"
               />
               <div>
-                <div className="font-medium">{state.currentUser.name}</div>
-                <div className="text-sm text-gray-500">{state.userRole}</div>
+                <div className="font-medium">{currentUser.displayName || currentUser.email}</div>
+                <div className="text-sm text-gray-500 capitalize">{currentUser.role}</div>
+                <div className="text-xs text-gray-400">
+                  {userPermissions.includes(Permission.CHAT_WRITE) ? 'Can send messages' : 'Read only'}
+                </div>
               </div>
             </div>
           </div>
@@ -421,6 +557,16 @@ const ChatPage: React.FC = () => {
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span>{selectors.onlineUsersCount} online</span>
               </div>
+              {currentUser && (
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  <ProfilePicture
+                    src={currentUser.photoURL}
+                    alt={currentUser.displayName || currentUser.email}
+                    size="xs"
+                  />
+                  <span>{currentUser.displayName || currentUser.email}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -517,8 +663,12 @@ const ChatPage: React.FC = () => {
                 onChange={(e) => actions.setNewMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onFocus={() => actions.setShowRichToolbar(true)}
-                placeholder={selectors.canSendMessage ? "Type a message..." : "Please log in to send messages"}
-                disabled={!selectors.canSendMessage}
+                placeholder={
+                  !isAuthenticated ? "Please log in to send messages" :
+                  !userPermissions.includes(Permission.CHAT_WRITE) ? "You don't have permission to send messages" :
+                  "Type a message..."
+                }
+                disabled={!isAuthenticated || !userPermissions.includes(Permission.CHAT_WRITE)}
                 className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 rows={3}
               />
@@ -575,9 +725,17 @@ const ChatPage: React.FC = () => {
               {/* Send Button */}
               <button
                 onClick={handleSendMessage}
-                disabled={!state.newMessage.trim() || !selectors.canSendMessage}
+                disabled={
+                  !state.newMessage.trim() ||
+                  !isAuthenticated ||
+                  !userPermissions.includes(Permission.CHAT_WRITE)
+                }
                 className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Send message (Ctrl+Enter)"
+                title={
+                  !isAuthenticated ? "Please log in to send messages" :
+                  !userPermissions.includes(Permission.CHAT_WRITE) ? "You don't have permission to send messages" :
+                  "Send message (Ctrl+Enter)"
+                }
               >
                 <Send className="w-5 h-5" />
               </button>

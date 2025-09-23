@@ -2,6 +2,19 @@ import { useState, useReducer, useCallback, useMemo } from 'react';
 import { ChatMessage, ChatChannel, ChatUser } from '../services/chatService';
 import { AppUser, UserRole } from '../services/authService';
 
+// Utility function for debouncing
+function debounce(func: Function, wait: number) {
+  let timeout: NodeJS.Timeout;
+  return function executedFunction(...args: any[]) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
 // Define missing types
 interface RichTextState {
   isBold: boolean;
@@ -300,9 +313,48 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
   }
 }
 
-// Custom hook for chat state management
+// Custom hook for chat state management with performance optimizations
 export function useChatState() {
   const [state, dispatch] = useReducer(chatReducer, initialChatState);
+
+  // Performance optimizations - memoize expensive operations
+  const memoizedChannels = useMemo(() => {
+    // Group channels by den type for efficient rendering (similar to events grouping)
+    const groupedChannels: Record<string, ChatChannel[]> = {};
+    state.channels.forEach(channel => {
+      const denType = channel.denType || 'general';
+      if (!groupedChannels[denType]) {
+        groupedChannels[denType] = [];
+      }
+      groupedChannels[denType].push(channel);
+    });
+    return groupedChannels;
+  }, [state.channels]);
+
+  // Optimized message filtering with caching
+  const memoizedFilteredMessages = useMemo(() => {
+    if (!state.searchQuery) return state.messages;
+
+    // Use efficient string matching (similar to events search)
+    const query = state.searchQuery.toLowerCase();
+    return state.messages.filter(message =>
+      message.message.toLowerCase().includes(query) ||
+      message.userName.toLowerCase().includes(query)
+    );
+  }, [state.messages, state.searchQuery]);
+
+  // Optimized user filtering
+  const memoizedOnlineUsers = useMemo(() => {
+    return state.users.filter(user => user.isOnline);
+  }, [state.users]);
+
+  // Performance optimization: Debounced search
+  const debouncedSearch = useCallback(
+    debounce((query: string) => {
+      dispatch({ type: 'SET_SEARCH_QUERY', payload: query });
+    }, 300),
+    []
+  );
 
   // Memoized action creators for better performance
   const actions = useMemo(() => ({
@@ -403,31 +455,33 @@ export function useChatState() {
       dispatch({ type: 'RESET_CHAT_STATE' }),
   }), []);
 
-  // Memoized selectors for computed values
+  // Memoized selectors for computed values (using optimized memoized data)
   const selectors = useMemo(() => ({
-    // Filtered messages based on search query
-    filteredMessages: state.searchQuery 
-      ? state.messages.filter(message => 
-          message.message.toLowerCase().includes(state.searchQuery.toLowerCase())
-        )
-      : state.messages,
-    
+    // Use memoized filtered messages
+    filteredMessages: memoizedFilteredMessages,
+
     // Current channel info
     currentChannel: state.channels.find(channel => channel.id === state.selectedChannel),
-    
-    // Online users count
-    onlineUsersCount: state.users.filter(user => user.isOnline).length,
-    
+
+    // Use memoized online users count
+    onlineUsersCount: memoizedOnlineUsers.length,
+
     // Can send message (authenticated and connected)
     canSendMessage: state.isAuthenticated && state.isConnected && state.currentUser,
-    
+
     // Rich text formatting active
-    hasActiveFormatting: state.richTextState.isBold || 
-                        state.richTextState.isItalic || 
-                        state.richTextState.isUnderline || 
-                        state.richTextState.isStrikethrough || 
+    hasActiveFormatting: state.richTextState.isBold ||
+                        state.richTextState.isItalic ||
+                        state.richTextState.isUnderline ||
+                        state.richTextState.isStrikethrough ||
                         state.richTextState.isCode,
-  }), [state]);
+
+    // Grouped channels for efficient rendering
+    groupedChannels: memoizedChannels,
+
+    // Optimized online users list
+    onlineUsers: memoizedOnlineUsers
+  }), [state, memoizedFilteredMessages, memoizedOnlineUsers, memoizedChannels]);
 
   return { state, actions, selectors };
 }

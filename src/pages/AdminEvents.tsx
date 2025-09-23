@@ -15,15 +15,16 @@ interface Event {
   description: string;
   startDate: string;
   endDate: string;
-  location: string;
-  locationId?: string; // Add locationId for Firestore compatibility
-  category: string;
+  location?: string; // Fallback for display
+  locationId?: string; // Primary field from Firestore
+  category?: string;
   visibility: 'public' | 'link-only' | 'private';
-  maxParticipants?: number;
-  currentParticipants: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  capacity?: number | null; // Primary field from Firestore (matches Firestore interface)
+  maxParticipants?: number; // Legacy field for compatibility
+  currentParticipants?: number;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 const AdminEvents: React.FC = () => {
@@ -342,7 +343,7 @@ const AdminEvents: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-3 p-2 bg-orange-50 rounded-lg">
                     <span className="text-orange-600">👥</span>
-                    <span className="text-gray-700">{event.currentParticipants}/{event.maxParticipants || '∞'}</span>
+                    <span className="text-gray-700">{event.currentParticipants || 0}/{event.capacity || '∞'}</span>
                   </div>
                   <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
                     <span className="text-gray-600">🔒</span>
@@ -457,10 +458,11 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) 
     description: event?.description || '',
     startDate: event?.startDate ? event.startDate.slice(0, 16) : '',
     endDate: event?.endDate ? event.endDate.slice(0, 16) : '',
-    location: event?.location || event?.locationId || '', // Handle both location and locationId
+    location: event?.location || '', // Use readable location name, not locationId
+    locationId: event?.locationId || '', // Store locationId separately for form submission
     category: event?.category || 'Meeting',
     visibility: event?.visibility || 'public',
-    maxParticipants: event?.maxParticipants ? event.maxParticipants.toString() : '',
+    maxParticipants: event?.capacity ? event.capacity.toString() : '', // Use capacity field from Firestore
     isActive: event?.isActive ?? true
   });
 
@@ -515,9 +517,10 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) 
     
     if (validateForm()) {
       console.log('Form validation passed');
-      const { maxParticipants, ...formDataWithoutMaxParticipants } = formData;
+      const { maxParticipants, locationId, ...formDataWithoutMaxParticipants } = formData;
       const eventData: Partial<Event> = {
         ...formDataWithoutMaxParticipants,
+        locationId: locationId || formData.location, // Use locationId if available, fallback to location
         // Convert string dates to Date objects
         startDate: new Date(formData.startDate).toISOString(),
         endDate: new Date(formData.endDate).toISOString(),
@@ -526,9 +529,11 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) 
         updatedAt: new Date().toISOString()
       };
       
-      // Only include maxParticipants if it's a valid number
+      // Map maxParticipants to capacity field for Firestore compatibility
       if (maxParticipants && !isNaN(parseInt(maxParticipants))) {
-        eventData.maxParticipants = parseInt(maxParticipants);
+        eventData.capacity = parseInt(maxParticipants);
+      } else if (maxParticipants === '') {
+        eventData.capacity = null; // Explicitly set to null for unlimited
       }
       
       console.log('Calling onSave with eventData:', eventData);

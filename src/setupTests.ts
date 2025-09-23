@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import React from 'react';
 
 // Mock Firebase services globally
 jest.mock('./firebase/config', () => ({

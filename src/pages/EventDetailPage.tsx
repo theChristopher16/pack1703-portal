@@ -286,91 +286,64 @@ const EventDetailPage: React.FC = () => {
         </div>
 
         {/* Event Header */}
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg border border-gray-200 p-8 mb-8 relative overflow-hidden">
-          {/* Decorative background elements */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-full -translate-y-16 translate-x-16"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-accent/5 to-primary/5 rounded-full translate-y-12 -translate-x-12"></div>
-          
-          <div className="relative z-10">
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-white rounded-xl shadow-sm border border-gray-100">
-                  <span className="text-4xl">{getCategoryIcon(event.category)}</span>
-                </div>
-                <div className="space-y-2">
-                  <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getCategoryColor(event.category)}`}>
-                    {event.category.charAt(0).toUpperCase() + event.category.slice(1)}
+        <div className="bg-white rounded-xl shadow-soft border border-gray-200 p-6 mb-8">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <span className="text-4xl">{getCategoryIcon(event.category)}</span>
+              <div>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(event.category)}`}>
+                  {event.category.charAt(0).toUpperCase() + event.category.slice(1)}
+                </span>
+                {event.rsvpEnabled && (
+                  <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full border border-green-200">
+                    RSVP Open
                   </span>
-                  {event.rsvpEnabled && (
-                    <div className="flex items-center space-x-2">
-                      <span className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full border border-green-200 font-medium">
-                        RSVP Open
-                      </span>
-                      {event.capacity && (
-                        <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full border border-blue-200 font-medium">
-                          {event.currentRSVPs || 0}/{event.capacity} spots
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex space-x-3">
-                <button
-                  onClick={downloadICS}
-                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-secondary to-secondary/90 text-white rounded-xl hover:from-secondary/90 hover:to-secondary/80 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Add to Calendar
-                </button>
-                <button
-                  onClick={shareEvent}
-                  className="inline-flex items-center px-4 py-2 bg-white text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-md hover:shadow-lg border border-gray-200"
-                >
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Share
-                </button>
+                )}
               </div>
             </div>
-
-            <h1 className="text-4xl font-display font-bold text-gray-900 mb-6 leading-tight">
-              {event.title}
-            </h1>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="flex items-center space-x-3 p-4 bg-white/60 rounded-xl border border-gray-100">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Calendar className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 font-medium">Date</p>
-                  <p className="text-gray-900 font-semibold">{formatDate(event.startDate)}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3 p-4 bg-white/60 rounded-xl border border-gray-100">
-                <div className="p-2 bg-secondary/10 rounded-lg">
-                  <Clock className="w-5 h-5 text-secondary" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 font-medium">Time</p>
-                  <p className="text-gray-900 font-semibold">{formatTimeFromString(event.startTime)} - {formatTimeFromString(event.endTime)}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3 p-4 bg-white/60 rounded-xl border border-gray-100">
-                <div className="p-2 bg-accent/10 rounded-lg">
-                  <MapPin className="w-5 h-5 text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 font-medium">Location</p>
-                  <p className="text-gray-900 font-semibold">{location?.name || 'Location TBD'}</p>
-                </div>
-              </div>
+            
+            <div className="flex space-x-2">
+              <button
+                onClick={downloadICS}
+                className="inline-flex items-center px-3 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors duration-200"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Add to Calendar
+              </button>
+              <button
+                onClick={shareEvent}
+                className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Share
+              </button>
             </div>
           </div>
-        </div>
+
+          <h1 className="text-3xl font-display font-bold text-text mb-4">
+            {event.title}
+          </h1>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="flex items-center space-x-2 text-gray-600">
+              <Calendar className="w-5 h-5" />
+              <span>{formatDate(event.startDate)}</span>
+            </div>
+            <div className="flex items-center space-x-2 text-gray-600">
+              <Clock className="w-5 h-5" />
+              <span>{formatTimeFromString(event.startTime)} - {formatTimeFromString(event.endTime)}</span>
+            </div>
+            <div className="flex items-center space-x-2 text-gray-600">
+              <MapPin className="w-5 h-5" />
+              <span>{location?.name || 'Location TBD'}</span>
+            </div>
+            {event.capacity && (
+              <div className="flex items-center space-x-2 text-gray-600">
+                <Users className="w-5 h-5" />
+                <span>Capacity: {event.capacity} families</span>
+              </div>
+            )}
+          </div>
 
           {event.denTags && event.denTags.length > 0 && (
             <div className="flex items-center space-x-2">
@@ -390,9 +363,9 @@ const EventDetailPage: React.FC = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 mb-8 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-soft border border-gray-200 mb-8">
           <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-8">
+            <nav className="flex space-x-8 px-6">
               {[
                 { id: 'details', label: 'Details', icon: FileText },
                 { id: 'rsvp', label: 'RSVP', icon: Users },
@@ -403,19 +376,14 @@ const EventDetailPage: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200 flex items-center space-x-2 ${
+                    className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
                       activeTab === tab.id
                         ? 'border-primary text-primary'
                         : 'border-transparent text-gray-600 hover:text-text hover:border-gray-300'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
-                    <span>{tab.label}</span>
-                    {tab.id === 'rsvp' && event?.rsvpEnabled && (
-                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                        {event?.currentRSVPs || 0}/{event?.capacity || '∞'}
-                      </span>
-                    )}
+                    <Icon className="w-4 h-4 inline mr-2" />
+                    {tab.label}
                   </button>
                 );
               })}
@@ -493,7 +461,7 @@ const EventDetailPage: React.FC = () => {
                 eventTitle={event?.title || ''}
                 eventDate={event?.startDate ? formatDate(event.startDate) : ''}
                 maxCapacity={event?.capacity || undefined}
-                currentRSVPs={event?.currentRSVPs || 0}
+                currentRSVPs={event?.currentParticipants || 0}
                 onSuccess={refreshEventData}
               />
             )}

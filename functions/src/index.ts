@@ -251,7 +251,7 @@ export const submitRSVP = functions.https.onCall(async (data: any, context: func
     }
 
     const eventData = eventDoc.data();
-    const currentRSVPs = eventData?.currentRSVPs || 0;
+    const currentRSVPs = eventData?.currentParticipants || 0;
     const maxCapacity = eventData?.capacity;
     const attendeeCount = attendees.length;
 
@@ -278,7 +278,7 @@ export const submitRSVP = functions.https.onCall(async (data: any, context: func
 
     // Update event RSVP count
     batch.update(eventRef, {
-      currentRSVPs: currentRSVPs + attendeeCount,
+      currentParticipants: currentRSVPs + attendeeCount,
       updatedAt: getTimestamp()
     });
 

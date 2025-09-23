@@ -3,13 +3,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import AdminEvents from '../AdminEvents';
 
 // Mock the admin service
-const mockUpdateEvent = jest.fn();
-const mockCreateEvent = jest.fn();
-
 jest.mock('../../services/adminService', () => ({
   adminService: {
-    updateEvent: mockUpdateEvent,
-    createEvent: mockCreateEvent,
+    updateEvent: jest.fn(),
+    createEvent: jest.fn(),
   }
 }));
 
@@ -33,6 +30,11 @@ jest.mock('../../contexts/AdminContext', () => ({
     deleteEntity: jest.fn(),
   }),
 }));
+
+// Import the mocked service after mocking
+import { adminService } from '../../services/adminService';
+const mockUpdateEvent = adminService.updateEvent as jest.MockedFunction<typeof adminService.updateEvent>;
+const mockCreateEvent = adminService.createEvent as jest.MockedFunction<typeof adminService.createEvent>;
 
 describe('AdminEvents - Event List Refresh', () => {
   const mockEvents = [

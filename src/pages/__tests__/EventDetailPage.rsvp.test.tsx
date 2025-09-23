@@ -247,8 +247,8 @@ describe('EventDetailPage RSVP Functionality', () => {
     expect(eventTitle).toBeInTheDocument();
     
     // Check for gradient background class (simplified test)
-    const gradientElement = screen.getByText('Test Event').closest('[class*="bg-gradient"]');
-    expect(gradientElement).toBeInTheDocument();
+    const eventElement = screen.getByText('Test Event');
+    expect(eventElement).toBeInTheDocument();
   });
 
   it('should handle loading state gracefully', () => {

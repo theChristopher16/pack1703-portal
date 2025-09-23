@@ -32,7 +32,7 @@ export const disableAppCheckEnforcement = functions.https.onCall(async (data: an
     if (!userDoc.exists) {
       throw new functions.https.HttpsError('permission-denied', 'User not found');
     }
-    
+
     const userData = userDoc.data();
     if (userData?.role !== 'root') {
       throw new functions.https.HttpsError('permission-denied', 'Only root users can disable App Check enforcement');
@@ -66,7 +66,7 @@ export const disableAppCheckEnforcement = functions.https.onCall(async (data: an
 // CRITICAL: Update user role function
 export const updateUserRole = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   try {
-    const { userId, newRole, email } = data;
+    const { userId, newRole } = data;
     
     // Check authentication
     if (!context.auth) {
@@ -127,7 +127,7 @@ export const updateUserRole = functions.https.onCall(async (data: any, context: 
 
   } catch (error) {
     console.error('Error updating user role:', error);
-    
+
     if (error instanceof functions.https.HttpsError) {
       throw error;
     }
@@ -154,7 +154,7 @@ export const adminUpdateEvent = functions.https.onCall(async (data: any, context
     const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasEventManagementPermission = userData?.permissions?.includes('event_management');
-
+    
     if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update events');
     }
@@ -198,7 +198,7 @@ export const adminCreateEvent = functions.https.onCall(async (data: any, context
     const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasEventManagementPermission = userData?.permissions?.includes('event_management');
-
+    
     if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to create events');
     }
@@ -235,19 +235,60 @@ export const submitRSVP = functions.https.onCall(async (data: any, context: func
       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
     }
 
+    const { eventId, attendees } = data;
+    
+    // Validate required fields
+    if (!eventId || !attendees || !Array.isArray(attendees)) {
+      throw new functions.https.HttpsError('invalid-argument', 'Missing required fields: eventId and attendees');
+    }
+
+    // Check if event exists and get current RSVP count
+    const eventRef = db.collection('events').doc(eventId);
+    const eventDoc = await eventRef.get();
+    
+    if (!eventDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Event not found');
+    }
+
+    const eventData = eventDoc.data();
+    const currentRSVPs = eventData?.currentRSVPs || 0;
+    const maxCapacity = eventData?.capacity;
+    const attendeeCount = attendees.length;
+
+    // Check capacity if event has a limit
+    if (maxCapacity && currentRSVPs + attendeeCount > maxCapacity) {
+      throw new functions.https.HttpsError('resource-exhausted', `Event is at capacity. Only ${maxCapacity - currentRSVPs} spots remaining.`);
+    }
+
     // Create RSVP submission
     const rsvpData = {
       ...data,
       userId: context.auth.uid,
       userEmail: context.auth.token.email,
-      submittedAt: getTimestamp()
+      submittedAt: getTimestamp(),
+      attendeeCount
     };
 
-    const rsvpRef = await db.collection('rsvps').add(rsvpData);
+    // Use batch write for atomicity
+    const batch = db.batch();
+    
+    // Add RSVP submission
+    const rsvpRef = db.collection('rsvps').doc();
+    batch.set(rsvpRef, rsvpData);
 
+    // Update event RSVP count
+    batch.update(eventRef, {
+      currentRSVPs: currentRSVPs + attendeeCount,
+      updatedAt: getTimestamp()
+    });
+
+    // Commit the batch
+    await batch.commit();
+    
     return {
       success: true,
       rsvpId: rsvpRef.id,
+      newRSVPCount: currentRSVPs + attendeeCount,
       message: 'RSVP submitted successfully'
     };
 
@@ -262,7 +303,7 @@ export const submitRSVP = functions.https.onCall(async (data: any, context: func
 
 // Simple test function
 export const helloWorld = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
-  return {
+    return {
     message: 'Hello from Firebase Cloud Functions!',
     timestamp: new Date().toISOString()
   };

@@ -1,15 +1,15 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
 import AdminEvents from '../AdminEvents';
-import { AdminProvider } from '../../contexts/AdminContext';
-import { adminService } from '../../services/adminService';
 
 // Mock the admin service
+const mockUpdateEvent = jest.fn();
+const mockCreateEvent = jest.fn();
+
 jest.mock('../../services/adminService', () => ({
   adminService: {
-    updateEvent: jest.fn(),
-    createEvent: jest.fn(),
+    updateEvent: mockUpdateEvent,
+    createEvent: mockCreateEvent,
   }
 }));
 
@@ -22,7 +22,17 @@ jest.mock('../../firebase/config', () => ({
   getDocs: jest.fn(),
 }));
 
-const mockAdminService = adminService as jest.Mocked<typeof adminService>;
+// Mock AdminContext
+jest.mock('../../contexts/AdminContext', () => ({
+  AdminProvider: ({ children }: { children: React.ReactNode }) => children,
+  useAdmin: () => ({
+    addNotification: jest.fn(),
+    state: { currentUser: { role: 'admin' } },
+    createEntity: jest.fn(),
+    updateEntity: jest.fn(),
+    deleteEntity: jest.fn(),
+  }),
+}));
 
 describe('AdminEvents - Event List Refresh', () => {
   const mockEvents = [
@@ -57,20 +67,14 @@ describe('AdminEvents - Event List Refresh', () => {
   ];
 
   const renderAdminEvents = () => {
-    return render(
-      <BrowserRouter>
-        <AdminProvider>
-          <AdminEvents />
-        </AdminProvider>
-      </BrowserRouter>
-    );
+    return render(<AdminEvents />);
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
     
     // Mock successful update
-    mockAdminService.updateEvent.mockResolvedValue({
+    mockUpdateEvent.mockResolvedValue({
       success: true,
     });
   });
@@ -105,7 +109,7 @@ describe('AdminEvents - Event List Refresh', () => {
 
     // Wait for update to complete
     await waitFor(() => {
-      expect(mockAdminService.updateEvent).toHaveBeenCalledWith(
+      expect(mockUpdateEvent).toHaveBeenCalledWith(
         'event1',
         expect.objectContaining({
           maxCapacity: 75,
@@ -126,7 +130,7 @@ describe('AdminEvents - Event List Refresh', () => {
 
   test('should show error notification on update failure', async () => {
     // Mock failed update
-    mockAdminService.updateEvent.mockResolvedValue({
+    mockUpdateEvent.mockResolvedValue({
       success: false,
       error: 'Update failed',
     });
@@ -184,7 +188,7 @@ describe('AdminEvents - Event List Refresh', () => {
 
     // Wait for update to complete
     await waitFor(() => {
-      expect(mockAdminService.updateEvent).toHaveBeenCalledWith(
+      expect(mockUpdateEvent).toHaveBeenCalledWith(
         'event1',
         expect.objectContaining({
           maxCapacity: null, // Should be null, not undefined

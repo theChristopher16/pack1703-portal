@@ -2,21 +2,20 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 import EventDetailPage from '../EventDetailPage';
-import { doc, getDoc } from 'firebase/firestore';
 
-// Mock Firebase
-jest.mock('../../firebase/firestore', () => ({
-  doc: jest.fn(),
-  getDoc: jest.fn(),
+// Mock Firebase functions
+const mockDoc = jest.fn();
+const mockGetDoc = jest.fn();
+
+jest.mock('firebase/firestore', () => ({
+  doc: mockDoc,
+  getDoc: mockGetDoc,
 }));
 
 // Mock Firebase config
 jest.mock('../../firebase/config', () => ({
   db: {},
 }));
-
-const mockDoc = doc as jest.MockedFunction<typeof doc>;
-const mockGetDoc = getDoc as jest.MockedFunction<typeof getDoc>;
 
 describe('EventDetailPage', () => {
   const mockEvent = {

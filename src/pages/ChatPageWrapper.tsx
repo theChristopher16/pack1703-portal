@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAdmin } from '../contexts/AdminContext';
+import ChatPage from './ChatPage';
 
 const ChatPageWrapper: React.FC = () => {
   const { state } = useAdmin();
@@ -26,17 +27,8 @@ const ChatPageWrapper: React.FC = () => {
     );
   }
 
-  // Render a simple chat placeholder for now
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center max-w-md mx-auto p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Chat Coming Soon</h2>
-        <p className="text-gray-600 mb-6">The chat feature is temporarily disabled while we fix some technical issues.</p>
-        <p className="text-sm text-gray-500">You are logged in as: {state.currentUser?.email}</p>
-        <p className="text-sm text-gray-500">Role: {state.currentUser?.role}</p>
-      </div>
-    </div>
-  );
+  // Return the actual ChatPage component
+  return <ChatPage />;
 };
 
 export default ChatPageWrapper;

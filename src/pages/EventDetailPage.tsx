@@ -10,18 +10,27 @@ import {
   Share2, 
   ArrowLeft,
   FileText,
-  ExternalLink
+  ExternalLink,
+  List,
+  User,
+  Mail,
+  Phone
 } from 'lucide-react';
 import { Event, Location } from '../types';
 import { LoadingSpinner } from '../components/Loading';
 import RSVPForm from '../components/Forms/RSVPForm';
+import { useAdmin } from '../contexts/AdminContext';
+import { UserRole } from '../services/authService';
 
 const EventDetailPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
+  const { state } = useAdmin();
   const [event, setEvent] = useState<Event | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
+  const [rsvpList, setRsvpList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'details' | 'rsvp' | 'map'>('details');
+  const [isLoadingRSVPs, setIsLoadingRSVPs] = useState(false);
+  const [activeTab, setActiveTab] = useState<'details' | 'rsvp' | 'rsvp-list' | 'map'>('details');
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -30,6 +39,13 @@ const EventDetailPage: React.FC = () => {
       setActiveTab('rsvp');
     }
   }, [searchParams]);
+
+  // Load RSVP list when rsvp-list tab is selected
+  useEffect(() => {
+    if (activeTab === 'rsvp-list' && eventId) {
+      loadRSVPList();
+    }
+  }, [activeTab, eventId]);
 
   useEffect(() => {
     const loadEventData = async () => {
@@ -85,6 +101,64 @@ const EventDetailPage: React.FC = () => {
 
     loadEventData();
   }, [eventId]);
+
+  // Function to refresh event data (for RSVP updates)
+  const refreshEventData = async (rsvpData?: any) => {
+    if (eventId) {
+      try {
+        console.log('EventDetailPage: Refreshing event data after RSVP submission...');
+        const { doc, getDoc } = await import('firebase/firestore');
+        const { db } = await import('../firebase/config');
+        
+        const eventRef = doc(db, 'events', eventId);
+        const eventSnap = await getDoc(eventRef);
+        
+        if (eventSnap.exists()) {
+          const eventData = { id: eventSnap.id, ...eventSnap.data() } as Event;
+          console.log('EventDetailPage: Updated event data:', eventData);
+          setEvent(eventData);
+        }
+
+        // Also refresh RSVP list if we're currently viewing it
+        if (activeTab === 'rsvp-list') {
+          await loadRSVPList();
+        }
+      } catch (error) {
+        console.error('Error refreshing event data:', error);
+      }
+    }
+  };
+
+  // Function to load RSVP list (admin+ only)
+  const loadRSVPList = async () => {
+    if (!eventId) return;
+    
+    setIsLoadingRSVPs(true);
+    try {
+      const { collection, query, where, orderBy, getDocs } = await import('firebase/firestore');
+      const { db } = await import('../firebase/config');
+      
+      const rsvpsRef = collection(db, 'rsvps');
+      const q = query(
+        rsvpsRef,
+        where('eventId', '==', eventId),
+        orderBy('submittedAt', 'desc')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const rsvps = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      console.log('EventDetailPage: Loaded RSVPs:', rsvps);
+      setRsvpList(rsvps);
+    } catch (error) {
+      console.error('Error loading RSVP list:', error);
+    } finally {
+      setIsLoadingRSVPs(false);
+    }
+  };
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'TBD';
@@ -349,6 +423,9 @@ const EventDetailPage: React.FC = () => {
               {[
                 { id: 'details', label: 'Details', icon: FileText },
                 { id: 'rsvp', label: 'RSVP', icon: Users },
+                // Only show RSVP list tab for admin+ users
+                ...(state.role === 'root' || state.role === 'super-admin' || state.role === 'content-admin' ? 
+                  [{ id: 'rsvp-list', label: 'RSVP List', icon: List }] : []),
                 { id: 'map', label: 'Map', icon: MapPin }
               ].map((tab) => {
                 const Icon = tab.icon;
@@ -441,8 +518,115 @@ const EventDetailPage: React.FC = () => {
                 eventTitle={event?.title || ''}
                 eventDate={event?.startDate ? formatDate(event.startDate) : ''}
                 maxCapacity={event?.capacity || undefined}
-                currentRSVPs={0} // TODO: Get actual RSVP count from Firestore
+                currentRSVPs={event?.currentParticipants || 0}
+                onSuccess={refreshEventData}
               />
+            )}
+
+            {activeTab === 'rsvp-list' && (
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-display font-semibold text-gray-900">
+                    RSVP List ({rsvpList.length} responses)
+                  </h3>
+                  <button
+                    onClick={loadRSVPList}
+                    disabled={isLoadingRSVPs}
+                    className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors duration-200"
+                  >
+                    {isLoadingRSVPs ? 'Loading...' : 'Refresh'}
+                  </button>
+                </div>
+
+                {isLoadingRSVPs ? (
+                  <div className="text-center py-8">
+                    <LoadingSpinner />
+                    <p className="text-gray-600 mt-2">Loading RSVP list...</p>
+                  </div>
+                ) : rsvpList.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h4 className="text-lg font-semibold text-gray-700 mb-2">No RSVPs Yet</h4>
+                    <p className="text-gray-600">No one has RSVP'd for this event yet.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {rsvpList.map((rsvp) => (
+                      <div key={rsvp.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{rsvp.familyName}</h4>
+                            <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                              <div className="flex items-center space-x-1">
+                                <Mail className="w-4 h-4" />
+                                <span>{rsvp.email}</span>
+                              </div>
+                              {rsvp.phone && (
+                                <div className="flex items-center space-x-1">
+                                  <Phone className="w-4 h-4" />
+                                  <span>{rsvp.phone}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right text-sm text-gray-500">
+                            <div>{rsvp.attendeeCount} attendee{rsvp.attendeeCount !== 1 ? 's' : ''}</div>
+                            <div>{rsvp.submittedAt?.toDate ? rsvp.submittedAt.toDate().toLocaleDateString() : 'Unknown date'}</div>
+                          </div>
+                        </div>
+
+                        {/* Attendees */}
+                        <div className="mb-3">
+                          <h5 className="font-medium text-gray-900 mb-2">Attendees:</h5>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {rsvp.attendees?.map((attendee: any, index: number) => (
+                              <div key={index} className="flex items-center space-x-2 text-sm">
+                                <User className="w-4 h-4 text-gray-500" />
+                                <span className="font-medium">{attendee.name}</span>
+                                <span className="text-gray-500">({attendee.age} years old)</span>
+                                {attendee.den && (
+                                  <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
+                                    {attendee.den}
+                                  </span>
+                                )}
+                                {attendee.isAdult && (
+                                  <span className="px-2 py-1 bg-secondary/10 text-secondary text-xs rounded-full">
+                                    Adult
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Additional Information */}
+                        {(rsvp.dietaryRestrictions || rsvp.specialNeeds || rsvp.notes) && (
+                          <div className="pt-3 border-t border-gray-200">
+                            {rsvp.dietaryRestrictions && (
+                              <div className="mb-2">
+                                <span className="font-medium text-gray-900">Dietary Restrictions:</span>
+                                <p className="text-gray-600 text-sm">{rsvp.dietaryRestrictions}</p>
+                              </div>
+                            )}
+                            {rsvp.specialNeeds && (
+                              <div className="mb-2">
+                                <span className="font-medium text-gray-900">Special Needs:</span>
+                                <p className="text-gray-600 text-sm">{rsvp.specialNeeds}</p>
+                              </div>
+                            )}
+                            {rsvp.notes && (
+                              <div>
+                                <span className="font-medium text-gray-900">Notes:</span>
+                                <p className="text-gray-600 text-sm">{rsvp.notes}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
 
             {activeTab === 'map' && (

@@ -1,0 +1,57 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches: [ main ]
+  pull_request_target:
+    branches: [ main ]
+
+jobs:
+  pr-validation:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Set up test environment
+      run: |
+        echo "NODE_ENV=test" >> $GITHUB_ENV
+        echo "CI=true" >> $GITHUB_ENV
+    
+    - name: Run TypeScript type checking
+      run: npx tsc --noEmit
+    
+    - name: Run linting
+      run: npm run lint
+    
+    - name: Run tests
+      run: npm test -- --watchAll=false --testTimeout=120000 --verbose --maxWorkers=2
+      env:
+        CI: true
+        NODE_ENV: test
+    
+    - name: Build check
+      run: CI=false npm run build
+    
+    - name: Check for security vulnerabilities
+      run: npm audit --audit-level=critical
+    
+    - name: Test Cloud Functions accessibility
+      run: node test-cloud-functions-access.js
+      env:
+        NODE_ENV: production
+    
+    - name: Comprehensive Cloud Functions test
+      run: node test-cloud-functions-comprehensive.js
+      env:
+        NODE_ENV: production
+        FIREBASE_TEST_USER_EMAIL: ${{ secrets.FIREBASE_TEST_USER_EMAIL }}
+        FIREBASE_TEST_USER_PASSWORD: ${{ secrets.FIREBASE_TEST_USER_PASSWORD }}

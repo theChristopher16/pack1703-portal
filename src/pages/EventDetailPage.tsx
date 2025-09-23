@@ -74,7 +74,7 @@ const EventDetailPage: React.FC = () => {
             }
           }
         } else {
-          console.log('EventDetailPage: Event not found in Firestore for ID:', id);
+          console.log('EventDetailPage: Event not found in Firestore for ID:', eventId);
         }
       } catch (error) {
         console.error('EventDetailPage: Error loading event:', error);

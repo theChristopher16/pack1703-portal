@@ -321,6 +321,40 @@ class ChatService {
     await this.updateUserInFirestore(this.currentUser);
   }
 
+  // Method to update chat user name from profile changes
+  async updateChatUserName(newName: string): Promise<void> {
+    if (!this.currentUser) return;
+
+    console.log('Updating chat user name from:', this.currentUser.name, 'to:', newName);
+
+    // Update the current user's name
+    this.currentUser.name = newName;
+    
+    // Save to localStorage
+    SessionManager.saveUserToStorage(this.currentUser);
+    
+    // Update in Firestore
+    await this.updateUserInFirestore(this.currentUser);
+    
+    console.log('Chat user name updated successfully to:', newName);
+  }
+
+  // Method to refresh user when authentication state changes
+  async refreshUser(): Promise<ChatUser> {
+    if (this.currentUser) {
+      // Re-initialize with current auth state
+      this.currentUser = await SessionManager.getOrCreateUser();
+      
+      // Update user in Firestore
+      await this.createOrUpdateUserInFirestore(this.currentUser);
+      
+      return this.currentUser;
+    }
+    
+    // If no current user, initialize normally
+    return await this.initialize();
+  }
+
   async getChannels(): Promise<ChatChannel[]> {
     // Check cache first
     const now = Date.now();

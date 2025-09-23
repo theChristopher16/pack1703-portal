@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toolbar Component Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        button { margin: 5px; padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .results { margin-top: 10px; }
+        .route-test { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Toolbar Component Test</h1>
+    <p>This page tests the actual functionality of toolbar components by simulating user interactions.</p>
+
+    <div class="test-section">
+        <h2>🔍 Route Testing</h2>
+        <p>Click each button to test if the route loads correctly:</p>
+        
+        <h3>Public Routes</h3>
+        <button onclick="testRoute('/')">Home</button>
+        <button onclick="testRoute('/events')">Events</button>
+        <button onclick="testRoute('/announcements')">Announcements</button>
+        <button onclick="testRoute('/locations')">Locations</button>
+        <button onclick="testRoute('/volunteer')">Volunteer</button>
+
+        <h3>Authenticated Routes</h3>
+        <button onclick="testRoute('/chat')">Chat</button>
+        <button onclick="testRoute('/resources')">Resources</button>
+        <button onclick="testRoute('/feedback')">Feedback</button>
+        <button onclick="testRoute('/data-audit')">Data Audit</button>
+
+        <h3>Admin Routes</h3>
+        <button onclick="testRoute('/analytics')">Analytics</button>
+        <button onclick="testRoute('/admin/events')">Event Management</button>
+        <button onclick="testRoute('/admin/announcements')">News Management</button>
+        <button onclick="testRoute('/admin/locations')">Location Management</button>
+        <button onclick="testRoute('/admin/volunteer')">Volunteer Management</button>
+        <button onclick="testRoute('/admin/users')">User Management</button>
+        <button onclick="testRoute('/admin/fundraising')">Fundraising</button>
+        <button onclick="testRoute('/admin/finances')">Finances</button>
+        <button onclick="testRoute('/admin/seasons')">Seasons</button>
+        <button onclick="testRoute('/admin/lists')">Lists</button>
+        <button onclick="testRoute('/admin/permissions-audit')">Permissions Audit</button>
+        <button onclick="testRoute('/admin/reminders')">Reminders</button>
+
+        <h3>Root Routes</h3>
+        <button onclick="testRoute('/admin/ai')">Solyn AI</button>
+        <button onclick="testRoute('/admin/cost-management')">Cost Management</button>
+        <button onclick="testRoute('/admin/multi-tenant')">Multi-Tenant</button>
+        <button onclick="testRoute('/admin/settings')">System Settings</button>
+        <button onclick="testRoute('/admin/soc')">SOC Console</button>
+        <button onclick="testRoute('/admin/database')">Database Monitor</button>
+        <button onclick="testRoute('/admin/system')">System Monitor</button>
+        <button onclick="testRoute('/admin/performance')">Performance Monitor</button>
+
+        <div id="route-results" class="results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔐 Authentication Test</h2>
+        <p>Test authentication state and role-based access:</p>
+        <button onclick="checkAuthState()">Check Auth State</button>
+        <button onclick="testRoleAccess()">Test Role Access</button>
+        <div id="auth-results" class="results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📱 Navigation Test</h2>
+        <p>Test navigation dropdown functionality:</p>
+        <button onclick="testNavigation()">Test Navigation</button>
+        <div id="nav-results" class="results"></div>
+    </div>
+
+    <script>
+        const BASE_URL = 'https://pack1703-portal.web.app';
+        
+        function testRoute(route) {
+            const resultsDiv = document.getElementById('route-results');
+            const testDiv = document.createElement('div');
+            testDiv.className = 'route-test';
+            testDiv.innerHTML = `Testing ${route}...`;
+            resultsDiv.appendChild(testDiv);
+
+            // Open route in new tab to test
+            const newWindow = window.open(BASE_URL + route, '_blank');
+            
+            // Check if window opened successfully
+            if (newWindow) {
+                testDiv.innerHTML = `✅ ${route} - Opened successfully`;
+                testDiv.style.background = '#d4edda';
+            } else {
+                testDiv.innerHTML = `❌ ${route} - Failed to open (popup blocked?)`;
+                testDiv.style.background = '#f8d7da';
+            }
+        }
+
+        function checkAuthState() {
+            const resultsDiv = document.getElementById('auth-results');
+            resultsDiv.innerHTML = `
+                <div class="route-test">
+                    <h4>Authentication State Check</h4>
+                    <p>To test authentication:</p>
+                    <ol>
+                        <li>Open the main app: <a href="${BASE_URL}" target="_blank">${BASE_URL}</a></li>
+                        <li>Open Developer Tools (F12)</li>
+                        <li>Go to Console tab</li>
+                        <li>Look for authentication logs</li>
+                        <li>Try logging in with different roles</li>
+                    </ol>
+                </div>
+            `;
+        }
+
+        function testRoleAccess() {
+            const resultsDiv = document.getElementById('auth-results');
+            resultsDiv.innerHTML += `
+                <div class="route-test">
+                    <h4>Role Access Test</h4>
+                    <p>Test different user roles:</p>
+                    <ol>
+                        <li><strong>Anonymous:</strong> Should only see public routes</li>
+                        <li><strong>Parent:</strong> Should see public + authenticated routes</li>
+                        <li><strong>Admin:</strong> Should see public + authenticated + admin routes</li>
+                        <li><strong>Root:</strong> Should see all routes</li>
+                    </ol>
+                    <p>Check that navigation dropdown shows correct items for each role.</p>
+                </div>
+            `;
+        }
+
+        function testNavigation() {
+            const resultsDiv = document.getElementById('nav-results');
+            resultsDiv.innerHTML = `
+                <div class="route-test">
+                    <h4>Navigation Test</h4>
+                    <p>Test navigation dropdown:</p>
+                    <ol>
+                        <li>Open the main app: <a href="${BASE_URL}" target="_blank">${BASE_URL}</a></li>
+                        <li>Click on the navigation menu (hamburger icon)</li>
+                        <li>Check that dropdown shows correct items for your role</li>
+                        <li>Click each item to verify it navigates correctly</li>
+                        <li>Check that protected routes redirect appropriately</li>
+                    </ol>
+                    <p><strong>Common Issues:</strong></p>
+                    <ul>
+                        <li>404 errors: Route not defined in App.tsx</li>
+                        <li>Redirects to admin login: RoleGuard blocking access</li>
+                        <li>Goes to home: Route exists but component has issues</li>
+                        <li>Syntax errors: JavaScript bundle issues</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        // Auto-run some tests on page load
+        window.onload = function() {
+            console.log('🧪 Toolbar Component Test Page Loaded');
+            console.log('Base URL:', BASE_URL);
+            console.log('Test different routes by clicking the buttons above');
+        };
+    </script>
+</body>
+</html>

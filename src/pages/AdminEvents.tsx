@@ -181,7 +181,7 @@ const AdminEvents: React.FC = () => {
             endTime: eventData.endDate?.split('T')[1]?.substring(0, 5) || '17:00', // Extract time part
             category: eventData.category || 'Meeting',
             visibility: eventData.visibility || 'public',
-            maxCapacity: eventData.maxParticipants ? parseInt(eventData.maxParticipants.toString()) : undefined // Fix: use maxCapacity instead of maxParticipants
+            maxCapacity: eventData.maxParticipants ? parseInt(eventData.maxParticipants.toString()) : null, // Use null instead of undefined
           }
         };
         
@@ -193,9 +193,11 @@ const AdminEvents: React.FC = () => {
           await fetchEvents();
           setIsModalOpen(false);
           setSelectedEvent(null);
+          addNotification('success', 'Event Updated', 'Event has been successfully updated.');
         } else {
           console.error('Error updating event:', result.error);
-          throw new Error(result.error || 'Failed to update event');
+          addNotification('error', 'Update Failed', result.error || 'Failed to update event. Please try again.');
+          return;
         }
       }
     } catch (error) {

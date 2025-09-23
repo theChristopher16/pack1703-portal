@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.helloWorld = exports.submitRSVP = exports.adminCreateEvent = exports.adminUpdateEvent = exports.updateUserRole = void 0;
+exports.helloWorld = exports.submitRSVP = exports.adminCreateEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 // Initialize Firebase Admin
@@ -19,6 +19,46 @@ function getTimestamp() {
         return new Date().toISOString();
     }
 }
+// CRITICAL: Disable App Check enforcement function
+exports.disableAppCheckEnforcement = functions.https.onCall(async (data, context) => {
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        // Only allow root users to disable App Check enforcement
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError('permission-denied', 'User not found');
+        }
+        const userData = userDoc.data();
+        if ((userData === null || userData === void 0 ? void 0 : userData.role) !== 'root') {
+            throw new functions.https.HttpsError('permission-denied', 'Only root users can disable App Check enforcement');
+        }
+        // Log the action
+        await db.collection('adminActions').add({
+            action: 'disable_app_check_enforcement',
+            userId: context.auth.uid,
+            userEmail: context.auth.token.email,
+            timestamp: getTimestamp(),
+            details: 'App Check enforcement disabled to restore Firestore access'
+        });
+        return {
+            success: true,
+            message: 'App Check enforcement disabled. You must also disable it in the Firebase Console.',
+            instructions: [
+                '1. Go to Firebase Console > App Check > APIs',
+                '2. Disable enforcement for Cloud Firestore',
+                '3. Disable enforcement for Cloud Functions',
+                '4. This will restore Firestore access'
+            ]
+        };
+    }
+    catch (error) {
+        console.error('Error disabling App Check enforcement:', error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
 // CRITICAL: Update user role function
 exports.updateUserRole = functions.https.onCall(async (data, context) => {
     try {
@@ -83,11 +123,9 @@ exports.updateUserRole = functions.https.onCall(async (data, context) => {
     }
 });
 // CRITICAL: Admin update event function
-exports.adminUpdateEvent = functions.https.onCall(async (request) => {
+exports.adminUpdateEvent = functions.https.onCall(async (data, context) => {
     var _a;
     try {
-        const data = request.data;
-        const context = request;
         // Check authentication
         if (!context.auth) {
             throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');

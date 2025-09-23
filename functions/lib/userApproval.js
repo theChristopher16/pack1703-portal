@@ -8,7 +8,6 @@ const firebase_functions_1 = require("firebase-functions");
 // User roles enum - Updated to match AuthService
 var UserRole;
 (function (UserRole) {
-    UserRole["ANONYMOUS"] = "anonymous";
     UserRole["PARENT"] = "parent";
     UserRole["VOLUNTEER"] = "volunteer";
     UserRole["ADMIN"] = "admin";
@@ -24,11 +23,6 @@ var UserStatus;
 })(UserStatus || (exports.UserStatus = UserStatus = {}));
 // Role permissions mapping - matches AuthService
 const ROLE_PERMISSIONS = {
-    [UserRole.ANONYMOUS]: [
-        'read_content',
-        'scout_content',
-        'scout_events'
-    ],
     [UserRole.PARENT]: [
         'read_content',
         'create_content',

@@ -1,12 +1,12 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import AdminEvents from '../pages/AdminEvents';
-import { AdminProvider } from '../contexts/AdminContext';
-import { adminService } from '../services/adminService';
+import AdminEvents from '../AdminEvents';
+import { AdminProvider } from '../../contexts/AdminContext';
+import { adminService } from '../../services/adminService';
 
 // Mock the admin service
-jest.mock('../services/adminService', () => ({
+jest.mock('../../services/adminService', () => ({
   adminService: {
     updateEvent: jest.fn(),
     createEvent: jest.fn(),
@@ -14,7 +14,7 @@ jest.mock('../services/adminService', () => ({
 }));
 
 // Mock Firebase
-jest.mock('../firebase/config', () => ({
+jest.mock('../../firebase/config', () => ({
   db: {},
   collection: jest.fn(),
   query: jest.fn(),

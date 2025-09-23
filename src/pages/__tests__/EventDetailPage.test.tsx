@@ -1,17 +1,17 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter, MemoryRouter } from 'react-router-dom';
-import EventDetailPage from '../pages/EventDetailPage';
+import EventDetailPage from '../EventDetailPage';
 import { doc, getDoc } from 'firebase/firestore';
 
 // Mock Firebase
-jest.mock('firebase/firestore', () => ({
+jest.mock('../../firebase/firestore', () => ({
   doc: jest.fn(),
   getDoc: jest.fn(),
 }));
 
 // Mock Firebase config
-jest.mock('../firebase/config', () => ({
+jest.mock('../../firebase/config', () => ({
   db: {},
 }));
 

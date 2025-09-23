@@ -893,8 +893,31 @@ class ChatService {
   }
 
   async getAllUsers(): Promise<ChatUser[]> {
+    // Allow all authenticated users to view online users
+    // Admin-only features are handled separately
+    try {
+      const usersRef = collection(db, 'chat-users');
+      const q = query(usersRef, orderBy('lastSeen', 'desc'));
+      const snapshot = await getDocs(q);
+      
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          lastSeen: data.lastSeen?.toDate() || new Date()
+        } as ChatUser;
+      });
+    } catch (error) {
+      console.warn('Failed to fetch all users:', error);
+      return [];
+    }
+  }
+
+  // Admin-only method for viewing all users with admin details
+  async getAllUsersForAdmin(): Promise<ChatUser[]> {
     if (!this.currentUser?.isAdmin) {
-      throw new Error('Only admins can view all users');
+      throw new Error('Only admins can view all users with admin details');
     }
 
     try {
@@ -911,7 +934,7 @@ class ChatService {
         } as ChatUser;
       });
     } catch (error) {
-      console.warn('Failed to fetch all users:', error);
+      console.warn('Failed to fetch all users for admin:', error);
       return [];
     }
   }

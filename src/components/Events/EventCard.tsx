@@ -35,7 +35,9 @@ interface EventCardProps {
   onViewDetails: (eventId: string) => void;
   onAddToCalendar: (event: Event) => void;
   onShare: (event: Event) => void;
+  onViewRSVPs?: (event: Event) => void;
   isAuthenticated?: boolean;
+  isAdmin?: boolean;
 }
 
 const EventCard: React.FC<EventCardProps> = ({ 
@@ -44,7 +46,9 @@ const EventCard: React.FC<EventCardProps> = ({
   onViewDetails, 
   onAddToCalendar, 
   onShare,
-  isAuthenticated = true
+  onViewRSVPs,
+  isAuthenticated = true,
+  isAdmin = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -288,6 +292,18 @@ const EventCard: React.FC<EventCardProps> = ({
               <Share2 className="w-4 h-4" />
               <span>Share</span>
             </button>
+
+            {/* Admin RSVP Viewer Button */}
+            {isAdmin && onViewRSVPs && (
+              <button
+                onClick={() => onViewRSVPs(event)}
+                className="flex items-center space-x-2 text-sm text-purple-600 hover:text-purple-700 transition-colors duration-200"
+                title="View RSVPs (Admin Only)"
+              >
+                <Users className="w-4 h-4" />
+                <span>View RSVPs</span>
+              </button>
+            )}
           </div>
 
           {/* Expand/Collapse */}

@@ -18,6 +18,8 @@ import { db, functions } from '../firebase/config';
 
 // Cloud Function calls
 export const submitRSVP = httpsCallable(functions, 'submitRSVP');
+export const getRSVPCount = httpsCallable(functions, 'getRSVPCount');
+export const deleteRSVP = httpsCallable(functions, 'deleteRSVP');
 export const submitFeedback = httpsCallable(functions, 'submitFeedback');
 export const claimVolunteerRole = httpsCallable(functions, 'claimVolunteerRole');
 export const generateICSFeed = httpsCallable(functions, 'generateICSFeed');
@@ -153,6 +155,29 @@ export const firestoreService = {
       return result.data;
     } catch (error) {
       console.error('Failed to submit RSVP via Cloud Function:', error);
+      throw error;
+    }
+  },
+
+  // Get RSVP count for an event
+  async getRSVPCount(eventId: string): Promise<number> {
+    try {
+      const result = await getRSVPCount({ eventId });
+      const data = result.data as any;
+      return data.success ? data.rsvpCount : 0;
+    } catch (error) {
+      console.error('Failed to get RSVP count:', error);
+      return 0;
+    }
+  },
+
+  // Delete an RSVP
+  async deleteRSVP(rsvpId: string): Promise<any> {
+    try {
+      const result = await deleteRSVP({ rsvpId });
+      return result.data;
+    } catch (error) {
+      console.error('Failed to delete RSVP:', error);
       throw error;
     }
   },

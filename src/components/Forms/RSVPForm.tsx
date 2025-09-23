@@ -30,6 +30,8 @@ interface RSVPData {
   ipHash: string;
   userAgent: string;
   timestamp: Date;
+  rsvpId?: string;
+  newRSVPCount?: number;
 }
 
 interface Attendee {
@@ -180,19 +182,29 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
       const secureData = validationResult.data;
 
       // Call Firebase Cloud Function with secure data
-      await submitRSVP(secureData);
+      const result = await submitRSVP(secureData);
 
-      // Simulate success
-      setSubmitStatus('success');
-      
-      // Track successful submission
-      analytics.trackRSVPSubmission(eventId, true, { 
-        attendees: secureData.attendees?.length || 0 
-      });
-      
-      // Call success callback
-      if (onSuccess) {
-        onSuccess(secureData as RSVPData);
+      // Check if submission was successful
+      if (result.data && (result.data as any).success) {
+        setSubmitStatus('success');
+        
+        // Track successful submission
+        analytics.trackRSVPSubmission(eventId, true, { 
+          attendees: secureData.attendees?.length || 0,
+          rsvpId: (result.data as any).rsvpId,
+          newRSVPCount: (result.data as any).newRSVPCount
+        });
+        
+        // Call success callback with updated data
+        if (onSuccess) {
+          onSuccess({
+            ...secureData as RSVPData,
+            rsvpId: (result.data as any).rsvpId,
+            newRSVPCount: (result.data as any).newRSVPCount
+          });
+        }
+      } else {
+        throw new Error((result.data as any)?.message || 'RSVP submission failed');
       }
 
       // Reset form after success
@@ -210,15 +222,33 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
         setSubmitStatus('idle');
       }, 3000);
 
-    } catch (error) {
+    } catch (error: any) {
       setSubmitStatus('error');
-      setErrorMessage(error instanceof Error ? error.message : 'An error occurred while submitting your RSVP');
+      
+      // Handle specific error types
+      let errorMsg = 'An error occurred while submitting your RSVP';
+      
+      if (error?.code === 'unauthenticated') {
+        errorMsg = 'You must be logged in to RSVP for events. Please log in and try again.';
+      } else if (error?.code === 'already-exists') {
+        errorMsg = 'You already have an RSVP for this event.';
+      } else if (error?.code === 'resource-exhausted') {
+        errorMsg = error.message || 'This event is at capacity.';
+      } else if (error?.code === 'not-found') {
+        errorMsg = 'Event not found. Please refresh the page and try again.';
+      } else if (error?.code === 'permission-denied') {
+        errorMsg = 'You do not have permission to RSVP for this event.';
+      } else if (error?.message) {
+        errorMsg = error.message;
+      }
+      
+      setErrorMessage(errorMsg);
       
       // Track error
-      analytics.trackError('rsvp_submission_error', error instanceof Error ? error.message : 'Unknown error', 'RSVPForm');
+      analytics.trackError('rsvp_submission_error', errorMsg, 'RSVPForm');
       
       if (onError) {
-        onError(errorMessage);
+        onError(errorMsg);
       }
     } finally {
       setIsSubmitting(false);

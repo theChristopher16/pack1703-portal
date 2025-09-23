@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAdmin } from '../contexts/AdminContext';
-import ChatPageOptimized from './ChatPageOptimized';
+import ChatPageSimple from './ChatPageSimple';
 
 const ChatPageWrapper: React.FC = () => {
   const { state } = useAdmin();
@@ -28,7 +28,7 @@ const ChatPageWrapper: React.FC = () => {
   }
 
   // Render the actual chat interface
-  return <ChatPageOptimized />;
+  return <ChatPageSimple />;
 };
 
 export default ChatPageWrapper;

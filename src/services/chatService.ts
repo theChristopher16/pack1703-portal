@@ -390,11 +390,19 @@ class ChatService {
         return defaultChannels;
       }
       
+      // Remove duplicates based on channel ID
+      const uniqueChannels = channels.reduce((acc: ChatChannel[], channel) => {
+        if (!acc.find(c => c.id === channel.id)) {
+          acc.push(channel);
+        }
+        return acc;
+      }, []);
+      
       // Cache the results
-      this.channelsCache = channels;
+      this.channelsCache = uniqueChannels;
       this.channelsCacheTime = now;
-      console.log('ChatService.getChannels() - cached channels:', channels.length);
-      return channels;
+      console.log('ChatService.getChannels() - cached channels:', uniqueChannels.length);
+      return uniqueChannels;
     } catch (error) {
       console.warn('Failed to fetch channels (index may be building), using defaults:', error);
       // Try a simpler query without ordering while index builds

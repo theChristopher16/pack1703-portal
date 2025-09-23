@@ -88,12 +88,14 @@ service cloud.firestore {
                       resource.data.items.size() <= 100;
     }
 
-    // RSVPs - Write-only for public, read for admin
+    // RSVPs - Authenticated users can create/read their own, admins can read all
     match /rsvps/{rsvpId} {
-      allow read: if isAdmin();
-      allow create: if !isAuthenticated() && // No auth required for RSVP
-                       isValidString(resource.data.contactName, 100) &&
-                       isValidEmail(resource.data.contactEmail) &&
+      allow read: if isAuthenticated() && 
+                     (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && // Authentication required for RSVP
+                       resource.data.userId == request.auth.uid &&
+                       isValidString(resource.data.familyName, 100) &&
+                       isValidEmail(resource.data.email) &&
                        isValidString(resource.data.eventId, 50) &&
                        resource.data.attendees is list &&
                        resource.data.attendees.size() > 0 &&
@@ -102,6 +104,8 @@ service cloud.firestore {
                        resource.data.ipHash is string &&
                        resource.data.ipHash.size() == 64; // SHA-256 hash
       allow update: if false; // RSVPs are immutable after creation
+      allow delete: if isAuthenticated() && 
+                       (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     // Volunteers - Write-only for public, read for admin

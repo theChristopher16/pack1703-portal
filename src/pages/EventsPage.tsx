@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, List, Filter, Download, Share2 } from 'lucide-react';
+// Removed unused imports - RSVP counting now uses Cloud Functions
 import EventCard from '../components/Events/EventCard';
 import EventCalendar from '../components/Events/EventCalendar';
 import EventFilters, { EventFiltersData as EventFiltersType } from '../components/Events/EventFilters';
+import RSVPListViewer from '../components/Admin/RSVPListViewer';
 import { firestoreService } from '../services/firestore';
+import { useAdmin } from '../contexts/AdminContext';
 // import { analytics } from '../services/analytics';
 
 interface Event {
@@ -37,6 +40,7 @@ interface Event {
 
 const EventsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { state: adminState, hasRole } = useAdmin();
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
@@ -44,6 +48,14 @@ const EventsPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [usingFallbackData, setUsingFallbackData] = useState(false);
+  
+  // Admin RSVP viewer state
+  const [showRSVPViewer, setShowRSVPViewer] = useState(false);
+  const [selectedEventForRSVP, setSelectedEventForRSVP] = useState<Event | null>(null);
+  
+  // Check if user has admin permissions
+  const isAdmin = hasRole('root') || hasRole('super-admin') || 
+                  adminState.currentUser?.isAdmin;
 
   // Load events from Firebase
   useEffect(() => {
@@ -56,29 +68,52 @@ const EventsPage: React.FC = () => {
         // Load real events from Firebase
         const firebaseEvents = await firestoreService.getEvents();
         
-        // Transform Firebase data to match our interface
-        const transformedEvents: Event[] = firebaseEvents.map((firebaseEvent: any) => ({
-          id: firebaseEvent.id,
-          title: firebaseEvent.title,
-          date: firebaseEvent.startDate?.toDate?.()?.toISOString()?.split('T')[0] || firebaseEvent.startDate,
-          startTime: firebaseEvent.startTime || '00:00',
-          endTime: firebaseEvent.endTime || '00:00',
-          location: {
-            name: firebaseEvent.locationName || firebaseEvent.location || 'TBD',
-            address: firebaseEvent.address || 'Address TBD',
-            coordinates: firebaseEvent.coordinates || undefined
-          },
-          category: firebaseEvent.category || 'pack-wide',
-          denTags: firebaseEvent.denTags || [],
-          maxCapacity: firebaseEvent.maxCapacity || null,
-          currentRSVPs: firebaseEvent.currentRSVPs || 0,
-          description: firebaseEvent.description || '',
-          packingList: firebaseEvent.packingList || [],
-          fees: firebaseEvent.fees || null,
-          contactEmail: firebaseEvent.contactEmail || 'cubmaster@sfpack1703.com',
-          isOvernight: firebaseEvent.isOvernight || false,
-          requiresPermission: firebaseEvent.requiresPermission || false,
-          attachments: firebaseEvent.attachments || []
+        // Transform Firebase data to match our interface and load RSVP counts
+        const transformedEvents: Event[] = await Promise.all(firebaseEvents.map(async (firebaseEvent: any) => {
+          // Get actual RSVP count for this event using Cloud Function
+          let rsvpCount = 0;
+          try {
+            const { getFunctions, httpsCallable } = await import('firebase/functions');
+            const functions = getFunctions();
+            const getRSVPCount = httpsCallable(functions, 'getRSVPCount');
+            
+            const result = await getRSVPCount({ eventId: firebaseEvent.id });
+            const data = result.data as any;
+            if (data.success) {
+              rsvpCount = data.rsvpCount;
+            } else {
+              // Fallback to the stored count if available
+              rsvpCount = firebaseEvent.currentRSVPs || 0;
+            }
+          } catch (error) {
+            console.warn(`Failed to load RSVP count for event ${firebaseEvent.id}:`, error);
+            // Fallback to the stored count if available
+            rsvpCount = firebaseEvent.currentRSVPs || 0;
+          }
+
+          return {
+            id: firebaseEvent.id,
+            title: firebaseEvent.title,
+            date: firebaseEvent.startDate?.toDate?.()?.toISOString()?.split('T')[0] || firebaseEvent.startDate,
+            startTime: firebaseEvent.startTime || '00:00',
+            endTime: firebaseEvent.endTime || '00:00',
+            location: {
+              name: firebaseEvent.locationName || firebaseEvent.location || 'TBD',
+              address: firebaseEvent.address || 'Address TBD',
+              coordinates: firebaseEvent.coordinates || undefined
+            },
+            category: firebaseEvent.category || 'pack-wide',
+            denTags: firebaseEvent.denTags || [],
+            maxCapacity: firebaseEvent.maxCapacity || null,
+            currentRSVPs: rsvpCount,
+            description: firebaseEvent.description || '',
+            packingList: firebaseEvent.packingList || [],
+            fees: firebaseEvent.fees || null,
+            contactEmail: firebaseEvent.contactEmail || 'cubmaster@sfpack1703.com',
+            isOvernight: firebaseEvent.isOvernight || false,
+            requiresPermission: firebaseEvent.requiresPermission || false,
+            attachments: firebaseEvent.attachments || []
+          };
         }));
         
         setEvents(transformedEvents);
@@ -245,6 +280,17 @@ const EventsPage: React.FC = () => {
     console.log('Calendar view changed to:', view);
   };
 
+  // Admin RSVP viewer handlers
+  const handleViewRSVPs = (event: Event) => {
+    setSelectedEventForRSVP(event);
+    setShowRSVPViewer(true);
+  };
+
+  const handleCloseRSVPViewer = () => {
+    setShowRSVPViewer(false);
+    setSelectedEventForRSVP(null);
+  };
+
   const generateICSFeed = async () => {
     try {
       // Import Firebase Functions
@@ -382,6 +428,7 @@ const EventsPage: React.FC = () => {
               <Filter className="w-4 h-4 inline mr-2" />
               Filters
             </button>
+
           </div>
 
           {/* Action Buttons */}
@@ -434,6 +481,8 @@ const EventsPage: React.FC = () => {
                     onViewDetails={handleViewDetails}
                     onAddToCalendar={handleAddToCalendar}
                     onShare={handleShare}
+                    onViewRSVPs={isAdmin ? handleViewRSVPs : undefined}
+                    isAdmin={isAdmin}
                   />
                 ))}
               </div>
@@ -468,6 +517,15 @@ const EventsPage: React.FC = () => {
             <div className="text-gray-600">Service Projects</div>
           </div>
         </div>
+
+        {/* Admin RSVP Viewer Modal */}
+        {showRSVPViewer && selectedEventForRSVP && (
+          <RSVPListViewer
+            eventId={selectedEventForRSVP.id}
+            eventTitle={selectedEventForRSVP.title}
+            onClose={handleCloseRSVPViewer}
+          />
+        )}
       </div>
     </div>
   );

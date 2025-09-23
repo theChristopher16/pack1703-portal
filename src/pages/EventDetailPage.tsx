@@ -23,6 +23,7 @@ const EventDetailPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'details' | 'rsvp' | 'map'>('details');
   const [searchParams] = useSearchParams();
+  const [rsvpCount, setRsvpCount] = useState(0);
 
   useEffect(() => {
     const initialTab = searchParams.get('tab');
@@ -43,7 +44,7 @@ const EventDetailPage: React.FC = () => {
 
       try {
         // Import Firebase functions
-        const { doc, getDoc } = await import('firebase/firestore');
+        const { doc, getDoc, collection, query, where, getDocs } = await import('firebase/firestore');
         const { db } = await import('../firebase/config');
         
         console.log('EventDetailPage: Fetching event from Firestore...');
@@ -73,6 +74,14 @@ const EventDetailPage: React.FC = () => {
               console.log('EventDetailPage: Location not found for ID:', eventData.locationId);
             }
           }
+
+          // Load RSVP count
+          console.log('EventDetailPage: Loading RSVP count...');
+          const rsvpsQuery = query(collection(db, 'rsvps'), where('eventId', '==', eventId));
+          const rsvpsSnapshot = await getDocs(rsvpsQuery);
+          const rsvpCount = rsvpsSnapshot.size;
+          console.log('EventDetailPage: RSVP count loaded:', rsvpCount);
+          setRsvpCount(rsvpCount);
         } else {
           console.log('EventDetailPage: Event not found in Firestore for ID:', eventId);
         }
@@ -441,7 +450,7 @@ const EventDetailPage: React.FC = () => {
                 eventTitle={event?.title || ''}
                 eventDate={event?.startDate ? formatDate(event.startDate) : ''}
                 maxCapacity={event?.capacity || undefined}
-                currentRSVPs={0} // TODO: Get actual RSVP count from Firestore
+                currentRSVPs={rsvpCount}
               />
             )}
 

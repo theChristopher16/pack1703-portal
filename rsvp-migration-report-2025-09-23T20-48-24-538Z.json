@@ -1,0 +1,65 @@
+{
+  "timestamp": "2025-09-23T20:48:24.538Z",
+  "stats": {
+    "totalRSVPs": 7,
+    "unauthenticatedRSVPs": 0,
+    "migratedRSVPs": 0,
+    "errors": 7
+  },
+  "migrationLog": [
+    {
+      "timestamp": "2025-09-23T20:48:24.124Z",
+      "action": "Failed to migrate RSVP G4yQui395XDRcOeFjnFf",
+      "error": "Update() requires either a single JavaScript object or an alternating list of field/value pairs that can be followed by an optional precondition. Value for argument \"dataOrField\" is not a valid Firestore value. Cannot use \"undefined\" as a Firestore value (found in field \"createdAt\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.",
+      "type": "error"
+    },
+    {
+      "timestamp": "2025-09-23T20:48:24.124Z",
+      "action": "Failed to migrate RSVP HWM8VqgefcBNwL5u6JoU",
+      "error": "Update() requires either a single JavaScript object or an alternating list of field/value pairs that can be followed by an optional precondition. Value for argument \"dataOrField\" is not a valid Firestore value. Cannot use \"undefined\" as a Firestore value (found in field \"createdAt\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.",
+      "type": "error"
+    },
+    {
+      "timestamp": "2025-09-23T20:48:24.124Z",
+      "action": "Failed to migrate RSVP QOijv7SnzY5Bc0sFsXiP",
+      "error": "Update() requires either a single JavaScript object or an alternating list of field/value pairs that can be followed by an optional precondition. Value for argument \"dataOrField\" is not a valid Firestore value. Cannot use \"undefined\" as a Firestore value (found in field \"createdAt\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.",
+      "type": "error"
+    },
+    {
+      "timestamp": "2025-09-23T20:48:24.124Z",
+      "action": "Failed to migrate RSVP ZIiWzb1MTvQTUIZ7qDLd",
+      "error": "Update() requires either a single JavaScript object or an alternating list of field/value pairs that can be followed by an optional precondition. Value for argument \"dataOrField\" is not a valid Firestore value. Cannot use \"undefined\" as a Firestore value (found in field \"createdAt\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.",
+      "type": "error"
+    },
+    {
+      "timestamp": "2025-09-23T20:48:24.124Z",
+      "action": "Failed to migrate RSVP iDvKTIAQgjbRA3e2K8oX",
+      "error": "Update() requires either a single JavaScript object or an alternating list of field/value pairs that can be followed by an optional precondition. Value for argument \"dataOrField\" is not a valid Firestore value. Cannot use \"undefined\" as a Firestore value (found in field \"createdAt\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.",
+      "type": "error"
+    },
+    {
+      "timestamp": "2025-09-23T20:48:24.124Z",
+      "action": "Failed to migrate RSVP pvGCTntGlLO6Vedou0Od",
+      "error": "Update() requires either a single JavaScript object or an alternating list of field/value pairs that can be followed by an optional precondition. Value for argument \"dataOrField\" is not a valid Firestore value. Cannot use \"undefined\" as a Firestore value (found in field \"createdAt\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.",
+      "type": "error"
+    },
+    {
+      "timestamp": "2025-09-23T20:48:24.125Z",
+      "action": "Failed to migrate RSVP vXbDU8TRgzLnflm659n8",
+      "error": "Update() requires either a single JavaScript object or an alternating list of field/value pairs that can be followed by an optional precondition. Value for argument \"dataOrField\" is not a valid Firestore value. Cannot use \"undefined\" as a Firestore value (found in field \"createdAt\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.",
+      "type": "error"
+    },
+    {
+      "timestamp": "2025-09-23T20:48:24.378Z",
+      "action": "Updated event count",
+      "details": "Event 1q0wlN27GqcLb3VEGg4i: 0 attendees",
+      "type": "migration"
+    },
+    {
+      "timestamp": "2025-09-23T20:48:24.538Z",
+      "action": "Updated event count",
+      "details": "Event lu6kyov2tFPWdFhpcgaj: 9 attendees",
+      "type": "migration"
+    }
+  ]
+}

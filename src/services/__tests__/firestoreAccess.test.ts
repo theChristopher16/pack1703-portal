@@ -61,12 +61,14 @@ describe('Firestore Access Control Tests', () => {
       
       mockFirestore.write.mockRejectedValue(corsError);
 
+      let caughtError: any;
       try {
         await mockFirestore.write();
       } catch (error) {
-        expect(error.message).toContain('access control checks');
-        expect(error.name).toBe('TypeError');
+        caughtError = error;
       }
+      expect(caughtError.message).toContain('access control checks');
+      expect(caughtError.name).toBe('TypeError');
     });
 
     it('should handle Firestore Listen channel CORS errors', async () => {
@@ -76,12 +78,14 @@ describe('Firestore Access Control Tests', () => {
       
       mockFirestore.listen.mockRejectedValue(corsError);
 
+      let caughtError2: any;
       try {
         await mockFirestore.listen();
       } catch (error) {
-        expect(error.message).toContain('access control checks');
-        expect(error.name).toBe('TypeError');
+        caughtError2 = error;
       }
+      expect(caughtError2.message).toContain('access control checks');
+      expect(caughtError2.name).toBe('TypeError');
     });
 
     it('should handle multiple concurrent CORS errors', async () => {
@@ -100,9 +104,8 @@ describe('Firestore Access Control Tests', () => {
       
       results.forEach(result => {
         expect(result.status).toBe('rejected');
-        if (result.status === 'rejected') {
-          expect(result.reason.message).toContain('access control checks');
-        }
+        const rejectedResult = result.status === 'rejected' ? result.reason : null;
+        expect(rejectedResult.message).toContain('access control checks');
       });
     });
   });
@@ -114,12 +117,14 @@ describe('Firestore Access Control Tests', () => {
       
       mockFirestore.getDoc.mockRejectedValue(networkError);
 
+      let caughtError3: any;
       try {
         await mockFirestore.getDoc();
       } catch (error) {
-        expect(error.message).toBe('Network request failed');
-        expect(error.name).toBe('NetworkError');
+        caughtError3 = error;
       }
+      expect(caughtError3.message).toBe('Network request failed');
+      expect(caughtError3.name).toBe('NetworkError');
     });
 
     it('should handle Firestore service unavailable errors', async () => {
@@ -128,12 +133,14 @@ describe('Firestore Access Control Tests', () => {
       
       mockFirestore.getDocs.mockRejectedValue(serviceError);
 
+      let caughtError4: any;
       try {
         await mockFirestore.getDocs();
       } catch (error) {
-        expect(error.message).toBe('Service temporarily unavailable');
-        expect(error.name).toBe('FirebaseError');
+        caughtError4 = error;
       }
+      expect(caughtError4.message).toBe('Service temporarily unavailable');
+      expect(caughtError4.name).toBe('FirebaseError');
     });
   });
 
@@ -147,12 +154,14 @@ describe('Firestore Access Control Tests', () => {
       
       mockFirestore.getDoc.mockRejectedValue(authError);
 
+      let caughtError5: any;
       try {
         await mockFirestore.getDoc();
       } catch (error) {
-        expect(error.message).toBe('Missing or insufficient permissions');
-        expect(error.name).toBe('FirebaseError');
+        caughtError5 = error;
       }
+      expect(caughtError5.message).toBe('Missing or insufficient permissions');
+      expect(caughtError5.name).toBe('FirebaseError');
     });
 
     it('should handle expired authentication tokens', async () => {
@@ -161,12 +170,14 @@ describe('Firestore Access Control Tests', () => {
       
       mockFirestore.getDoc.mockRejectedValue(tokenError);
 
+      let caughtError6: any;
       try {
         await mockFirestore.getDoc();
       } catch (error) {
-        expect(error.message).toContain('credential is no longer valid');
-        expect(error.name).toBe('FirebaseError');
+        caughtError6 = error;
       }
+      expect(caughtError6.message).toContain('credential is no longer valid');
+      expect(caughtError6.name).toBe('FirebaseError');
     });
   });
 

@@ -172,10 +172,9 @@ describe('Chat Service CORS and Firestore Access Tests', () => {
       
       results.forEach(result => {
         expect(result.status).toBe('fulfilled');
-        if (result.status === 'fulfilled') {
-          expect(result.value).toHaveProperty('success', false);
-          expect(result.value).toHaveProperty('error', 'CORS_ERROR');
-        }
+        const fulfilledResult = result.status === 'fulfilled' ? result.value : null;
+        expect(fulfilledResult).toHaveProperty('success', false);
+        expect(fulfilledResult).toHaveProperty('error', 'CORS_ERROR');
       });
     });
   });

@@ -1,9 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { 
-  Users, UserPlus, Search, Filter, MoreVertical, Edit, Trash2, 
-  Mail, Copy, Check, X, Eye, EyeOff, Shield, Key, Download, 
-  Upload, Calendar, Building, GraduationCap, Settings, ExternalLink,
-  ChevronDown, ChevronRight, MapPin, Save, AlertCircle
+  Users, UserPlus, Search, Edit, Trash2, 
+  Mail, Check, X, AlertCircle
 } from 'lucide-react';
 import { UserRole, ROLE_PERMISSIONS, AppUser } from '../../services/authService';
 import { useUserManagementState } from '../../hooks/useOptimizedState';
@@ -65,12 +63,12 @@ const UserManagement: React.FC = () => {
   useEffect(() => {
     loadUsers();
     loadInvites();
-  }, []);
+  }, [loadUsers, loadInvites]);
 
   // Filter and sort users based on current filters
   useEffect(() => {
     filterAndSortUsers();
-  }, [state.users, state.searchTerm, state.roleFilter, state.denFilter, state.statusFilter]);
+  }, [state.users, state.searchTerm, state.roleFilter, state.denFilter, state.statusFilter, filterAndSortUsers]);
 
   const loadUsers = async () => {
     try {

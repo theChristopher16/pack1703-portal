@@ -53,7 +53,6 @@ import RootAccountSetup from './pages/RootAccountSetup';
 import HackerTab from './pages/HackerTab';
 import AdminSettings from './pages/AdminSettings';
 import UserProfile from './pages/UserProfile';
-import FeedbackManagementPage from './pages/FeedbackManagementPage';
 import AdminReminders from './pages/AdminReminders';
 import DatabaseMonitor from './components/Admin/DatabaseMonitor';
 import SystemMonitor from './components/Admin/SystemMonitor';
@@ -101,11 +100,6 @@ function App() {
 
     window.addEventListener('versionUpdate', handleVersionUpdate as EventListener);
 
-    // Cleanup
-    return () => {
-      window.removeEventListener('versionUpdate', handleVersionUpdate as EventListener);
-    };
-
     // Initialize default configurations (non-blocking)
     const initializeConfigs = async () => {
       try {
@@ -123,6 +117,11 @@ function App() {
 
     // Run initialization in background without blocking app startup
     initializeConfigs();
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('versionUpdate', handleVersionUpdate as EventListener);
+    };
   }, []);
 
   return (

@@ -91,41 +91,38 @@ describe('AccountRequestService', () => {
         address: '123 Test St'
       };
 
-      // This will fail in test environment due to Firebase not being initialized,
-      // but we can test that the method accepts the correct parameters
-      try {
-        await accountRequestService.submitRequest(formData);
-      } catch (error) {
-        // Expected to fail in test environment - this is fine
-        expect(error).toBeDefined();
-      }
+      // Test that the method exists and can be called
+      expect(typeof accountRequestService.submitRequest).toBe('function');
+      
+      // In a real test environment, this would fail due to Firebase not being initialized
+      // For now, we just verify the method exists and accepts the right parameters
+      const result = await accountRequestService.submitRequest(formData);
+      expect(result).toHaveProperty('success', false);
+      expect(result).toHaveProperty('error');
     });
 
     it('should handle approveRequest parameters correctly', async () => {
-      try {
-        await accountRequestService.approveRequest('test-request-id', 'parent');
-      } catch (error) {
-        // Expected to fail in test environment - this is fine
-        expect(error).toBeDefined();
-      }
+      expect(typeof accountRequestService.approveRequest).toBe('function');
+      
+      const result = await accountRequestService.approveRequest('test-request-id', 'parent');
+      expect(result).toHaveProperty('success', false);
+      expect(result).toHaveProperty('error');
     });
 
     it('should handle rejectRequest parameters correctly', async () => {
-      try {
-        await accountRequestService.rejectRequest('test-request-id', 'Invalid information');
-      } catch (error) {
-        // Expected to fail in test environment - this is fine
-        expect(error).toBeDefined();
-      }
+      expect(typeof accountRequestService.rejectRequest).toBe('function');
+      
+      const result = await accountRequestService.rejectRequest('test-request-id', 'Invalid information');
+      expect(result).toHaveProperty('success', false);
+      expect(result).toHaveProperty('error');
     });
 
     it('should handle getPendingRequests parameters correctly', async () => {
-      try {
-        await accountRequestService.getPendingRequests();
-      } catch (error) {
-        // Expected to fail in test environment - this is fine
-        expect(error).toBeDefined();
-      }
+      expect(typeof accountRequestService.getPendingRequests).toBe('function');
+      
+      const result = await accountRequestService.getPendingRequests();
+      expect(result).toHaveProperty('success', false);
+      expect(result).toHaveProperty('error');
     });
   });
 });

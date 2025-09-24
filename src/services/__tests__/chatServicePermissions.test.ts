@@ -337,14 +337,16 @@ describe('Chat Service Permission Tests', () => {
       await expect(chatService.getAllUsers()).resolves.toEqual([]);
 
       // Admin access should fail with helpful error
+      let caughtError: any;
       try {
         await chatService.getAllUsersForAdmin();
       } catch (error: any) {
-        expect(error.name).toBe('PermissionError');
-        expect(error.code).toBe('INSUFFICIENT_PERMISSIONS');
-        expect(error.requiredRole).toBe('admin');
-        expect(error.currentRole).toBe('viewer');
+        caughtError = error;
       }
+      expect(caughtError.name).toBe('PermissionError');
+      expect(caughtError.code).toBe('INSUFFICIENT_PERMISSIONS');
+      expect(caughtError.requiredRole).toBe('admin');
+      expect(caughtError.currentRole).toBe('viewer');
     });
 
     it('should handle permission errors gracefully in UI', async () => {

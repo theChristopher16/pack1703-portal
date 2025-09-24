@@ -550,9 +550,9 @@ export const getRSVPData = functions.https.onCall(async (data: any, context: fun
     console.log(`Admin ${context.auth.uid} requesting RSVP data for event ${data.eventId}`);
 
     // Query RSVPs with admin privileges (bypasses client-side rules)
+    // Remove orderBy to avoid index requirement, we'll sort in JavaScript
     const rsvpsQuery = await db.collection('rsvps')
       .where('eventId', '==', data.eventId)
-      .orderBy('submittedAt', 'desc')
       .get();
 
     const rsvpsData: any[] = [];
@@ -573,6 +573,13 @@ export const getRSVPData = functions.https.onCall(async (data: any, context: fun
         submittedAt: data.submittedAt,
         createdAt: data.createdAt
       });
+    });
+
+    // Sort by submittedAt in descending order (most recent first)
+    rsvpsData.sort((a, b) => {
+      const aTime = a.submittedAt?.toDate ? a.submittedAt.toDate() : new Date(a.submittedAt || 0);
+      const bTime = b.submittedAt?.toDate ? b.submittedAt.toDate() : new Date(b.submittedAt || 0);
+      return bTime.getTime() - aTime.getTime();
     });
 
     console.log(`Found ${rsvpsData.length} RSVPs for event ${data.eventId}`);

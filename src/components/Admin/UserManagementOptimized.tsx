@@ -63,12 +63,12 @@ const UserManagement: React.FC = () => {
   useEffect(() => {
     loadUsers();
     loadInvites();
-  }, [loadUsers, loadInvites]);
+  }, []);
 
   // Filter and sort users based on current filters
   useEffect(() => {
     filterAndSortUsers();
-  }, [state.users, state.searchTerm, state.roleFilter, state.denFilter, state.statusFilter, filterAndSortUsers]);
+  }, [state.users, state.searchTerm, state.roleFilter, state.denFilter, state.statusFilter]);
 
   const loadUsers = async () => {
     try {

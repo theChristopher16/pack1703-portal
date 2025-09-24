@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Users, X, Download, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase/config';
+import { Users, X, Download, RefreshCw, AlertCircle, CheckCircle, Home, Mail, Phone, Clipboard, User } from 'lucide-react';
+import { firestoreService } from '../../services/firestore';
 
 interface RSVPData {
   id: string;
@@ -50,29 +49,16 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
 
       console.log('RSVPListViewer: Loading RSVPs for event:', eventId);
 
-      // Query RSVPs for this event
-      const rsvpsQuery = query(
-        collection(db, 'rsvps'),
-        where('eventId', '==', eventId)
-      );
-
-      console.log('RSVPListViewer: Executing query...');
-      const rsvpsSnapshot = await getDocs(rsvpsQuery);
-      console.log('RSVPListViewer: Query successful, found', rsvpsSnapshot.size, 'RSVPs');
+      // Use Cloud Function to get RSVP data (bypasses client-side permissions)
+      console.log('RSVPListViewer: Calling getRSVPData Cloud Function...');
+      const result = await firestoreService.getRSVPData(eventId);
       
-      const rsvpsData: RSVPData[] = [];
-
-      rsvpsSnapshot.forEach((doc) => {
-        const data = doc.data();
-        console.log('RSVPListViewer: Processing RSVP:', doc.id, data);
-        rsvpsData.push({
-          id: doc.id,
-          ...data
-        } as RSVPData);
-      });
-
-      console.log('RSVPListViewer: Processed', rsvpsData.length, 'RSVPs');
-      setRsvps(rsvpsData);
+      if (result.success) {
+        console.log('RSVPListViewer: Cloud Function successful, found', result.count, 'RSVPs');
+        setRsvps(result.rsvps || []);
+      } else {
+        throw new Error(result.message || 'Failed to load RSVP data');
+      }
     } catch (error) {
       console.error('Error loading RSVPs:', error);
       setError('Failed to load RSVPs');

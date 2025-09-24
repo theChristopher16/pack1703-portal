@@ -20,6 +20,7 @@ import { db, functions } from '../firebase/config';
 export const submitRSVP = httpsCallable(functions, 'submitRSVP');
 export const getRSVPCount = httpsCallable(functions, 'getRSVPCount');
 export const deleteRSVP = httpsCallable(functions, 'deleteRSVP');
+export const getRSVPData = httpsCallable(functions, 'getRSVPData');
 export const submitFeedback = httpsCallable(functions, 'submitFeedback');
 export const claimVolunteerRole = httpsCallable(functions, 'claimVolunteerRole');
 export const generateICSFeed = httpsCallable(functions, 'generateICSFeed');
@@ -178,6 +179,16 @@ export const firestoreService = {
       return result.data;
     } catch (error) {
       console.error('Failed to delete RSVP:', error);
+      throw error;
+    }
+  },
+
+  async getRSVPData(eventId: string): Promise<any> {
+    try {
+      const result = await getRSVPData({ eventId });
+      return result.data;
+    } catch (error) {
+      console.error('Failed to get RSVP data:', error);
       throw error;
     }
   },

@@ -44,7 +44,7 @@ import {
 import { useAdmin } from '../../contexts/AdminContext';
 import { authService, AppUser, UserRole, Permission, ROLE_PERMISSIONS, SELECTABLE_ROLES } from '../../services/authService';
 import { adminService } from '../../services/adminService';
-import { AdminUserManagement } from '../UserApproval/UserApprovalComponents';
+import AccountRequestsManager from './AccountRequestsManager';
 import { functions } from '../../firebase/config';
 
 interface UserWithChildren extends AppUser {
@@ -695,8 +695,8 @@ const UserManagement: React.FC = () => {
         </>
       ) : (
         <>
-          {/* Join Requests - User Approval Management */}
-          <AdminUserManagement />
+          {/* Join Requests - Account Request Management */}
+          <AccountRequestsManager />
 
         </>
       )}

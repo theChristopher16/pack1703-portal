@@ -542,6 +542,454 @@ export const getRSVPData = functions.https.onCall(async (data: any, context: fun
   }
 });
 
+// CRITICAL: Admin update user function
+export const adminUpdateUser = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    // Check role-based permissions (new system) or legacy boolean fields
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
+    const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
+    
+    if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update users');
+    }
+
+    const { userId, updates } = data;
+    
+    if (!userId) {
+      throw new functions.https.HttpsError('invalid-argument', 'User ID is required');
+    }
+
+    // Check if target user exists
+    const targetUserDoc = await db.collection('users').doc(userId).get();
+    if (!targetUserDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Target user not found');
+    }
+
+    // Prepare update data
+    const updateData: any = {
+      updatedAt: getTimestamp()
+    };
+
+    if (updates.displayName !== undefined) {
+      updateData.displayName = updates.displayName;
+    }
+
+    if (updates.isActive !== undefined) {
+      updateData.isActive = updates.isActive;
+    }
+
+    if (updates.profile !== undefined) {
+      updateData.profile = updates.profile;
+    }
+
+    // Update Firestore document
+    await db.collection('users').doc(userId).update(updateData);
+
+    // Update Firebase Auth custom claims if role is being changed
+    if (updates.role !== undefined) {
+      await admin.auth().setCustomUserClaims(userId, {
+        approved: true,
+        role: updates.role
+      });
+      
+      // Also update the role in Firestore
+      await db.collection('users').doc(userId).update({
+        role: updates.role,
+        permissions: updates.permissions || [],
+        updatedAt: getTimestamp()
+      });
+    }
+
+    // Log admin action
+    await db.collection('adminActions').add({
+      userId: context.auth.uid,
+      userEmail: context.auth.token.email || '',
+      action: 'update',
+      entityType: 'user',
+      entityId: userId,
+      entityName: updates.displayName || 'User',
+      details: updates,
+      timestamp: getTimestamp(),
+      ipAddress: context.rawRequest?.ip || 'unknown',
+      userAgent: context.rawRequest?.headers?.['user-agent'] || 'unknown',
+      success: true
+    });
+
+    return {
+      success: true,
+      message: 'User updated successfully'
+    };
+
+  } catch (error) {
+    console.error('Error in adminUpdateUser:', error);
+    
+    // Log failed action
+    try {
+      await db.collection('adminActions').add({
+        userId: context.auth?.uid || 'unknown',
+        userEmail: context.auth?.token?.email || '',
+        action: 'update',
+        entityType: 'user',
+        entityId: data?.userId || 'unknown',
+        entityName: 'User',
+        details: data?.updates || {},
+        timestamp: getTimestamp(),
+        ipAddress: context.rawRequest?.ip || 'unknown',
+        userAgent: context.rawRequest?.headers?.['user-agent'] || 'unknown',
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    } catch (logError: any) {
+      console.error('Failed to log admin action:', logError);
+    }
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to update user');
+  }
+});
+
+// CRITICAL: Submit account request function
+export const submitAccountRequest = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Validate required fields
+    if (!data.email || !data.displayName || !data.phone || !data.address) {
+      throw new functions.https.HttpsError('invalid-argument', 'Missing required fields: email, displayName, phone, address');
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.email)) {
+      throw new functions.https.HttpsError('invalid-argument', 'Invalid email format');
+    }
+
+    // Check if email already exists
+    const existingUserQuery = await db.collection('users')
+      .where('email', '==', data.email)
+      .get();
+    
+    if (!existingUserQuery.empty) {
+      throw new functions.https.HttpsError('already-exists', 'An account with this email already exists');
+    }
+
+    // Check if there's already a pending request for this email
+    const existingRequestQuery = await db.collection('accountRequests')
+      .where('email', '==', data.email)
+      .where('status', '==', 'pending')
+      .get();
+    
+    if (!existingRequestQuery.empty) {
+      throw new functions.https.HttpsError('already-exists', 'A request for this email is already pending');
+    }
+
+    // Create account request
+    const requestData = {
+      email: data.email,
+      displayName: data.displayName,
+      phone: data.phone,
+      address: data.address,
+      scoutRank: data.scoutRank || '',
+      den: data.den || '',
+      emergencyContact: data.emergencyContact || '',
+      reason: data.reason || '',
+      status: 'pending',
+      submittedAt: getTimestamp(),
+      createdAt: getTimestamp(),
+      updatedAt: getTimestamp(),
+      ipHash: data.ipHash || '',
+      userAgent: data.userAgent || ''
+    };
+
+    const requestRef = await db.collection('accountRequests').add(requestData);
+
+    // Log the request
+    await db.collection('adminActions').add({
+      action: 'account_request_submitted',
+      entityType: 'account_request',
+      entityId: requestRef.id,
+      entityName: data.displayName,
+      details: {
+        email: data.email,
+        phone: data.phone,
+        den: data.den,
+        scoutRank: data.scoutRank
+      },
+      timestamp: getTimestamp(),
+      ipAddress: context.rawRequest?.ip || 'unknown',
+      userAgent: context.rawRequest?.headers?.['user-agent'] || 'unknown',
+      success: true
+    });
+
+    return {
+      success: true,
+      requestId: requestRef.id,
+      message: 'Account request submitted successfully. You will be notified when it is reviewed.'
+    };
+
+  } catch (error) {
+    console.error('Error submitting account request:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to submit account request');
+  }
+});
+
+// CRITICAL: Get pending account requests (admin only)
+export const getPendingAccountRequests = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
+    const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
+    
+    if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to view account requests');
+    }
+
+    // Get pending requests
+    const requestsQuery = await db.collection('accountRequests')
+      .where('status', '==', 'pending')
+      .orderBy('submittedAt', 'desc')
+      .get();
+
+    const requests: any[] = [];
+    requestsQuery.docs.forEach(doc => {
+      const data = doc.data();
+      requests.push({
+        id: doc.id,
+        email: data.email,
+        displayName: data.displayName,
+        phone: data.phone,
+        address: data.address,
+        scoutRank: data.scoutRank,
+        den: data.den,
+        emergencyContact: data.emergencyContact,
+        reason: data.reason,
+        status: data.status,
+        submittedAt: data.submittedAt,
+        createdAt: data.createdAt
+      });
+    });
+
+    return {
+      success: true,
+      requests: requests,
+      count: requests.length,
+      message: 'Account requests retrieved successfully'
+    };
+
+  } catch (error) {
+    console.error('Error getting account requests:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to get account requests');
+  }
+});
+
+// CRITICAL: Approve account request (admin only)
+export const approveAccountRequest = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
+    const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
+    
+    if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to approve account requests');
+    }
+
+    const { requestId, role = 'parent' } = data;
+    
+    if (!requestId) {
+      throw new functions.https.HttpsError('invalid-argument', 'Request ID is required');
+    }
+
+    // Get the request
+    const requestRef = db.collection('accountRequests').doc(requestId);
+    const requestDoc = await requestRef.get();
+    
+    if (!requestDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Account request not found');
+    }
+
+    const requestData = requestDoc.data();
+    
+    if (requestData?.status !== 'pending') {
+      throw new functions.https.HttpsError('failed-precondition', 'Request is not pending');
+    }
+
+    // Update request status
+    await requestRef.update({
+      status: 'approved',
+      approvedBy: context.auth.uid,
+      approvedAt: getTimestamp(),
+      approvedRole: role,
+      updatedAt: getTimestamp()
+    });
+
+    // Log the approval
+    await db.collection('adminActions').add({
+      userId: context.auth.uid,
+      userEmail: context.auth.token.email || '',
+      action: 'approve_account_request',
+      entityType: 'account_request',
+      entityId: requestId,
+      entityName: requestData.displayName,
+      details: {
+        email: requestData.email,
+        approvedRole: role
+      },
+      timestamp: getTimestamp(),
+      ipAddress: context.rawRequest?.ip || 'unknown',
+      userAgent: context.rawRequest?.headers?.['user-agent'] || 'unknown',
+      success: true
+    });
+
+    return {
+      success: true,
+      message: 'Account request approved successfully'
+    };
+
+  } catch (error) {
+    console.error('Error approving account request:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to approve account request');
+  }
+});
+
+// CRITICAL: Reject account request (admin only)
+export const rejectAccountRequest = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
+    const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
+    
+    if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to reject account requests');
+    }
+
+    const { requestId, reason = '' } = data;
+    
+    if (!requestId) {
+      throw new functions.https.HttpsError('invalid-argument', 'Request ID is required');
+    }
+
+    // Get the request
+    const requestRef = db.collection('accountRequests').doc(requestId);
+    const requestDoc = await requestRef.get();
+    
+    if (!requestDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Account request not found');
+    }
+
+    const requestData = requestDoc.data();
+    
+    if (requestData?.status !== 'pending') {
+      throw new functions.https.HttpsError('failed-precondition', 'Request is not pending');
+    }
+
+    // Update request status
+    await requestRef.update({
+      status: 'rejected',
+      rejectedBy: context.auth.uid,
+      rejectedAt: getTimestamp(),
+      rejectionReason: reason,
+      updatedAt: getTimestamp()
+    });
+
+    // Log the rejection
+    await db.collection('adminActions').add({
+      userId: context.auth.uid,
+      userEmail: context.auth.token.email || '',
+      action: 'reject_account_request',
+      entityType: 'account_request',
+      entityId: requestId,
+      entityName: requestData.displayName,
+      details: {
+        email: requestData.email,
+        rejectionReason: reason
+      },
+      timestamp: getTimestamp(),
+      ipAddress: context.rawRequest?.ip || 'unknown',
+      userAgent: context.rawRequest?.headers?.['user-agent'] || 'unknown',
+      success: true
+    });
+
+    return {
+      success: true,
+      message: 'Account request rejected successfully'
+    };
+
+  } catch (error) {
+    console.error('Error rejecting account request:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to reject account request');
+  }
+});
+
 // Simple test function
 export const helloWorld = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   return {

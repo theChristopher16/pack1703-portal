@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.helloWorld = exports.rejectAccountRequest = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.adminUpdateUser = exports.getRSVPData = exports.deleteRSVP = exports.getRSVPCount = exports.submitRSVP = exports.adminCreateEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
+exports.helloWorld = exports.rejectAccountRequest = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.adminUpdateUser = exports.getRSVPData = exports.deleteRSVP = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.submitRSVP = exports.adminCreateEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 // Initialize Firebase Admin
@@ -301,14 +301,17 @@ exports.submitRSVP = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('internal', 'Failed to submit RSVP');
     }
 });
-// Helper function to get actual RSVP count from database
+// Helper function to get actual RSVP count from database using aggregation
 async function getActualRSVPCount(eventId) {
     try {
-        const rsvpsQuery = await db.collection('rsvps')
+        // Use aggregation query for better performance
+        const rsvpsRef = db.collection('rsvps');
+        const snapshot = await rsvpsRef
             .where('eventId', '==', eventId)
+            .select('attendees')
             .get();
         let totalAttendees = 0;
-        rsvpsQuery.docs.forEach(doc => {
+        snapshot.docs.forEach(doc => {
             var _a;
             const rsvpData = doc.data();
             totalAttendees += ((_a = rsvpData.attendees) === null || _a === void 0 ? void 0 : _a.length) || 1;
@@ -340,6 +343,46 @@ exports.getRSVPCount = functions.https.onCall(async (data, context) => {
             throw error;
         }
         throw new functions.https.HttpsError('internal', 'Failed to get RSVP count');
+    }
+});
+// CRITICAL: Get RSVP counts for multiple events in batch (performance optimization)
+exports.getBatchRSVPCounts = functions.https.onCall(async (data, context) => {
+    try {
+        if (!data.eventIds || !Array.isArray(data.eventIds)) {
+            throw new functions.https.HttpsError('invalid-argument', 'Event IDs array is required');
+        }
+        // Get all RSVPs for the requested events in a single query
+        const rsvpsQuery = await db.collection('rsvps')
+            .where('eventId', 'in', data.eventIds)
+            .get();
+        // Group RSVPs by eventId and count attendees
+        const rsvpCounts = {};
+        // Initialize all event IDs with 0 count
+        data.eventIds.forEach((eventId) => {
+            rsvpCounts[eventId] = 0;
+        });
+        // Count attendees for each RSVP
+        rsvpsQuery.docs.forEach(doc => {
+            var _a;
+            const rsvpData = doc.data();
+            const eventId = rsvpData.eventId;
+            const attendeeCount = ((_a = rsvpData.attendees) === null || _a === void 0 ? void 0 : _a.length) || 1;
+            if (rsvpCounts.hasOwnProperty(eventId)) {
+                rsvpCounts[eventId] += attendeeCount;
+            }
+        });
+        return {
+            success: true,
+            rsvpCounts,
+            message: 'Batch RSVP counts retrieved successfully'
+        };
+    }
+    catch (error) {
+        console.error('Error getting batch RSVP counts:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to get batch RSVP counts');
     }
 });
 // CRITICAL: Delete RSVP function

@@ -9,7 +9,10 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && 
-             request.auth.token.get('role', '') == 'admin';
+             (request.auth.token.get('role', '') == 'admin' ||
+              request.auth.token.get('role', '') == 'root' ||
+              request.auth.token.get('role', '') == 'super-admin' ||
+              request.auth.token.get('isAdmin', false) == true);
     }
     
     function isValidTimestamp(timestamp) {

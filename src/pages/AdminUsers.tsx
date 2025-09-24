@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+// Import icons from lucide-react
 import { 
   Users, 
   UserPlus, 
@@ -14,7 +15,12 @@ import {
   Mail,
   X,
   Save,
-  Loader2
+  Loader2,
+  AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  ArrowLeft,
+  Home
 } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import { authService, AppUser, UserRole, ROLE_PERMISSIONS } from '../services/authService';

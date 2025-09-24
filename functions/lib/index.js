@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.helloWorld = exports.deleteRSVP = exports.getRSVPCount = exports.submitRSVP = exports.adminCreateEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
+exports.helloWorld = exports.getRSVPData = exports.deleteRSVP = exports.getRSVPCount = exports.submitRSVP = exports.adminCreateEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 // Initialize Firebase Admin
@@ -405,6 +405,62 @@ exports.deleteRSVP = functions.https.onCall(async (data, context) => {
             throw error;
         }
         throw new functions.https.HttpsError('internal', 'Failed to delete RSVP');
+    }
+});
+// CRITICAL: Get RSVP data for admin users (bypasses client-side permissions)
+exports.getRSVPData = functions.https.onCall(async (data, context) => {
+    try {
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        if (!data.eventId) {
+            throw new functions.https.HttpsError('invalid-argument', 'Event ID is required');
+        }
+        // Check if user is admin
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        const userData = userDoc.data();
+        const isAdmin = (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' ||
+            (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.isAdmin);
+        if (!isAdmin) {
+            throw new functions.https.HttpsError('permission-denied', 'Only admin users can access RSVP data');
+        }
+        console.log(`Admin ${context.auth.uid} requesting RSVP data for event ${data.eventId}`);
+        // Query RSVPs with admin privileges (bypasses client-side rules)
+        const rsvpsQuery = await db.collection('rsvps')
+            .where('eventId', '==', data.eventId)
+            .orderBy('submittedAt', 'desc')
+            .get();
+        const rsvpsData = [];
+        rsvpsQuery.docs.forEach(doc => {
+            const data = doc.data();
+            rsvpsData.push({
+                id: doc.id,
+                eventId: data.eventId,
+                userId: data.userId,
+                userEmail: data.userEmail,
+                familyName: data.familyName,
+                email: data.email,
+                phone: data.phone,
+                attendees: data.attendees || [],
+                dietaryRestrictions: data.dietaryRestrictions,
+                specialNeeds: data.specialNeeds,
+                notes: data.notes,
+                submittedAt: data.submittedAt,
+                createdAt: data.createdAt
+            });
+        });
+        console.log(`Found ${rsvpsData.length} RSVPs for event ${data.eventId}`);
+        return {
+            success: true,
+            eventId: data.eventId,
+            rsvps: rsvpsData,
+            count: rsvpsData.length,
+            message: 'RSVP data retrieved successfully'
+        };
+    }
+    catch (error) {
+        console.error('Error getting RSVP data:', error);
+        throw new functions.https.HttpsError('internal', 'Failed to get RSVP data');
     }
 });
 // Simple test function

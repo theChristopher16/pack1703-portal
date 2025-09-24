@@ -477,6 +477,71 @@ export const deleteRSVP = functions.https.onCall(async (data: any, context: func
   }
 });
 
+// CRITICAL: Get RSVP data for admin users (bypasses client-side permissions)
+export const getRSVPData = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+    
+    if (!data.eventId) {
+      throw new functions.https.HttpsError('invalid-argument', 'Event ID is required');
+    }
+
+    // Check if user is admin
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    const userData = userDoc.data();
+    const isAdmin = userData?.role === 'admin' || userData?.role === 'root' || 
+                    userData?.role === 'super-admin' || userData?.isAdmin;
+
+    if (!isAdmin) {
+      throw new functions.https.HttpsError('permission-denied', 'Only admin users can access RSVP data');
+    }
+
+    console.log(`Admin ${context.auth.uid} requesting RSVP data for event ${data.eventId}`);
+
+    // Query RSVPs with admin privileges (bypasses client-side rules)
+    const rsvpsQuery = await db.collection('rsvps')
+      .where('eventId', '==', data.eventId)
+      .orderBy('submittedAt', 'desc')
+      .get();
+
+    const rsvpsData: any[] = [];
+    rsvpsQuery.docs.forEach(doc => {
+      const data = doc.data();
+      rsvpsData.push({
+        id: doc.id,
+        eventId: data.eventId,
+        userId: data.userId,
+        userEmail: data.userEmail,
+        familyName: data.familyName,
+        email: data.email,
+        phone: data.phone,
+        attendees: data.attendees || [],
+        dietaryRestrictions: data.dietaryRestrictions,
+        specialNeeds: data.specialNeeds,
+        notes: data.notes,
+        submittedAt: data.submittedAt,
+        createdAt: data.createdAt
+      });
+    });
+
+    console.log(`Found ${rsvpsData.length} RSVPs for event ${data.eventId}`);
+
+    return {
+      success: true,
+      eventId: data.eventId,
+      rsvps: rsvpsData,
+      count: rsvpsData.length,
+      message: 'RSVP data retrieved successfully'
+    };
+
+  } catch (error) {
+    console.error('Error getting RSVP data:', error);
+    throw new functions.https.HttpsError('internal', 'Failed to get RSVP data');
+  }
+});
+
 // Simple test function
 export const helloWorld = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   return {

@@ -1,14 +1,9 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
-// Create mock functions at module level for Jest compatibility
-const mockFirestoreCollection = jest.fn();
-const mockFirestoreDoc = jest.fn();
-const mockJestFn = jest.fn;
-
 // Mock Firebase Admin and Functions
 const mockFirestore = {
-  collection: mockFirestoreCollection,
-  doc: mockFirestoreDoc
+  collection: jest.fn(),
+  doc: jest.fn()
 };
 
 const mockAuth = {
@@ -21,7 +16,7 @@ const mockContext = {
 };
 
 // Mock Firebase Functions
-const mockHttpsError = mockJestFn((code: string, message: string) => {
+const mockHttpsError = jest.fn((code: string, message: string) => {
   const error = new Error(message);
   (error as any).code = code;
   return error;
@@ -30,13 +25,13 @@ const mockHttpsError = mockJestFn((code: string, message: string) => {
 const mockFunctions = {
   https: {
     HttpsError: mockHttpsError,
-    onCall: mockJestFn()
+    onCall: jest.fn()
   }
 };
 
 // Mock Firebase Admin
 jest.mock('firebase-admin', () => ({
-  initializeApp: mockJestFn(),
+  initializeApp: jest.fn(),
   firestore: () => mockFirestore,
   firestore: {
     Timestamp: {
@@ -110,21 +105,21 @@ describe('getRSVPData Cloud Function', () => {
     ];
 
     mockQuery = {
-      get: mockJestFn().mockResolvedValue({
+      get: jest.fn().mockResolvedValue({
         docs: mockRsvpDocs
       })
     };
 
     mockRsvpCollection = {
-      where: mockJestFn().mockReturnValue(mockQuery)
+      where: jest.fn().mockReturnValue(mockQuery)
     };
 
     // Setup Firestore mocks
-    mockFirestoreCollection.mockImplementation((collectionName: string) => {
+    mockFirestore.collection.mockImplementation((collectionName: string) => {
       if (collectionName === 'users') {
         return {
-          doc: mockJestFn().mockReturnValue({
-            get: mockJestFn().mockResolvedValue(mockUserDoc)
+          doc: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue(mockUserDoc)
           })
         };
       }

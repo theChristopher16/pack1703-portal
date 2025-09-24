@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import chatService from '../services/chatService';
 import { ChatChannel } from '../services/chatService';
 
-// Mock Firebase
+// Mock Firebase - define mocks first
 const mockCollection = jest.fn();
 const mockQuery = jest.fn();
 const mockWhere = jest.fn();

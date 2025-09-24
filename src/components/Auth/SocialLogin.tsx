@@ -27,11 +27,9 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailForm, setEmailForm] = useState({
     email: inviteEmail,
-    password: '',
-    confirmPassword: '',
-    displayName: ''
+    password: ''
   });
-  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   const handleSocialLogin = async (provider: SocialProvider) => {
     setIsLoading(provider);
@@ -72,38 +70,29 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
     }
   };
 
-  const handleEmailRegistration = async (e: React.FormEvent) => {
+  const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (emailForm.password !== emailForm.confirmPassword) {
-      setError('Passwords do not match');
+    if (!emailForm.email || !emailForm.password) {
+      setError('Please enter both email and password');
       return;
     }
 
-    if (emailForm.password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-
-    setIsCreatingAccount(true);
+    setIsSigningIn(true);
     setError(null);
 
     try {
-      // Create user with email and password
-      const user = await authService.createUserWithEmail(
-        emailForm.email,
-        emailForm.password,
-        emailForm.displayName
-      );
+      // Sign in with email and password
+      const user = await authService.signIn(emailForm.email, emailForm.password);
       
       setShowEmailModal(false);
       onSuccess?.(user);
     } catch (error: any) {
-      console.error('Error creating account:', error);
-      setError(error.message || 'Failed to create account');
-      onError?.(error.message || 'Failed to create account');
+      console.error('Error signing in:', error);
+      setError(error.message || 'Failed to sign in');
+      onError?.(error.message || 'Failed to sign in');
     } finally {
-      setIsCreatingAccount(false);
+      setIsSigningIn(false);
     }
   };
 
@@ -111,7 +100,7 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
     {
       provider: SocialProvider.GOOGLE,
       name: 'Google',
-      label: 'Sign in with Google',
+      label: 'Sign in with Google (if you have linked your account)',
       className: 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-sm hover:shadow-md font-medium',
       disabled: isLoading !== null && isLoading !== SocialProvider.GOOGLE
     }
@@ -187,7 +176,7 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
                 shadow-sm hover:shadow-md"
             >
               <Mail className="w-5 h-5" />
-              <span>Sign up with Email</span>
+              <span>Sign in with Email & Password</span>
             </button>
           </>
         )}
@@ -214,12 +203,12 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
         </div>
       </div>
 
-      {/* Email Registration Modal */}
+      {/* Email Sign-In Modal */}
       {showEmailModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-gray-900">Create Account</h3>
+              <h3 className="text-xl font-semibold text-gray-900">Sign in with Email</h3>
               <button
                 onClick={() => setShowEmailModal(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -228,7 +217,7 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleEmailRegistration} className="space-y-4">
+            <form onSubmit={handleEmailSignIn} className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                   Email
@@ -245,21 +234,6 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
               </div>
 
               <div>
-                <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  id="displayName"
-                  value={emailForm.displayName}
-                  onChange={(e) => setEmailForm({ ...emailForm, displayName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your full name"
-                  required
-                />
-              </div>
-
-              <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                   Password
                 </label>
@@ -269,38 +243,23 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
                   value={emailForm.password}
                   onChange={(e) => setEmailForm({ ...emailForm, password: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Create a password"
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  value={emailForm.confirmPassword}
-                  onChange={(e) => setEmailForm({ ...emailForm, confirmPassword: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Confirm your password"
+                  placeholder="Enter your password"
                   required
                 />
               </div>
 
               <button
                 type="submit"
-                disabled={isCreatingAccount}
+                disabled={isSigningIn}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isCreatingAccount ? (
+                {isSigningIn ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Creating Account...
+                    Signing in...
                   </>
                 ) : (
-                  'Create Account'
+                  'Sign in'
                 )}
               </button>
             </form>

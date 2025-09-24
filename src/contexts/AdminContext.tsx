@@ -598,13 +598,31 @@ export function AdminProvider({ children }: AdminProviderProps) {
     }
   };
 
-  // System operations
+  // System operations - Optimized with batch loading
   const refreshDashboardStats = async (): Promise<void> => {
     try {
-      const stats = await adminService.getDashboardStats();
-      dispatch({ type: 'SET_DASHBOARD_STATS', payload: stats });
+      // Use batch function for better performance
+      const batchData = await adminService.getBatchDashboardData();
+      if (batchData.success) {
+        dispatch({ type: 'SET_DASHBOARD_STATS', payload: batchData.dashboardStats });
+        dispatch({ type: 'SET_SYSTEM_HEALTH', payload: batchData.systemHealth });
+        dispatch({ type: 'SET_AUDIT_LOGS', payload: batchData.auditLogs });
+      }
     } catch (error) {
-      console.error('Failed to refresh dashboard stats:', error);
+      console.error('Failed to refresh dashboard data:', error);
+      // Fallback to individual calls if batch fails
+      try {
+        const [stats, health, logs] = await Promise.all([
+          adminService.getDashboardStats(),
+          adminService.getSystemHealth(),
+          adminService.getAuditLogs()
+        ]);
+        dispatch({ type: 'SET_DASHBOARD_STATS', payload: stats });
+        dispatch({ type: 'SET_SYSTEM_HEALTH', payload: health });
+        dispatch({ type: 'SET_AUDIT_LOGS', payload: logs });
+      } catch (fallbackError) {
+        console.error('Fallback dashboard refresh failed:', fallbackError);
+      }
     }
   };
 

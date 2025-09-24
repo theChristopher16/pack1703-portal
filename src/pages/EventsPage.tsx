@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, List, Filter, Download, Share2 } from 'lucide-react';
 // Removed unused imports - RSVP counting now uses Cloud Functions
@@ -38,6 +38,8 @@ interface Event {
   }>;
 }
 
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 const EventsPage: React.FC = () => {
   const navigate = useNavigate();
   const { state: adminState, hasRole } = useAdmin();
@@ -49,6 +51,9 @@ const EventsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [usingFallbackData, setUsingFallbackData] = useState(false);
   
+  // Cache for RSVP counts to avoid repeated API calls
+  const [rsvpCountCache, setRsvpCountCache] = useState<{ [eventId: string]: { count: number; timestamp: number } }>({});
+  
   // Admin RSVP viewer state
   const [showRSVPViewer, setShowRSVPViewer] = useState(false);
   const [selectedEventForRSVP, setSelectedEventForRSVP] = useState<Event | null>(null);
@@ -56,6 +61,19 @@ const EventsPage: React.FC = () => {
   // Check if user has admin permissions
   const isAdmin = hasRole('root') || hasRole('super-admin') || 
                   adminState.currentUser?.isAdmin;
+
+  // Helper function to check if cache is valid
+  const isCacheValid = useCallback((eventId: string): boolean => {
+    const cached = rsvpCountCache[eventId];
+    if (!cached) return false;
+    return (Date.now() - cached.timestamp) < CACHE_DURATION;
+  }, [rsvpCountCache]);
+
+  // Helper function to get cached RSVP count
+  const getCachedRSVPCount = useCallback((eventId: string): number | null => {
+    const cached = rsvpCountCache[eventId];
+    return cached && isCacheValid(eventId) ? cached.count : null;
+  }, [rsvpCountCache, isCacheValid]);
 
   // Load events from Firebase
   useEffect(() => {
@@ -68,52 +86,91 @@ const EventsPage: React.FC = () => {
         // Load real events from Firebase
         const firebaseEvents = await firestoreService.getEvents();
         
-        // Transform Firebase data to match our interface and load RSVP counts
-        const transformedEvents: Event[] = await Promise.all(firebaseEvents.map(async (firebaseEvent: any) => {
-          // Get actual RSVP count for this event using Cloud Function
-          let rsvpCount = 0;
+        // Get RSVP counts with caching
+        let rsvpCounts: { [eventId: string]: number } = {};
+        
+        // Check cache first and collect event IDs that need fresh data
+        const eventIdsToFetch: string[] = [];
+        firebaseEvents.forEach((event: any) => {
+          const cachedCount = getCachedRSVPCount(event.id);
+          if (cachedCount !== null) {
+            rsvpCounts[event.id] = cachedCount;
+          } else {
+            eventIdsToFetch.push(event.id);
+          }
+        });
+        
+        // Fetch RSVP counts for events not in cache
+        if (eventIdsToFetch.length > 0) {
           try {
             const { getFunctions, httpsCallable } = await import('firebase/functions');
             const functions = getFunctions();
-            const getRSVPCount = httpsCallable(functions, 'getRSVPCount');
+            const getBatchRSVPCounts = httpsCallable(functions, 'getBatchRSVPCounts');
             
-            const result = await getRSVPCount({ eventId: firebaseEvent.id });
+            const result = await getBatchRSVPCounts({ eventIds: eventIdsToFetch });
             const data = result.data as any;
             if (data.success) {
-              rsvpCount = data.rsvpCount;
-            } else {
-              // Fallback to the stored count if available
-              rsvpCount = firebaseEvent.currentRSVPs || 0;
+              // Update cache with fresh data
+              const newCacheEntries: { [eventId: string]: { count: number; timestamp: number } } = {};
+              Object.entries(data.rsvpCounts).forEach(([eventId, count]) => {
+                rsvpCounts[eventId] = count as number;
+                newCacheEntries[eventId] = { count: count as number, timestamp: Date.now() };
+              });
+              
+              setRsvpCountCache(prev => ({ ...prev, ...newCacheEntries }));
             }
           } catch (error) {
-            console.warn(`Failed to load RSVP count for event ${firebaseEvent.id}:`, error);
-            // Fallback to the stored count if available
-            rsvpCount = firebaseEvent.currentRSVPs || 0;
+            console.warn('Failed to load batch RSVP counts:', error);
+            // Fallback to individual counts if batch fails
+            for (const eventId of eventIdsToFetch) {
+              try {
+                const { getFunctions, httpsCallable } = await import('firebase/functions');
+                const functions = getFunctions();
+                const getRSVPCount = httpsCallable(functions, 'getRSVPCount');
+                
+                const result = await getRSVPCount({ eventId });
+                const data = result.data as any;
+                if (data.success) {
+                  rsvpCounts[eventId] = data.rsvpCount;
+                  // Update cache
+                  setRsvpCountCache(prev => ({
+                    ...prev,
+                    [eventId]: { count: data.rsvpCount, timestamp: Date.now() }
+                  }));
+                } else {
+                  rsvpCounts[eventId] = firebaseEvents.find(e => e.id === eventId)?.currentRSVPs || 0;
+                }
+              } catch (error) {
+                console.warn(`Failed to load RSVP count for event ${eventId}:`, error);
+                rsvpCounts[eventId] = firebaseEvents.find(e => e.id === eventId)?.currentRSVPs || 0;
+              }
+            }
           }
+        }
 
-          return {
-            id: firebaseEvent.id,
-            title: firebaseEvent.title,
-            date: firebaseEvent.startDate?.toDate?.()?.toISOString()?.split('T')[0] || firebaseEvent.startDate,
-            startTime: firebaseEvent.startTime || '00:00',
-            endTime: firebaseEvent.endTime || '00:00',
-            location: {
-              name: firebaseEvent.locationName || firebaseEvent.location || 'TBD',
-              address: firebaseEvent.address || 'Address TBD',
-              coordinates: firebaseEvent.coordinates || undefined
-            },
-            category: firebaseEvent.category || 'pack-wide',
-            denTags: firebaseEvent.denTags || [],
-            maxCapacity: firebaseEvent.maxCapacity || null,
-            currentRSVPs: rsvpCount,
-            description: firebaseEvent.description || '',
-            packingList: firebaseEvent.packingList || [],
-            fees: firebaseEvent.fees || null,
-            contactEmail: firebaseEvent.contactEmail || 'cubmaster@sfpack1703.com',
-            isOvernight: firebaseEvent.isOvernight || false,
-            requiresPermission: firebaseEvent.requiresPermission || false,
-            attachments: firebaseEvent.attachments || []
-          };
+        // Transform Firebase data to match our interface
+        const transformedEvents: Event[] = firebaseEvents.map((firebaseEvent: any) => ({
+          id: firebaseEvent.id,
+          title: firebaseEvent.title,
+          date: firebaseEvent.startDate?.toDate?.()?.toISOString()?.split('T')[0] || firebaseEvent.startDate,
+          startTime: firebaseEvent.startTime || '00:00',
+          endTime: firebaseEvent.endTime || '00:00',
+          location: {
+            name: firebaseEvent.locationName || firebaseEvent.location || 'TBD',
+            address: firebaseEvent.address || 'Address TBD',
+            coordinates: firebaseEvent.coordinates || undefined
+          },
+          category: firebaseEvent.category || 'pack-wide',
+          denTags: firebaseEvent.denTags || [],
+          maxCapacity: firebaseEvent.maxCapacity || null,
+          currentRSVPs: rsvpCounts[firebaseEvent.id] || firebaseEvent.currentRSVPs || 0,
+          description: firebaseEvent.description || '',
+          packingList: firebaseEvent.packingList || [],
+          fees: firebaseEvent.fees || null,
+          contactEmail: firebaseEvent.contactEmail || 'cubmaster@sfpack1703.com',
+          isOvernight: firebaseEvent.isOvernight || false,
+          requiresPermission: firebaseEvent.requiresPermission || false,
+          attachments: firebaseEvent.attachments || []
         }));
         
         setEvents(transformedEvents);
@@ -138,7 +195,7 @@ const EventsPage: React.FC = () => {
     };
     
     loadEvents();
-  }, []);
+  }, [getCachedRSVPCount]);
 
   const handleFiltersChange = (filters: EventFiltersType) => {
     let filtered = events;

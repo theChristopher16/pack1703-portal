@@ -63,6 +63,7 @@ export const adminFunctions = {
   getDashboardStats: httpsCallable(functions, 'adminGetDashboardStats'),
   getAuditLogs: httpsCallable(functions, 'adminGetAuditLogs'),
   getSystemHealth: httpsCallable(functions, 'adminGetSystemHealth'),
+  getBatchDashboardData: httpsCallable(functions, 'getBatchDashboardData'),
 };
 
 // Admin service class
@@ -643,6 +644,25 @@ export class AdminService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return { success: false, error: errorMessage };
+    }
+  }
+
+  // System operations - Optimized batch method
+  async getBatchDashboardData(): Promise<{ success: boolean; dashboardStats?: any; systemHealth?: any; auditLogs?: any[]; error?: string }> {
+    try {
+      const result = await adminFunctions.getBatchDashboardData({});
+      return {
+        success: true,
+        dashboardStats: result.data.dashboardStats,
+        systemHealth: result.data.systemHealth,
+        auditLogs: result.data.auditLogs
+      };
+    } catch (error) {
+      console.error('Failed to get batch dashboard data:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
   }
 

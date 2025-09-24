@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   UserPlus, 
   CheckCircle, 
@@ -15,18 +15,28 @@ import {
 import { accountRequestService, AccountRequest } from '../../services/accountRequestService';
 import { useAdmin } from '../../contexts/AdminContext';
 
+const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes cache for account requests
+
 const AccountRequestsManager: React.FC = () => {
   const { addNotification } = useAdmin();
   const [requests, setRequests] = useState<AccountRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
 
-  useEffect(() => {
-    loadRequests();
-  }, []);
+  // Check if cache is still valid
+  const isCacheValid = useCallback((): boolean => {
+    return (Date.now() - lastFetchTime) < CACHE_DURATION;
+  }, [lastFetchTime]);
 
-  const loadRequests = async () => {
+  const loadRequests = useCallback(async (forceRefresh: boolean = false) => {
+    // Use cache if available and not forcing refresh
+    if (!forceRefresh && requests.length > 0 && isCacheValid()) {
+      console.log('Using cached account requests data');
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
@@ -35,6 +45,7 @@ const AccountRequestsManager: React.FC = () => {
       
       if (result.success) {
         setRequests(result.requests || []);
+        setLastFetchTime(Date.now());
       } else {
         setError(result.message);
         addNotification('error', 'Error', result.message);
@@ -45,7 +56,11 @@ const AccountRequestsManager: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [requests.length, isCacheValid, addNotification]);
+
+  useEffect(() => {
+    loadRequests();
+  }, [loadRequests]);
 
   const handleApprove = async (requestId: string, role: string = 'parent') => {
     try {
@@ -137,7 +152,7 @@ const AccountRequestsManager: React.FC = () => {
         </div>
         
         <button
-          onClick={loadRequests}
+          onClick={() => loadRequests(true)}
           className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
           disabled={isLoading}
         >

@@ -45,6 +45,10 @@ const AdminUsers: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
   const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Cache for users data
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   // Form state for editing user
   const [editForm, setEditForm] = useState({
@@ -65,7 +69,18 @@ const AdminUsers: React.FC = () => {
     'Pack Leadership', 'Committee', 'Volunteer'
   ];
 
-  const loadUsers = useCallback(async () => {
+  // Check if cache is still valid
+  const isCacheValid = useCallback((): boolean => {
+    return (Date.now() - lastFetchTime) < CACHE_DURATION;
+  }, [lastFetchTime]);
+
+  const loadUsers = useCallback(async (forceRefresh: boolean = false) => {
+    // Use cache if available and not forcing refresh
+    if (!forceRefresh && users.length > 0 && isCacheValid()) {
+      console.log('Using cached users data');
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
@@ -73,53 +88,59 @@ const AdminUsers: React.FC = () => {
       // Get all users from auth service
       const usersData = await authService.getUsers();
       
-      // Transform users to include hierarchical structure
-      const usersWithChildren = buildUserHierarchy(usersData);
+      // Transform users to include hierarchical structure (optimized)
+      const usersWithChildren = buildUserHierarchyOptimized(usersData);
       
       setUsers(usersWithChildren);
+      setLastFetchTime(Date.now());
     } catch (error: any) {
       setError(error.message);
       await addNotification('error', 'Error', 'Failed to load users');
     } finally {
       setIsLoading(false);
     }
-  }, [addNotification]);
+  }, [users.length, isCacheValid, addNotification]);
 
-  const buildUserHierarchy = (users: AppUser[]): UserWithChildren[] => {
+  const buildUserHierarchyOptimized = (users: AppUser[]): UserWithChildren[] => {
     const userMap = new Map<string, UserWithChildren>();
     const rootUsers: UserWithChildren[] = [];
+    const denGroups = new Map<string, UserWithChildren[]>();
 
-    // First pass: create user map
+    // First pass: create user map and group by den for faster parent lookup
     users.forEach(user => {
-      userMap.set(user.uid, { ...user, children: [] });
+      const userWithChildren = { ...user, children: [] };
+      userMap.set(user.uid, userWithChildren);
+      
+      // Group by den for faster parent-child matching
+      if (user.profile?.den) {
+        if (!denGroups.has(user.profile.den)) {
+          denGroups.set(user.profile.den, []);
+        }
+        denGroups.get(user.profile.den)!.push(userWithChildren);
+      }
     });
 
-    // Second pass: build hierarchy
+    // Second pass: build hierarchy with optimized parent lookup
     users.forEach(user => {
       const userWithChildren = userMap.get(user.uid)!;
       
-      // Check if this user has a parent (based on profile or other logic)
-      // For now, we'll assume users with 'scout' in their role are children
+      // Check if this user is a child (has scout rank and den)
       const isChild = user.role === UserRole.PARENT && 
                      user.profile?.den && 
                      user.profile.scoutRank;
       
       if (isChild) {
-        // Find potential parent (adult with same den or role)
-        const potentialParent = users.find(u => 
+        // Find potential parent using den groups for faster lookup
+        const denUsers = denGroups.get(user.profile.den) || [];
+        const potentialParent = denUsers.find(u => 
           u.uid !== user.uid && 
-          (u.profile?.den === user.profile?.den || 
-           u.role === UserRole.VOLUNTEER ||
-           u.role === UserRole.ADMIN)
+          (u.role === UserRole.VOLUNTEER || u.role === UserRole.ADMIN)
         );
         
         if (potentialParent) {
-          const parent = userMap.get(potentialParent.uid);
-          if (parent) {
-            parent.children = parent.children || [];
-            parent.children.push(userWithChildren);
-            userWithChildren.parentId = potentialParent.uid;
-          }
+          potentialParent.children = potentialParent.children || [];
+          potentialParent.children.push(userWithChildren);
+          userWithChildren.parentId = potentialParent.uid;
         } else {
           rootUsers.push(userWithChildren);
         }

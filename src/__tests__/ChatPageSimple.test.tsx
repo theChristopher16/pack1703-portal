@@ -80,7 +80,21 @@ describe('ChatPageSimple', () => {
         setSelectedChannel: jest.fn(),
         setNewMessage: jest.fn(),
         toggleExpandedDen: jest.fn(),
-        // Add other actions as needed
+        setIsLoading: jest.fn(),
+        setError: jest.fn(),
+        setIsConnected: jest.fn(),
+        setMessages: jest.fn(),
+        addMessage: jest.fn(),
+        setChannels: jest.fn(),
+        setUsers: jest.fn(),
+        setIsSidebarOpen: jest.fn(),
+        setIsAtBottom: jest.fn(),
+        setHasNewMessages: jest.fn(),
+        setIsUploading: jest.fn(),
+        setUploadedImages: jest.fn(),
+        setShowGifPicker: jest.fn(),
+        setShowReactionPicker: jest.fn(),
+        resetState: jest.fn()
       }
     } as any);
   });

@@ -606,7 +606,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
       if (batchData.success) {
         dispatch({ type: 'SET_DASHBOARD_STATS', payload: batchData.dashboardStats });
         dispatch({ type: 'SET_SYSTEM_HEALTH', payload: batchData.systemHealth });
-        dispatch({ type: 'SET_AUDIT_LOGS', payload: batchData.auditLogs });
+        dispatch({ type: 'SET_AUDIT_LOGS', payload: batchData.auditLogs || [] });
       }
     } catch (error) {
       console.error('Failed to refresh dashboard data:', error);

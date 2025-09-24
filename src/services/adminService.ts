@@ -653,9 +653,9 @@ export class AdminService {
       const result = await adminFunctions.getBatchDashboardData({});
       return {
         success: true,
-        dashboardStats: result.data.dashboardStats,
-        systemHealth: result.data.systemHealth,
-        auditLogs: result.data.auditLogs
+        dashboardStats: (result.data as any).dashboardStats,
+        systemHealth: (result.data as any).systemHealth,
+        auditLogs: (result.data as any).auditLogs
       };
     } catch (error) {
       console.error('Failed to get batch dashboard data:', error);

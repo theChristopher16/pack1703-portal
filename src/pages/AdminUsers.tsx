@@ -131,7 +131,7 @@ const AdminUsers: React.FC = () => {
       
       if (isChild) {
         // Find potential parent using den groups for faster lookup
-        const denUsers = denGroups.get(user.profile.den) || [];
+        const denUsers = denGroups.get(user.profile?.den || '') || [];
         const potentialParent = denUsers.find(u => 
           u.uid !== user.uid && 
           (u.role === UserRole.VOLUNTEER || u.role === UserRole.ADMIN)

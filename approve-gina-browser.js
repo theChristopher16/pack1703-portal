@@ -10,6 +10,13 @@ async function approveGinaMessa() {
   try {
     console.log('Starting Gina Messa approval process...');
     
+    // Check if Firebase is available
+    if (typeof firebase === 'undefined') {
+      console.log('❌ Firebase not found. Make sure you\'re on the Pack 1703 Portal page.');
+      console.log('Try refreshing the page and running this script again.');
+      return;
+    }
+    
     // Get the Firebase functions
     const functions = firebase.functions();
     
@@ -66,22 +73,69 @@ async function approveGinaMessa() {
   }
 }
 
+// Alternative function to create Gina manually if approval doesn't work
+async function createGinaManually() {
+  try {
+    console.log('Creating Gina Messa manually...');
+    
+    // Check if Firebase is available
+    if (typeof firebase === 'undefined') {
+      console.log('❌ Firebase not found. Make sure you\'re on the Pack 1703 Portal page.');
+      return;
+    }
+    
+    const functions = firebase.functions();
+    const createUser = functions.httpsCallable('createUserManually');
+    
+    const userData = {
+      email: 'gina_daigle@yahoo.com',
+      displayName: 'Gina Messa',
+      firstName: 'Gina',
+      lastName: 'Messa',
+      phone: '7133762589',
+      address: '5122 Rutherglenn Dr',
+      city: 'Houston',
+      state: 'TX',
+      zipCode: '77025',
+      den: 'Arrow of Light Den',
+      rank: 'Adult',
+      role: 'parent',
+      reasonForJoining: 'Info sharing between packs! I\'m with pack 34'
+    };
+    
+    const result = await createUser(userData);
+    console.log('✅ Gina Messa created manually:', result.data);
+    
+  } catch (error) {
+    console.error('Error creating Gina manually:', error);
+    console.log('Error details:', error.message);
+  }
+}
+
 // Instructions for running this script:
 console.log(`
 To approve Gina Messa's account request:
 
-1. Open the Pack 1703 Portal in your browser
+1. Make sure you're on the Pack 1703 Portal page (sfpack1703.com)
 2. Make sure you're logged in as an admin user
 3. Open the browser console (F12)
 4. Copy and paste this entire script
 5. Run: approveGinaMessa()
+
+If the approval doesn't work, try the manual creation:
+6. Run: createGinaManually()
 
 This will:
 - Find Gina's pending account request
 - Approve it using the fixed approveAccountRequest function
 - Create her user account in the users collection
 - Verify she appears in the approved users list
+
+If you get "Firebase not found" error:
+- Refresh the page and try again
+- Make sure you're on the correct domain (sfpack1703.com)
 `);
 
-// Export the function for use
+// Export the functions for use
 window.approveGinaMessa = approveGinaMessa;
+window.createGinaManually = createGinaManually;

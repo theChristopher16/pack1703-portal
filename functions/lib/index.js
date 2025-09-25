@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.helloWorld = exports.getBatchDashboardData = exports.rejectAccountRequest = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.adminUpdateUser = exports.getRSVPData = exports.deleteRSVP = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.submitRSVP = exports.adminCreateEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
+exports.helloWorld = exports.getBatchDashboardData = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.adminUpdateUser = exports.getRSVPData = exports.deleteRSVP = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.submitRSVP = exports.adminCreateEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 // Initialize Firebase Admin
@@ -915,6 +915,119 @@ exports.approveAccountRequest = functions.https.onCall(async (data, context) => 
             throw error;
         }
         throw new functions.https.HttpsError('internal', 'Failed to approve account request');
+    }
+});
+// CRITICAL: Create user account manually (admin only) - for fixing approval issues
+exports.createUserManually = functions.https.onCall(async (data, context) => {
+    var _a, _b, _c, _d, _e;
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        // Check if user has admin privileges
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError('permission-denied', 'User not found');
+        }
+        const userData = userDoc.data();
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
+        const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
+        if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
+            throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to create user accounts');
+        }
+        const { email, displayName, firstName, lastName, phone, address, city, state, zipCode, den, rank, role = 'parent', reasonForJoining } = data;
+        if (!email || !displayName) {
+            throw new functions.https.HttpsError('invalid-argument', 'Email and display name are required');
+        }
+        // Check if user already exists
+        const existingUsersSnapshot = await db.collection('users')
+            .where('email', '==', email)
+            .get();
+        if (!existingUsersSnapshot.empty) {
+            throw new functions.https.HttpsError('already-exists', 'User with this email already exists');
+        }
+        // Create user account
+        const newUserData = {
+            email: email,
+            displayName: displayName,
+            role: role,
+            permissions: getRolePermissions(role),
+            isActive: true,
+            status: 'approved',
+            createdAt: getTimestamp(),
+            updatedAt: getTimestamp(),
+            lastLoginAt: null,
+            profile: {
+                firstName: firstName || '',
+                lastName: lastName || '',
+                phone: phone || '',
+                address: address || '',
+                city: city || '',
+                state: state || '',
+                zipCode: zipCode || '',
+                emergencyContact: '',
+                emergencyPhone: '',
+                medicalInfo: '',
+                dietaryRestrictions: '',
+                specialNeeds: '',
+                den: den || '',
+                rank: rank || '',
+                patrol: '',
+                parentGuardian: '',
+                parentPhone: '',
+                parentEmail: ''
+            },
+            preferences: {
+                notifications: true,
+                emailUpdates: true,
+                smsUpdates: false,
+                language: 'en',
+                timezone: 'America/Los_Angeles'
+            },
+            authProvider: 'email',
+            emailVerified: false,
+            approvedBy: context.auth.uid,
+            approvedAt: getTimestamp(),
+            reasonForJoining: reasonForJoining || ''
+        };
+        // Create user document in Firestore
+        const userRef = db.collection('users').doc();
+        await userRef.set(newUserData);
+        // Log the manual creation
+        await db.collection('adminActions').add({
+            userId: context.auth.uid,
+            userEmail: context.auth.token.email || '',
+            action: 'manual_user_creation',
+            entityType: 'user',
+            entityId: userRef.id,
+            entityName: displayName,
+            details: {
+                email: email,
+                role: role,
+                reason: 'Manual creation due to approval process issue'
+            },
+            timestamp: getTimestamp(),
+            ipAddress: ((_c = context.rawRequest) === null || _c === void 0 ? void 0 : _c.ip) || 'unknown',
+            userAgent: ((_e = (_d = context.rawRequest) === null || _d === void 0 ? void 0 : _d.headers) === null || _e === void 0 ? void 0 : _e['user-agent']) || 'unknown',
+            success: true
+        });
+        return {
+            success: true,
+            message: 'User account created successfully',
+            userId: userRef.id,
+            email: email,
+            displayName: displayName,
+            role: role
+        };
+    }
+    catch (error) {
+        console.error('Error creating user manually:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to create user account');
     }
 });
 // CRITICAL: Reject account request (admin only)

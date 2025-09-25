@@ -836,9 +836,9 @@ export const getPendingAccountRequests = functions.https.onCall(async (data: any
     const lastDocId = data.lastDocId; // For cursor-based pagination
     const limit = Math.min(pageSize, 50); // Cap at 50 to prevent abuse
 
+    // Query without orderBy to avoid index requirement
     let query = db.collection('accountRequests')
       .where('status', '==', 'pending')
-      .orderBy('submittedAt', 'desc')
       .limit(limit);
 
     // Apply cursor-based pagination if lastDocId is provided
@@ -868,6 +868,13 @@ export const getPendingAccountRequests = functions.https.onCall(async (data: any
         submittedAt: data.submittedAt,
         createdAt: data.createdAt
       });
+    });
+
+    // Sort by submittedAt in descending order (most recent first)
+    requests.sort((a, b) => {
+      const aTime = a.submittedAt?.toDate ? a.submittedAt.toDate() : new Date(a.submittedAt || 0);
+      const bTime = b.submittedAt?.toDate ? b.submittedAt.toDate() : new Date(b.submittedAt || 0);
+      return bTime.getTime() - aTime.getTime();
     });
 
     // Get total count for pagination info (optimized query)

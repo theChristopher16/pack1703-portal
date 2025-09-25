@@ -1,0 +1,196 @@
+name: Create Gina Messa Account
+
+on:
+  workflow_dispatch: # This allows manual triggering from GitHub UI
+  push:
+    paths:
+      - 'create-gina-workflow.yml' # Trigger when this file is modified
+
+jobs:
+  create-gina-account:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        cd functions
+        npm install
+        
+    - name: Create Gina Messa Account
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+        FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      run: |
+        cd functions
+        node -e "
+        const admin = require('firebase-admin');
+        
+        // Initialize Firebase Admin with service account
+        const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+          projectId: process.env.FIREBASE_PROJECT_ID
+        });
+        
+        const db = admin.firestore();
+        
+        async function createGinaAccount() {
+          try {
+            console.log('Creating Gina Messa user account...');
+            
+            // Check if Gina already exists
+            const existingUsers = await db.collection('users')
+              .where('email', '==', 'gina_daigle@yahoo.com')
+              .get();
+              
+            if (!existingUsers.empty) {
+              console.log('✅ Gina already exists in users collection!');
+              existingUsers.docs.forEach(doc => {
+                const userData = doc.data();
+                console.log('User ID:', doc.id);
+                console.log('Email:', userData.email);
+                console.log('Display Name:', userData.displayName);
+                console.log('Role:', userData.role);
+                console.log('Status:', userData.status);
+              });
+              return;
+            }
+            
+            // Create Gina's user account
+            const userData = {
+              email: 'gina_daigle@yahoo.com',
+              displayName: 'Gina Messa',
+              role: 'parent',
+              permissions: [],
+              isActive: true,
+              status: 'approved',
+              createdAt: admin.firestore.Timestamp.now(),
+              updatedAt: admin.firestore.Timestamp.now(),
+              lastLoginAt: null,
+              profile: {
+                firstName: 'Gina',
+                lastName: 'Messa',
+                phone: '7133762589',
+                address: '5122 Rutherglenn Dr',
+                city: 'Houston',
+                state: 'TX',
+                zipCode: '77025',
+                emergencyContact: '',
+                emergencyPhone: '',
+                medicalInfo: '',
+                dietaryRestrictions: '',
+                specialNeeds: '',
+                den: 'Arrow of Light Den',
+                rank: 'Adult',
+                patrol: '',
+                parentGuardian: '',
+                parentPhone: '',
+                parentEmail: ''
+              },
+              preferences: {
+                notifications: true,
+                emailUpdates: true,
+                smsUpdates: false,
+                language: 'en',
+                timezone: 'America/Chicago'
+              },
+              authProvider: 'email',
+              emailVerified: false,
+              approvedBy: 'github-actions',
+              approvedAt: admin.firestore.Timestamp.now(),
+              reasonForJoining: 'Info sharing between packs! I am with pack 34'
+            };
+            
+            // Create user document
+            const userRef = await db.collection('users').add(userData);
+            console.log('✅ Gina\'s user account created successfully!');
+            console.log('User ID:', userRef.id);
+            console.log('Email:', userData.email);
+            console.log('Display Name:', userData.displayName);
+            console.log('Role:', userData.role);
+            
+            // Log the creation
+            await db.collection('adminActions').add({
+              userId: 'github-actions',
+              userEmail: 'github-actions@pack1703.com',
+              action: 'manual_user_creation',
+              entityType: 'user',
+              entityId: userRef.id,
+              entityName: 'Gina Messa',
+              details: {
+                email: 'gina_daigle@yahoo.com',
+                role: 'parent',
+                reason: 'Manual creation via GitHub Actions'
+              },
+              timestamp: admin.firestore.Timestamp.now(),
+              ipAddress: 'github-actions',
+              userAgent: 'github-actions-workflow',
+              success: true
+            });
+            
+            console.log('🎉 Gina Messa has been successfully added to the users collection!');
+            console.log('She should now appear in the approved users list.');
+            
+          } catch (error) {
+            console.error('Error creating Gina\'s account:', error);
+            process.exit(1);
+          }
+        }
+        
+        createGinaAccount();
+        "
+        
+    - name: Verify Account Creation
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+        FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      run: |
+        cd functions
+        node -e "
+        const admin = require('firebase-admin');
+        
+        const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+          projectId: process.env.FIREBASE_PROJECT_ID
+        });
+        
+        const db = admin.firestore();
+        
+        async function verifyAccount() {
+          try {
+            const users = await db.collection('users')
+              .where('email', '==', 'gina_daigle@yahoo.com')
+              .get();
+              
+            if (users.empty) {
+              console.log('❌ Gina Messa not found in users collection');
+              process.exit(1);
+            } else {
+              console.log('✅ Gina Messa found in users collection!');
+              users.docs.forEach(doc => {
+                const userData = doc.data();
+                console.log('User ID:', doc.id);
+                console.log('Email:', userData.email);
+                console.log('Display Name:', userData.displayName);
+                console.log('Role:', userData.role);
+                console.log('Status:', userData.status);
+              });
+            }
+          } catch (error) {
+            console.error('Error verifying account:', error);
+            process.exit(1);
+          }
+        }
+        
+        verifyAccount();
+        "

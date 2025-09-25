@@ -1,25 +1,117 @@
 /**
  * Test script to approve Gina Messa's account request
- * This script will call the approveAccountRequest Cloud Function
+ * This script works with Firebase v9+ modular SDK
  */
 
-// This is a simple test script that you can run from the browser console
-// when you're logged in as an admin user
+// This script works with the Firebase v9+ modular SDK used in your app
 
 async function approveGinaMessa() {
   try {
     console.log('Starting Gina Messa approval process...');
     
-    // Check if Firebase is available
+    // Check if Firebase is available in the global scope
     if (typeof firebase === 'undefined') {
-      console.log('❌ Firebase not found. Make sure you\'re on the Pack 1703 Portal page.');
-      console.log('Try refreshing the page and running this script again.');
+      console.log('❌ Legacy Firebase not found. Trying to access Firebase from window...');
+      
+      // Try to access Firebase from the window object or React app
+      if (window.firebase) {
+        console.log('✅ Found Firebase on window object');
+        var firebaseApp = window.firebase;
+      } else {
+        console.log('❌ Firebase not found on window object either.');
+        console.log('This app uses Firebase v9+ modular SDK.');
+        console.log('Let me try a different approach...');
+        
+        // Try to access the Firebase functions directly from the app
+        try {
+          // Check if we can access the functions from the app's context
+          const appElement = document.querySelector('[data-firebase-app]');
+          if (appElement) {
+            console.log('Found Firebase app element');
+          }
+          
+          // Try to use the existing Firebase instance
+          console.log('Attempting to use existing Firebase instance...');
+          
+          // Import Firebase modules dynamically
+          const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js');
+          const { getApp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+          
+          const app = getApp();
+          const functions = getFunctions(app, 'us-central1');
+          
+          console.log('✅ Successfully imported Firebase modules');
+          
+          // Now proceed with the approval
+          await approveWithModularSDK(functions);
+          return;
+          
+        } catch (importError) {
+          console.error('❌ Failed to import Firebase modules:', importError);
+          console.log('Please try refreshing the page and running this script again.');
+          return;
+        }
+      }
+    } else {
+      console.log('✅ Found legacy Firebase');
+      var firebaseApp = firebase;
+    }
+    
+    // Use legacy Firebase if available
+    if (firebaseApp) {
+      const functions = firebaseApp.functions();
+      await approveWithLegacySDK(functions);
+    }
+    
+  } catch (error) {
+    console.error('Error:', error);
+    console.log('Error details:', error.message);
+  }
+}
+
+async function approveWithModularSDK(functions) {
+  try {
+    const { httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js');
+    
+    // First, get pending account requests
+    console.log('Getting pending account requests...');
+    const getPendingRequests = httpsCallable(functions, 'getPendingAccountRequests');
+    const requestsResult = await getPendingRequests({ pageSize: 50 });
+    
+    console.log('Pending requests:', requestsResult.data);
+    
+    // Find Gina's request
+    const ginaRequest = requestsResult.data.requests.find(req => 
+      req.email === 'gina_daigle@yahoo.com' || 
+      req.displayName === 'Gina Messa'
+    );
+    
+    if (!ginaRequest) {
+      console.log('❌ Gina Messa\'s request not found in pending requests');
+      console.log('Available requests:', requestsResult.data.requests.map(r => ({ id: r.id, email: r.email, displayName: r.displayName })));
       return;
     }
     
-    // Get the Firebase functions
-    const functions = firebase.functions();
+    console.log('Found Gina\'s request:', ginaRequest);
     
+    // Approve the request
+    console.log('Approving Gina Messa\'s request...');
+    const approveRequest = httpsCallable(functions, 'approveAccountRequest');
+    const approveResult = await approveRequest({
+      requestId: ginaRequest.id,
+      role: 'parent'
+    });
+    
+    console.log('✅ Success!', approveResult.data);
+    console.log('Gina Messa has been approved and her user account created!');
+    
+  } catch (error) {
+    console.error('Error with modular SDK:', error);
+  }
+}
+
+async function approveWithLegacySDK(functions) {
+  try {
     // First, get pending account requests
     console.log('Getting pending account requests...');
     const getPendingRequests = functions.httpsCallable('getPendingAccountRequests');
@@ -52,24 +144,8 @@ async function approveGinaMessa() {
     console.log('✅ Success!', approveResult.data);
     console.log('Gina Messa has been approved and her user account created!');
     
-    // Verify she's now in the users collection
-    console.log('Verifying user creation...');
-    const getUsers = functions.httpsCallable('getBatchDashboardData');
-    const usersResult = await getUsers({});
-    
-    const ginaUser = usersResult.data.users.find(user => 
-      user.email === 'gina_daigle@yahoo.com'
-    );
-    
-    if (ginaUser) {
-      console.log('✅ Gina Messa found in users collection:', ginaUser);
-    } else {
-      console.log('❌ Gina Messa not found in users collection');
-    }
-    
   } catch (error) {
-    console.error('Error:', error);
-    console.log('Error details:', error.message);
+    console.error('Error with legacy SDK:', error);
   }
 }
 

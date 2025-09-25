@@ -674,12 +674,24 @@ export const adminUpdateUser = functions.https.onCall(async (data: any, context:
 
     // Update Firebase Auth custom claims if role is being changed
     if (updates.role !== undefined) {
-      await admin.auth().setCustomUserClaims(userId, {
-        approved: true,
-        role: updates.role
-      });
+      try {
+        // Try to set custom claims in Firebase Auth
+        await admin.auth().setCustomUserClaims(userId, {
+          approved: true,
+          role: updates.role
+        });
+        console.log(`Successfully updated Firebase Auth claims for user ${userId}`);
+      } catch (authError: any) {
+        // If user doesn't exist in Firebase Auth, just log and continue
+        if (authError.code === 'auth/user-not-found') {
+          console.log(`User ${userId} not found in Firebase Auth, skipping custom claims update`);
+        } else {
+          console.error('Error updating Firebase Auth claims:', authError);
+          throw authError;
+        }
+      }
       
-      // Also update the role in Firestore
+      // Always update the role in Firestore
       await db.collection('users').doc(userId).update({
         role: updates.role,
         permissions: updates.permissions || [],

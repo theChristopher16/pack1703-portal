@@ -1683,8 +1683,9 @@ class AuthService {
           profile: doc.data().profile || {}
         }))
         .filter(user => {
-          // Only show users who are approved or don't have a status (existing users)
-          return !user.status || user.status === 'approved';
+          // Show all users - let the UI handle filtering
+          // Only hide users who are explicitly denied
+          return user.status !== 'denied' && user.status !== 'rejected';
         });
     } catch (error: any) {
       console.error('Error getting users:', error);

@@ -77,11 +77,8 @@ const AdminUsers: React.FC = () => {
   }, [lastFetchTime]);
 
   const loadUsers = useCallback(async (forceRefresh: boolean = false) => {
-    // Use cache if available and not forcing refresh
-    if (!forceRefresh && users.length > 0 && isCacheValid()) {
-      console.log('Using cached users data');
-      return;
-    }
+    // Always fetch fresh data (cache disabled)
+    console.log('Loading fresh users data (cache disabled)');
 
     try {
       setIsLoading(true);
@@ -101,7 +98,7 @@ const AdminUsers: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [users.length, isCacheValid, addNotification]);
+  }, [addNotification]);
 
   const buildUserHierarchyOptimized = (users: AppUser[]): UserWithChildren[] => {
     const userMap = new Map<string, UserWithChildren>();
@@ -182,7 +179,7 @@ const AdminUsers: React.FC = () => {
 
   useEffect(() => {
     loadUsers();
-  }, [loadUsers]);
+  }, []); // Only run once on mount
 
   useEffect(() => {
     filterUsers();

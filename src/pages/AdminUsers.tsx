@@ -72,7 +72,8 @@ const AdminUsers: React.FC = () => {
 
   // Check if cache is still valid
   const isCacheValid = useCallback((): boolean => {
-    return (Date.now() - lastFetchTime) < CACHE_DURATION;
+    // Always invalidate cache to ensure fresh data
+    return false;
   }, [lastFetchTime]);
 
   const loadUsers = useCallback(async (forceRefresh: boolean = false) => {

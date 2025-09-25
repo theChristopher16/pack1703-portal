@@ -74,7 +74,7 @@ const AdminUsers: React.FC = () => {
   const isCacheValid = useCallback((): boolean => {
     // Always invalidate cache to ensure fresh data
     return false;
-  }, [lastFetchTime]);
+  }, []);
 
   const loadUsers = useCallback(async (forceRefresh: boolean = false) => {
     // Always fetch fresh data (cache disabled)

@@ -19,6 +19,24 @@ function getTimestamp(): any {
   }
 }
 
+// Helper function to get role permissions
+function getRolePermissions(role: string): string[] {
+  switch (role) {
+    case 'root':
+      return ['system_admin', 'user_management', 'event_management', 'pack_management', 'location_management', 'announcement_management', 'audit_logs'];
+    case 'admin':
+      return ['user_management', 'event_management', 'pack_management', 'location_management', 'announcement_management'];
+    case 'leader':
+    case 'den_leader':
+      return ['event_management', 'pack_management', 'announcement_management'];
+    case 'volunteer':
+      return ['event_management'];
+    case 'parent':
+    default:
+      return [];
+  }
+}
+
 // CRITICAL: Disable App Check enforcement function
 export const disableAppCheckEnforcement = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   try {
@@ -947,13 +965,62 @@ export const approveAccountRequest = functions.https.onCall(async (data: any, co
       throw new functions.https.HttpsError('failed-precondition', 'Request is not pending');
     }
 
+    // Create user account in Firestore
+    const newUserData = {
+      email: requestData.email,
+      displayName: requestData.displayName,
+      role: role,
+      permissions: getRolePermissions(role),
+      isActive: true,
+      status: 'approved',
+      createdAt: getTimestamp(),
+      updatedAt: getTimestamp(),
+      lastLoginAt: null,
+      profile: {
+        firstName: requestData.firstName || '',
+        lastName: requestData.lastName || '',
+        phone: requestData.phone || '',
+        address: requestData.address || '',
+        city: requestData.city || '',
+        state: requestData.state || '',
+        zipCode: requestData.zipCode || '',
+        emergencyContact: requestData.emergencyContact || '',
+        emergencyPhone: requestData.emergencyPhone || '',
+        medicalInfo: requestData.medicalInfo || '',
+        dietaryRestrictions: requestData.dietaryRestrictions || '',
+        specialNeeds: requestData.specialNeeds || '',
+        den: requestData.den || '',
+        rank: requestData.rank || '',
+        patrol: requestData.patrol || '',
+        parentGuardian: requestData.parentGuardian || '',
+        parentPhone: requestData.parentPhone || '',
+        parentEmail: requestData.parentEmail || ''
+      },
+      preferences: {
+        notifications: true,
+        emailUpdates: true,
+        smsUpdates: false,
+        language: 'en',
+        timezone: 'America/Los_Angeles'
+      },
+      authProvider: 'email',
+      emailVerified: false,
+      approvedBy: context.auth.uid,
+      approvedAt: getTimestamp()
+    };
+
+    // Create user document in Firestore
+    const userRef = db.collection('users').doc();
+    await userRef.set(newUserData);
+
     // Update request status
     await requestRef.update({
       status: 'approved',
       approvedBy: context.auth.uid,
       approvedAt: getTimestamp(),
       approvedRole: role,
-      updatedAt: getTimestamp()
+      updatedAt: getTimestamp(),
+      userId: userRef.id // Link to the created user
     });
 
     // Log the approval
@@ -966,7 +1033,8 @@ export const approveAccountRequest = functions.https.onCall(async (data: any, co
       entityName: requestData.displayName,
       details: {
         email: requestData.email,
-        approvedRole: role
+        approvedRole: role,
+        createdUserId: userRef.id
       },
       timestamp: getTimestamp(),
       ipAddress: context.rawRequest?.ip || 'unknown',
@@ -976,7 +1044,8 @@ export const approveAccountRequest = functions.https.onCall(async (data: any, co
 
     return {
       success: true,
-      message: 'Account request approved successfully'
+      message: 'Account request approved and user account created successfully',
+      userId: userRef.id
     };
 
   } catch (error) {

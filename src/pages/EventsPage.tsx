@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, List, Filter, Download, Share2 } from 'lucide-react';
 // Removed unused imports - RSVP counting now uses Cloud Functions
@@ -39,6 +39,8 @@ interface Event {
 }
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const EVENTS_PER_PAGE = 12; // Pagination limit
+const DEBOUNCE_DELAY = 300; // Debounce filter changes
 
 const EventsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -46,10 +48,14 @@ const EventsPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
-  // const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [usingFallbackData, setUsingFallbackData] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   
   // Cache for RSVP counts to avoid repeated API calls
   const [rsvpCountCache, setRsvpCountCache] = useState<{ [eventId: string]: { count: number; timestamp: number } }>({});
@@ -57,6 +63,19 @@ const EventsPage: React.FC = () => {
   // Admin RSVP viewer state
   const [showRSVPViewer, setShowRSVPViewer] = useState(false);
   const [selectedEventForRSVP, setSelectedEventForRSVP] = useState<Event | null>(null);
+  
+  // Debounced filter state
+  const [filters, setFilters] = useState<EventFiltersType>({
+    search: '',
+    categories: [],
+    denTags: [],
+    dateRange: { start: '', end: '' },
+    location: '',
+    capacity: { min: 0, max: 1000 },
+    timeOfDay: [],
+    isOvernight: null,
+    requiresPermission: null
+  });
   
   // Check if user has admin permissions
   const isAdmin = hasRole('root') || hasRole('super-admin') || 
@@ -75,78 +94,164 @@ const EventsPage: React.FC = () => {
     return cached && isCacheValid(eventId) ? cached.count : null;
   }, [rsvpCountCache, isCacheValid]);
 
-  // Load events from Firebase
+  // Optimized RSVP count fetching with batch processing
+  const fetchRSVPCounts = useCallback(async (eventIds: string[]): Promise<{ [eventId: string]: number }> => {
+    const rsvpCounts: { [eventId: string]: number } = {};
+    const eventIdsToFetch: string[] = [];
+
+    // Check cache first
+    eventIds.forEach(eventId => {
+      const cachedCount = getCachedRSVPCount(eventId);
+      if (cachedCount !== null) {
+        rsvpCounts[eventId] = cachedCount;
+      } else {
+        eventIdsToFetch.push(eventId);
+      }
+    });
+
+    // Fetch remaining counts in batch
+    if (eventIdsToFetch.length > 0) {
+      try {
+        const { getFunctions, httpsCallable } = await import('firebase/functions');
+        const functions = getFunctions();
+        const getBatchRSVPCounts = httpsCallable(functions, 'getBatchRSVPCounts');
+        
+        const result = await getBatchRSVPCounts({ eventIds: eventIdsToFetch });
+        const data = result.data as any;
+        
+        if (data.success) {
+          // Update cache with fresh data
+          const newCacheEntries: { [eventId: string]: { count: number; timestamp: number } } = {};
+          Object.entries(data.rsvpCounts).forEach(([eventId, count]) => {
+            rsvpCounts[eventId] = count as number;
+            newCacheEntries[eventId] = { count: count as number, timestamp: Date.now() };
+          });
+          
+          setRsvpCountCache(prev => ({ ...prev, ...newCacheEntries }));
+        }
+      } catch (error) {
+        console.warn('Failed to load batch RSVP counts:', error);
+        // Fallback to individual counts
+        for (const eventId of eventIdsToFetch) {
+          rsvpCounts[eventId] = 0; // Default fallback
+        }
+      }
+    }
+
+    return rsvpCounts;
+  }, [getCachedRSVPCount]);
+
+  // Memoized event filtering
+  const applyFilters = useCallback((eventsList: Event[], filterData: EventFiltersType): Event[] => {
+    let filtered = eventsList;
+    
+    // Apply search filter
+    if (filterData.search) {
+      const searchLower = filterData.search.toLowerCase();
+      filtered = filtered.filter(event => 
+        event.title.toLowerCase().includes(searchLower) ||
+        event.description.toLowerCase().includes(searchLower) ||
+        event.location.name.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Apply category filter
+    if (filterData.categories.length > 0) {
+      filtered = filtered.filter(event => filterData.categories.includes(event.category));
+    }
+    
+    // Apply den filter
+    if (filterData.denTags.length > 0) {
+      filtered = filtered.filter(event => 
+        event.denTags.some(tag => filterData.denTags.includes(tag))
+      );
+    }
+    
+    // Apply date range filter
+    if (filterData.dateRange.start) {
+      filtered = filtered.filter(event => new Date(event.date) >= new Date(filterData.dateRange.start));
+    }
+    if (filterData.dateRange.end) {
+      filtered = filtered.filter(event => new Date(event.date) <= new Date(filterData.dateRange.end));
+    }
+    
+    // Apply location filter
+    if (filterData.location) {
+      const locationLower = filterData.location.toLowerCase();
+      filtered = filtered.filter(event => 
+        event.location.name.toLowerCase().includes(locationLower) ||
+        event.location.address.toLowerCase().includes(locationLower)
+      );
+    }
+    
+    // Apply capacity filter
+    filtered = filtered.filter(event => 
+      event.currentRSVPs >= filterData.capacity.min && 
+      event.currentRSVPs <= filterData.capacity.max
+    );
+    
+    // Apply time of day filter
+    if (filterData.timeOfDay.length > 0) {
+      filtered = filtered.filter(event => {
+        const hour = parseInt(event.startTime.split(':')[0]);
+        if (filterData.timeOfDay.includes('morning') && hour >= 6 && hour < 12) return true;
+        if (filterData.timeOfDay.includes('afternoon') && hour >= 12 && hour < 18) return true;
+        if (filterData.timeOfDay.includes('evening') && hour >= 18 && hour < 24) return true;
+        if (filterData.timeOfDay.includes('overnight') && (hour >= 0 && hour < 6)) return true;
+        return false;
+      });
+    }
+    
+    // Apply overnight filter
+    if (filterData.isOvernight !== null) {
+      filtered = filtered.filter(event => event.isOvernight === filterData.isOvernight);
+    }
+    
+    // Apply permission filter
+    if (filterData.requiresPermission !== null) {
+      filtered = filtered.filter(event => event.requiresPermission === filterData.requiresPermission);
+    }
+    
+    return filtered;
+  }, []);
+
+  // Memoized pagination
+  const paginatedEvents = useMemo(() => {
+    const startIndex = (currentPage - 1) * EVENTS_PER_PAGE;
+    const endIndex = startIndex + EVENTS_PER_PAGE;
+    return filteredEvents.slice(startIndex, endIndex);
+  }, [filteredEvents, currentPage]);
+
+  // Debounced filter application
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const filtered = applyFilters(events, filters);
+      setFilteredEvents(filtered);
+      setCurrentPage(1); // Reset to first page when filters change
+      setTotalPages(Math.ceil(filtered.length / EVENTS_PER_PAGE));
+    }, DEBOUNCE_DELAY);
+
+    return () => clearTimeout(timeoutId);
+  }, [events, filters, applyFilters]);
+
+  // Optimized event loading with parallel processing
   useEffect(() => {
     const loadEvents = async () => {
-      // setIsLoading(true);
+      setIsLoading(true);
       setError(null);
       setUsingFallbackData(false);
       
       try {
-        // Load real events from Firebase
-        const firebaseEvents = await firestoreService.getEvents();
+        // Load events and RSVP counts in parallel
+        const [firebaseEvents] = await Promise.all([
+          firestoreService.getEvents()
+        ]);
         
-        // Get RSVP counts with caching
-        let rsvpCounts: { [eventId: string]: number } = {};
+        // Get event IDs for RSVP count fetching
+        const eventIds = firebaseEvents.map((event: any) => event.id);
         
-        // Check cache first and collect event IDs that need fresh data
-        const eventIdsToFetch: string[] = [];
-        firebaseEvents.forEach((event: any) => {
-          const cachedCount = getCachedRSVPCount(event.id);
-          if (cachedCount !== null) {
-            rsvpCounts[event.id] = cachedCount;
-          } else {
-            eventIdsToFetch.push(event.id);
-          }
-        });
-        
-        // Fetch RSVP counts for events not in cache
-        if (eventIdsToFetch.length > 0) {
-          try {
-            const { getFunctions, httpsCallable } = await import('firebase/functions');
-            const functions = getFunctions();
-            const getBatchRSVPCounts = httpsCallable(functions, 'getBatchRSVPCounts');
-            
-            const result = await getBatchRSVPCounts({ eventIds: eventIdsToFetch });
-            const data = result.data as any;
-            if (data.success) {
-              // Update cache with fresh data
-              const newCacheEntries: { [eventId: string]: { count: number; timestamp: number } } = {};
-              Object.entries(data.rsvpCounts).forEach(([eventId, count]) => {
-                rsvpCounts[eventId] = count as number;
-                newCacheEntries[eventId] = { count: count as number, timestamp: Date.now() };
-              });
-              
-              setRsvpCountCache(prev => ({ ...prev, ...newCacheEntries }));
-            }
-          } catch (error) {
-            console.warn('Failed to load batch RSVP counts:', error);
-            // Fallback to individual counts if batch fails
-            for (const eventId of eventIdsToFetch) {
-              try {
-                const { getFunctions, httpsCallable } = await import('firebase/functions');
-                const functions = getFunctions();
-                const getRSVPCount = httpsCallable(functions, 'getRSVPCount');
-                
-                const result = await getRSVPCount({ eventId });
-                const data = result.data as any;
-                if (data.success) {
-                  rsvpCounts[eventId] = data.rsvpCount;
-                  // Update cache
-                  setRsvpCountCache(prev => ({
-                    ...prev,
-                    [eventId]: { count: data.rsvpCount, timestamp: Date.now() }
-                  }));
-                } else {
-                  rsvpCounts[eventId] = firebaseEvents.find(e => e.id === eventId)?.currentRSVPs || 0;
-                }
-              } catch (error) {
-                console.warn(`Failed to load RSVP count for event ${eventId}:`, error);
-                rsvpCounts[eventId] = firebaseEvents.find(e => e.id === eventId)?.currentRSVPs || 0;
-              }
-            }
-          }
-        }
+        // Fetch RSVP counts using optimized batch function
+        const rsvpCounts = await fetchRSVPCounts(eventIds);
 
         // Transform Firebase data to match our interface
         const transformedEvents: Event[] = firebaseEvents.map((firebaseEvent: any) => ({
@@ -174,7 +279,6 @@ const EventsPage: React.FC = () => {
         }));
         
         setEvents(transformedEvents);
-        setFilteredEvents(transformedEvents);
         
         // Track successful data load
         console.log('Events loaded successfully:', transformedEvents.length);
@@ -184,91 +288,22 @@ const EventsPage: React.FC = () => {
         
         // No fallback data - show empty state
         setEvents([]);
-        setFilteredEvents([]);
         setError('Unable to load events. Please try again later.');
         
         // Track error
         console.log('Failed to load events from database');
       } finally {
-        // setIsLoading(false);
+        setIsLoading(false);
       }
     };
     
     loadEvents();
-  }, [getCachedRSVPCount]);
+  }, [fetchRSVPCounts]);
 
-  const handleFiltersChange = (filters: EventFiltersType) => {
-    let filtered = events;
-    
-    // Apply search filter
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      filtered = filtered.filter(event => 
-        event.title.toLowerCase().includes(searchLower) ||
-        event.description.toLowerCase().includes(searchLower) ||
-        event.location.name.toLowerCase().includes(searchLower)
-      );
-    }
-    
-    // Apply category filter
-    if (filters.categories.length > 0) {
-      filtered = filtered.filter(event => filters.categories.includes(event.category));
-    }
-    
-    // Apply den filter
-    if (filters.denTags.length > 0) {
-      filtered = filtered.filter(event => 
-        event.denTags.some(tag => filters.denTags.includes(tag))
-      );
-    }
-    
-    // Apply date range filter
-    if (filters.dateRange.start) {
-      filtered = filtered.filter(event => new Date(event.date) >= new Date(filters.dateRange.start));
-    }
-    if (filters.dateRange.end) {
-      filtered = filtered.filter(event => new Date(event.date) <= new Date(filters.dateRange.end));
-    }
-    
-    // Apply location filter
-    if (filters.location) {
-      const locationLower = filters.location.toLowerCase();
-      filtered = filtered.filter(event => 
-        event.location.name.toLowerCase().includes(locationLower) ||
-        event.location.address.toLowerCase().includes(locationLower)
-      );
-    }
-    
-    // Apply capacity filter
-    filtered = filtered.filter(event => 
-      event.currentRSVPs >= filters.capacity.min && 
-      event.currentRSVPs <= filters.capacity.max
-    );
-    
-    // Apply time of day filter
-    if (filters.timeOfDay.length > 0) {
-      filtered = filtered.filter(event => {
-        const hour = parseInt(event.startTime.split(':')[0]);
-        if (filters.timeOfDay.includes('morning') && hour >= 6 && hour < 12) return true;
-        if (filters.timeOfDay.includes('afternoon') && hour >= 12 && hour < 18) return true;
-        if (filters.timeOfDay.includes('evening') && hour >= 18 && hour < 24) return true;
-        if (filters.timeOfDay.includes('overnight') && (hour >= 0 && hour < 6)) return true;
-        return false;
-      });
-    }
-    
-    // Apply overnight filter
-    if (filters.isOvernight !== null) {
-      filtered = filtered.filter(event => event.isOvernight === filters.isOvernight);
-    }
-    
-    // Apply permission filter
-    if (filters.requiresPermission !== null) {
-      filtered = filtered.filter(event => event.requiresPermission === filters.requiresPermission);
-    }
-    
-    setFilteredEvents(filtered);
-  };
+  // Optimized filter change handler
+  const handleFiltersChange = useCallback((newFilters: EventFiltersType) => {
+    setFilters(newFilters);
+  }, []);
 
   const handleEventClick = (eventId: string) => {
     console.log('🔗 EventsPage: Navigating to event detail page for ID:', eventId);
@@ -516,8 +551,12 @@ const EventsPage: React.FC = () => {
         )}
 
         {/* Content */}
-        
-        {viewMode === 'list' ? (
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading events...</p>
+          </div>
+        ) : viewMode === 'list' ? (
           /* List View */
           <div className="space-y-6">
             {filteredEvents.length === 0 ? (
@@ -529,20 +568,62 @@ const EventsPage: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {filteredEvents.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    onRSVP={handleRSVP}
-                    onViewDetails={handleViewDetails}
-                    onAddToCalendar={handleAddToCalendar}
-                    onShare={handleShare}
-                    onViewRSVPs={isAdmin ? handleViewRSVPs : undefined}
-                    isAdmin={isAdmin}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {paginatedEvents.map((event) => (
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      onRSVP={handleRSVP}
+                      onViewDetails={handleViewDetails}
+                      onAddToCalendar={handleAddToCalendar}
+                      onShare={handleShare}
+                      onViewRSVPs={isAdmin ? handleViewRSVPs : undefined}
+                      isAdmin={isAdmin}
+                    />
+                  ))}
+                </div>
+                
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center space-x-2 mt-8">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    
+                    <div className="flex space-x-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        const pageNum = i + 1;
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`px-3 py-2 text-sm font-medium rounded-md ${
+                              currentPage === pageNum
+                                ? 'bg-primary-600 text-white'
+                                : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         ) : (

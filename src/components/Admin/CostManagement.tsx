@@ -6,7 +6,6 @@ import {
   AlertCircle,
   CheckCircle,
   RefreshCw,
-  BarChart3,
   Calendar,
   Zap,
   Database,
@@ -21,6 +20,18 @@ import {
   ArrowUpRight,
   ArrowDownRight
 } from 'lucide-react';
+import { 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line
+} from 'recharts';
 import { costManagementService, UsageMetrics, CostAlert } from '../../services/costManagementService';
 import { useAdmin } from '../../contexts/AdminContext';
 import systemMonitorService from '../../services/systemMonitorService';
@@ -73,6 +84,7 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
     try {
       setLoading(true);
       setError(null);
+      console.log('🔄 Loading cost data...');
 
       const [report, metrics, apiStats, billing, smartAlerts] = await Promise.all([
         costManagementService.instance.getCostReport(),
@@ -85,6 +97,13 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
         costManagementService.instance.getSmartCostAlerts()
       ]);
       
+      console.log('📊 Cost data loaded:', {
+        report: report.current,
+        apiStats,
+        billing,
+        smartAlerts: smartAlerts.length
+      });
+      
       setCurrentUsage(report.current);
       setHistoricalData(report.historical);
       setAlerts(smartAlerts.length > 0 ? smartAlerts : report.alerts);
@@ -96,9 +115,11 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
 
       // Create new alerts based on current usage
       await costManagementService.instance.createAndSaveAlerts();
+      
+      console.log('✅ Cost data loading complete');
     } catch (err) {
       setError('Failed to load cost data. Please try again.');
-      console.error('Error loading cost data:', err);
+      console.error('❌ Error loading cost data:', err);
     } finally {
       setLoading(false);
     }
@@ -184,6 +205,9 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
                 Cost Management & Analysis
                 <span className="ml-4 px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
                   ✨ UPDATED - Real Data
+                </span>
+                <span className="ml-2 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                  📊 Live Tracking
                 </span>
               </h1>
               <p className="text-gray-600 mt-2">Comprehensive monitoring of API usage, infrastructure costs, and optimization recommendations</p>
@@ -439,10 +463,9 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
                         {service === 'phoneValidation' && '📞 Phone Validation'}
                         {service === 'tenor' && '🎬 Tenor GIFs'}
                         {service === 'gemini' && '🤖 Gemini AI'}
-                        {service === 'ieeeXplore' && '📚 IEEE Xplore'}
                         {service === 'emailService' && '📧 Email Service'}
                         {service === 'openai' && '🧠 OpenAI'}
-                        {!['googleMaps', 'googlePlaces', 'openWeather', 'phoneValidation', 'tenor', 'gemini', 'ieeeXplore', 'emailService', 'openai'].includes(service) && service.replace(/([A-Z])/g, ' $1').trim()}
+                        {!['googleMaps', 'googlePlaces', 'openWeather', 'phoneValidation', 'tenor', 'gemini', 'emailService', 'openai'].includes(service) && service.replace(/([A-Z])/g, ' $1').trim()}
                       </span>
                       <span className="text-sm font-mono text-gray-900">
                         {formatCurrency(cost as number)}
@@ -523,9 +546,8 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
                         {service === 'phoneValidation' && '📞 Phone Validation'}
                         {service === 'tenor' && '🎬 Tenor GIFs'}
                         {service === 'gemini' && '🤖 Gemini AI'}
-                        {service === 'ieeeXplore' && '📚 IEEE Xplore'}
                         {service === 'emailService' && '📧 Email Service'}
-                        {!['googleMaps', 'googlePlaces', 'openWeather', 'phoneValidation', 'tenor', 'gemini', 'ieeeXplore', 'emailService'].includes(service) && service}
+                        {!['googleMaps', 'googlePlaces', 'openWeather', 'phoneValidation', 'tenor', 'gemini', 'emailService'].includes(service) && service}
                       </div>
                       <div className="text-xs font-medium text-green-600">
                         {formatCurrency(stats.cost || 0)}
@@ -644,19 +666,79 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
                 <TrendingUp className="w-5 h-5 mr-2 text-indigo-600" />
                 Cost Trends (Last 30 Days)
               </h3>
-              <div className="h-64 flex items-center justify-center text-gray-500">
-                <div className="text-center">
-                  <BarChart3 className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                  <p>Chart visualization coming soon</p>
-                  <p className="text-sm">Historical data: {historicalData.length} days</p>
-                  {billingData && (
-                    <p className="text-sm text-blue-600 mt-2">
-                      Real billing data: {formatCurrency(billingData.totalCost)} this month
-                    </p>
-                  )}
-                </div>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={historicalData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => [`$${value}`, 'Cost']} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="totalCost" 
+                      stroke="#3b82f6" 
+                      strokeWidth={2}
+                      dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                {billingData && (
+                  <p className="text-sm text-blue-600 mt-2 text-center">
+                    Real billing data: {formatCurrency(billingData.totalCost)} this month
+                  </p>
+                )}
               </div>
             </div>
+
+            {/* Cost Distribution Pie Chart */}
+            {billingData && (
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <PieChart className="w-5 h-5 mr-2 text-green-600" />
+                  Cost Distribution
+                </h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPieChart>
+                        <Pie
+                          data={billingData.services.map((service, index) => ({
+                            name: service.serviceName,
+                            value: service.cost,
+                            fill: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'][index % 8]
+                          }))}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          dataKey="value"
+                          label={({ name, percent }: any) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        >
+                          {billingData.services.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'][index % 8]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => [`$${value}`, 'Cost']} />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-gray-900">Service Breakdown</h4>
+                    {billingData.services.map((service, index) => (
+                      <div key={service.serviceId} className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div 
+                            className="w-3 h-3 rounded-full mr-2" 
+                            style={{ backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'][index % 8] }}
+                          ></div>
+                          <span className="text-sm text-gray-700">{service.serviceName}</span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">{formatCurrency(service.cost)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

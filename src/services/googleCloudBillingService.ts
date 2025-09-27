@@ -43,10 +43,23 @@ class GoogleCloudBillingService {
     
     // Check for admin indicators in email
     const email = user.email?.toLowerCase() || '';
-    return email.includes('admin') || 
-           email.includes('cubmaster') || 
-           email.includes('denleader') ||
-           email.includes('root');
+    const hasEmailAccess = email.includes('admin') || 
+                          email.includes('cubmaster') || 
+                          email.includes('denleader') ||
+                          email.includes('root') ||
+                          email.includes('christophersmith'); // Add your specific email
+    
+    // Also check if user has custom claims for admin access
+    // Note: customClaims are not directly accessible on the client
+    // We'll rely on the admin context for role checking
+    
+    if (hasEmailAccess) {
+      console.log(`✅ Billing access granted via email: ${email}`);
+      return true;
+    }
+    
+    console.log(`❌ Billing access denied for user: ${email}`);
+    return false;
   }
 
   /**

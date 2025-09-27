@@ -28,8 +28,8 @@ async function setAdminClaims() {
 
   try {
     // The user UID from the console logs
-    const userUID = 'biD4B9cWVWgOPxJlOZgGKifDJst2';
-    const userEmail = 'christophersmithm16@gmail.com';
+    const userUID = 'PeL8RNQOTmSBDlydI9IG1ogOnW63';
+    const userEmail = 'testadmin@pack1703.org';
 
     console.log(`Setting claims for user: ${userEmail} (${userUID})`);
 

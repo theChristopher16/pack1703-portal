@@ -40,10 +40,10 @@ const VolunteerPage: React.FC = () => {
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   
-  // Use AdminContext instead of direct auth service
+  // Use AdminContext for notifications, but get current user from authService for profile data
   const { state: adminState, addNotification } = useAdmin();
-  const currentUser = adminState.currentUser;
-  const isAdmin = currentUser?.role === 'root' || currentUser?.role === 'super-admin' || currentUser?.role === 'content-admin';
+  const currentUser = authService.getCurrentUser();
+  const isAdmin = currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.SUPER_ADMIN;
 
   // Load volunteer needs and user signups
   useEffect(() => {
@@ -213,11 +213,13 @@ const VolunteerPage: React.FC = () => {
       // Get user information for signup
       const volunteerName = currentUser.displayName || currentUser.email || 'Anonymous';
       const volunteerEmail = currentUser.email || '';
+      const volunteerPhone = currentUser.profile?.phone || '';
       
       const signupData = {
         needId: need.id,
         volunteerName,
         volunteerEmail,
+        volunteerPhone,
         count: 1, // Default to 1 person
         notes: ''
       };

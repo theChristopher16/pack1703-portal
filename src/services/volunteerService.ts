@@ -286,7 +286,7 @@ class VolunteerService {
         role: needData.role,
         volunteerName: signupData.volunteerName,
         volunteerEmail: signupData.volunteerEmail,
-        volunteerPhone: signupData.volunteerPhone,
+        volunteerPhone: signupData.volunteerPhone || null,
         volunteerUserId: currentUser?.uid || null,
         count: signupData.count,
         notes: signupData.notes,

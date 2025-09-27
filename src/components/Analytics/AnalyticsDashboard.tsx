@@ -55,7 +55,7 @@ const AnalyticsDashboard: React.FC = () => {
         // Get user document to check admin status
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
         const userData = userDoc.data();
-        const isAdmin = userData?.role === 'admin' || userData?.role === 'root';
+        const isAdmin = userData?.role === 'admin' || userData?.role === 'super-admin';
         
         if (!isAdmin) {
           console.warn('Non-admin user accessing analytics dashboard');

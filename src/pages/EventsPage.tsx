@@ -247,9 +247,8 @@ const EventsPage: React.FC = () => {
           firestoreService.getEvents()
         ]);
         
-        // Debug logging
-        console.log('🔍 Raw Firebase events received:', firebaseEvents.length);
-        console.log('🔍 First event data:', firebaseEvents[0]);
+        // Track successful data load
+        console.log('Events loaded from database:', firebaseEvents.length);
         
         // Get event IDs for RSVP count fetching
         const eventIds = firebaseEvents.map((event: any) => event.id);
@@ -285,15 +284,13 @@ const EventsPage: React.FC = () => {
             attachments: firebaseEvent.attachments || []
           };
           
-          console.log('🔍 Transforming event:', firebaseEvent.title, 'Date:', transformedEvent.date);
           return transformedEvent;
         });
         
         setEvents(transformedEvents);
         
         // Track successful data load
-        console.log('✅ Events loaded successfully:', transformedEvents.length);
-        console.log('✅ Transformed events:', transformedEvents);
+        console.log('Events loaded successfully:', transformedEvents.length);
         
       } catch (error) {
         console.error('Error loading events:', error);

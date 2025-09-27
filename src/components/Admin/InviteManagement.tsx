@@ -127,7 +127,7 @@ const InviteManagement: React.FC<InviteManagementProps> = ({ className = '' }) =
 
   const getRoleIcon = (role: UserRole) => {
     switch (role) {
-      case UserRole.ROOT:
+      case UserRole.SUPER_ADMIN:
         return <Crown className="w-4 h-4 text-yellow-500" />;
       case UserRole.ADMIN:
         return <Shield className="w-4 h-4 text-blue-500" />;
@@ -144,7 +144,7 @@ const InviteManagement: React.FC<InviteManagementProps> = ({ className = '' }) =
 
   const getRoleBadgeColor = (role: UserRole) => {
     switch (role) {
-      case UserRole.ROOT:
+      case UserRole.SUPER_ADMIN:
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case UserRole.ADMIN:
         return 'bg-blue-100 text-blue-800 border-blue-200';

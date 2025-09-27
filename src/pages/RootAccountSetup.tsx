@@ -10,7 +10,7 @@ const RootAccountSetup: React.FC = () => {
   const userRole = (currentUser?.role as UserRole) || UserRole.PARENT;
 
   // Only allow root users to access this page
-  if (userRole !== UserRole.ROOT) {
+  if (userRole !== UserRole.SUPER_ADMIN) {
     return <Navigate to="/" replace />;
   }
 

@@ -39,7 +39,7 @@ const FeedbackManagementPage: React.FC = () => {
 
   // Check if user can manage feedback
   const canManageFeedback = currentUser && 
-    ['volunteer', 'admin', 'root'].includes(currentUser.role);
+    ['volunteer', 'admin', 'super-admin'].includes(currentUser.role);
 
   useEffect(() => {
     if (!canManageFeedback) {

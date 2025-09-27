@@ -141,7 +141,7 @@ const FeedbackResponseItem: React.FC<FeedbackResponseItemProps> = ({
 
   const getRoleColor = (role: string) => {
     switch (role.toLowerCase()) {
-      case 'root':
+      case 'super-admin':
         return 'bg-red-100 text-red-800';
       case 'admin':
         return 'bg-purple-100 text-purple-800';

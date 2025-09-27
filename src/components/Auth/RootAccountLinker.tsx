@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { authService, SocialProvider } from '../../services/authService';
+import { authService, SocialProvider, UserRole } from '../../services/authService';
 import { 
   Shield, Chrome, CheckCircle, AlertCircle, Loader2, Mail, Lock, Eye, EyeOff
 } from 'lucide-react';
@@ -26,10 +26,10 @@ const RootAccountLinker: React.FC<RootAccountLinkerProps> = ({ onSetupComplete }
 
     try {
       const user = await authService.signInWithSocial(provider);
-      if (user.role === 'root') {
+      if (user.role === UserRole.SUPER_ADMIN) {
         onSetupComplete();
       } else {
-        setError('This account is not authorized as root. Please use a different account.');
+        setError('This account is not authorized as super admin. Please use a different account.');
       }
     } catch (error: any) {
       console.error(`Error signing in with ${provider}:`, error);

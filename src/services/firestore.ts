@@ -71,10 +71,14 @@ export const firestoreService = {
   async getEvents(): Promise<any[]> {
     return safeFirestoreCall(async () => {
       const eventsRef = collection(db, 'events');
-      // Temporarily show all events regardless of visibility to debug the issue
       const q = query(eventsRef, orderBy('startDate'));
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const allEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      // Filter for public events or events without visibility field (default to public)
+      return allEvents.filter(event => 
+        !event.visibility || event.visibility === 'public'
+      );
     });
   },
 

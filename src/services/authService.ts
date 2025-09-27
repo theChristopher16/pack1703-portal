@@ -37,29 +37,29 @@ import { db, functions } from '../firebase/config';
 // User roles and permissions - Simplified and intuitive
 export enum UserRole {
   PARENT = 'parent',          // Family account (default after signup)
-  VOLUNTEER = 'volunteer',    // Active volunteers
+  VOLUNTEER = 'volunteer',    // Active volunteers (den leaders)
   ADMIN = 'admin',            // Pack administrators
-  ROOT = 'root',              // System owner (you)
+  SUPER_ADMIN = 'super_admin', // Super administrators (highest level)
   AI_ASSISTANT = 'ai_assistant' // AI assistant role
 }
 
 // Role hierarchy - each role inherits permissions from roles below it
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
-  [UserRole.PARENT]: 1,
-  [UserRole.VOLUNTEER]: 2,
-  [UserRole.ADMIN]: 3,
-  [UserRole.ROOT]: 4,
-  [UserRole.AI_ASSISTANT]: 2.5 // AI assistant has volunteer-level access
+  [UserRole.PARENT]: 1,           // Lowest level
+  [UserRole.VOLUNTEER]: 2,        // Den leaders
+  [UserRole.AI_ASSISTANT]: 3,     // AI assistant
+  [UserRole.ADMIN]: 4,            // Pack administrators
+  [UserRole.SUPER_ADMIN]: 5       // Highest level
 };
 
 export enum Permission {
-  // Root permissions (full system access)
+  // Admin permissions (full system access - highest level)
   SYSTEM_ADMIN = 'system_admin',
   USER_MANAGEMENT = 'user_management',
   ROLE_MANAGEMENT = 'role_management',
   SYSTEM_CONFIG = 'system_config',
   
-  // Admin permissions (pack-level management)
+  // Pack-level management permissions
   PACK_MANAGEMENT = 'pack_management',
   EVENT_MANAGEMENT = 'event_management',
   LOCATION_MANAGEMENT = 'location_management',
@@ -209,6 +209,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   [UserRole.ADMIN]: [
     Permission.SYSTEM_ADMIN,
     Permission.USER_MANAGEMENT,
+    Permission.ROLE_MANAGEMENT,
+    Permission.SYSTEM_CONFIG,
     Permission.PACK_MANAGEMENT,
     Permission.EVENT_MANAGEMENT,
     Permission.LOCATION_MANAGEMENT,
@@ -239,7 +241,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.COST_ANALYTICS,
     Permission.COST_ALERTS
   ],
-  [UserRole.ROOT]: [
+  [UserRole.SUPER_ADMIN]: [
     Permission.SYSTEM_ADMIN,
     Permission.USER_MANAGEMENT,
     Permission.ROLE_MANAGEMENT,
@@ -273,7 +275,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.COST_MANAGEMENT,
     Permission.COST_ANALYTICS,
     Permission.COST_ALERTS
-  ]
+  ],
 };
 
 // Role color configuration (object format for UI components)
@@ -282,7 +284,7 @@ export const ROLE_COLORS: Record<UserRole, { bg: string; text: string; border: s
   [UserRole.VOLUNTEER]: { bg: '#dcfce7', text: '#166534', border: '#86efac' },
   [UserRole.AI_ASSISTANT]: { bg: '#e0f2fe', text: '#0c4a6e', border: '#7dd3fc' },
   [UserRole.ADMIN]: { bg: '#f3e8ff', text: '#7c3aed', border: '#c4b5fd' },
-  [UserRole.ROOT]: { bg: '#fef3c7', text: '#92400e', border: '#fbbf24' }
+  [UserRole.SUPER_ADMIN]: { bg: '#fef3c7', text: '#92400e', border: '#fcd34d' },
 };
 
 // Role display names
@@ -291,7 +293,7 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   [UserRole.VOLUNTEER]: 'Volunteer',
   [UserRole.AI_ASSISTANT]: 'AI Assistant',
   [UserRole.ADMIN]: 'Admin',
-  [UserRole.ROOT]: 'Root'
+  [UserRole.SUPER_ADMIN]: 'Super Admin',
 };
 
 // Role descriptions
@@ -300,14 +302,15 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   [UserRole.VOLUNTEER]: 'Active volunteer - den-specific management',
   [UserRole.AI_ASSISTANT]: 'AI assistant - event management and content creation',
   [UserRole.ADMIN]: 'Pack administrator - full pack management',
-  [UserRole.ROOT]: 'System owner - complete system access'
+  [UserRole.SUPER_ADMIN]: 'Super administrator - complete system access (highest level)'
 };
 
 // Selectable roles for UI components (excludes system-only roles)
 export const SELECTABLE_ROLES: UserRole[] = [
   UserRole.PARENT,
   UserRole.VOLUNTEER,
-  UserRole.ADMIN
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN
 ];
 
 // User interface with enhanced profile data
@@ -658,7 +661,7 @@ class AuthService {
     const isFirstUser = usersSnapshot.empty;
 
     // Determine role based on whether this is the first user
-    const role = isFirstUser ? UserRole.ROOT : UserRole.PARENT;
+    const role = isFirstUser ? UserRole.SUPER_ADMIN : UserRole.PARENT;
 
     // Create user document in Firestore
     console.log('Creating Firestore user document...');
@@ -1002,7 +1005,7 @@ class AuthService {
       // Check if root account already exists
       const rootUsersQuery = query(
         collection(db, 'users'),
-        where('role', '==', UserRole.ROOT)
+        where('role', '==', UserRole.SUPER_ADMIN)
       );
       const rootUsersSnapshot = await getDocs(rootUsersQuery);
       
@@ -1024,8 +1027,8 @@ class AuthService {
       const userData: Omit<AppUser, 'uid' | 'createdAt' | 'updatedAt'> = {
         email: firebaseUser.email!,
         displayName,
-        role: UserRole.ROOT,
-        permissions: ROLE_PERMISSIONS[UserRole.ROOT],
+        role: UserRole.SUPER_ADMIN,
+        permissions: ROLE_PERMISSIONS[UserRole.SUPER_ADMIN],
         isActive: true,
         profile: {}
       };
@@ -1209,8 +1212,8 @@ class AuthService {
     }
 
     console.log('🔐 AuthService: Upgrading temporary user to ROOT role');
-    this.currentUser.role = UserRole.ROOT;
-    this.currentUser.permissions = ROLE_PERMISSIONS[UserRole.ROOT];
+    this.currentUser.role = UserRole.SUPER_ADMIN;
+    this.currentUser.permissions = ROLE_PERMISSIONS[UserRole.SUPER_ADMIN];
     console.log('🔐 AuthService: User upgraded to ROOT:', this.currentUser.email);
     this.notifyAuthStateListeners(this.currentUser);
   }
@@ -1255,12 +1258,12 @@ class AuthService {
 
   // Check if user is root
   isRoot(): boolean {
-    return this.currentUser?.role === UserRole.ROOT;
+    return this.currentUser?.role === UserRole.SUPER_ADMIN;
   }
 
   // Check if user is admin or higher
   isAdmin(): boolean {
-    return this.currentUser?.role === UserRole.ROOT || this.currentUser?.role === UserRole.ADMIN;
+    return this.currentUser?.role === UserRole.SUPER_ADMIN || this.currentUser?.role === UserRole.ADMIN;
   }
 
   // Check if user is den leader or higher
@@ -1274,7 +1277,7 @@ class AuthService {
     if (!targetUser) return false;
     
     // Root has access to everything
-    if (targetUser.role === UserRole.ROOT) return true;
+    if (targetUser.role === UserRole.SUPER_ADMIN) return true;
     
     // Check if user has the specific permission
     if (targetUser.permissions.includes(permission)) return true;
@@ -1285,10 +1288,10 @@ class AuthService {
     // Define permission-to-role mappings for inheritance
     const permissionRoleMap: Record<Permission, UserRole> = {
       // System permissions - only root
-      [Permission.SYSTEM_ADMIN]: UserRole.ROOT,
-      [Permission.USER_MANAGEMENT]: UserRole.ROOT,
-      [Permission.ROLE_MANAGEMENT]: UserRole.ROOT,
-      [Permission.SYSTEM_CONFIG]: UserRole.ROOT,
+      [Permission.SYSTEM_ADMIN]: UserRole.SUPER_ADMIN,
+      [Permission.USER_MANAGEMENT]: UserRole.SUPER_ADMIN,
+      [Permission.ROLE_MANAGEMENT]: UserRole.SUPER_ADMIN,
+      [Permission.SYSTEM_CONFIG]: UserRole.SUPER_ADMIN,
       
       // Admin permissions - admin and root
       [Permission.PACK_MANAGEMENT]: UserRole.ADMIN,
@@ -1391,7 +1394,7 @@ class AuthService {
     }
     
     if (this.isAdmin()) {
-      return allUsers.filter(user => user.role !== UserRole.ROOT); // Admin can manage all except root
+      return allUsers.filter(user => user.role !== UserRole.SUPER_ADMIN); // Admin can manage all except super admin
     }
     
     if (this.isDenLeader()) {
@@ -1597,7 +1600,7 @@ class AuthService {
   async deleteUser(userId: string, reason?: string): Promise<boolean> {
     try {
       const currentUser = this.getCurrentUser();
-      if (!currentUser || currentUser.role !== UserRole.ROOT) {
+      if (!currentUser || currentUser.role !== UserRole.SUPER_ADMIN) {
         throw new Error('Only root users can delete accounts');
       }
 

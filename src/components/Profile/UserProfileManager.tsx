@@ -145,7 +145,7 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
 
   const getRoleIcon = (role: UserRole) => {
     switch (role) {
-      case UserRole.ROOT: return <Crown className="w-4 h-4 text-yellow-600" />;
+      case UserRole.SUPER_ADMIN: return <Crown className="w-4 h-4 text-yellow-600" />;
       case UserRole.ADMIN: return <Shield className="w-4 h-4 text-red-600" />;
       case UserRole.VOLUNTEER: return <Star className="w-4 h-4 text-green-600" />;
       case UserRole.PARENT: return <Users className="w-4 h-4 text-blue-600" />;
@@ -156,7 +156,7 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
 
   const getRoleBadgeColor = (role: UserRole) => {
     switch (role) {
-      case UserRole.ROOT: return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case UserRole.SUPER_ADMIN: return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case UserRole.ADMIN: return 'bg-red-100 text-red-800 border-red-200';
       case UserRole.VOLUNTEER: return 'bg-green-100 text-green-800 border-green-200';
       case UserRole.PARENT: return 'bg-blue-100 text-blue-800 border-blue-200';

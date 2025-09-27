@@ -25,7 +25,7 @@ const RoleBadge: React.FC<RoleBadgeProps> = ({
 
   const getRoleIcon = () => {
     switch (role) {
-      case UserRole.ROOT:
+      case UserRole.SUPER_ADMIN:
         return '👑';
       case UserRole.ADMIN:
         return '⚡';

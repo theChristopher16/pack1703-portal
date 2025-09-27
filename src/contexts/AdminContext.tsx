@@ -245,8 +245,8 @@ export function AdminProvider({ children }: AdminProviderProps) {
       if (user) {
         // Convert AppUser to AdminUser with proper role mapping
         const roleMap: { [key: string]: AdminRole } = {
-          [UserRole.ROOT]: 'root',
-          [UserRole.ADMIN]: 'super-admin', 
+          [UserRole.SUPER_ADMIN]: 'super-admin',
+          [UserRole.ADMIN]: 'content-admin', 
           [UserRole.VOLUNTEER]: 'moderator',
           [UserRole.PARENT]: 'viewer',
           [UserRole.AI_ASSISTANT]: 'moderator' // Map AI assistant to moderator level
@@ -257,7 +257,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
           email: user.email,
           displayName: user.displayName || null,
           photoURL: user.photoURL || null,
-          isAdmin: user.role === UserRole.ROOT || user.role === UserRole.ADMIN || user.role === UserRole.VOLUNTEER,
+          isAdmin: user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN || user.role === UserRole.VOLUNTEER,
           role: roleMap[user.role] || 'viewer',
           permissions: user.permissions as unknown as AdminPermission[],
           lastLogin: user.lastLoginAt || new Date(),

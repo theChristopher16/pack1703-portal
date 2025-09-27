@@ -38,7 +38,7 @@ export enum UserRole {
   PARENT = 'parent',          // Family account (default after signup)
   LEADER = 'leader',          // Den leaders, cubmaster, etc.
   ADMIN = 'admin',            // Pack administrators
-  ROOT = 'root',              // System owner (you)
+  SUPER_ADMIN = 'super_admin', // Super administrators (highest level)
   AI_ASSISTANT = 'ai_assistant' // AI assistant role
 }
 
@@ -55,7 +55,7 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
   [UserRole.PARENT]: 1,
   [UserRole.LEADER]: 2,
   [UserRole.ADMIN]: 3,
-  [UserRole.ROOT]: 4,
+  [UserRole.SUPER_ADMIN]: 5,
   [UserRole.AI_ASSISTANT]: 5
 }
 
@@ -263,7 +263,7 @@ export class AuthService {
    * Check if current user is admin
    */
   isAdmin(): boolean {
-    return this.userDoc?.role === UserRole.ADMIN || this.userDoc?.role === UserRole.ROOT;
+    return this.userDoc?.role === UserRole.ADMIN || this.userDoc?.role === UserRole.SUPER_ADMIN;
   }
 
   /**
@@ -272,7 +272,7 @@ export class AuthService {
   isLeaderOrAbove(): boolean {
     return this.userDoc?.role === UserRole.LEADER || 
            this.userDoc?.role === UserRole.ADMIN || 
-           this.userDoc?.role === UserRole.ROOT;
+           this.userDoc?.role === UserRole.SUPER_ADMIN;
   }
 
   /**

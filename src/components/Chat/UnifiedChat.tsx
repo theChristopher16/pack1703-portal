@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { chatServiceCloudFunctions } from '../../services/chatServiceCloudFunctions';
+import React, { useState, useEffect, useRef } from 'react';
+import chatService from '../../services/chatService';
 import { ChatChannel, ChatMessage } from '../../services/chatService';
 import { useToast } from '../../contexts/ToastContext';
 import { useAdmin } from '../../contexts/AdminContext';
@@ -18,27 +18,70 @@ const UnifiedChat: React.FC = () => {
   });
   const { showError, showSuccess } = useToast();
   const { state } = useAdmin();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
   
-  // Check if user is admin
-  const isAdmin = state.currentUser?.role === 'super-admin' || state.currentUser?.role === 'root';
+  // Check if user can delete messages (admin and up)
+  const canDeleteMessages = state.currentUser?.role === 'super-admin' ||
+                           state.currentUser?.role === 'content-admin' ||
+                           state.currentUser?.role === 'moderator';
   const currentUserName = state.currentUser?.displayName || state.currentUser?.email || 'Anonymous User';
 
-  // Load channels on component mount
+  // Initialize chat service and load channels on component mount
   useEffect(() => {
-    loadChannels();
+    const initializeChat = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Initialize chat service
+        await chatService.initialize();
+        
+        // Load channels
+        await loadChannels();
+      } catch (error) {
+        console.error('Failed to initialize chat:', error);
+        showError('Failed to initialize chat');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeChat();
+
+    // Cleanup on unmount
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
+      chatService.cleanup();
+    };
   }, []);
 
-  // Load messages when selectedChannel changes
+  // Set up real-time message subscription when selectedChannel changes
   useEffect(() => {
     if (selectedChannel) {
+      // Unsubscribe from previous channel
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
+
+      // Subscribe to new channel messages
+      unsubscribeRef.current = chatService.subscribeToMessages(selectedChannel, (newMessages) => {
+        setMessages(newMessages);
+        // Auto-scroll to bottom when new messages arrive
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      });
+
+      // Load initial messages
       loadMessages(selectedChannel);
     }
   }, [selectedChannel]);
 
   const loadChannels = async () => {
     try {
-      setIsLoading(true);
-      const channelData = await chatServiceCloudFunctions.getChannels();
+      const channelData = await chatService.getChannels();
       
       // Additional client-side deduplication as a safeguard
       const uniqueChannels = channelData.filter((channel: ChatChannel, index: number, self: ChatChannel[]) => 
@@ -54,15 +97,13 @@ const UnifiedChat: React.FC = () => {
     } catch (error) {
       console.error('Failed to load channels:', error);
       showError('Failed to load chat channels');
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const loadMessages = async (channelId: string) => {
     try {
-      const messageData = await chatServiceCloudFunctions.getMessages(channelId, 50);
-      setMessages(messageData.reverse()); // Reverse to show newest at bottom
+      const messageData = await chatService.getMessages(channelId, 50);
+      setMessages(messageData); // Messages are already in chronological order
     } catch (error) {
       console.error('Failed to load messages:', error);
       showError('Failed to load chat messages');
@@ -72,21 +113,21 @@ const UnifiedChat: React.FC = () => {
   const sendMessage = async () => {
     if (!newMessage.trim() || isSending) return;
 
+    const messageText = newMessage.trim();
+    setNewMessage(''); // Clear input immediately for instant feedback
     setIsSending(true);
+
     try {
-      await chatServiceCloudFunctions.sendMessage(
-        selectedChannel,
-        newMessage,
-        currentUserName
-      );
+      // Send message using direct Firestore (much faster than Cloud Functions)
+      await chatService.sendMessage(selectedChannel, messageText);
       
-      setNewMessage('');
-      // Reload messages to show the new one
-      await loadMessages(selectedChannel);
-      showSuccess('Message sent successfully');
+      // Success feedback (no need to reload messages - real-time listener will handle it)
+      showSuccess('Message sent!');
     } catch (error) {
       console.error('Failed to send message:', error);
       showError('Failed to send message');
+      // Restore message on error
+      setNewMessage(messageText);
     } finally {
       setIsSending(false);
     }
@@ -134,12 +175,19 @@ const UnifiedChat: React.FC = () => {
   };
 
   const deleteMessage = async (messageId: string) => {
-    if (!isAdmin) return;
+    if (!canDeleteMessages) {
+      showError('You do not have permission to delete messages');
+      return;
+    }
+    
+    // Confirm deletion
+    if (!window.confirm('Are you sure you want to delete this message? This action cannot be undone.')) {
+      return;
+    }
     
     try {
-      // TODO: Implement delete message Cloud Function
-      console.log('Delete message not implemented yet:', messageId);
-      showSuccess('Message deletion not implemented yet');
+      await chatService.deleteMessage(messageId);
+      showSuccess('Message deleted successfully');
     } catch (error) {
       console.error('Failed to delete message:', error);
       showError('Failed to delete message');
@@ -245,7 +293,7 @@ const UnifiedChat: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center space-x-2 sm:space-x-4">
-            {isAdmin && (
+            {canDeleteMessages && (
               <div className="hidden sm:flex items-center text-sm bg-primary-100 text-primary-800 px-3 py-1 rounded-full border border-primary-200">
                 <Settings className="h-4 w-4 mr-1" />
                 <span>Admin Mode</span>
@@ -257,7 +305,7 @@ const UnifiedChat: React.FC = () => {
             </div>
           </div>
         </div>
-        {isAdmin && (
+        {canDeleteMessages && (
           <div className="sm:hidden mt-2 flex items-center text-xs bg-primary-100 text-primary-800 px-2 py-1 rounded-full border border-primary-200 w-fit">
             <Settings className="h-3 w-3 mr-1" />
             <span>Admin Mode</span>
@@ -312,7 +360,7 @@ const UnifiedChat: React.FC = () => {
                                   <span className="mr-1">{getChannelEmoji(channel.name)}</span>
                                   {channel.name}
                                 </span>
-                                {isAdmin && (
+                                {canDeleteMessages && (
                                   <MoreVertical className="h-3 w-3 opacity-50 flex-shrink-0 ml-1" />
                                 )}
                               </div>
@@ -361,7 +409,7 @@ const UnifiedChat: React.FC = () => {
                                   <span className="mr-1">{getChannelEmoji(channel.name)}</span>
                                   {channel.name}
                                 </span>
-                                {isAdmin && (
+                                {canDeleteMessages && (
                                   <MoreVertical className="h-3 w-3 opacity-50 flex-shrink-0 ml-1" />
                                 )}
                               </div>
@@ -399,7 +447,7 @@ const UnifiedChat: React.FC = () => {
                                     <span className="mr-1">{getChannelEmoji(channel.name)}</span>
                                     {channel.name}
                                   </span>
-                                  {isAdmin && (
+                                  {canDeleteMessages && (
                                     <MoreVertical className="h-3 w-3 opacity-50 flex-shrink-0 ml-1" />
                                   )}
                                 </div>
@@ -455,11 +503,11 @@ const UnifiedChat: React.FC = () => {
                           {message.senderName || message.userName || 'Unknown User'}
                         </div>
                       </div>
-                      {isAdmin && (
+                      {canDeleteMessages && (
                         <button
                           onClick={() => deleteMessage(message.id)}
                           className="opacity-50 hover:opacity-100 transition-opacity flex-shrink-0 ml-1 p-1 rounded hover:bg-red-500/20"
-                          title="Delete message (Admin only)"
+                          title="Delete message"
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
@@ -504,6 +552,9 @@ const UnifiedChat: React.FC = () => {
               </button>
             </div>
           </div>
+          
+          {/* Auto-scroll anchor */}
+          <div ref={messagesEndRef} />
         </main>
       </div>
     </div>

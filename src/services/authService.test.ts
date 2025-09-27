@@ -141,7 +141,7 @@ describe('AuthService - Enhanced User Management', () => {
     test('should have correct role permissions for ROOT', () => {
       const rootUser = { 
         ...mockAppUser, 
-        role: UserRole.ROOT,
+        role: UserRole.SUPER_ADMIN,
         permissions: [
           Permission.SYSTEM_ADMIN,
           Permission.USER_MANAGEMENT,
@@ -686,7 +686,7 @@ describe('AuthService - Enhanced User Management', () => {
       expect(user.uid).toBe('test-user-123');
       expect(user.email).toBe('test@example.com');
       expect(user.displayName).toBe('Test User');
-      expect(user.role).toBe(UserRole.ROOT);
+      expect(user.role).toBe(UserRole.SUPER_ADMIN);
       expect(user.isActive).toBe(true);
     });
 
@@ -695,7 +695,7 @@ describe('AuthService - Enhanced User Management', () => {
       getDocs.mockResolvedValue({ empty: true }); // No existing users
 
       const user = await authService['createUserFromFirebaseUser'](mockFirebaseUser);
-      expect(user.role).toBe(UserRole.ROOT);
+      expect(user.role).toBe(UserRole.SUPER_ADMIN);
     });
 
     test('should create subsequent users as PARENT', async () => {

@@ -25,7 +25,7 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
   
   // Map AdminContext role back to UserRole enum
   const roleMap: { [key: string]: UserRole } = {
-    'root': UserRole.ROOT,
+    'root': UserRole.SUPER_ADMIN,
     'super-admin': UserRole.ADMIN,
     'moderator': UserRole.VOLUNTEER,
     'viewer': UserRole.PARENT,
@@ -68,7 +68,7 @@ export const AdminOnly: React.FC<{ children: React.ReactNode; fallbackPath?: str
   const currentUser = state.currentUser;
   
   // Check if user has admin role (either 'super-admin' or 'root')
-  const isAdmin = currentUser?.role === 'super-admin' || currentUser?.role === 'root';
+  const isAdmin = currentUser?.role === 'super-admin';
   
   if (!isAdmin) {
     return <Navigate to={fallbackPath} replace />;
@@ -82,7 +82,7 @@ export const RootOnly: React.FC<{ children: React.ReactNode; fallbackPath?: stri
   fallbackPath = '/' 
 }) => (
   <RoleGuard 
-    requiredRole={UserRole.ROOT} 
+    requiredRole={UserRole.SUPER_ADMIN} 
     fallbackPath={fallbackPath}
   >
     {children}
@@ -94,7 +94,7 @@ export const AuthenticatedOnly: React.FC<{ children: React.ReactNode; fallbackPa
   fallbackPath = '/' 
 }) => (
   <RoleGuard 
-    requiredRoles={[UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.ROOT, UserRole.AI_ASSISTANT]} 
+    requiredRoles={[UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT]} 
     fallbackPath={fallbackPath}
   >
     {children}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// import { authService, SocialProvider } from '../services/authService';
+import { authService, SocialProvider, UserRole } from '../services/authService';
 import { inviteService, Invite } from '../services/inviteService';
 import SocialLogin from '../components/Auth/SocialLogin';
 import { 
@@ -64,9 +64,9 @@ const JoinPage: React.FC = () => {
       });
       
       // Redirect based on user role
-      if (user.role === 'root') {
+      if (user.role === UserRole.SUPER_ADMIN) {
         navigate('/admin');
-      } else if (user.role === 'admin' || user.role === 'den_leader') {
+      } else if (user.role === UserRole.ADMIN || user.role === UserRole.VOLUNTEER) {
         navigate('/admin');
       } else {
         navigate('/');
@@ -82,7 +82,7 @@ const JoinPage: React.FC = () => {
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'root':
+      case UserRole.SUPER_ADMIN:
         return <Crown className="w-6 h-6 text-yellow-500" />;
       case 'admin':
         return <Shield className="w-6 h-6 text-blue-500" />;
@@ -97,7 +97,7 @@ const JoinPage: React.FC = () => {
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'root':
+      case UserRole.SUPER_ADMIN:
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'admin':
         return 'bg-blue-100 text-blue-800 border-blue-200';

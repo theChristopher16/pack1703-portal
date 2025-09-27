@@ -306,7 +306,16 @@ const ChatAdmin: React.FC = () => {
   };
 
   const handleDeleteMessage = async (messageId: string) => {
-    if (!currentUser?.isAdmin) return;
+    // Check if user has permission to delete messages (admin and up)
+    const canDelete = currentUser?.isAdmin ||
+                     currentUser?.role === 'super-admin' ||
+                     currentUser?.role === 'admin' ||
+                     currentUser?.role === 'volunteer';
+    
+    if (!canDelete) {
+      showError('Permission denied', 'You do not have permission to delete messages.');
+      return;
+    }
 
     try {
       await chatService.deleteMessage(messageId);

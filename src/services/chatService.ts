@@ -17,7 +17,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { authService } from './authService';
+import { authService, UserRole } from './authService';
 
 // User session management
 export interface ChatUser {
@@ -26,6 +26,7 @@ export interface ChatUser {
   isOnline: boolean;
   lastSeen: Date;
   isAdmin: boolean;
+  role?: 'super-admin' | 'admin' | 'volunteer' | 'parent' | 'ai_assistant';
   den?: 'lion' | 'tiger' | 'wolf' | 'bear' | 'webelos' | 'arrow-of-light' | 'pack-leader' | 'parent';
   scoutRank?: string;
   familyName?: string;
@@ -82,6 +83,24 @@ export interface ChatChannel {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// Role mapping utility
+const mapUserRoleToChatRole = (userRole: UserRole): ChatUser['role'] => {
+  switch (userRole) {
+    case UserRole.SUPER_ADMIN:
+      return 'super-admin';
+    case UserRole.ADMIN:
+      return 'admin';
+    case UserRole.VOLUNTEER:
+      return 'volunteer';
+    case UserRole.PARENT:
+      return 'parent';
+    case UserRole.AI_ASSISTANT:
+      return 'ai_assistant';
+    default:
+      return 'parent'; // Default to parent for unknown roles
+  }
+};
 
 // Session management utilities
 class SessionManager {
@@ -160,7 +179,7 @@ class SessionManager {
     }
   }
 
-  static createNewUser(name: string, den?: string, photoURL?: string): ChatUser {
+  static createNewUser(name: string, den?: string, photoURL?: string, role?: string): ChatUser {
     const userId = this.generateUserId();
     const sessionId = this.generateSessionId();
     const ipHash = this.generateIPHash();
@@ -171,6 +190,7 @@ class SessionManager {
       isOnline: true,
       lastSeen: new Date(),
       isAdmin: false,
+      role: role as any, // Include role
       den: den as any,
       sessionId,
       userAgent: navigator.userAgent,
@@ -200,6 +220,7 @@ class SessionManager {
           lastSeen: new Date(),
           sessionId: this.generateSessionId(),
           isAdmin: existingUser.isAdmin || false,
+          role: mapUserRoleToChatRole(authenticatedUser.role), // Include role from authenticated user
           userAgent: existingUser.userAgent || navigator.userAgent,
           ipHash: existingUser.ipHash || this.generateIPHash()
         };
@@ -208,7 +229,7 @@ class SessionManager {
       } else {
         // Create new authenticated user
         const realName = authenticatedUser.displayName || authenticatedUser.email || 'Authenticated User';
-        return this.createNewUser(realName, undefined, authenticatedUser.photoURL);
+        return this.createNewUser(realName, undefined, authenticatedUser.photoURL, mapUserRoleToChatRole(authenticatedUser.role));
       }
     }
     
@@ -507,29 +528,31 @@ class ChatService {
         ipHash: this.currentUser.ipHash || null // Ensure null instead of undefined
       });
 
-      // Update channel's last activity and message count
-      await this.updateChannelActivity(channelId);
+      // Update channel's last activity and message count (non-blocking)
+      this.updateChannelActivity(channelId).catch(error => 
+        console.warn('Failed to update channel activity:', error)
+      );
 
-      // Check for AI mentions and process them
-      await this.processAIMentions(message, channelId);
+      // Check for AI mentions and process them (non-blocking)
+      this.processAIMentions(message, channelId);
     } catch (error) {
       console.error('Failed to send message:', error);
       throw error;
     }
   }
 
-  // Process AI mentions in messages
-  private async processAIMentions(message: string, channelId: string): Promise<void> {
+  // Process AI mentions in messages (truly async - no blocking)
+  private processAIMentions(message: string, channelId: string): void {
     try {
-      // Import AI service dynamically to avoid circular dependencies
-      const aiService = (await import('./aiService')).default;
-      
       // Check if message contains @mention of AI
       const mentionPattern = /@(solyn|ai|assistant)/i;
       if (mentionPattern.test(message)) {
-        // Process the mention asynchronously
-        setTimeout(async () => {
+        // Process the mention asynchronously without blocking message sending
+        setImmediate(async () => {
           try {
+            // Import AI service dynamically to avoid circular dependencies
+            const aiService = (await import('./aiService')).default;
+            
             await aiService.processChatMention(
               message, 
               channelId, 
@@ -540,7 +563,7 @@ class ChatService {
           } catch (error) {
             console.error('Error processing AI mention:', error);
           }
-        }, 1000); // Small delay to ensure message is saved first
+        });
       }
     } catch (error) {
       console.warn('Failed to process AI mentions:', error);
@@ -631,6 +654,11 @@ class ChatService {
         updateData.den = user.den;
       }
       
+      // Only add role if it's not undefined
+      if (user.role !== undefined) {
+        updateData.role = user.role;
+      }
+      
       if (userDoc.exists()) {
         // Update existing user
         await updateDoc(userRef, updateData);
@@ -668,6 +696,11 @@ class ChatService {
         updateData.den = user.den;
       }
       
+      // Only add role if it's not undefined
+      if (user.role !== undefined) {
+        updateData.role = user.role;
+      }
+      
       await updateDoc(userRef, updateData);
     } catch (error) {
       console.warn('Failed to update user in Firestore:', error);
@@ -688,8 +721,14 @@ class ChatService {
 
   // Admin Functions
   async deleteMessage(messageId: string): Promise<void> {
-    if (!this.currentUser?.isAdmin) {
-      throw new Error('Only admins can delete messages');
+    // Check if user has permission to delete messages (admin and up)
+    const canDelete = this.currentUser?.isAdmin || 
+                     this.currentUser?.role === 'super-admin' || 
+                     this.currentUser?.role === 'admin' || 
+                     this.currentUser?.role === 'volunteer';
+    
+    if (!canDelete) {
+      throw new Error('You do not have permission to delete messages');
     }
 
     try {
@@ -1205,9 +1244,9 @@ class ChatService {
     // Check if current user is admin/root to initialize with admin privileges
     const currentAuthUser = authService.getCurrentUser();
     const isAdmin = currentAuthUser && (
-      currentAuthUser.role === 'root' || 
-      currentAuthUser.role === 'admin' || 
-      currentAuthUser.role === 'volunteer'
+      currentAuthUser.role === UserRole.SUPER_ADMIN || 
+      currentAuthUser.role === UserRole.ADMIN || 
+      currentAuthUser.role === UserRole.VOLUNTEER
     );
     
     // Initialize with fresh user data

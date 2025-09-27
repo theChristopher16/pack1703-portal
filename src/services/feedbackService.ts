@@ -232,7 +232,7 @@ class FeedbackService {
   private canViewAllFeedback(): boolean {
     if (!this.currentUser) return false;
     
-    const allowedRoles = [UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.ROOT];
+    const allowedRoles = [UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN];
     return allowedRoles.includes(this.currentUser.role);
   }
 
@@ -242,7 +242,7 @@ class FeedbackService {
   private canRespondToFeedback(): boolean {
     if (!this.currentUser) return false;
     
-    const allowedRoles = [UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.ROOT];
+    const allowedRoles = [UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN];
     return allowedRoles.includes(this.currentUser.role);
   }
 

@@ -138,14 +138,14 @@ const AccountRequestsManager: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-            <UserPlus className="w-5 h-5 text-blue-600" />
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center shadow-glow-primary/30">
+            <UserPlus className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Account Requests</h2>
-            <p className="text-sm text-gray-600">
+            <h2 className="text-2xl font-display font-bold text-gray-900">Account Requests</h2>
+            <p className="text-gray-600 font-medium">
               Review and approve new member requests
             </p>
           </div>
@@ -153,7 +153,7 @@ const AccountRequestsManager: React.FC = () => {
         
         <button
           onClick={() => loadRequests(true)}
-          className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+          className="flex items-center gap-2 px-6 py-3 bg-white/90 backdrop-blur-sm text-gray-700 hover:text-gray-900 hover:bg-white rounded-xl transition-all duration-200 border border-gray-200/50 font-medium"
           disabled={isLoading}
         >
           <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -179,18 +179,18 @@ const AccountRequestsManager: React.FC = () => {
           <p className="text-gray-600">All account requests have been reviewed.</p>
         </div>
       ) : (
-        <div className="grid gap-6">
+        <div className="space-y-6">
           {requests.map((request) => (
-            <div key={request.id} className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="p-6">
+            <div key={request.id} className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft">
+              <div className="p-8">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                      <UserPlus className="w-6 h-6 text-blue-600" />
+                    <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center shadow-glow-primary/30">
+                      <UserPlus className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-medium text-gray-900">
+                      <h3 className="text-xl font-semibold text-gray-900">
                         {request.displayName}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
@@ -203,54 +203,60 @@ const AccountRequestsManager: React.FC = () => {
                   </div>
                   
                   <div className="text-right">
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-500 font-medium">
                       Submitted {request.submittedAt?.toDate?.()?.toLocaleDateString() || 'Recently'}
                     </p>
                   </div>
                 </div>
 
                 {/* Contact Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div className="flex items-center gap-3">
-                    <Mail className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">{request.email}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <Phone className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">{request.phone}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 md:col-span-2">
-                    <MapPin className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">{request.address}</span>
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-xl p-6 mb-6">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-primary-600" />
+                    Contact Information
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3">
+                      <Mail className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-700 font-medium">{request.email}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <Phone className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-700 font-medium">{request.phone}</span>
+                    </div>
+                    
+                    <div className="flex items-start gap-3 md:col-span-2">
+                      <MapPin className="w-4 h-4 text-gray-500 mt-0.5" />
+                      <span className="text-sm text-gray-700 font-medium">{request.address}</span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Scouting Information */}
                 {(request.scoutRank || request.den || request.emergencyContact) && (
-                  <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50/50 rounded-xl p-6 mb-6">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
                       <Shield className="w-4 h-4 text-green-600" />
                       Scouting Information
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {request.scoutRank && (
-                        <div>
-                          <span className="text-gray-600">Rank:</span>
-                          <span className="ml-1 font-medium">{request.scoutRank}</span>
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">Rank</span>
+                          <span className="text-sm font-semibold text-gray-800">{request.scoutRank}</span>
                         </div>
                       )}
                       {request.den && (
-                        <div>
-                          <span className="text-gray-600">Den:</span>
-                          <span className="ml-1 font-medium">{request.den}</span>
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">Den</span>
+                          <span className="text-sm font-semibold text-gray-800">{request.den}</span>
                         </div>
                       )}
                       {request.emergencyContact && (
-                        <div className="md:col-span-3">
-                          <span className="text-gray-600">Emergency Contact:</span>
-                          <span className="ml-1 font-medium">{request.emergencyContact}</span>
+                        <div className="flex flex-col md:col-span-3">
+                          <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">Emergency Contact</span>
+                          <span className="text-sm font-semibold text-gray-800">{request.emergencyContact}</span>
                         </div>
                       )}
                     </div>
@@ -259,19 +265,22 @@ const AccountRequestsManager: React.FC = () => {
 
                 {/* Reason */}
                 {request.reason && (
-                  <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Reason for Joining</h4>
-                    <p className="text-sm text-gray-700">{request.reason}</p>
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50/50 rounded-xl p-6 mb-6">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-blue-600" />
+                      Reason for Joining
+                    </h4>
+                    <p className="text-sm text-gray-700 leading-relaxed">{request.reason}</p>
                   </div>
                 )}
 
                 {/* Actions */}
                 {request.status === 'pending' && (
-                  <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-end gap-4 pt-6 border-t border-gray-200/50">
                     <button
                       onClick={() => handleReject(request.id)}
                       disabled={isProcessing === request.id}
-                      className="flex items-center gap-2 px-4 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                      className="flex items-center gap-2 px-6 py-3 text-red-600 hover:text-red-800 hover:bg-red-50/80 rounded-xl transition-all duration-200 disabled:opacity-50 font-medium"
                     >
                       {isProcessing === request.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -284,7 +293,7 @@ const AccountRequestsManager: React.FC = () => {
                     <button
                       onClick={() => handleApprove(request.id, 'parent')}
                       disabled={isProcessing === request.id}
-                      className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50"
+                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 rounded-xl transition-all duration-200 disabled:opacity-50 font-medium shadow-lg hover:shadow-xl transform hover:scale-105"
                     >
                       {isProcessing === request.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />

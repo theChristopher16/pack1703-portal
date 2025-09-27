@@ -38,9 +38,9 @@ declare -a ADMIN_ROUTES=(
 declare -a ROOT_ROUTES=(
     "/admin/ai"
     "/admin/cost-management"
-    "/admin/multi-tenant"
+    "/multi-tenant"
     "/admin/settings"
-    "/admin/soc"
+    "/soc"
     "/admin/database"
     "/admin/system"
     "/admin/performance"

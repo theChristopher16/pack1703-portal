@@ -69,12 +69,6 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
       
       if (result.success) {
         console.log('RSVPListViewer: Cloud Function successful, found', result.count, 'RSVPs');
-        console.log('RSVPListViewer: Sample RSVP data:', result.rsvps?.[0]);
-        if (result.rsvps?.[0]?.submittedAt) {
-          console.log('RSVPListViewer: Sample submittedAt:', result.rsvps[0].submittedAt);
-          console.log('RSVPListViewer: submittedAt type:', typeof result.rsvps[0].submittedAt);
-          console.log('RSVPListViewer: submittedAt keys:', Object.keys(result.rsvps[0].submittedAt || {}));
-        }
         setRsvps(result.rsvps || []);
       } else {
         throw new Error(result.message || 'Failed to load RSVP data');
@@ -88,41 +82,34 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
   };
 
   const formatDate = (timestamp: any) => {
-    console.log('formatDate called with:', timestamp, 'type:', typeof timestamp);
-    
     if (!timestamp) return 'Unknown';
     
     try {
-      // Handle Firestore timestamp
-      if (timestamp.toDate) {
-        console.log('Using toDate() method');
-        return timestamp.toDate().toLocaleString();
-      }
-      
-      // Handle Firestore timestamp serialized as object
-      if (timestamp.seconds && timestamp.nanoseconds) {
-        console.log('Using seconds/nanoseconds:', timestamp.seconds, timestamp.nanoseconds);
-        return new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000).toLocaleString();
-      }
-      
-      // Handle Firestore timestamp serialized as object with _seconds and _nanoseconds
-      if (timestamp._seconds && timestamp._nanoseconds) {
-        console.log('Using _seconds/_nanoseconds:', timestamp._seconds, timestamp._nanoseconds);
-        return new Date(timestamp._seconds * 1000 + timestamp._nanoseconds / 1000000).toLocaleString();
-      }
-      
-      // Handle string timestamp
+      // Handle ISO string timestamp (from Cloud Function)
       if (typeof timestamp === 'string') {
-        console.log('Using string timestamp:', timestamp);
         const date = new Date(timestamp);
         if (!isNaN(date.getTime())) {
           return date.toLocaleString();
         }
       }
       
+      // Handle Firestore timestamp
+      if (timestamp.toDate) {
+        return timestamp.toDate().toLocaleString();
+      }
+      
+      // Handle Firestore timestamp serialized as object
+      if (timestamp.seconds && timestamp.nanoseconds) {
+        return new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000).toLocaleString();
+      }
+      
+      // Handle Firestore timestamp serialized as object with _seconds and _nanoseconds
+      if (timestamp._seconds && timestamp._nanoseconds) {
+        return new Date(timestamp._seconds * 1000 + timestamp._nanoseconds / 1000000).toLocaleString();
+      }
+      
       // Handle number timestamp (milliseconds)
       if (typeof timestamp === 'number') {
-        console.log('Using number timestamp:', timestamp);
         const date = new Date(timestamp);
         if (!isNaN(date.getTime())) {
           return date.toLocaleString();
@@ -131,18 +118,15 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
       
       // Handle Date object
       if (timestamp instanceof Date) {
-        console.log('Using Date object');
         return timestamp.toLocaleString();
       }
       
-      // If we get here, try to create a date from the value
-      console.log('Trying fallback date creation');
+      // Fallback: try to create a date from the value
       const date = new Date(timestamp);
       if (!isNaN(date.getTime())) {
         return date.toLocaleString();
       }
       
-      console.log('All date formatting attempts failed');
       return 'Unknown date';
     } catch (error) {
       console.warn('Error formatting date:', timestamp, error);

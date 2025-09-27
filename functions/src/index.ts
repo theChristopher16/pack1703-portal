@@ -169,7 +169,7 @@ export const adminUpdateEvent = functions.https.onCall(async (data: any, context
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasEventManagementPermission = userData?.permissions?.includes('event_management');
 
@@ -213,7 +213,7 @@ export const adminCreateEvent = functions.https.onCall(async (data: any, context
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasEventManagementPermission = userData?.permissions?.includes('event_management');
 
@@ -588,15 +588,15 @@ export const getRSVPData = functions.https.onCall(async (data: any, context: fun
         dietaryRestrictions: data.dietaryRestrictions,
         specialNeeds: data.specialNeeds,
         notes: data.notes,
-        submittedAt: data.submittedAt,
-        createdAt: data.createdAt
+        submittedAt: data.submittedAt?.toDate ? data.submittedAt.toDate().toISOString() : data.submittedAt,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt
       });
     });
 
     // Sort by submittedAt in descending order (most recent first)
     rsvpsData.sort((a, b) => {
-      const aTime = a.submittedAt?.toDate ? a.submittedAt.toDate() : new Date(a.submittedAt || 0);
-      const bTime = b.submittedAt?.toDate ? b.submittedAt.toDate() : new Date(b.submittedAt || 0);
+      const aTime = new Date(a.submittedAt || 0);
+      const bTime = new Date(b.submittedAt || 0);
       return bTime.getTime() - aTime.getTime();
     });
 
@@ -632,7 +632,7 @@ export const adminUpdateUser = functions.https.onCall(async (data: any, context:
 
     const userData = userDoc.data();
     // Check role-based permissions (new system) or legacy boolean fields
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
     
@@ -683,6 +683,12 @@ export const adminUpdateUser = functions.https.onCall(async (data: any, context:
         console.log(`Successfully updated Firebase Auth claims for user ${userId}`);
       } catch (authError: any) {
         // If user doesn't exist in Firebase Auth, just log and continue
+        console.log(`Auth error details:`, {
+          code: authError.code,
+          message: authError.message,
+          stack: authError.stack
+        });
+        
         if (authError.code === 'auth/user-not-found') {
           console.log(`User ${userId} not found in Firebase Auth, skipping custom claims update`);
         } else {
@@ -747,6 +753,247 @@ export const adminUpdateUser = functions.https.onCall(async (data: any, context:
     }
     
     throw new functions.https.HttpsError('internal', 'Failed to update user');
+  }
+});
+
+// Update user custom claims function
+export const updateUserClaims = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'leader';
+    
+    if (!hasAdminRole) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update user claims');
+    }
+
+    const { targetUserId, role } = data;
+    
+    if (!targetUserId || !role) {
+      throw new functions.https.HttpsError('invalid-argument', 'targetUserId and role are required');
+    }
+
+    // Update custom claims
+    await admin.auth().setCustomUserClaims(targetUserId, {
+      approved: true,
+      role: role
+    });
+
+    console.log(`Updated custom claims for user ${targetUserId} to role: ${role}`);
+
+    return {
+      success: true,
+      message: `Updated user claims to role: ${role}`,
+      userId: targetUserId,
+      role: role
+    };
+
+  } catch (error) {
+    console.error('Error in updateUserClaims:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to update user claims');
+  }
+});
+
+// Chat Cloud Functions
+export const getChatChannels = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    const channelsRef = db.collection('chat-channels');
+    const snapshot = await channelsRef.get();
+    
+    const channels = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    // Remove duplicates based on channel name (case-insensitive)
+    const uniqueChannels = channels.filter((channel, index, self) => 
+      index === self.findIndex(c => c.name?.toLowerCase() === channel.name?.toLowerCase())
+    );
+
+    return {
+      success: true,
+      channels: uniqueChannels
+    };
+
+  } catch (error) {
+    console.error('Error in getChatChannels:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to get chat channels');
+  }
+});
+
+export const getChatMessages = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    const { channelId, limit = 50 } = data;
+    
+    if (!channelId) {
+      throw new functions.https.HttpsError('invalid-argument', 'channelId is required');
+    }
+
+    const messagesRef = db.collection('chat-messages');
+    const snapshot = await messagesRef
+      .where('channelId', '==', channelId)
+      .orderBy('timestamp', 'desc')
+      .limit(limit)
+      .get();
+    
+    const messages = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        // Ensure backward compatibility for existing messages
+        userName: data.userName || data.senderName || 'Unknown User',
+        content: data.content || data.message || '',
+        isAdmin: data.isAdmin || false
+      };
+    });
+
+    return {
+      success: true,
+      messages: messages
+    };
+
+  } catch (error) {
+    console.error('Error in getChatMessages:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to get chat messages');
+  }
+});
+
+export const sendChatMessage = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    const { channelId, content, senderName } = data;
+    
+    if (!channelId || !content) {
+      throw new functions.https.HttpsError('invalid-argument', 'channelId and content are required');
+    }
+
+    // Get user data to determine if admin
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    const userData = userDoc.exists ? userDoc.data() : null;
+    const isAdmin = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'leader';
+
+    const messageRef = db.collection('chat-messages');
+    const newMessage = {
+      channelId,
+      content,
+      senderId: context.auth.uid,
+      senderName: senderName || 'Anonymous',
+      userName: senderName || 'Anonymous', // Add userName for compatibility
+      isAdmin: isAdmin || false,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    const docRef = await messageRef.add(newMessage);
+
+    return {
+      success: true,
+      messageId: docRef.id,
+      message: {
+        id: docRef.id,
+        ...newMessage
+      }
+    };
+
+  } catch (error) {
+    console.error('Error in sendChatMessage:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to send chat message');
+  }
+});
+
+// Test email connection function
+export const testEmailConnection = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'leader';
+    
+    if (!hasAdminRole) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to test email connection');
+    }
+
+    const { emailAddress, password, imapServer, imapPort } = data;
+    
+    if (!emailAddress || !password || !imapServer || !imapPort) {
+      throw new functions.https.HttpsError('invalid-argument', 'Missing required email connection parameters');
+    }
+
+    // For now, return a mock success response
+    // In a real implementation, you would test the IMAP connection here
+    return {
+      success: true,
+      message: 'Email connection test completed (mock response)',
+      details: {
+        emailAddress,
+        imapServer,
+        imapPort,
+        status: 'connected'
+      }
+    };
+
+  } catch (error) {
+    console.error('Error in testEmailConnection:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to test email connection');
   }
 });
 
@@ -853,7 +1100,7 @@ export const getPendingAccountRequests = functions.https.onCall(async (data: any
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
     
@@ -949,7 +1196,7 @@ export const approveAccountRequest = functions.https.onCall(async (data: any, co
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
     
@@ -1086,7 +1333,7 @@ export const createUserManually = functions.https.onCall(async (data: any, conte
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
     
@@ -1212,7 +1459,7 @@ export const rejectAccountRequest = functions.https.onCall(async (data: any, con
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
     
@@ -1298,7 +1545,7 @@ export const getBatchDashboardData = functions.https.onCall(async (data: any, co
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasSystemAdminPermission = userData?.permissions?.includes('system_admin') || userData?.permissions?.includes('user_management');
     

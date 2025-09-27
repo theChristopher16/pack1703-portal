@@ -78,7 +78,7 @@ const EventsPage: React.FC = () => {
   });
   
   // Check if user has admin permissions
-  const isAdmin = hasRole('root') || hasRole('super-admin') || 
+  const isAdmin = hasRole('super-admin') || 
                   adminState.currentUser?.isAdmin;
 
   // Helper function to check if cache is valid
@@ -262,7 +262,9 @@ const EventsPage: React.FC = () => {
           const transformedEvent = {
             id: firebaseEvent.id,
             title: firebaseEvent.title,
-            date: firebaseEvent.startDate?.toDate?.()?.toISOString()?.split('T')[0] || firebaseEvent.startDate,
+            date: firebaseEvent.startDate?.toDate?.()?.toISOString()?.split('T')[0] || 
+                  (firebaseEvent.startDate && firebaseEvent.startDate.split) ? firebaseEvent.startDate.split('T')[0] : 
+                  firebaseEvent.startDate,
             startTime: firebaseEvent.startTime || '00:00',
             endTime: firebaseEvent.endTime || '00:00',
             location: {

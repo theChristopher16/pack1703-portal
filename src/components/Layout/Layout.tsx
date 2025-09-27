@@ -181,9 +181,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     {
       name: 'Content Management',
       items: adminNav.filter(item => 
-        item.href.includes('/admin/events') || 
-        item.href.includes('/admin/announcements') || 
-        item.href.includes('/admin/locations')
+        item.href.includes('/events') || 
+        item.href.includes('/announcements') || 
+        item.href.includes('/locations')
       ),
       icon: '📝'
     },
@@ -191,35 +191,35 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       name: 'User Management',
       items: adminNav.filter(item => 
         item.href.includes('/users') || 
-        item.href.includes('/admin/volunteer') ||
-        item.href.includes('/admin/permissions-audit')
+        item.href.includes('/volunteer') ||
+        item.href.includes('/permissions-audit')
       ),
       icon: '👥'
     },
     {
       name: 'Financial',
       items: adminNav.filter(item => 
-        item.href.includes('/admin/fundraising') || 
-        item.href.includes('/admin/finances')
+        item.href.includes('/fundraising') || 
+        item.href.includes('/finances')
       ),
       icon: '💰'
     },
     {
       name: 'Operations',
       items: adminNav.filter(item => 
-        item.href.includes('/admin/lists') || 
-        item.href.includes('/admin/seasons') ||
-        item.href.includes('/admin/chat')
+        item.href.includes('/lists') || 
+        item.href.includes('/seasons') ||
+        item.href.includes('/chat')
       ),
       icon: '⚙️'
     },
     {
       name: 'System Administration',
       items: systemNav.filter(item => 
-        item.href.includes('/admin/ai') || 
-        item.href.includes('/admin/cost-management') ||
+        item.href.includes('/ai') || 
+        item.href.includes('/cost-management') ||
         item.href.includes('/multi-tenant') ||
-        item.href.includes('/admin/settings')
+        item.href.includes('/settings')
       ),
       icon: '🔧'
     },
@@ -227,12 +227,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       name: 'Monitoring',
       items: systemNav.filter(item => 
         item.href.includes('/soc') ||
-        item.href.includes('/admin/database') ||
-        item.href.includes('/admin/system') ||
-        item.href.includes('/admin/performance') ||
-        item.href.includes('/admin/security') ||
-        item.href.includes('/admin/permissions') ||
-        item.href.includes('/admin/api')
+        item.href.includes('/database') ||
+        item.href.includes('/system') ||
+        item.href.includes('/performance') ||
+        item.href.includes('/security') ||
+        item.href.includes('/permissions') ||
+        item.href.includes('/api')
       ),
       icon: '📈'
     }

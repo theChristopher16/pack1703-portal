@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.helloWorld = exports.getBatchDashboardData = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
+exports.helloWorld = exports.adminDeleteUser = exports.getBatchDashboardData = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 // Initialize Firebase Admin
@@ -1420,6 +1420,165 @@ exports.getBatchDashboardData = functions.https.onCall(async (data, context) => 
             throw error;
         }
         throw new functions.https.HttpsError('internal', 'Failed to get dashboard data');
+    }
+});
+// Admin Delete User Function - Comprehensive data cleanup
+exports.adminDeleteUser = functions.https.onCall(async (data, context) => {
+    var _a, _b;
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        const { userId, reason } = data;
+        if (!userId) {
+            throw new functions.https.HttpsError('invalid-argument', 'User ID is required');
+        }
+        // Check if requesting user has admin privileges
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError('permission-denied', 'User not found');
+        }
+        const userData = userDoc.data();
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin';
+        const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
+        const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
+        if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
+            throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to delete users');
+        }
+        // Prevent deleting self
+        if (userId === context.auth.uid) {
+            throw new functions.https.HttpsError('invalid-argument', 'Cannot delete your own account');
+        }
+        // Check if target user exists
+        const targetUserDoc = await db.collection('users').doc(userId).get();
+        if (!targetUserDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'User not found');
+        }
+        const targetUserData = targetUserDoc.data();
+        // Prevent deleting root users (unless you're also root)
+        if ((targetUserData === null || targetUserData === void 0 ? void 0 : targetUserData.role) === 'root' && (userData === null || userData === void 0 ? void 0 : userData.role) !== 'root') {
+            throw new functions.https.HttpsError('permission-denied', 'Cannot delete root users');
+        }
+        functions.logger.info(`Starting comprehensive user deletion for user: ${userId}`);
+        // COMPREHENSIVE DATA CLEANUP - Remove user data from ALL collections
+        const collectionsToCleanup = [
+            // User-related data
+            { collection: 'users', docId: userId, directDelete: true },
+            // User analytics and tracking
+            { collection: 'analytics', field: 'userId', value: userId },
+            { collection: 'usageTracking', field: 'userId', value: userId },
+            { collection: 'userUsageStats', docId: userId, directDelete: true },
+            { collection: 'performance_metrics', field: 'userId', value: userId },
+            // User interactions
+            { collection: 'rsvps', field: 'userId', value: userId },
+            { collection: 'feedback', field: 'userId', value: userId },
+            { collection: 'volunteer-signups', field: 'volunteerUserId', value: userId },
+            { collection: 'user-pinned-announcements', field: 'userId', value: userId },
+            // Chat system
+            { collection: 'chat-users', docId: userId, directDelete: true },
+            { collection: 'chat-messages', field: 'userId', value: userId },
+            // System logs
+            { collection: 'system-logs', field: 'userId', value: userId },
+            // AI interactions
+            { collection: 'ai-interactions', field: 'userId', value: userId },
+            { collection: 'ai-confirmations', field: 'userId', value: userId },
+            // Cross-organization data
+            { collection: 'crossOrganizationUsers', field: 'userId', value: userId }
+        ];
+        let deletedCount = 0;
+        const deletionResults = [];
+        // Process each collection cleanup
+        for (const collectionConfig of collectionsToCleanup) {
+            try {
+                if (collectionConfig.directDelete) {
+                    // Direct document deletion
+                    await db.collection(collectionConfig.collection).doc(collectionConfig.docId).delete();
+                    deletedCount++;
+                    deletionResults.push(`${collectionConfig.collection}/${collectionConfig.docId} - deleted`);
+                }
+                else {
+                    // Query and delete documents matching the user ID
+                    const query = db.collection(collectionConfig.collection)
+                        .where(collectionConfig.field, '==', collectionConfig.value);
+                    const snapshot = await query.get();
+                    if (!snapshot.empty) {
+                        const batch = db.batch();
+                        snapshot.docs.forEach(doc => {
+                            batch.delete(doc.ref);
+                            deletedCount++;
+                        });
+                        await batch.commit();
+                        deletionResults.push(`${collectionConfig.collection} - ${snapshot.docs.length} documents deleted`);
+                    }
+                }
+            }
+            catch (error) {
+                functions.logger.warn(`Failed to cleanup ${collectionConfig.collection}:`, error);
+                deletionResults.push(`${collectionConfig.collection} - cleanup failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+        }
+        // Delete user from Firebase Auth (requires admin SDK)
+        try {
+            await admin.auth().deleteUser(userId);
+            functions.logger.info(`Firebase Auth user deleted: ${userId}`);
+            deletionResults.push('Firebase Auth - user deleted');
+        }
+        catch (authError) {
+            functions.logger.warn(`Failed to delete Firebase Auth user ${userId}:`, authError);
+            deletionResults.push(`Firebase Auth - deletion failed: ${authError instanceof Error ? authError.message : 'Unknown error'}`);
+            // Continue even if Firebase Auth deletion fails - Firestore deletion is the main concern
+        }
+        // Log comprehensive admin action
+        await db.collection('adminActions').add({
+            userId: context.auth.uid,
+            userEmail: (userData === null || userData === void 0 ? void 0 : userData.email) || 'unknown',
+            action: 'delete_user',
+            entityType: 'user',
+            entityId: userId,
+            entityName: (targetUserData === null || targetUserData === void 0 ? void 0 : targetUserData.displayName) || (targetUserData === null || targetUserData === void 0 ? void 0 : targetUserData.email) || 'Unknown',
+            details: {
+                reason: reason || 'No reason provided',
+                deletedUserRole: targetUserData === null || targetUserData === void 0 ? void 0 : targetUserData.role,
+                deletedUserEmail: targetUserData === null || targetUserData === void 0 ? void 0 : targetUserData.email,
+                deletedDocumentsCount: deletedCount,
+                deletionResults: deletionResults,
+                comprehensiveCleanup: true
+            },
+            timestamp: getTimestamp(),
+            success: true
+        });
+        functions.logger.info(`User deletion completed for ${userId}. Documents deleted: ${deletedCount}`);
+        return {
+            success: true,
+            message: 'User and all associated data deleted successfully',
+            deletedDocumentsCount: deletedCount,
+            deletionResults: deletionResults
+        };
+    }
+    catch (error) {
+        functions.logger.error('Error deleting user:', error);
+        // Log failed admin action
+        if (context.auth) {
+            try {
+                await db.collection('adminActions').add({
+                    userId: context.auth.uid,
+                    action: 'delete_user',
+                    entityType: 'user',
+                    entityId: (data === null || data === void 0 ? void 0 : data.userId) || 'unknown',
+                    details: { error: error instanceof Error ? error.message : 'Unknown error' },
+                    timestamp: getTimestamp(),
+                    success: false
+                });
+            }
+            catch (logError) {
+                functions.logger.error('Failed to log admin action:', logError);
+            }
+        }
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to delete user');
     }
 });
 // Simple test function

@@ -249,16 +249,32 @@ const AdminUsers: React.FC = () => {
 
     try {
       setIsUpdating(true);
-      const success = await authService.deleteUser(selectedUser.uid);
+      const success = await authService.deleteUser(selectedUser.uid, `Deleted by admin from user management interface`);
       if (success) {
         await loadUsers();
         setShowDeleteModal(false);
         setShowUserModal(false);
-        await addNotification('success', 'Success', 'User deleted successfully');
+        await addNotification('success', 'Success', 'User and all associated data deleted successfully');
       }
     } catch (error: any) {
+      console.error('Error deleting user:', error);
       setError(error.message);
-      await addNotification('error', 'Error', 'Failed to delete user');
+      
+      // Provide more specific error messages based on error type
+      let errorMessage = 'Failed to delete user';
+      if (error.code === 'permission-denied') {
+        errorMessage = 'Insufficient permissions to delete users';
+      } else if (error.code === 'not-found') {
+        errorMessage = 'User not found';
+      } else if (error.code === 'invalid-argument') {
+        errorMessage = 'Cannot delete your own account or invalid user ID';
+      } else if (error.code === 'unauthenticated') {
+        errorMessage = 'Authentication required';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      await addNotification('error', 'Error', errorMessage);
     } finally {
       setIsUpdating(false);
     }
@@ -306,9 +322,9 @@ const AdminUsers: React.FC = () => {
           }`}
         >
           <div className="p-6">
-            <div className="flex items-start space-x-4">
+            <div className="flex flex-col sm:flex-row sm:items-start space-y-4 sm:space-y-0 sm:space-x-4">
               {/* Profile Photo */}
-              <div className="relative">
+              <div className="relative flex-shrink-0">
                 <div className="w-16 h-16 rounded-full overflow-hidden border-4 border-yellow-400">
                   {user.photoURL ? (
                     <img 
@@ -331,14 +347,16 @@ const AdminUsers: React.FC = () => {
 
               {/* User Info */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col space-y-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
-                      <span>{user.displayName || 'Unnamed User'}</span>
-                      {getRoleIcon(user.role)}
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleBadgeColor(user.role)}`}>
-                        {user.role.replace('_', ' ')}
-                      </span>
+                    <h3 className="text-lg font-semibold text-gray-900 flex flex-wrap items-center gap-2">
+                      <span className="truncate">{user.displayName || 'Unnamed User'}</span>
+                      <div className="flex items-center space-x-2 flex-shrink-0">
+                        {getRoleIcon(user.role)}
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleBadgeColor(user.role)}`}>
+                          {user.role.replace('_', ' ')}
+                        </span>
+                      </div>
                     </h3>
                     
                     {user.profile?.nickname && (
@@ -347,20 +365,20 @@ const AdminUsers: React.FC = () => {
                     
                     <div className="mt-2 space-y-1">
                       <div className="flex items-center text-sm text-gray-600">
-                        <Mail className="w-4 h-4 mr-2" />
+                        <Mail className="w-4 h-4 mr-2 flex-shrink-0" />
                         <span className="truncate">{user.email}</span>
                       </div>
                       
                       {user.profile?.phone && (
                         <div className="flex items-center text-sm text-gray-600">
-                          <Phone className="w-4 h-4 mr-2" />
-                          <span>{user.profile.phone}</span>
+                          <Phone className="w-4 h-4 mr-2 flex-shrink-0" />
+                          <span className="truncate">{user.profile.phone}</span>
                         </div>
                       )}
                       
                       {user.profile?.den && (
                         <div className="flex items-center text-sm text-gray-600">
-                          <MapPin className="w-4 h-4 mr-2" />
+                          <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
                           <span className="font-medium text-primary-600">{user.profile.den}</span>
                           {user.profile.scoutRank && (
                             <span className="ml-2 text-gray-500">• {user.profile.scoutRank}</span>
@@ -370,12 +388,13 @@ const AdminUsers: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center space-x-2">
+                  {/* Actions - Moved below user info on mobile */}
+                  <div className="flex items-center justify-end sm:justify-start space-x-2">
                     {hasChildren && (
                       <button
                         onClick={() => toggleUserExpansion(user.uid)}
                         className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                        title="Toggle children"
                       >
                         {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                       </button>

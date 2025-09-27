@@ -157,34 +157,34 @@ function App() {
           <Route path="/analytics" element={<Layout><AdminOnly><AnalyticsDashboard /></AdminOnly></Layout>} />
           <Route path="/analytics/test" element={<Layout><AdminOnly><AnalyticsTest /></AdminOnly></Layout>} />
           <Route path="/admin" element={<Layout><AdminOnly><AdminDashboard /></AdminOnly></Layout>} />
-          <Route path="/admin/events" element={<Layout><AdminOnly><AdminEvents /></AdminOnly></Layout>} />
-          <Route path="/admin/locations" element={<Layout><AdminOnly><AdminLocations /></AdminOnly></Layout>} />
-          <Route path="/admin/announcements" element={<Layout><AdminOnly><AdminAnnouncements /></AdminOnly></Layout>} />
-          <Route path="/admin/lists" element={<Layout><AdminOnly><AdminLists /></AdminOnly></Layout>} />
-          <Route path="/admin/volunteer" element={<Layout><AdminOnly><AdminVolunteer /></AdminOnly></Layout>} />
-          <Route path="/admin/seasons" element={<Layout><AdminOnly><AdminSeasons /></AdminOnly></Layout>} />
-          <Route path="/admin/fundraising" element={<Layout><AdminOnly><AdminFundraising /></AdminOnly></Layout>} />
-          <Route path="/admin/finances" element={<Layout><AdminOnly><AdminFinances /></AdminOnly></Layout>} />
+          <Route path="/events" element={<Layout><AdminOnly><AdminEvents /></AdminOnly></Layout>} />
+          <Route path="/locations" element={<Layout><AdminOnly><AdminLocations /></AdminOnly></Layout>} />
+          <Route path="/announcements" element={<Layout><AdminOnly><AdminAnnouncements /></AdminOnly></Layout>} />
+          <Route path="/lists" element={<Layout><AdminOnly><AdminLists /></AdminOnly></Layout>} />
+          <Route path="/volunteer" element={<Layout><AdminOnly><AdminVolunteer /></AdminOnly></Layout>} />
+          <Route path="/seasons" element={<Layout><AdminOnly><AdminSeasons /></AdminOnly></Layout>} />
+          <Route path="/fundraising" element={<Layout><AdminOnly><AdminFundraising /></AdminOnly></Layout>} />
+          <Route path="/finances" element={<Layout><AdminOnly><AdminFinances /></AdminOnly></Layout>} />
           <Route path="/users" element={<Layout><AdminOnly><AdminUsers /></AdminOnly></Layout>} />
           {/* Temporarily disabled for build
-        <Route path="/admin/feedback" element={<Layout><AdminOnly><FeedbackManagementPage /></AdminOnly></Layout>} />
+        <Route path="/feedback" element={<Layout><AdminOnly><FeedbackManagementPage /></AdminOnly></Layout>} />
         */}
-          <Route path="/admin/permissions-audit" element={<Layout><AdminOnly><AdminPermissionsAudit /></AdminOnly></Layout>} />
-          <Route path="/admin/reminders" element={<Layout><AdminOnly><AdminReminders /></AdminOnly></Layout>} />
+          <Route path="/permissions-audit" element={<Layout><AdminOnly><AdminPermissionsAudit /></AdminOnly></Layout>} />
+          <Route path="/reminders" element={<Layout><AdminOnly><AdminReminders /></AdminOnly></Layout>} />
           
           {/* Root-only Routes */}
-          <Route path="/admin/ai" element={<Layout><RootOnly><AdminAI /></RootOnly></Layout>} />
-          <Route path="/admin/cost-management" element={<Layout><RootOnly><AdminCostManagement /></RootOnly></Layout>} />
+          <Route path="/ai" element={<Layout><RootOnly><AdminAI /></RootOnly></Layout>} />
+          <Route path="/cost-management" element={<Layout><RootOnly><AdminCostManagement /></RootOnly></Layout>} />
           <Route path="/multi-tenant" element={<Layout><RootOnly><MultiTenantManagement /></RootOnly></Layout>} />
-          <Route path="/admin/settings" element={<Layout><RootOnly><AdminSettings /></RootOnly></Layout>} />
+          <Route path="/settings" element={<Layout><RootOnly><AdminSettings /></RootOnly></Layout>} />
           
           {/* User Profile Route */}
           <Route path="/profile" element={<Layout><AuthenticatedOnly><UserProfile /></AuthenticatedOnly></Layout>} />
           <Route path="/soc" element={<Layout><RootOnly><HackerTab /></RootOnly></Layout>} />
-          <Route path="/admin/database" element={<Layout><RootOnly><DatabaseMonitor /></RootOnly></Layout>} />
-          <Route path="/admin/system" element={<Layout><RootOnly><SystemMonitor /></RootOnly></Layout>} />
-          <Route path="/admin/performance" element={<Layout><RootOnly><PerformanceMonitor /></RootOnly></Layout>} />
-          <Route path="/admin/root-setup" element={<RootAccountSetup />} />
+          <Route path="/database" element={<Layout><RootOnly><DatabaseMonitor /></RootOnly></Layout>} />
+          <Route path="/system" element={<Layout><RootOnly><SystemMonitor /></RootOnly></Layout>} />
+          <Route path="/performance" element={<Layout><RootOnly><PerformanceMonitor /></RootOnly></Layout>} />
+          <Route path="/root-setup" element={<RootAccountSetup />} />
           
           {/* Development/Test Routes */}
           <Route path="/forms-demo" element={<Layout><FormsDemoPage /></Layout>} />

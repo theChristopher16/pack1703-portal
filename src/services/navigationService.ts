@@ -147,7 +147,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'Event Management',
-    href: '/admin/events',
+    href: '/events',
     icon: Calendar,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
@@ -155,7 +155,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'News Management',
-    href: '/admin/announcements',
+    href: '/announcements',
     icon: MessageSquare,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
@@ -163,7 +163,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'Location Management',
-    href: '/admin/locations',
+    href: '/locations',
     icon: MapPin,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
@@ -171,7 +171,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'Volunteer Management',
-    href: '/admin/volunteer',
+    href: '/volunteer',
     icon: HandHeart,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
@@ -187,7 +187,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'Fundraising',
-    href: '/admin/fundraising',
+    href: '/fundraising',
     icon: Target,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
@@ -195,7 +195,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'Finances',
-    href: '/admin/finances',
+    href: '/finances',
     icon: CreditCard,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
@@ -203,7 +203,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'Seasons',
-    href: '/admin/seasons',
+    href: '/seasons',
     icon: Sprout,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
@@ -211,7 +211,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'Lists',
-    href: '/admin/lists',
+    href: '/lists',
     icon: List,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
@@ -219,7 +219,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'Feedback Management',
-    href: '/admin/feedback',
+    href: '/feedback',
     icon: MessageSquare,
     roles: [UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
@@ -229,7 +229,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   // SYSTEM ITEMS (root only)
   {
     name: 'Solyn AI',
-    href: '/admin/ai',
+    href: '/ai',
     icon: Bot,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
@@ -253,7 +253,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'Cost Management',
-    href: '/admin/cost-management',
+    href: '/cost-management',
     icon: DollarSign,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
@@ -261,7 +261,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'System Settings',
-    href: '/admin/settings',
+    href: '/settings',
     icon: Cog,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
@@ -269,7 +269,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'Database Monitor',
-    href: '/admin/database',
+    href: '/database',
     icon: Database,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
@@ -277,7 +277,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'System Monitor',
-    href: '/admin/system',
+    href: '/system',
     icon: Activity,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
@@ -285,7 +285,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'Performance Monitor',
-    href: '/admin/performance',
+    href: '/performance',
     icon: TrendingUp,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
@@ -293,7 +293,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'Permissions Audit',
-    href: '/admin/permissions-audit',
+    href: '/permissions-audit',
     icon: Eye,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',

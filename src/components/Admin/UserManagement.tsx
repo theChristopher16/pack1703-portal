@@ -401,12 +401,28 @@ const UserManagement: React.FC = () => {
 
     try {
       setIsUpdating(true);
-      await authService.deleteUser(selectedUser.uid);
-      await addNotification('success', 'Success', 'User deleted successfully');
+      await authService.deleteUser(selectedUser.uid, `Deleted by admin from user management component`);
+      await addNotification('success', 'Success', 'User and all associated data deleted successfully');
       setShowDeleteModal(false);
       loadUsers();
     } catch (error: any) {
-      await addNotification('error', 'Error', error.message);
+      console.error('Error deleting user:', error);
+      
+      // Provide more specific error messages based on error type
+      let errorMessage = 'Failed to delete user';
+      if (error.code === 'permission-denied') {
+        errorMessage = 'Insufficient permissions to delete users';
+      } else if (error.code === 'not-found') {
+        errorMessage = 'User not found';
+      } else if (error.code === 'invalid-argument') {
+        errorMessage = 'Cannot delete your own account or invalid user ID';
+      } else if (error.code === 'unauthenticated') {
+        errorMessage = 'Authentication required';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      await addNotification('error', 'Error', errorMessage);
     } finally {
       setIsUpdating(false);
     }
@@ -581,7 +597,8 @@ const UserManagement: React.FC = () => {
         <>
           {/* User List */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
@@ -690,6 +707,108 @@ const UserManagement: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="lg:hidden">
+              <div className="divide-y divide-gray-200">
+                {filteredUsers.map((user) => (
+                  <div key={user.uid} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-start space-x-4">
+                      {/* Profile Photo */}
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 rounded-full overflow-hidden">
+                          {user.photoURL ? (
+                            <img className="w-full h-full object-cover" src={user.photoURL} alt="" />
+                          ) : (
+                            <div className="w-full h-full bg-gray-300 flex items-center justify-center">
+                              <User className="w-6 h-6 text-gray-600" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* User Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h4 className="text-sm font-medium text-gray-900 truncate">
+                            {user.displayName || 'No Name'}
+                          </h4>
+                          {getRoleIcon(user.role)}
+                        </div>
+                        
+                        <div className="text-sm text-gray-500 mb-2">
+                          {user.email}
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <div className="flex items-center text-xs text-gray-600">
+                            <span className="font-medium mr-1">Role:</span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
+                              {user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </span>
+                          </div>
+                          
+                          {user.profile?.den && (
+                            <div className="flex items-center text-xs text-gray-600">
+                              <span className="font-medium mr-1">Den:</span>
+                              <span>{user.profile.den}</span>
+                              {user.profile.scoutRank && (
+                                <span className="ml-1">• {user.profile.scoutRank}</span>
+                              )}
+                            </div>
+                          )}
+                          
+                          {user.profile?.phone && (
+                            <div className="flex items-center text-xs text-gray-600">
+                              <Phone className="w-3 h-3 mr-1" />
+                              <span>{user.profile.phone}</span>
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs text-gray-600">
+                                Last: {formatLastLogin(user.lastLoginAt)}
+                              </span>
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                user.isActive 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {user.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-col space-y-2">
+                        <button
+                          onClick={() => handleEditUser(user)}
+                          className="p-2 text-primary-600 hover:text-primary-900 hover:bg-primary-50 rounded-lg transition-colors"
+                          title="Edit user"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        {user.role !== UserRole.SUPER_ADMIN && (
+                          <button
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setShowDeleteModal(true);
+                            }}
+                            className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete user"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </>

@@ -247,6 +247,10 @@ const EventsPage: React.FC = () => {
           firestoreService.getEvents()
         ]);
         
+        // Debug logging
+        console.log('🔍 Raw Firebase events received:', firebaseEvents.length);
+        console.log('🔍 First event data:', firebaseEvents[0]);
+        
         // Get event IDs for RSVP count fetching
         const eventIds = firebaseEvents.map((event: any) => event.id);
         
@@ -254,34 +258,40 @@ const EventsPage: React.FC = () => {
         const rsvpCounts = await fetchRSVPCounts(eventIds);
 
         // Transform Firebase data to match our interface
-        const transformedEvents: Event[] = firebaseEvents.map((firebaseEvent: any) => ({
-          id: firebaseEvent.id,
-          title: firebaseEvent.title,
-          date: firebaseEvent.startDate?.toDate?.()?.toISOString()?.split('T')[0] || firebaseEvent.startDate,
-          startTime: firebaseEvent.startTime || '00:00',
-          endTime: firebaseEvent.endTime || '00:00',
-          location: {
-            name: firebaseEvent.locationName || firebaseEvent.location || 'TBD',
-            address: firebaseEvent.address || 'Address TBD',
-            coordinates: firebaseEvent.coordinates || undefined
-          },
-          category: firebaseEvent.category || 'pack-wide',
-          denTags: firebaseEvent.denTags || [],
-          maxCapacity: firebaseEvent.maxCapacity || null,
-          currentRSVPs: rsvpCounts[firebaseEvent.id] || firebaseEvent.currentRSVPs || 0,
-          description: firebaseEvent.description || '',
-          packingList: firebaseEvent.packingList || [],
-          fees: firebaseEvent.fees || null,
-          contactEmail: firebaseEvent.contactEmail || 'cubmaster@sfpack1703.com',
-          isOvernight: firebaseEvent.isOvernight || false,
-          requiresPermission: firebaseEvent.requiresPermission || false,
-          attachments: firebaseEvent.attachments || []
-        }));
+        const transformedEvents: Event[] = firebaseEvents.map((firebaseEvent: any) => {
+          const transformedEvent = {
+            id: firebaseEvent.id,
+            title: firebaseEvent.title,
+            date: firebaseEvent.startDate?.toDate?.()?.toISOString()?.split('T')[0] || firebaseEvent.startDate,
+            startTime: firebaseEvent.startTime || '00:00',
+            endTime: firebaseEvent.endTime || '00:00',
+            location: {
+              name: firebaseEvent.locationName || firebaseEvent.location || 'TBD',
+              address: firebaseEvent.address || 'Address TBD',
+              coordinates: firebaseEvent.coordinates || undefined
+            },
+            category: firebaseEvent.category || 'pack-wide',
+            denTags: firebaseEvent.denTags || [],
+            maxCapacity: firebaseEvent.maxCapacity || null,
+            currentRSVPs: rsvpCounts[firebaseEvent.id] || firebaseEvent.currentRSVPs || 0,
+            description: firebaseEvent.description || '',
+            packingList: firebaseEvent.packingList || [],
+            fees: firebaseEvent.fees || null,
+            contactEmail: firebaseEvent.contactEmail || 'cubmaster@sfpack1703.com',
+            isOvernight: firebaseEvent.isOvernight || false,
+            requiresPermission: firebaseEvent.requiresPermission || false,
+            attachments: firebaseEvent.attachments || []
+          };
+          
+          console.log('🔍 Transforming event:', firebaseEvent.title, 'Date:', transformedEvent.date);
+          return transformedEvent;
+        });
         
         setEvents(transformedEvents);
         
         // Track successful data load
-        console.log('Events loaded successfully:', transformedEvents.length);
+        console.log('✅ Events loaded successfully:', transformedEvents.length);
+        console.log('✅ Transformed events:', transformedEvents);
         
       } catch (error) {
         console.error('Error loading events:', error);

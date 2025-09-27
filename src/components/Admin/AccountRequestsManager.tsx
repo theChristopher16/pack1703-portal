@@ -26,13 +26,7 @@ const AccountRequestsManager: React.FC = () => {
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
   const hasLoaded = useRef(false);
 
-  const loadRequests = useCallback(async (forceRefresh: boolean = false) => {
-    // Use cache if available and not forcing refresh
-    if (!forceRefresh && hasLoaded.current && (Date.now() - lastFetchTime) < CACHE_DURATION) {
-      console.log('Using cached account requests data');
-      return;
-    }
-
+  const loadRequests = async (forceRefresh: boolean = false) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -53,13 +47,14 @@ const AccountRequestsManager: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [lastFetchTime, addNotification]);
+  };
 
   useEffect(() => {
+    // Only load once on mount
     if (!hasLoaded.current) {
       loadRequests();
     }
-  }, [loadRequests]);
+  }, []); // Empty dependency array - only run once
 
   const handleApprove = async (requestId: string, role: string = 'parent') => {
     try {

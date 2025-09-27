@@ -239,7 +239,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo/Brand */}
-            <div className="flex items-center space-x-3">
+            <button 
+              onClick={() => handleNavigation('/')}
+              className="flex items-center space-x-3 hover:opacity-80 transition-opacity duration-200 cursor-pointer"
+            >
               <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center shadow-glow">
                 <span className="text-white" style={{ fontSize: '24px' }}>🏕️</span>
               </div>
@@ -249,7 +252,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </h1>
                 <p className="text-xs footer-text">Families Portal</p>
               </div>
-            </div>
+            </button>
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center space-x-1">

@@ -40,7 +40,8 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [deletingRSVP, setDeletingRSVP] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
-  const { isAdmin, hasPermission } = useAdmin();
+  const { state, hasPermission } = useAdmin();
+  const isAdmin = state.currentUser?.isAdmin || false;
 
   useEffect(() => {
     loadRSVPs();
@@ -182,7 +183,7 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
   };
 
   const handleDeleteRSVP = async (rsvpId: string) => {
-    if (!isAdmin && !hasPermission('event_management')) {
+    if (!isAdmin && !hasPermission('events:delete')) {
       setError('You do not have permission to delete RSVPs');
       return;
     }
@@ -209,10 +210,10 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
   };
 
   const canDeleteRSVP = () => {
-    const canDelete = isAdmin || hasPermission('event_management');
+    const canDelete = isAdmin || hasPermission('events:delete');
     console.log('RSVPListViewer: canDeleteRSVP check:', {
       isAdmin,
-      hasEventManagement: hasPermission('event_management'),
+      hasEventDelete: hasPermission('events:delete'),
       canDelete
     });
     return canDelete;

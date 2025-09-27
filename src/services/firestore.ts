@@ -184,16 +184,6 @@ export const firestoreService = {
     }
   },
 
-  // Delete an RSVP
-  async deleteRSVP(rsvpId: string): Promise<any> {
-    try {
-      const result = await deleteRSVP({ rsvpId });
-      return result.data;
-    } catch (error) {
-      console.error('Failed to delete RSVP:', error);
-      throw error;
-    }
-  },
 
   async getRSVPData(eventId: string): Promise<any> {
     try {

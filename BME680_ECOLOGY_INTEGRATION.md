@@ -290,3 +290,4 @@ int calculateAQI(float gasResistance) {
 ---
 
 *This integration provides a comprehensive environmental monitoring solution that combines cutting-edge sensor technology with educational value, perfect for teaching scouts about environmental science, data analysis, and technology integration.*
+

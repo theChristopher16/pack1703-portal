@@ -1,6 +1,9 @@
 import { getFirestore } from 'firebase/firestore';
 import { collection, doc, getDocs, addDoc, query, orderBy, limit, Timestamp } from 'firebase/firestore';
 
+// Initialize Firestore
+const db = getFirestore();
+
 // Types for BME680 and ecology data
 export interface BME680Reading {
   timestamp: number;

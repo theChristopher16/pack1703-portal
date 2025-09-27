@@ -190,7 +190,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     {
       name: 'User Management',
       items: adminNav.filter(item => 
-        item.href.includes('/admin/users') || 
+        item.href.includes('/users') || 
         item.href.includes('/admin/volunteer') ||
         item.href.includes('/admin/permissions-audit')
       ),

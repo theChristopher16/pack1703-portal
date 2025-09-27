@@ -1,5 +1,6 @@
 import { getApiKeys, API_CONFIG, FEATURE_FLAGS, FALLBACK_BEHAVIOR } from '../config/apiKeys';
 import { apiKeyService } from './apiKeyService';
+import { apiCacheService } from './apiCacheService';
 
 // Interfaces for API responses
 export interface LocationData {
@@ -130,6 +131,13 @@ class ExternalApiService {
    * Verify location using Google Maps Geocoding API
    */
   async verifyLocation(address: string): Promise<LocationData> {
+    // Check cache first
+    const cacheKey = apiCacheService.generateKey('geocode', { address });
+    const cachedData = await apiCacheService.get(cacheKey, 'maps');
+    if (cachedData) {
+      return cachedData;
+    }
+
     const googleMapsKey = await this.getGoogleMapsKey();
     if (!FEATURE_FLAGS.LOCATION_VERIFICATION || !googleMapsKey) {
       return this.getFallbackLocationData();
@@ -162,25 +170,37 @@ class ExternalApiService {
         const businessInfo = await this.getBusinessInfo(location.lat, location.lng, address);
         const parkingInfo = await this.getParkingInfo(location.lat, location.lng);
 
-        return {
+        const successResult: LocationData = {
           verified: true,
           coordinates: { lat: location.lat, lng: location.lng },
           formattedAddress: result.formatted_address,
-          confidence: 'high',
+          confidence: 'high' as const,
           businessInfo,
           parkingInfo,
           source: 'google_maps',
         };
+
+        // Cache the successful result
+        await apiCacheService.set(cacheKey, successResult, 'maps');
+        return successResult;
       }
 
-      return {
+      const result: LocationData = {
         verified: false,
-        confidence: 'low',
+        confidence: 'low' as const,
         source: 'google_maps_no_results',
       };
+
+      // Cache the result
+      await apiCacheService.set(cacheKey, result, 'maps');
+      return result;
     } catch (error) {
       console.error('Location verification failed:', error);
-      return this.getFallbackLocationData();
+      const fallbackResult = this.getFallbackLocationData();
+      
+      // Cache the fallback result
+      await apiCacheService.set(cacheKey, fallbackResult, 'maps');
+      return fallbackResult;
     }
   }
 

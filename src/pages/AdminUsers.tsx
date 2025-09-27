@@ -26,6 +26,7 @@ import { useAdmin } from '../contexts/AdminContext';
 import { authService, AppUser, UserRole, ROLE_PERMISSIONS } from '../services/authService';
 import { adminService } from '../services/adminService';
 import { Link } from 'react-router-dom';
+import AccountRequestsManager from '../components/Admin/AccountRequestsManager';
 
 interface UserWithChildren extends AppUser {
   children?: UserWithChildren[];
@@ -42,6 +43,7 @@ const AdminUsers: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
   const [denFilter, setDenFilter] = useState<string>('all');
   const [selectedUser, setSelectedUser] = useState<UserWithChildren | null>(null);
+  const [activeTab, setActiveTab] = useState<'users' | 'invitations'>('users');
   const [showUserModal, setShowUserModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
@@ -560,8 +562,37 @@ const AdminUsers: React.FC = () => {
           </div>
         </div>
 
-        {/* Users List */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft">
+        {/* Tab Navigation */}
+        <div className="flex space-x-1 bg-white/90 backdrop-blur-sm rounded-2xl p-1 mb-8 border border-white/50">
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+              activeTab === 'users'
+                ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-glow-primary/50'
+                : 'text-gray-600 hover:text-primary-600 hover:bg-primary-50/50'
+            }`}
+          >
+            <Users className="w-4 h-4 inline mr-2" />
+            Users
+          </button>
+          <button
+            onClick={() => setActiveTab('invitations')}
+            className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+              activeTab === 'invitations'
+                ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-glow-primary/50'
+                : 'text-gray-600 hover:text-primary-600 hover:bg-primary-50/50'
+            }`}
+          >
+            <Mail className="w-4 h-4 inline mr-2" />
+            Join Requests
+          </button>
+        </div>
+
+        {/* Content based on active tab */}
+        {activeTab === 'users' ? (
+          <>
+            {/* Users List */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft">
           <h2 className="text-2xl font-display font-semibold text-gray-800 mb-6 flex items-center">
             <span className="w-2 h-8 bg-gradient-to-b from-primary-500 to-secondary-500 rounded-full mr-4"></span>
             Pack Members ({filteredUsers.length})
@@ -588,7 +619,14 @@ const AdminUsers: React.FC = () => {
               {filteredUsers.map(user => renderUserCard(user))}
             </div>
           )}
-        </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Join Requests - Account Request Management */}
+            <AccountRequestsManager />
+          </>
+        )}
       </div>
 
       {/* Edit User Modal */}

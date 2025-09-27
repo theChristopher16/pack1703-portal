@@ -97,7 +97,7 @@ class CostManagementService {
   }
 
   /**
-   * Track API usage for cost monitoring
+   * Track API usage for cost monitoring with alerts
    */
   async trackApiUsage(service: string, userRole?: string, cost: number = 0): Promise<void> {
     if (!this.hasAdminAccess()) {
@@ -115,6 +115,7 @@ class CostManagementService {
         date: today,
         requests: {
           openai: 0,
+          gemini: 0,
           googleMaps: 0,
           openWeather: 0,
           googlePlaces: 0,
@@ -125,6 +126,7 @@ class CostManagementService {
         costs: {
           api: {
             openai: 0,
+            gemini: 0,
             googleMaps: 0,
             openWeather: 0,
             googlePlaces: 0,
@@ -165,6 +167,9 @@ class CostManagementService {
       currentData.costs.total.daily = apiCosts + firebaseCosts;
       currentData.costs.total.monthly = currentData.costs.total.daily * 30;
       currentData.costs.total.yearly = currentData.costs.total.daily * 365;
+
+      // Check for cost alerts
+      await this.checkCostAlertsForService(currentData, service, cost);
       currentData.lastUpdated = serverTimestamp();
 
       // Save to Firestore
@@ -173,11 +178,74 @@ class CostManagementService {
       // Update API status tracking
       this.updateApiStatus(service, userRole);
 
-      // Check for cost alerts
-      await this.checkCostAlerts(currentData.costs.total.daily);
-
     } catch (error) {
       console.error('Error tracking API usage:', error);
+    }
+  }
+
+  /**
+   * Check for cost alerts and create them if thresholds are exceeded
+   */
+  private async checkCostAlertsForService(usageData: any, service: string, cost: number): Promise<void> {
+    try {
+      const dailyBudget = 5.00; // $5 daily budget
+      const monthlyBudget = 150.00; // $150 monthly budget
+      const serviceBudget = 2.00; // $2 per service per day
+
+      // Daily budget alert
+      if (usageData.costs.total.daily > dailyBudget) {
+        await this.createCostAlert({
+          type: 'critical',
+          message: `Daily budget exceeded: $${usageData.costs.total.daily.toFixed(2)} (Budget: $${dailyBudget})`,
+          service: 'total',
+          cost: usageData.costs.total.daily
+        });
+      }
+
+      // Monthly budget alert
+      if (usageData.costs.total.monthly > monthlyBudget) {
+        await this.createCostAlert({
+          type: 'warning',
+          message: `Monthly budget at risk: $${usageData.costs.total.monthly.toFixed(2)} (Budget: $${monthlyBudget})`,
+          service: 'total',
+          cost: usageData.costs.total.monthly
+        });
+      }
+
+      // Service-specific budget alert
+      const serviceCost = usageData.costs.api[service] || 0;
+      if (serviceCost > serviceBudget) {
+        await this.createCostAlert({
+          type: 'warning',
+          message: `${service} usage high: $${serviceCost.toFixed(2)} (Budget: $${serviceBudget})`,
+          service: service,
+          cost: serviceCost
+        });
+      }
+    } catch (error) {
+      console.error('Error checking cost alerts:', error);
+    }
+  }
+
+  /**
+   * Create a cost alert in Firestore
+   */
+  private async createCostAlert(alertData: {
+    type: 'critical' | 'warning' | 'info';
+    message: string;
+    service: string;
+    cost: number;
+  }): Promise<void> {
+    try {
+      const alertRef = doc(collection(this.db, 'cost-alerts'));
+      await setDoc(alertRef, {
+        ...alertData,
+        id: alertRef.id,
+        date: serverTimestamp(),
+        acknowledged: false
+      });
+    } catch (error) {
+      console.error('Error creating cost alert:', error);
     }
   }
 

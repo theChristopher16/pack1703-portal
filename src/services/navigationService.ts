@@ -179,7 +179,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'User Management',
-    href: '/admin/users',
+    href: '/users',
     icon: UserPlus,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',

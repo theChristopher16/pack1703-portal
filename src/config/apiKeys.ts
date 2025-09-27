@@ -74,7 +74,7 @@ export const API_CONFIG = {
       geocodingEndpoint: '/geocode/json',
       placesEndpoint: '/place/details/json',
       placesSearchEndpoint: '/place/nearbysearch/json',
-      maxRequestsPerDay: 5000, // Higher limit for admin
+      maxRequestsPerDay: 1000, // Reduced from 5000 - 80% reduction
       costPerRequest: 0.005, // $5 per 1000 requests
     },
     OPENWEATHER: {
@@ -89,7 +89,7 @@ export const API_CONFIG = {
       detailsEndpoint: '/place/details/json',
       nearbySearchEndpoint: '/place/nearbysearch/json',
       textSearchEndpoint: '/place/textsearch/json',
-      maxRequestsPerDay: 5000, // Higher limit for admin
+      maxRequestsPerDay: 500, // Reduced from 5000 - 90% reduction
       costPerRequest: 0.017, // $17 per 1000 requests
     },
   },
@@ -101,7 +101,7 @@ export const API_CONFIG = {
       geocodingEndpoint: '/geocode/json',
       placesEndpoint: '/place/details/json',
       placesSearchEndpoint: '/place/nearbysearch/json',
-      maxRequestsPerDay: 1000, // Lower limit for users
+      maxRequestsPerDay: 200, // Reduced from 1000 - 80% reduction
       costPerRequest: 0.005, // $5 per 1000 requests
     },
     OPENWEATHER: {
@@ -116,7 +116,7 @@ export const API_CONFIG = {
       detailsEndpoint: '/place/details/json',
       nearbySearchEndpoint: '/place/nearbysearch/json',
       textSearchEndpoint: '/place/textsearch/json',
-      maxRequestsPerDay: 1000, // Lower limit for users
+      maxRequestsPerDay: 100, // Reduced from 1000 - 90% reduction
       costPerRequest: 0.017, // $17 per 1000 requests
     },
   },

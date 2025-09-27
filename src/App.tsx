@@ -165,7 +165,7 @@ function App() {
           <Route path="/admin/seasons" element={<Layout><AdminOnly><AdminSeasons /></AdminOnly></Layout>} />
           <Route path="/admin/fundraising" element={<Layout><AdminOnly><AdminFundraising /></AdminOnly></Layout>} />
           <Route path="/admin/finances" element={<Layout><AdminOnly><AdminFinances /></AdminOnly></Layout>} />
-          <Route path="/admin/users" element={<Layout><AdminOnly><AdminUsers /></AdminOnly></Layout>} />
+          <Route path="/users" element={<Layout><AdminOnly><AdminUsers /></AdminOnly></Layout>} />
           {/* Temporarily disabled for build
         <Route path="/admin/feedback" element={<Layout><AdminOnly><FeedbackManagementPage /></AdminOnly></Layout>} />
         */}

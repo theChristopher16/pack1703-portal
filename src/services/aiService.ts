@@ -83,7 +83,9 @@ class AIService {
       // Track API usage for cost monitoring (optional in test environment)
       try {
         const { costManagementService } = await import('./costManagementService');
-        await costManagementService.instance.trackApiUsage('gemini', context.userRole, 0.001);
+        // Estimate Gemini cost: ~$0.30-1.20 per response with current settings
+        const estimatedCost = 0.75; // Average cost per Gemini response
+        await costManagementService.instance.trackApiUsage('gemini', context.userRole, estimatedCost);
       } catch (costError) {
         // Silently ignore cost tracking errors in test environment
         if (process.env.NODE_ENV !== 'test') {

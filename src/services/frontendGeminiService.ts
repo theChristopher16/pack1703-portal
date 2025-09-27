@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAI, getGenerativeModel, GoogleAIBackend } from 'firebase/ai';
 import { firebaseConfig } from '../firebase/config';
+import { apiCacheService } from './apiCacheService';
 
 // Initialize Firebase App
 const app = initializeApp(firebaseConfig);
@@ -8,11 +9,11 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firebase AI Logic
 const ai = getAI(app, { backend: new GoogleAIBackend() });
 
-// Create Gemini model instance
+// Create Gemini model instance with reduced token limits
 const model = getGenerativeModel(ai, { 
   model: "gemini-2.5-flash",
   generationConfig: {
-    maxOutputTokens: 4000,
+    maxOutputTokens: 500, // Reduced from 4000 - 87.5% reduction
     temperature: 0.7,
   }
 });
@@ -42,19 +43,54 @@ export interface AnnouncementData {
 }
 
 class FrontendGeminiService {
+  private dailyUsageCount = 0;
+  private dailyUsageLimit = 50; // Limit to 50 Gemini calls per day
+  private lastResetDate = new Date().toDateString();
   /**
-   * Generate a response using Gemini
+   * Generate a response using Gemini with caching
    */
   async generateResponse(prompt: string): Promise<GeminiResponse> {
     try {
+      // Reset daily counter if new day
+      const today = new Date().toDateString();
+      if (today !== this.lastResetDate) {
+        this.dailyUsageCount = 0;
+        this.lastResetDate = today;
+      }
+
+      // Check daily limit
+      if (this.dailyUsageCount >= this.dailyUsageLimit) {
+        console.warn('🚫 Daily Gemini usage limit reached');
+        return {
+          content: 'I apologize, but I\'ve reached my daily response limit. Please try again tomorrow.',
+          model: "gemini-2.5-flash"
+        };
+      }
+
+      // Check cache first
+      const cacheKey = apiCacheService.generateKey('gemini', { prompt });
+      const cachedResponse = await apiCacheService.get(cacheKey, 'gemini');
+      
+      if (cachedResponse) {
+        console.log('🎯 Gemini cache hit - avoiding API call');
+        return cachedResponse;
+      }
+
+      console.log(`💰 Making Gemini API call (${this.dailyUsageCount + 1}/${this.dailyUsageLimit})`);
+      this.dailyUsageCount++;
       const result = await model.generateContent(prompt);
       const response = result.response;
       const text = response.text();
 
-      return {
+      const geminiResponse = {
         content: text,
         model: "gemini-2.5-flash"
       };
+
+      // Cache the response for 1 hour
+      await apiCacheService.set(cacheKey, geminiResponse, 'gemini', 60 * 60 * 1000);
+      
+      return geminiResponse;
     } catch (error) {
       console.error('Error generating Gemini response:', error);
       throw new Error(`Failed to generate response: ${error}`);
@@ -65,25 +101,19 @@ class FrontendGeminiService {
    * Generate event description
    */
   async generateEventDescription(eventData: EventData): Promise<string> {
-    const prompt = `Generate an engaging, scout-appropriate event description for a Cub Scout Pack event. 
+    const prompt = `Create a short, engaging Cub Scout event description.
 
-Event Details:
-- Title: ${eventData.title}
-- Date: ${eventData.date}
-- Location: ${eventData.location || 'TBD'}
-- Category: ${eventData.category || 'General'}
-- Den Tags: ${eventData.denTags?.join(', ') || 'All Dens'}
-- Important: ${eventData.isImportant ? 'Yes' : 'No'}
+Event: ${eventData.title} on ${eventData.date}
+Location: ${eventData.location || 'TBD'}
+Category: ${eventData.category || 'General'}
 
 Requirements:
-- 100-200 words
-- Scout-appropriate language
-- Include what scouts will learn/do
-- Mention any special requirements
-- Houston-area appropriate activities
-- Engaging and exciting tone
+- 2-3 sentences only
+- Scout-appropriate
+- Include what scouts will do
+- Houston-area activities
 
-Generate the description:`;
+Description:`;
 
     const result = await this.generateResponse(prompt);
     return result.content;
@@ -93,22 +123,18 @@ Generate the description:`;
    * Generate announcement content
    */
   async generateAnnouncementContent(announcementData: AnnouncementData): Promise<string> {
-    const prompt = `Generate a clear, informative announcement for Cub Scout Pack families.
+    const prompt = `Create a brief Pack announcement.
 
-Announcement Details:
-- Title: ${announcementData.title}
-- Category: ${announcementData.category}
-- Priority: ${announcementData.priority}
-- Related Event: ${announcementData.eventTitle || 'N/A'}
+Title: ${announcementData.title}
+Category: ${announcementData.category}
+Priority: ${announcementData.priority}
 
 Requirements:
-- Clear, family-friendly language
-- Include important details
-- Mention deadlines if applicable
-- Professional but warm tone
-- 50-150 words
+- 1-2 sentences
+- Clear and friendly
+- Include key details
 
-Generate the announcement content:`;
+Announcement:`;
 
     const result = await this.generateResponse(prompt);
     return result.content;

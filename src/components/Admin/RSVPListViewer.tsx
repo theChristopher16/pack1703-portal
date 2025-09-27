@@ -89,13 +89,43 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
       if (timestamp.toDate) {
         return timestamp.toDate().toLocaleString();
       }
+      
+      // Handle Firestore timestamp serialized as object
+      if (timestamp.seconds && timestamp.nanoseconds) {
+        return new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000).toLocaleString();
+      }
+      
       // Handle string timestamp
       if (typeof timestamp === 'string') {
-        return new Date(timestamp).toLocaleString();
+        const date = new Date(timestamp);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleString();
+        }
       }
-      return 'Invalid date';
+      
+      // Handle number timestamp (milliseconds)
+      if (typeof timestamp === 'number') {
+        const date = new Date(timestamp);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleString();
+        }
+      }
+      
+      // Handle Date object
+      if (timestamp instanceof Date) {
+        return timestamp.toLocaleString();
+      }
+      
+      // If we get here, try to create a date from the value
+      const date = new Date(timestamp);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleString();
+      }
+      
+      return 'Unknown date';
     } catch (error) {
-      return 'Invalid date';
+      console.warn('Error formatting date:', timestamp, error);
+      return 'Unknown date';
     }
   };
 

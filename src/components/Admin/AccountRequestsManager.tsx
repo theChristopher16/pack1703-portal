@@ -41,18 +41,23 @@ const AccountRequestsManager: React.FC = () => {
       setIsLoading(true);
       setError(null);
       
+      console.log('Loading account requests...');
       const result = await accountRequestService.getPendingRequests();
+      console.log('Account requests result:', result);
       
       if (result.success) {
         setRequests(result.requests || []);
         setLastFetchTime(Date.now());
+        console.log('Successfully loaded', result.requests?.length || 0, 'requests');
       } else {
         setError(result.message);
         addNotification('error', 'Error', result.message);
+        console.error('Failed to load requests:', result.message);
       }
     } catch (error: any) {
       setError(error.message);
       addNotification('error', 'Error', 'Failed to load account requests');
+      console.error('Error loading account requests:', error);
     } finally {
       setIsLoading(false);
     }

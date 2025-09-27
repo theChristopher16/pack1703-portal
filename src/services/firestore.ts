@@ -160,6 +160,18 @@ export const firestoreService = {
     }
   },
 
+  // Delete RSVP - Use Cloud Function for enhanced security
+  async deleteRSVP(rsvpId: string): Promise<any> {
+    try {
+      const deleteRSVPFunction = httpsCallable(functions, 'deleteRSVP');
+      const result = await deleteRSVPFunction({ rsvpId });
+      return result.data;
+    } catch (error) {
+      console.error('Failed to delete RSVP via Cloud Function:', error);
+      throw error;
+    }
+  },
+
   // Get RSVP count for an event
   async getRSVPCount(eventId: string): Promise<number> {
     try {

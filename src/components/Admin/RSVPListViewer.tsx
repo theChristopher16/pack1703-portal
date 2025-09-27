@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Users, X, Download, RefreshCw, AlertCircle, CheckCircle, Home, Mail, Phone, Clipboard, User } from 'lucide-react';
+import { Users, X, Download, RefreshCw, AlertCircle, CheckCircle, Home, Mail, Phone, Clipboard, User, Trash2 } from 'lucide-react';
 import { firestoreService } from '../../services/firestore';
+import { useAdmin } from '../../contexts/AdminContext';
 
 interface RSVPData {
   id: string;
@@ -37,6 +38,9 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
   const [rsvps, setRsvps] = useState<RSVPData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingRSVP, setDeletingRSVP] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const { isAdmin, hasPermission } = useAdmin();
 
   useEffect(() => {
     loadRSVPs();
@@ -177,6 +181,37 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
     return denCounts;
   };
 
+  const handleDeleteRSVP = async (rsvpId: string) => {
+    if (!isAdmin && !hasPermission('event_management')) {
+      setError('You do not have permission to delete RSVPs');
+      return;
+    }
+
+    setDeletingRSVP(rsvpId);
+    setError(null);
+
+    try {
+      const result = await firestoreService.deleteRSVP(rsvpId);
+      
+      if (result.success) {
+        // Remove the RSVP from the local state
+        setRsvps(prev => prev.filter(rsvp => rsvp.id !== rsvpId));
+        setShowDeleteConfirm(null);
+      } else {
+        setError(result.message || 'Failed to delete RSVP');
+      }
+    } catch (error) {
+      console.error('Error deleting RSVP:', error);
+      setError('Failed to delete RSVP');
+    } finally {
+      setDeletingRSVP(null);
+    }
+  };
+
+  const canDeleteRSVP = () => {
+    return isAdmin || hasPermission('event_management');
+  };
+
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -281,13 +316,29 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
                         <p className="text-sm text-gray-500">{rsvp.phone}</p>
                       )}
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm text-gray-500">
-                        {formatDate(rsvp.submittedAt)}
+                    <div className="flex items-center space-x-3">
+                      <div className="text-right">
+                        <div className="text-sm text-gray-500">
+                          {formatDate(rsvp.submittedAt)}
+                        </div>
+                        <div className="text-sm font-medium text-primary-600">
+                          {rsvp.attendees.length} attendee{rsvp.attendees.length !== 1 ? 's' : ''}
+                        </div>
                       </div>
-                      <div className="text-sm font-medium text-primary-600">
-                        {rsvp.attendees.length} attendee{rsvp.attendees.length !== 1 ? 's' : ''}
-                      </div>
+                      {canDeleteRSVP() && (
+                        <button
+                          onClick={() => setShowDeleteConfirm(rsvp.id)}
+                          disabled={deletingRSVP === rsvp.id}
+                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                          title="Delete RSVP"
+                        >
+                          {deletingRSVP === rsvp.id ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -345,6 +396,38 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
             </div>
           )}
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-2 bg-red-100 rounded-full">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete RSVP</h3>
+              </div>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete this RSVP? This action cannot be undone and will remove all attendee information.
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteRSVP(showDeleteConfirm)}
+                  disabled={deletingRSVP === showDeleteConfirm}
+                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors duration-200 disabled:opacity-50"
+                >
+                  {deletingRSVP === showDeleteConfirm ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">

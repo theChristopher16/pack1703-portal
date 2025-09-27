@@ -393,6 +393,130 @@ async function getActualRSVPCount(eventId: string): Promise<number> {
   }
 }
 
+// Delete RSVP - Admin only
+export const deleteRSVP = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated to delete RSVPs');
+    }
+
+    // Check admin permissions
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    const isAdmin = userData?.isAdmin || userData?.role === 'admin' || userData?.role === 'root';
+    
+    if (!isAdmin) {
+      throw new functions.https.HttpsError('permission-denied', 'Only admins can delete RSVPs');
+    }
+
+    // Validate required fields
+    if (!data.rsvpId) {
+      throw new functions.https.HttpsError('invalid-argument', 'RSVP ID is required');
+    }
+
+    // Get the RSVP document
+    const rsvpRef = db.collection('rsvps').doc(data.rsvpId);
+    const rsvpDoc = await rsvpRef.get();
+    
+    if (!rsvpDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'RSVP not found');
+    }
+
+    const rsvpData = rsvpDoc.data();
+    const eventId = rsvpData?.eventId;
+
+    if (!eventId) {
+      throw new functions.https.HttpsError('invalid-argument', 'RSVP missing event ID');
+    }
+
+    // Use batch write for atomicity
+    const batch = db.batch();
+    
+    // Delete the RSVP
+    batch.delete(rsvpRef);
+
+    // Update event RSVP count
+    const eventRef = db.collection('events').doc(eventId);
+    const currentCount = await getActualRSVPCount(eventId);
+    const newCount = Math.max(0, currentCount - (rsvpData?.attendees?.length || 1));
+    
+    batch.update(eventRef, {
+      currentRSVPs: newCount,
+      updatedAt: getTimestamp()
+    });
+
+    // Update event statistics
+    const eventStatsRef = db.collection('eventStats').doc(eventId);
+    const eventStatsDoc = await eventStatsRef.get();
+    
+    if (eventStatsDoc.exists) {
+      const statsData = eventStatsDoc.data();
+      const currentStatsCount = statsData?.rsvpCount || 0;
+      const attendeeCount = rsvpData?.attendees?.length || 1;
+      
+      batch.update(eventStatsRef, {
+        rsvpCount: Math.max(0, currentStatsCount - attendeeCount),
+        attendeeCount: Math.max(0, (statsData?.attendeeCount || 0) - attendeeCount),
+        updatedAt: getTimestamp()
+      });
+    }
+
+    // Commit the batch
+    await batch.commit();
+
+    // Log the deletion
+    await db.collection('adminActions').add({
+      type: 'rsvp_deleted',
+      adminId: context.auth.uid,
+      adminEmail: context.auth.token.email,
+      rsvpId: data.rsvpId,
+      eventId: eventId,
+      familyName: rsvpData?.familyName || 'Unknown',
+      attendeeCount: rsvpData?.attendees?.length || 0,
+      timestamp: getTimestamp(),
+      ipAddress: context.rawRequest?.ip || 'unknown',
+      userAgent: context.rawRequest?.headers?.['user-agent'] || 'unknown',
+      success: true
+    });
+
+    return {
+      success: true,
+      message: 'RSVP deleted successfully',
+      newRSVPCount: newCount
+    };
+
+  } catch (error) {
+    console.error('Error deleting RSVP:', error);
+    
+    // Log the failed deletion attempt
+    try {
+      await db.collection('adminActions').add({
+        type: 'rsvp_deletion_failed',
+        adminId: context.auth?.uid || 'unknown',
+        adminEmail: context.auth?.token?.email || 'unknown',
+        rsvpId: data.rsvpId || 'unknown',
+        timestamp: getTimestamp(),
+        ipAddress: context.rawRequest?.ip || 'unknown',
+        userAgent: context.rawRequest?.headers?.['user-agent'] || 'unknown',
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    } catch (logError) {
+      console.error('Failed to log deletion error:', logError);
+    }
+
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to delete RSVP');
+  }
+});
+
 // CRITICAL: Get RSVP count for an event
 export const getRSVPCount = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   try {
@@ -464,85 +588,6 @@ export const getBatchRSVPCounts = functions.https.onCall(async (data: any, conte
   }
 });
 
-// CRITICAL: Delete RSVP function
-export const deleteRSVP = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
-  try {
-    // Check authentication
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-    }
-
-    if (!data.rsvpId) {
-      throw new functions.https.HttpsError('invalid-argument', 'RSVP ID is required');
-    }
-
-    // Get the RSVP to check ownership
-    const rsvpRef = db.collection('rsvps').doc(data.rsvpId);
-    const rsvpDoc = await rsvpRef.get();
-    
-    if (!rsvpDoc.exists) {
-      throw new functions.https.HttpsError('not-found', 'RSVP not found');
-    }
-
-    const rsvpData = rsvpDoc.data();
-    
-    // Check if user owns this RSVP or is admin
-    const userDoc = await db.collection('users').doc(context.auth.uid).get();
-    const userData = userDoc.data();
-    const isAdmin = userData?.role === 'admin' || userData?.role === 'root' || userData?.isAdmin;
-    
-    if (rsvpData?.userId !== context.auth.uid && !isAdmin) {
-      throw new functions.https.HttpsError('permission-denied', 'You can only delete your own RSVPs');
-    }
-
-    // Use batch write for atomicity
-    const batch = db.batch();
-    
-    // Delete RSVP
-    batch.delete(rsvpRef);
-
-    // Update event RSVP count
-    const eventRef = db.collection('events').doc(rsvpData!.eventId);
-    const currentCount = await getActualRSVPCount(rsvpData!.eventId);
-    const newCount = Math.max(0, currentCount - (rsvpData!.attendees?.length || 1));
-    
-    batch.update(eventRef, {
-      currentRSVPs: newCount,
-      updatedAt: getTimestamp()
-    });
-
-    // Update event statistics
-    const eventStatsRef = db.collection('eventStats').doc(rsvpData!.eventId);
-    const eventStatsDoc = await eventStatsRef.get();
-    
-    if (eventStatsDoc.exists) {
-      const statsData = eventStatsDoc.data();
-      const currentStatsCount = statsData?.rsvpCount || 0;
-      const newStatsCount = Math.max(0, currentStatsCount - (rsvpData!.attendees?.length || 1));
-      
-      batch.update(eventStatsRef, {
-        rsvpCount: newStatsCount,
-        updatedAt: getTimestamp()
-      });
-    }
-
-    // Commit the batch
-    await batch.commit();
-
-    return {
-      success: true,
-      message: 'RSVP deleted successfully',
-      newRSVPCount: newCount
-    };
-
-  } catch (error) {
-    console.error('Error deleting RSVP:', error);
-    if (error instanceof functions.https.HttpsError) {
-      throw error;
-    }
-    throw new functions.https.HttpsError('internal', 'Failed to delete RSVP');
-  }
-});
 
 // CRITICAL: Get RSVP data for admin users (bypasses client-side permissions)
 export const getRSVPData = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {

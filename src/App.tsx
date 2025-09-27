@@ -41,7 +41,6 @@ import UnifiedChat from './components/Chat/UnifiedChat';
 import AdminAI from './pages/AdminAI';
 import AdminPermissionsAudit from './pages/AdminPermissionsAudit';
 import AdminLists from './pages/AdminLists';
-import AdminVolunteer from './pages/AdminVolunteer';
 import AdminSeasons from './pages/AdminSeasons';
 import AdminFundraising from './pages/AdminFundraising';
 import AdminFinances from './pages/AdminFinances';
@@ -161,7 +160,6 @@ function App() {
           <Route path="/locations" element={<Layout><AdminOnly><AdminLocations /></AdminOnly></Layout>} />
           <Route path="/announcements" element={<Layout><AdminOnly><AdminAnnouncements /></AdminOnly></Layout>} />
           <Route path="/lists" element={<Layout><AdminOnly><AdminLists /></AdminOnly></Layout>} />
-          <Route path="/volunteer" element={<Layout><AdminOnly><AdminVolunteer /></AdminOnly></Layout>} />
           <Route path="/seasons" element={<Layout><AdminOnly><AdminSeasons /></AdminOnly></Layout>} />
           <Route path="/fundraising" element={<Layout><AdminOnly><AdminFundraising /></AdminOnly></Layout>} />
           <Route path="/finances" element={<Layout><AdminOnly><AdminFinances /></AdminOnly></Layout>} />

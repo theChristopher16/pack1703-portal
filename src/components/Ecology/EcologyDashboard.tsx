@@ -36,6 +36,15 @@ interface SensorReading {
   unit: string;
 }
 
+interface BME680Reading {
+  timestamp: number;
+  temperature: number;
+  humidity: number;
+  pressure: number;
+  gasResistance: number;
+  airQualityIndex: number;
+}
+
 interface SensorData {
   temperature: SensorReading[];
   humidity: SensorReading[];
@@ -43,6 +52,7 @@ interface SensorData {
   airQuality: SensorReading[];
   light: SensorReading[];
   soilMoisture: SensorReading[];
+  bme680: BME680Reading[];
 }
 
 interface EcologyData {
@@ -63,6 +73,18 @@ const generateMockData = (): EcologyData => {
     }));
   };
 
+  // Generate BME680 sensor data
+  const generateBME680Data = (): BME680Reading[] => {
+    return Array.from({ length: 24 }, (_, i) => ({
+      timestamp: now - (23 - i) * 300000, // 5-minute intervals
+      temperature: 22 + (Math.random() - 0.5) * 4, // °C
+      humidity: 45 + (Math.random() - 0.5) * 15, // %
+      pressure: 1013 + (Math.random() - 0.5) * 10, // hPa
+      gasResistance: 50000 + (Math.random() - 0.5) * 20000, // ohms
+      airQualityIndex: 50 + (Math.random() - 0.5) * 30 // AQI
+    }));
+  };
+
   return {
     sensors: {
       temperature: generateSensorData(22, 4, '°C'),
@@ -70,7 +92,8 @@ const generateMockData = (): EcologyData => {
       pressure: generateSensorData(1013, 10, 'hPa'),
       airQuality: generateSensorData(50, 20, 'AQI'),
       light: generateSensorData(800, 200, 'lux'),
-      soilMoisture: generateSensorData(60, 20, '%')
+      soilMoisture: generateSensorData(60, 20, '%'),
+      bme680: generateBME680Data()
     },
     lastUpdated: now,
     isLive: true,
@@ -101,7 +124,8 @@ const EcologyDashboard: React.FC = () => {
             pressure: [...prevData.sensors.pressure.slice(1), newData.sensors.pressure[23]],
             airQuality: [...prevData.sensors.airQuality.slice(1), newData.sensors.airQuality[23]],
             light: [...prevData.sensors.light.slice(1), newData.sensors.light[23]],
-            soilMoisture: [...prevData.sensors.soilMoisture.slice(1), newData.sensors.soilMoisture[23]]
+            soilMoisture: [...prevData.sensors.soilMoisture.slice(1), newData.sensors.soilMoisture[23]],
+            bme680: [...prevData.sensors.bme680.slice(1), newData.sensors.bme680[23]]
           }
         };
       });
@@ -136,6 +160,16 @@ const EcologyDashboard: React.FC = () => {
         return value < 200 ? 'text-gray-600' : value > 1000 ? 'text-yellow-600' : 'text-green-600';
       case 'soilMoisture':
         return value < 30 ? 'text-red-600' : value > 80 ? 'text-blue-600' : 'text-green-600';
+      case 'gasResistance':
+        return value < 30000 ? 'text-red-600' : value > 80000 ? 'text-green-600' : 'text-yellow-600';
+      case 'bme680Temperature':
+        return value < 15 ? 'text-blue-600' : value > 30 ? 'text-red-600' : 'text-green-600';
+      case 'bme680Humidity':
+        return value < 30 ? 'text-yellow-600' : value > 70 ? 'text-blue-600' : 'text-green-600';
+      case 'bme680Pressure':
+        return value < 1000 ? 'text-red-600' : value > 1030 ? 'text-blue-600' : 'text-green-600';
+      case 'bme680AirQuality':
+        return value < 50 ? 'text-green-600' : value > 100 ? 'text-red-600' : 'text-yellow-600';
       default:
         return 'text-gray-600';
     }

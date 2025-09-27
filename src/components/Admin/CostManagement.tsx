@@ -2,20 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { 
   DollarSign, 
   TrendingUp, 
-  TrendingDown, 
   AlertTriangle, 
   AlertCircle,
   CheckCircle,
   RefreshCw,
   BarChart3,
   Calendar,
-  Clock,
   Zap,
   Database,
-  HardDrive,
   Globe,
-  Code,
-  Shield,
   Activity,
   BarChart,
   PieChart,
@@ -30,6 +25,7 @@ import { costManagementService, UsageMetrics, CostAlert } from '../../services/c
 import { useAdmin } from '../../contexts/AdminContext';
 import systemMonitorService from '../../services/systemMonitorService';
 import { useToast } from '../../contexts/ToastContext';
+import { googleCloudBillingService, BillingData } from '../../services/googleCloudBillingService';
 
 interface CostManagementProps {
   className?: string;
@@ -43,10 +39,12 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
   const [historicalData, setHistoricalData] = useState<UsageMetrics[]>([]);
   const [alerts, setAlerts] = useState<CostAlert[]>([]);
   const [firebaseEstimate, setFirebaseEstimate] = useState<any>(null);
-  const [selectedTimeframe, setSelectedTimeframe] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [gcpEstimate, setGcpEstimate] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [systemMetrics, setSystemMetrics] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'breakdown' | 'alerts' | 'optimization'>('overview');
+  const [realApiStats, setRealApiStats] = useState<any>(null);
+  const [billingData, setBillingData] = useState<BillingData | null>(null);
 
   useEffect(() => {
     // Load cost data for admin users (root and super-admin roles)
@@ -76,16 +74,28 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
       setLoading(true);
       setError(null);
 
-      const [report, metrics] = await Promise.all([
+      const [report, metrics, apiStats, billing, smartAlerts] = await Promise.all([
         costManagementService.instance.getCostReport(),
-        systemMonitorService.getSystemMetrics()
+        systemMonitorService.getSystemMetrics(),
+        costManagementService.instance.getRealApiUsageStats(),
+        googleCloudBillingService.getCurrentMonthCosts().catch(err => {
+          console.warn('Failed to fetch billing data:', err);
+          return null;
+        }),
+        costManagementService.instance.getSmartCostAlerts()
       ]);
       
       setCurrentUsage(report.current);
       setHistoricalData(report.historical);
-      setAlerts(report.alerts);
+      setAlerts(smartAlerts.length > 0 ? smartAlerts : report.alerts);
       setFirebaseEstimate(report.firebaseEstimate);
+      setGcpEstimate(report.gcpEstimate);
       setSystemMetrics(metrics);
+      setRealApiStats(apiStats);
+      setBillingData(billing);
+
+      // Create new alerts based on current usage
+      await costManagementService.instance.createAndSaveAlerts();
     } catch (err) {
       setError('Failed to load cost data. Please try again.');
       console.error('Error loading cost data:', err);
@@ -112,10 +122,6 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
     }).format(amount);
   };
 
-  const getCostTrend = (current: number, previous: number) => {
-    if (previous === 0) return 'neutral';
-    return current > previous ? 'up' : current < previous ? 'down' : 'neutral';
-  };
 
   const getAlertIcon = (type: string) => {
     switch (type) {
@@ -233,18 +239,45 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
                   {alerts.map((alert) => (
                     <div
                       key={alert.id}
-                      className={`p-4 rounded-lg border ${getAlertColor(alert.type)} flex items-center justify-between`}
+                      className={`p-4 rounded-lg border ${getAlertColor(alert.type)}`}
                     >
-                      <div className="flex items-center">
-                        {getAlertIcon(alert.type)}
-                        <span className="ml-3 font-medium">{alert.message}</span>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start">
+                          {getAlertIcon(alert.type)}
+                          <div className="ml-3 flex-1">
+                            <p className="font-medium">{alert.message}</p>
+                            <div className="mt-2 flex items-center space-x-4 text-sm">
+                              <span className="text-gray-600">
+                                Threshold: {formatCurrency(alert.threshold)}
+                              </span>
+                              <span className="text-gray-600">
+                                Current: {formatCurrency(alert.current)}
+                              </span>
+                              <span className="text-gray-500">
+                                {new Date(alert.date).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {alert.current > alert.threshold && (
+                              <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className={`h-2 rounded-full ${
+                                    alert.type === 'critical' ? 'bg-red-600' : 'bg-yellow-600'
+                                  }`}
+                                  style={{ 
+                                    width: `${Math.min((alert.current / alert.threshold) * 100, 100)}%` 
+                                  }}
+                                ></div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => acknowledgeAlert(alert.id)}
+                          className="text-sm px-3 py-1 bg-white/50 rounded hover:bg-white/70 transition-colors ml-4"
+                        >
+                          Acknowledge
+                        </button>
                       </div>
-                      <button
-                        onClick={() => acknowledgeAlert(alert.id)}
-                        className="text-sm px-3 py-1 bg-white/50 rounded hover:bg-white/70 transition-colors"
-                      >
-                        Acknowledge
-                      </button>
                     </div>
                   ))}
                 </div>
@@ -258,7 +291,11 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
                   <div>
                     <p className="text-sm font-medium text-gray-600">Today's Cost</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      {currentUsage ? formatCurrency(currentUsage.costs.total.daily) : '$0.00'}
+                      {billingData ? formatCurrency(billingData.totalCost / 30) : 
+                       currentUsage ? formatCurrency(currentUsage.costs.total.daily) : '$0.00'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {billingData ? 'Based on monthly billing data' : 'Estimated from usage'}
                     </p>
                   </div>
                   <DollarSign className="w-8 h-8 text-green-600" />
@@ -268,9 +305,13 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
               <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Monthly Estimate</p>
+                    <p className="text-sm font-medium text-gray-600">Monthly Cost</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      {currentUsage ? formatCurrency(currentUsage.costs.total.monthly) : '$0.00'}
+                      {billingData ? formatCurrency(billingData.totalCost) : 
+                       currentUsage ? formatCurrency(currentUsage.costs.total.monthly) : '$0.00'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {billingData ? 'Real billing data' : 'Estimated from usage'}
                     </p>
                   </div>
                   <Calendar className="w-8 h-8 text-blue-600" />
@@ -280,9 +321,13 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
               <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">API Requests</p>
+                    <p className="text-sm font-medium text-gray-600">API Requests (7 days)</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      {currentUsage ? Object.values(currentUsage.requests).reduce((sum, count) => sum + count, 0) : 0}
+                      {realApiStats ? Object.values(realApiStats).reduce((sum: number, stats: any) => sum + (stats.requests || 0), 0) : 
+                       currentUsage ? Object.values(currentUsage.requests).reduce((sum, count) => sum + count, 0) : 0}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {realApiStats ? 'Real usage data' : 'Estimated from tracking'}
                     </p>
                   </div>
                   <Zap className="w-8 h-8 text-yellow-600" />
@@ -374,20 +419,30 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
         {activeTab === 'breakdown' && (
           <div className="space-y-8">
             {/* API Costs Breakdown */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* External API Costs */}
               <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <BarChart3 className="w-5 h-5 mr-2 text-blue-600" />
-                  API Costs
+                  <Globe className="w-5 h-5 mr-2 text-blue-600" />
+                  External APIs
                 </h3>
                 <div className="space-y-3">
                   {currentUsage && Object.entries(currentUsage.costs.api).map(([service, cost]) => (
                     <div key={service} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
                       <span className="text-sm font-medium text-gray-700 capitalize">
-                        {service.replace(/([A-Z])/g, ' $1').trim()}
+                        {service === 'googleMaps' && '🗺️ Google Maps'}
+                        {service === 'googlePlaces' && '🏢 Google Places'}
+                        {service === 'openWeather' && '🌤️ OpenWeather'}
+                        {service === 'phoneValidation' && '📞 Phone Validation'}
+                        {service === 'tenor' && '🎬 Tenor GIFs'}
+                        {service === 'gemini' && '🤖 Gemini AI'}
+                        {service === 'ieeeXplore' && '📚 IEEE Xplore'}
+                        {service === 'emailService' && '📧 Email Service'}
+                        {service === 'openai' && '🧠 OpenAI'}
+                        {!['googleMaps', 'googlePlaces', 'openWeather', 'phoneValidation', 'tenor', 'gemini', 'ieeeXplore', 'emailService', 'openai'].includes(service) && service.replace(/([A-Z])/g, ' $1').trim()}
                       </span>
                       <span className="text-sm font-mono text-gray-900">
-                        {formatCurrency(cost)}
+                        {formatCurrency(cost as number)}
                       </span>
                     </div>
                   ))}
@@ -398,18 +453,45 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
               <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                   <Database className="w-5 h-5 mr-2 text-green-600" />
-                  Firebase Infrastructure
+                  Firebase Services
                 </h3>
                 <div className="space-y-3">
                   {firebaseEstimate && Object.entries(firebaseEstimate).map(([service, cost]) => (
                     <div key={service} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
                       <span className="text-sm font-medium text-gray-700 capitalize flex items-center">
-                        {service === 'firestore' && <Database className="w-4 h-4 mr-2" />}
-                        {service === 'storage' && <HardDrive className="w-4 h-4 mr-2" />}
-                        {service === 'hosting' && <Globe className="w-4 h-4 mr-2" />}
-                        {service === 'functions' && <Code className="w-4 h-4 mr-2" />}
-                        {service === 'auth' && <Shield className="w-4 h-4 mr-2" />}
-                        {service.replace(/([A-Z])/g, ' $1').trim()}
+                        {service === 'firestore' && '📊 Firestore'}
+                        {service === 'storage' && '💾 Storage'}
+                        {service === 'hosting' && '🌐 Hosting'}
+                        {service === 'functions' && '⚡ Functions'}
+                        {service === 'auth' && '🔐 Auth'}
+                        {service === 'appCheck' && '🛡️ App Check'}
+                        {service === 'analytics' && '📈 Analytics'}
+                        {!['firestore', 'storage', 'hosting', 'functions', 'auth', 'appCheck', 'analytics'].includes(service) && service.replace(/([A-Z])/g, ' $1').trim()}
+                      </span>
+                      <span className="text-sm font-mono text-gray-900">
+                        {formatCurrency(cost as number)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Google Cloud Platform Services */}
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <Settings className="w-5 h-5 mr-2 text-purple-600" />
+                  GCP Services
+                </h3>
+                <div className="space-y-3">
+                  {gcpEstimate && Object.entries(gcpEstimate).map(([service, cost]) => (
+                    <div key={service} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                      <span className="text-sm font-medium text-gray-700 capitalize flex items-center">
+                        {service === 'secretManager' && '🔑 Secret Manager'}
+                        {service === 'monitoring' && '📊 Monitoring'}
+                        {service === 'logging' && '📝 Logging'}
+                        {service === 'scheduler' && '⏰ Scheduler'}
+                        {service === 'pubsub' && '📡 Pub/Sub'}
+                        {!['secretManager', 'monitoring', 'logging', 'scheduler', 'pubsub'].includes(service) && service.replace(/([A-Z])/g, ' $1').trim()}
                       </span>
                       <span className="text-sm font-mono text-gray-900">
                         {formatCurrency(cost as number)}
@@ -420,22 +502,135 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
               </div>
             </div>
 
-            {/* Usage Statistics */}
-            {currentUsage && (
+            {/* Real API Usage Statistics */}
+            {realApiStats && (
               <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <BarChart3 className="w-5 h-5 mr-2 text-purple-600" />
-                  API Usage Statistics
+                  <Activity className="w-5 h-5 mr-2 text-purple-600" />
+                  Real API Usage (Last 7 Days)
                 </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                  {Object.entries(currentUsage.requests).map(([service, count]) => (
-                    <div key={service} className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">{count}</div>
-                      <div className="text-xs text-gray-600 capitalize">
-                        {service.replace(/([A-Z])/g, ' $1').trim()}
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+                  {Object.entries(realApiStats).map(([service, stats]: [string, any]) => (
+                    <div key={service} className="text-center p-3 bg-gray-50 rounded-lg">
+                      <div className="text-lg font-bold text-gray-900">{stats.requests || 0}</div>
+                      <div className="text-xs text-gray-600 mb-1">
+                        {service === 'googleMaps' && '🗺️ Google Maps'}
+                        {service === 'googlePlaces' && '🏢 Google Places'}
+                        {service === 'openWeather' && '🌤️ OpenWeather'}
+                        {service === 'phoneValidation' && '📞 Phone Validation'}
+                        {service === 'tenor' && '🎬 Tenor GIFs'}
+                        {service === 'gemini' && '🤖 Gemini AI'}
+                        {service === 'ieeeXplore' && '📚 IEEE Xplore'}
+                        {service === 'emailService' && '📧 Email Service'}
+                        {!['googleMaps', 'googlePlaces', 'openWeather', 'phoneValidation', 'tenor', 'gemini', 'ieeeXplore', 'emailService'].includes(service) && service}
+                      </div>
+                      <div className="text-xs font-medium text-green-600">
+                        {formatCurrency(stats.cost || 0)}
+                      </div>
+                      <div className={`text-xs px-2 py-1 rounded-full mt-1 ${
+                        stats.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {stats.status}
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Firebase/GCP Operations */}
+            {currentUsage && (
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <Database className="w-5 h-5 mr-2 text-blue-600" />
+                  Firebase/GCP Operations
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <div className="text-lg font-bold text-blue-900">{currentUsage.requests.firestoreReads || 0}</div>
+                    <div className="text-xs text-blue-700">📖 Firestore Reads</div>
+                  </div>
+                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                    <div className="text-lg font-bold text-green-900">{currentUsage.requests.firestoreWrites || 0}</div>
+                    <div className="text-xs text-green-700">✍️ Firestore Writes</div>
+                  </div>
+                  <div className="text-center p-3 bg-red-50 rounded-lg">
+                    <div className="text-lg font-bold text-red-900">{currentUsage.requests.firestoreDeletes || 0}</div>
+                    <div className="text-xs text-red-700">🗑️ Firestore Deletes</div>
+                  </div>
+                  <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                    <div className="text-lg font-bold text-yellow-900">{currentUsage.requests.functionInvocations || 0}</div>
+                    <div className="text-xs text-yellow-700">⚡ Function Calls</div>
+                  </div>
+                  <div className="text-center p-3 bg-purple-50 rounded-lg">
+                    <div className="text-lg font-bold text-purple-900">{currentUsage.requests.storageOperations || 0}</div>
+                    <div className="text-xs text-purple-700">💾 Storage Ops</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Google Cloud Billing Data */}
+            {billingData && (
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <Settings className="w-5 h-5 mr-2 text-blue-600" />
+                  Google Cloud Billing (Current Month)
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-sm font-medium text-gray-600">Total Monthly Cost</span>
+                      <span className="text-2xl font-bold text-gray-900">
+                        {formatCurrency(billingData.totalCost)}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {billingData.services.map((service) => (
+                        <div key={service.serviceId} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
+                          <span className="text-sm font-medium text-gray-700">
+                            {service.serviceName}
+                          </span>
+                          <div className="text-right">
+                            <span className="text-sm font-mono text-gray-900">
+                              {formatCurrency(service.cost)}
+                            </span>
+                            <div className="text-xs text-gray-500">
+                              {service.usage.amount.toLocaleString()} {service.usage.unit}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-md font-semibold text-gray-900 mb-3">Cost Breakdown</h4>
+                    <div className="space-y-3">
+                      {billingData.services
+                        .sort((a, b) => b.cost - a.cost)
+                        .slice(0, 5)
+                        .map((service) => {
+                          const percentage = (service.cost / billingData.totalCost) * 100;
+                          return (
+                            <div key={service.serviceId} className="space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span className="font-medium text-gray-700">{service.serviceName}</span>
+                                <span className="font-mono text-gray-900">{formatCurrency(service.cost)}</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {percentage.toFixed(1)}% of total
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -451,6 +646,11 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
                   <BarChart3 className="w-12 h-12 mx-auto mb-2 text-gray-400" />
                   <p>Chart visualization coming soon</p>
                   <p className="text-sm">Historical data: {historicalData.length} days</p>
+                  {billingData && (
+                    <p className="text-sm text-blue-600 mt-2">
+                      Real billing data: {formatCurrency(billingData.totalCost)} this month
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -469,23 +669,45 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
                   {alerts.map((alert) => (
                     <div
                       key={alert.id}
-                      className={`p-4 rounded-lg border ${getAlertColor(alert.type)} flex items-center justify-between`}
+                      className={`p-4 rounded-lg border ${getAlertColor(alert.type)}`}
                     >
-                      <div className="flex items-center">
-                        {getAlertIcon(alert.type)}
-                        <div className="ml-3">
-                          <p className="font-medium">{alert.message}</p>
-                          <p className="text-sm text-gray-600">
-                            {new Date(alert.date).toLocaleDateString()}
-                          </p>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start">
+                          {getAlertIcon(alert.type)}
+                          <div className="ml-3 flex-1">
+                            <p className="font-medium">{alert.message}</p>
+                            <div className="mt-2 flex items-center space-x-4 text-sm">
+                              <span className="text-gray-600">
+                                Threshold: {formatCurrency(alert.threshold)}
+                              </span>
+                              <span className="text-gray-600">
+                                Current: {formatCurrency(alert.current)}
+                              </span>
+                              <span className="text-gray-500">
+                                {new Date(alert.date).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {alert.current > alert.threshold && (
+                              <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className={`h-2 rounded-full ${
+                                    alert.type === 'critical' ? 'bg-red-600' : 'bg-yellow-600'
+                                  }`}
+                                  style={{ 
+                                    width: `${Math.min((alert.current / alert.threshold) * 100, 100)}%` 
+                                  }}
+                                ></div>
+                              </div>
+                            )}
+                          </div>
                         </div>
+                        <button
+                          onClick={() => acknowledgeAlert(alert.id)}
+                          className="text-sm px-3 py-1 bg-white/50 rounded hover:bg-white/70 transition-colors ml-4"
+                        >
+                          Acknowledge
+                        </button>
                       </div>
-                      <button
-                        onClick={() => acknowledgeAlert(alert.id)}
-                        className="text-sm px-3 py-1 bg-white/50 rounded hover:bg-white/70 transition-colors"
-                      >
-                        Acknowledge
-                      </button>
                     </div>
                   ))}
                 </div>
@@ -509,22 +731,48 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
                 </h3>
                 <div className="space-y-4">
                   <div className="p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-medium text-blue-900 mb-2">Reduce OpenAI Usage</h4>
-                    <p className="text-sm text-blue-700">
-                      Consider implementing response caching to reduce API calls by up to 40%.
+                    <h4 className="font-medium text-blue-900 mb-2">🤖 Optimize AI Usage</h4>
+                    <p className="text-sm text-blue-700 mb-2">
+                      Current Gemini usage can be optimized with response caching and prompt optimization.
                     </p>
+                    <ul className="text-xs text-blue-600 space-y-1">
+                      <li>• Implement response caching for common queries</li>
+                      <li>• Use shorter, more focused prompts</li>
+                      <li>• Batch similar requests together</li>
+                    </ul>
                   </div>
                   <div className="p-4 bg-green-50 rounded-lg">
-                    <h4 className="font-medium text-green-900 mb-2">Optimize Storage</h4>
-                    <p className="text-sm text-green-700">
-                      Clean up unused files to reduce Firebase Storage costs.
+                    <h4 className="font-medium text-green-900 mb-2">🗺️ Reduce Google Maps Costs</h4>
+                    <p className="text-sm text-green-700 mb-2">
+                      Google Maps API is the highest cost service. Optimize usage patterns.
                     </p>
+                    <ul className="text-xs text-green-600 space-y-1">
+                      <li>• Cache location data for 24 hours</li>
+                      <li>• Use static maps for non-interactive displays</li>
+                      <li>• Implement client-side geocoding caching</li>
+                    </ul>
                   </div>
                   <div className="p-4 bg-purple-50 rounded-lg">
-                    <h4 className="font-medium text-purple-900 mb-2">Batch API Calls</h4>
-                    <p className="text-sm text-purple-700">
-                      Group multiple API requests to reduce overhead costs.
+                    <h4 className="font-medium text-purple-900 mb-2">📊 Optimize Firebase Usage</h4>
+                    <p className="text-sm text-purple-700 mb-2">
+                      Reduce Firestore read/write operations through better data structure.
                     </p>
+                    <ul className="text-xs text-purple-600 space-y-1">
+                      <li>• Implement pagination for large collections</li>
+                      <li>• Use composite indexes efficiently</li>
+                      <li>• Batch write operations</li>
+                    </ul>
+                  </div>
+                  <div className="p-4 bg-yellow-50 rounded-lg">
+                    <h4 className="font-medium text-yellow-900 mb-2">⚡ Function Optimization</h4>
+                    <p className="text-sm text-yellow-700 mb-2">
+                      Reduce Cloud Function invocations and execution time.
+                    </p>
+                    <ul className="text-xs text-yellow-600 space-y-1">
+                      <li>• Combine related operations</li>
+                      <li>• Use background functions for non-urgent tasks</li>
+                      <li>• Optimize function cold starts</li>
+                    </ul>
                   </div>
                 </div>
               </div>
@@ -541,13 +789,27 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Target Monthly Cost:</span>
-                    <span className="font-medium text-green-600">$100.00</span>
+                    <span className="font-medium text-green-600">$50.00</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Potential Savings:</span>
                     <span className="font-medium text-green-600">
-                      {currentUsage ? formatCurrency(currentUsage.costs.total.monthly - 100) : '$0.00'}
+                      {currentUsage ? formatCurrency(Math.max(0, currentUsage.costs.total.monthly - 50)) : '$0.00'}
                     </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div 
+                      className="bg-green-600 h-3 rounded-full transition-all duration-300" 
+                      style={{ 
+                        width: `${Math.min((currentUsage?.costs.total.monthly || 0) / 50 * 100, 100)}%` 
+                      }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-gray-500 text-center">
+                    {currentUsage ? 
+                      `${((currentUsage.costs.total.monthly / 50) * 100).toFixed(1)}% of target budget used` : 
+                      '0% of target budget used'
+                    }
                   </div>
                 </div>
               </div>

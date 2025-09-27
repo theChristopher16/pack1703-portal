@@ -66,9 +66,7 @@ class AccountRequestService {
 
   async getPendingRequests(): Promise<{ success: boolean; requests?: AccountRequest[]; count?: number; message: string; error?: string }> {
     try {
-      console.log('Calling getPendingAccountRequests Cloud Function...');
       const result = await this.getPendingAccountRequests({});
-      console.log('Cloud Function response:', result);
       return {
         success: true,
         requests: (result.data as any).requests,
@@ -77,11 +75,6 @@ class AccountRequestService {
       };
     } catch (error: any) {
       console.error('Error getting pending requests:', error);
-      console.error('Error details:', {
-        code: error.code,
-        message: error.message,
-        details: error.details
-      });
       return {
         success: false,
         message: error.message || 'Failed to get pending requests',

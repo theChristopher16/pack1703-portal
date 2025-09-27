@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   UserPlus, 
   CheckCircle, 
@@ -24,15 +24,11 @@ const AccountRequestsManager: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
-
-  // Check if cache is still valid
-  const isCacheValid = useCallback((): boolean => {
-    return (Date.now() - lastFetchTime) < CACHE_DURATION;
-  }, [lastFetchTime]);
+  const hasLoaded = useRef(false);
 
   const loadRequests = useCallback(async (forceRefresh: boolean = false) => {
     // Use cache if available and not forcing refresh
-    if (!forceRefresh && requests.length > 0 && isCacheValid()) {
+    if (!forceRefresh && hasLoaded.current && (Date.now() - lastFetchTime) < CACHE_DURATION) {
       console.log('Using cached account requests data');
       return;
     }
@@ -46,6 +42,7 @@ const AccountRequestsManager: React.FC = () => {
       if (result.success) {
         setRequests(result.requests || []);
         setLastFetchTime(Date.now());
+        hasLoaded.current = true;
       } else {
         setError(result.message);
         addNotification('error', 'Error', result.message);
@@ -56,10 +53,12 @@ const AccountRequestsManager: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isCacheValid, addNotification]);
+  }, [lastFetchTime, addNotification]);
 
   useEffect(() => {
-    loadRequests();
+    if (!hasLoaded.current) {
+      loadRequests();
+    }
   }, [loadRequests]);
 
   const handleApprove = async (requestId: string, role: string = 'parent') => {
@@ -152,7 +151,10 @@ const AccountRequestsManager: React.FC = () => {
         </div>
         
         <button
-          onClick={() => loadRequests(true)}
+          onClick={() => {
+            hasLoaded.current = false;
+            loadRequests(true);
+          }}
           className="flex items-center gap-2 px-6 py-3 bg-white/90 backdrop-blur-sm text-gray-700 hover:text-gray-900 hover:bg-white rounded-xl transition-all duration-200 border border-gray-200/50 font-medium"
           disabled={isLoading}
         >

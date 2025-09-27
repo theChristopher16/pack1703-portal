@@ -209,7 +209,13 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
   };
 
   const canDeleteRSVP = () => {
-    return isAdmin || hasPermission('event_management');
+    const canDelete = isAdmin || hasPermission('event_management');
+    console.log('RSVPListViewer: canDeleteRSVP check:', {
+      isAdmin,
+      hasEventManagement: hasPermission('event_management'),
+      canDelete
+    });
+    return canDelete;
   };
 
   if (loading) {
@@ -325,20 +331,24 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
                           {rsvp.attendees.length} attendee{rsvp.attendees.length !== 1 ? 's' : ''}
                         </div>
                       </div>
-                      {canDeleteRSVP() && (
-                        <button
-                          onClick={() => setShowDeleteConfirm(rsvp.id)}
-                          disabled={deletingRSVP === rsvp.id}
-                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200 disabled:opacity-50"
-                          title="Delete RSVP"
-                        >
-                          {deletingRSVP === rsvp.id ? (
-                            <RefreshCw className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </button>
-                      )}
+                      {(() => {
+                        const canDelete = canDeleteRSVP();
+                        console.log('RSVPListViewer: Rendering delete button for RSVP:', rsvp.id, 'canDelete:', canDelete);
+                        return canDelete && (
+                          <button
+                            onClick={() => setShowDeleteConfirm(rsvp.id)}
+                            disabled={deletingRSVP === rsvp.id}
+                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                            title="Delete RSVP"
+                          >
+                            {deletingRSVP === rsvp.id ? (
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        );
+                      })()}
                     </div>
                   </div>
 

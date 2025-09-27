@@ -42,6 +42,20 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
     loadRSVPs();
   }, [eventId]);
 
+  // Prevent body scrolling when modal is open
+  useEffect(() => {
+    // Save the current overflow style
+    const originalOverflow = document.body.style.overflow;
+    
+    // Prevent body scrolling
+    document.body.style.overflow = 'hidden';
+    
+    // Cleanup function to restore scrolling when modal closes
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   const loadRSVPs = async () => {
     try {
       setLoading(true);
@@ -142,10 +156,10 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
               <Users className="w-6 h-6 text-primary-600" />
@@ -183,7 +197,7 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
         </div>
 
         {/* Stats */}
-        <div className="p-6 bg-gray-50 border-b border-gray-200">
+        <div className="p-6 bg-gray-50 border-b border-gray-200 flex-shrink-0">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="text-3xl font-bold text-primary-600">{rsvps.length}</div>
@@ -204,7 +218,7 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
 
         {/* Error State */}
         {error && (
-          <div className="p-6">
+          <div className="p-6 flex-shrink-0">
             <div className="flex items-center space-x-3 p-4 bg-red-50 border border-red-200 rounded-xl">
               <AlertCircle className="w-5 h-5 text-red-500" />
               <span className="text-red-700">{error}</span>
@@ -212,8 +226,8 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
           </div>
         )}
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto">
+        {/* Content - This is the scrollable area */}
+        <div className="flex-1 overflow-y-auto min-h-0" style={{ maxHeight: 'calc(90vh - 300px)' }}>
           {rsvps.length === 0 ? (
             <div className="p-8 text-center">
               <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -298,7 +312,7 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
+        <div className="p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600">
               Showing {rsvps.length} RSVP{rsvps.length !== 1 ? 's' : ''} • {getTotalAttendees()} total attendees

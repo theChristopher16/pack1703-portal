@@ -71,7 +71,8 @@ export const firestoreService = {
   async getEvents(): Promise<any[]> {
     return safeFirestoreCall(async () => {
       const eventsRef = collection(db, 'events');
-      const q = query(eventsRef, orderBy('startDate'), where('visibility', '==', 'public'));
+      // Temporarily show all events regardless of visibility to debug the issue
+      const q = query(eventsRef, orderBy('startDate'));
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     });

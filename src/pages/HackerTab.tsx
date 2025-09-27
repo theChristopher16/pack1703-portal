@@ -52,8 +52,8 @@ const HackerTab: React.FC = () => {
   const [debugMode, setDebugMode] = useState(false);
   const [systemStatus, setSystemStatus] = useState<any>(null);
 
-  // Check if user is root
-  const isRoot = currentUser?.role === 'super-admin';
+  // Check if user is root (handle both new and legacy roles)
+  const isRoot = currentUser?.role === 'super-admin' || currentUser?.role === 'root';
 
   useEffect(() => {
     if (isRoot) {

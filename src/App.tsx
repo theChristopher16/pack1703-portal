@@ -18,6 +18,7 @@ import LocationsPage from './pages/LocationsPage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
 import ResourcesPage from './pages/ResourcesPage';
 import VolunteerPage from './pages/VolunteerPage';
+import EcologyPage from './pages/EcologyPage';
 import FeedbackPage from './pages/FeedbackPage';
 import DataAuditPage from './pages/DataAuditPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
@@ -142,6 +143,7 @@ function App() {
           <Route path="/announcements" element={<Layout><AnnouncementsPage /></Layout>} />
           <Route path="/resources" element={<Layout><ResourcesPage /></Layout>} />
           <Route path="/volunteer" element={<Layout><VolunteerPage /></Layout>} />
+          <Route path="/ecology" element={<Layout><EcologyPage /></Layout>} />
           <Route path="/privacy" element={<Layout><PrivacyPolicyPage /></Layout>} />
           <Route path="/terms" element={<Layout><TermsOfServicePage /></Layout>} />
           <Route path="/join/:inviteId" element={<JoinPage />} />
@@ -173,12 +175,12 @@ function App() {
           {/* Root-only Routes */}
           <Route path="/admin/ai" element={<Layout><RootOnly><AdminAI /></RootOnly></Layout>} />
           <Route path="/admin/cost-management" element={<Layout><RootOnly><AdminCostManagement /></RootOnly></Layout>} />
-          <Route path="/admin/multi-tenant" element={<Layout><RootOnly><MultiTenantManagement /></RootOnly></Layout>} />
+          <Route path="/multi-tenant" element={<Layout><RootOnly><MultiTenantManagement /></RootOnly></Layout>} />
           <Route path="/admin/settings" element={<Layout><RootOnly><AdminSettings /></RootOnly></Layout>} />
           
           {/* User Profile Route */}
           <Route path="/profile" element={<Layout><AuthenticatedOnly><UserProfile /></AuthenticatedOnly></Layout>} />
-          <Route path="/admin/soc" element={<Layout><RootOnly><HackerTab /></RootOnly></Layout>} />
+          <Route path="/soc" element={<Layout><RootOnly><HackerTab /></RootOnly></Layout>} />
           <Route path="/admin/database" element={<Layout><RootOnly><DatabaseMonitor /></RootOnly></Layout>} />
           <Route path="/admin/system" element={<Layout><RootOnly><SystemMonitor /></RootOnly></Layout>} />
           <Route path="/admin/performance" element={<Layout><RootOnly><PerformanceMonitor /></RootOnly></Layout>} />

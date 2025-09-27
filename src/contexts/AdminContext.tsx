@@ -251,14 +251,20 @@ export function AdminProvider({ children }: AdminProviderProps) {
           [UserRole.PARENT]: 'viewer',
           [UserRole.AI_ASSISTANT]: 'moderator' // Map AI assistant to moderator level
         };
+
+        // Handle legacy 'root' role mapping
+        let mappedRole = roleMap[user.role] || 'viewer';
+        if ((user.role as any) === 'root') {
+          mappedRole = 'super-admin';
+        }
         
         const adminUser: AdminUser = {
           uid: user.uid,
           email: user.email,
           displayName: user.displayName || null,
           photoURL: user.photoURL || null,
-          isAdmin: user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN || user.role === UserRole.VOLUNTEER,
-          role: roleMap[user.role] || 'viewer',
+          isAdmin: user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN || user.role === UserRole.VOLUNTEER || (user.role as any) === 'root',
+          role: mappedRole,
           permissions: user.permissions as unknown as AdminPermission[],
           lastLogin: user.lastLoginAt || new Date(),
           isActive: user.isActive,

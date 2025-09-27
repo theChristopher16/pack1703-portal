@@ -4,7 +4,7 @@ import { Menu, X, ChevronDown, Settings, LogOut } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { useAdmin } from '../../contexts/AdminContext';
 import { UserRole } from '../../services/authService';
-import { getNavigationByCategory, isAdminOrAbove, isRoot } from '../../services/navigationService';
+import { getNavigationByCategory, isAdminOrAbove, isRoot, ALL_NAVIGATION_ITEMS } from '../../services/navigationService';
 import OfflineBanner from './OfflineBanner';
 import PWAInstallPrompt from '../PWAInstallPrompt/PWAInstallPrompt';
 import BackToTop from '../BackToTop/BackToTop';
@@ -39,7 +39,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       // Convert AdminRole to UserRole
       const roleMap: { [key: string]: UserRole } = {
         'root': UserRole.SUPER_ADMIN,
-        'super-admin': UserRole.ADMIN,
+        'super-admin': UserRole.SUPER_ADMIN,
         'content-admin': UserRole.ADMIN,
         'moderator': UserRole.VOLUNTEER,
         'viewer': UserRole.PARENT,
@@ -90,6 +90,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const adminNav = getNavigationByCategory(userRole || UserRole.PARENT, 'admin');
   const systemNav = getNavigationByCategory(userRole || UserRole.PARENT, 'system');
   
+  
+  
   // Combine all navigation items
   const allNavItems = [...publicNav, ...authenticatedNav, ...adminNav, ...systemNav];
   
@@ -98,20 +100,26 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (currentUser) {
       // For authenticated users, prioritize main content items
       const mainContentItems = publicNav.filter(item => 
-        ['Events', 'Announcements', 'Locations', 'Volunteer'].includes(item.name)
+        ['Events', 'Announcements', 'Locations', 'Volunteer', 'Ecology'].includes(item.name)
       );
       const chatItem = authenticatedNav.find(item => item.name === 'Chat');
       const profileItem = authenticatedNav.find(item => item.name === 'Profile');
       const otherItems = publicNav.filter(item => 
-        !['Events', 'Announcements', 'Locations', 'Volunteer', 'Home'].includes(item.name)
+        !['Events', 'Announcements', 'Locations', 'Volunteer', 'Ecology', 'Home'].includes(item.name)
       );
+      
+      // For super-admin users, include SOC Console and Multi-Tenant
+      const superAdminItems = userRole === UserRole.SUPER_ADMIN ? [
+        ...systemNav.filter(item => ['SOC Console', 'Multi-Tenant'].includes(item.name))
+      ] : [];
       
       return [
         ...mainContentItems,
         ...(chatItem ? [chatItem] : []),
         ...(profileItem ? [profileItem] : []),
-        ...otherItems
-      ].slice(0, 5); // Increased from 4 to 5 to include Profile
+        ...otherItems,
+        ...superAdminItems
+      ].slice(0, 8); // Increased to 8 to include super-admin items
     } else {
       // For anonymous users, show public items
       return publicNav.slice(0, 4);
@@ -126,10 +134,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
 
   // Organize navigation into logical groups for dropdown
+  const coreFeaturesItems = publicNav.filter(item => 
+    ['Events', 'Announcements', 'Locations', 'Volunteer'].includes(item.name)
+  );
+  
+  // ALWAYS include Ecology in Core Features (bypass role filtering)
+  const ecologyItem = ALL_NAVIGATION_ITEMS.find(item => item.name === 'Ecology');
+  if (ecologyItem) {
+    coreFeaturesItems.push(ecologyItem);
+  }
+  
   const navigationGroups = [
     {
       name: 'Core Features',
-      items: publicNav.slice(0, 4), // First 4 public items go in main toolbar
+      items: coreFeaturesItems,
       icon: '🏠'
     },
     {
@@ -200,7 +218,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       items: systemNav.filter(item => 
         item.href.includes('/admin/ai') || 
         item.href.includes('/admin/cost-management') ||
-        item.href.includes('/admin/multi-tenant') ||
+        item.href.includes('/multi-tenant') ||
         item.href.includes('/admin/settings')
       ),
       icon: '🔧'
@@ -208,7 +226,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     {
       name: 'Monitoring',
       items: systemNav.filter(item => 
-        item.href.includes('/admin/soc') ||
+        item.href.includes('/soc') ||
         item.href.includes('/admin/database') ||
         item.href.includes('/admin/system') ||
         item.href.includes('/admin/performance') ||
@@ -220,11 +238,38 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   ].filter(group => group.items.length > 0); // Only show groups with items
 
+  // Debug: Log navigation groups for super-admin users
+  if (userRole === UserRole.SUPER_ADMIN) {
+    console.log('🔍 Super-Admin Navigation Groups Debug:', {
+      navigationGroups: navigationGroups.map(group => ({
+        name: group.name,
+        items: group.items.map(item => ({ name: item.name, href: item.href }))
+      })),
+      systemNavItems: systemNav.map(item => ({ name: item.name, href: item.href }))
+    });
+  }
+
+
   // For mobile menu, ensure we always have content to show
+  // Force Ecology to always be in Core Features for mobile
+  const coreFeaturesGroup = navigationGroups.find(group => group.name === 'Core Features');
+  if (coreFeaturesGroup) {
+    // Ensure Ecology is in the Core Features group
+    const hasEcology = coreFeaturesGroup.items.some(item => item.name === 'Ecology');
+    if (!hasEcology) {
+      const ecologyItem = ALL_NAVIGATION_ITEMS.find(item => item.name === 'Ecology');
+      if (ecologyItem) {
+        coreFeaturesGroup.items.push(ecologyItem);
+      }
+    }
+  }
+  
   const mobileNavigationGroups = navigationGroups.length > 0 ? navigationGroups : [
     {
       name: 'Navigation',
-      items: publicNav,
+      items: publicNav.filter(item => 
+        ['Events', 'Announcements', 'Locations', 'Volunteer', 'Ecology'].includes(item.name)
+      ),
       icon: '🏠'
     }
   ];

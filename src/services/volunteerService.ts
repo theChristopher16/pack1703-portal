@@ -16,7 +16,7 @@ import {
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { db } from '../firebase/config';
-import { authService } from './authService';
+import { authService, UserRole } from './authService';
 
 // Types
 export interface VolunteerNeed {
@@ -328,7 +328,7 @@ class VolunteerService {
       // Check if user owns this signup (unless they're an admin)
       if (signupData.volunteerUserId && signupData.volunteerUserId !== currentUser?.uid) {
         const userRole = currentUser?.role;
-        if (userRole !== 'admin' && userRole !== 'root') {
+        if (userRole !== UserRole.ADMIN && userRole !== UserRole.SUPER_ADMIN) {
           throw new Error('You can only cancel your own volunteer signups');
         }
       }

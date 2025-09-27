@@ -73,10 +73,10 @@ export const firestoreService = {
       const eventsRef = collection(db, 'events');
       const q = query(eventsRef, orderBy('startDate'));
       const snapshot = await getDocs(q);
-      const allEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const allEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
       
       // Filter for public events or events without visibility field (default to public)
-      return allEvents.filter(event => 
+      return allEvents.filter((event: any) => 
         !event.visibility || event.visibility === 'public'
       );
     });

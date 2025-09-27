@@ -29,7 +29,8 @@ import {
   Lock,
   Eye,
   Zap,
-  User
+  User,
+  Leaf
 } from 'lucide-react';
 
 export interface NavigationItem {
@@ -83,6 +84,14 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
     description: 'Volunteer opportunities'
+  },
+  {
+    name: 'Ecology',
+    href: '/ecology',
+    icon: Leaf,
+    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    category: 'public',
+    description: 'Environmental monitoring and education'
   },
 
   // AUTHENTICATED ITEMS (require login)
@@ -228,7 +237,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'SOC Console',
-    href: '/admin/soc',
+    href: '/soc',
     icon: Monitor,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
@@ -236,7 +245,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'Multi-Tenant',
-    href: '/admin/multi-tenant',
+    href: '/multi-tenant',
     icon: Building,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',

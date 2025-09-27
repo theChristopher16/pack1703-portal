@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.helloWorld = exports.getBatchDashboardData = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.deleteRSVP = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.submitRSVP = exports.adminCreateEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
+exports.helloWorld = exports.getBatchDashboardData = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 // Initialize Firebase Admin
@@ -340,6 +340,111 @@ async function getActualRSVPCount(eventId) {
         return 0;
     }
 }
+// Delete RSVP - Admin only
+exports.deleteRSVP = functions.https.onCall(async (data, context) => {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated to delete RSVPs');
+        }
+        // Check admin permissions
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError('permission-denied', 'User not found');
+        }
+        const userData = userDoc.data();
+        const isAdmin = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'root';
+        if (!isAdmin) {
+            throw new functions.https.HttpsError('permission-denied', 'Only admins can delete RSVPs');
+        }
+        // Validate required fields
+        if (!data.rsvpId) {
+            throw new functions.https.HttpsError('invalid-argument', 'RSVP ID is required');
+        }
+        // Get the RSVP document
+        const rsvpRef = db.collection('rsvps').doc(data.rsvpId);
+        const rsvpDoc = await rsvpRef.get();
+        if (!rsvpDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'RSVP not found');
+        }
+        const rsvpData = rsvpDoc.data();
+        const eventId = rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.eventId;
+        if (!eventId) {
+            throw new functions.https.HttpsError('invalid-argument', 'RSVP missing event ID');
+        }
+        // Use batch write for atomicity
+        const batch = db.batch();
+        // Delete the RSVP
+        batch.delete(rsvpRef);
+        // Update event RSVP count
+        const eventRef = db.collection('events').doc(eventId);
+        const currentCount = await getActualRSVPCount(eventId);
+        const newCount = Math.max(0, currentCount - (((_a = rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.attendees) === null || _a === void 0 ? void 0 : _a.length) || 1));
+        batch.update(eventRef, {
+            currentRSVPs: newCount,
+            updatedAt: getTimestamp()
+        });
+        // Update event statistics
+        const eventStatsRef = db.collection('eventStats').doc(eventId);
+        const eventStatsDoc = await eventStatsRef.get();
+        if (eventStatsDoc.exists) {
+            const statsData = eventStatsDoc.data();
+            const currentStatsCount = (statsData === null || statsData === void 0 ? void 0 : statsData.rsvpCount) || 0;
+            const attendeeCount = ((_b = rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.attendees) === null || _b === void 0 ? void 0 : _b.length) || 1;
+            batch.update(eventStatsRef, {
+                rsvpCount: Math.max(0, currentStatsCount - attendeeCount),
+                attendeeCount: Math.max(0, ((statsData === null || statsData === void 0 ? void 0 : statsData.attendeeCount) || 0) - attendeeCount),
+                updatedAt: getTimestamp()
+            });
+        }
+        // Commit the batch
+        await batch.commit();
+        // Log the deletion
+        await db.collection('adminActions').add({
+            type: 'rsvp_deleted',
+            adminId: context.auth.uid,
+            adminEmail: context.auth.token.email,
+            rsvpId: data.rsvpId,
+            eventId: eventId,
+            familyName: (rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.familyName) || 'Unknown',
+            attendeeCount: ((_c = rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.attendees) === null || _c === void 0 ? void 0 : _c.length) || 0,
+            timestamp: getTimestamp(),
+            ipAddress: ((_d = context.rawRequest) === null || _d === void 0 ? void 0 : _d.ip) || 'unknown',
+            userAgent: ((_f = (_e = context.rawRequest) === null || _e === void 0 ? void 0 : _e.headers) === null || _f === void 0 ? void 0 : _f['user-agent']) || 'unknown',
+            success: true
+        });
+        return {
+            success: true,
+            message: 'RSVP deleted successfully',
+            newRSVPCount: newCount
+        };
+    }
+    catch (error) {
+        console.error('Error deleting RSVP:', error);
+        // Log the failed deletion attempt
+        try {
+            await db.collection('adminActions').add({
+                type: 'rsvp_deletion_failed',
+                adminId: ((_g = context.auth) === null || _g === void 0 ? void 0 : _g.uid) || 'unknown',
+                adminEmail: ((_j = (_h = context.auth) === null || _h === void 0 ? void 0 : _h.token) === null || _j === void 0 ? void 0 : _j.email) || 'unknown',
+                rsvpId: data.rsvpId || 'unknown',
+                timestamp: getTimestamp(),
+                ipAddress: ((_k = context.rawRequest) === null || _k === void 0 ? void 0 : _k.ip) || 'unknown',
+                userAgent: ((_m = (_l = context.rawRequest) === null || _l === void 0 ? void 0 : _l.headers) === null || _m === void 0 ? void 0 : _m['user-agent']) || 'unknown',
+                success: false,
+                error: error instanceof Error ? error.message : String(error)
+            });
+        }
+        catch (logError) {
+            console.error('Failed to log deletion error:', logError);
+        }
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to delete RSVP');
+    }
+});
 // CRITICAL: Get RSVP count for an event
 exports.getRSVPCount = functions.https.onCall(async (data, context) => {
     try {
@@ -402,71 +507,6 @@ exports.getBatchRSVPCounts = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('internal', 'Failed to get batch RSVP counts');
     }
 });
-// CRITICAL: Delete RSVP function
-exports.deleteRSVP = functions.https.onCall(async (data, context) => {
-    var _a, _b;
-    try {
-        // Check authentication
-        if (!context.auth) {
-            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-        }
-        if (!data.rsvpId) {
-            throw new functions.https.HttpsError('invalid-argument', 'RSVP ID is required');
-        }
-        // Get the RSVP to check ownership
-        const rsvpRef = db.collection('rsvps').doc(data.rsvpId);
-        const rsvpDoc = await rsvpRef.get();
-        if (!rsvpDoc.exists) {
-            throw new functions.https.HttpsError('not-found', 'RSVP not found');
-        }
-        const rsvpData = rsvpDoc.data();
-        // Check if user owns this RSVP or is admin
-        const userDoc = await db.collection('users').doc(context.auth.uid).get();
-        const userData = userDoc.data();
-        const isAdmin = (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.isAdmin);
-        if ((rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.userId) !== context.auth.uid && !isAdmin) {
-            throw new functions.https.HttpsError('permission-denied', 'You can only delete your own RSVPs');
-        }
-        // Use batch write for atomicity
-        const batch = db.batch();
-        // Delete RSVP
-        batch.delete(rsvpRef);
-        // Update event RSVP count
-        const eventRef = db.collection('events').doc(rsvpData.eventId);
-        const currentCount = await getActualRSVPCount(rsvpData.eventId);
-        const newCount = Math.max(0, currentCount - (((_a = rsvpData.attendees) === null || _a === void 0 ? void 0 : _a.length) || 1));
-        batch.update(eventRef, {
-            currentRSVPs: newCount,
-            updatedAt: getTimestamp()
-        });
-        // Update event statistics
-        const eventStatsRef = db.collection('eventStats').doc(rsvpData.eventId);
-        const eventStatsDoc = await eventStatsRef.get();
-        if (eventStatsDoc.exists) {
-            const statsData = eventStatsDoc.data();
-            const currentStatsCount = (statsData === null || statsData === void 0 ? void 0 : statsData.rsvpCount) || 0;
-            const newStatsCount = Math.max(0, currentStatsCount - (((_b = rsvpData.attendees) === null || _b === void 0 ? void 0 : _b.length) || 1));
-            batch.update(eventStatsRef, {
-                rsvpCount: newStatsCount,
-                updatedAt: getTimestamp()
-            });
-        }
-        // Commit the batch
-        await batch.commit();
-        return {
-            success: true,
-            message: 'RSVP deleted successfully',
-            newRSVPCount: newCount
-        };
-    }
-    catch (error) {
-        console.error('Error deleting RSVP:', error);
-        if (error instanceof functions.https.HttpsError) {
-            throw error;
-        }
-        throw new functions.https.HttpsError('internal', 'Failed to delete RSVP');
-    }
-});
 // CRITICAL: Get RSVP data for admin users (bypasses client-side permissions)
 exports.getRSVPData = functions.https.onCall(async (data, context) => {
     try {
@@ -492,6 +532,7 @@ exports.getRSVPData = functions.https.onCall(async (data, context) => {
             .get();
         const rsvpsData = [];
         rsvpsQuery.docs.forEach(doc => {
+            var _a, _b;
             const data = doc.data();
             rsvpsData.push({
                 id: doc.id,
@@ -505,15 +546,14 @@ exports.getRSVPData = functions.https.onCall(async (data, context) => {
                 dietaryRestrictions: data.dietaryRestrictions,
                 specialNeeds: data.specialNeeds,
                 notes: data.notes,
-                submittedAt: data.submittedAt,
-                createdAt: data.createdAt
+                submittedAt: ((_a = data.submittedAt) === null || _a === void 0 ? void 0 : _a.toDate) ? data.submittedAt.toDate().toISOString() : data.submittedAt,
+                createdAt: ((_b = data.createdAt) === null || _b === void 0 ? void 0 : _b.toDate) ? data.createdAt.toDate().toISOString() : data.createdAt
             });
         });
         // Sort by submittedAt in descending order (most recent first)
         rsvpsData.sort((a, b) => {
-            var _a, _b;
-            const aTime = ((_a = a.submittedAt) === null || _a === void 0 ? void 0 : _a.toDate) ? a.submittedAt.toDate() : new Date(a.submittedAt || 0);
-            const bTime = ((_b = b.submittedAt) === null || _b === void 0 ? void 0 : _b.toDate) ? b.submittedAt.toDate() : new Date(b.submittedAt || 0);
+            const aTime = new Date(a.submittedAt || 0);
+            const bTime = new Date(b.submittedAt || 0);
             return bTime.getTime() - aTime.getTime();
         });
         console.log(`Found ${rsvpsData.length} RSVPs for event ${data.eventId}`);
@@ -706,9 +746,11 @@ exports.getChatChannels = functions.https.onCall(async (data, context) => {
         const channelsRef = db.collection('chat-channels');
         const snapshot = await channelsRef.get();
         const channels = snapshot.docs.map(doc => (Object.assign({ id: doc.id }, doc.data())));
+        // Remove duplicates based on channel name (case-insensitive)
+        const uniqueChannels = channels.filter((channel, index, self) => index === self.findIndex(c => { var _a, _b; return ((_a = c.name) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === ((_b = channel.name) === null || _b === void 0 ? void 0 : _b.toLowerCase()); }));
         return {
             success: true,
-            channels: channels
+            channels: uniqueChannels
         };
     }
     catch (error) {
@@ -735,7 +777,12 @@ exports.getChatMessages = functions.https.onCall(async (data, context) => {
             .orderBy('timestamp', 'desc')
             .limit(limit)
             .get();
-        const messages = snapshot.docs.map(doc => (Object.assign({ id: doc.id }, doc.data())));
+        const messages = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return Object.assign(Object.assign({ id: doc.id }, data), { 
+                // Ensure backward compatibility for existing messages
+                userName: data.userName || data.senderName || 'Unknown User', content: data.content || data.message || '', isAdmin: data.isAdmin || false });
+        });
         return {
             success: true,
             messages: messages
@@ -759,12 +806,18 @@ exports.sendChatMessage = functions.https.onCall(async (data, context) => {
         if (!channelId || !content) {
             throw new functions.https.HttpsError('invalid-argument', 'channelId and content are required');
         }
+        // Get user data to determine if admin
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        const userData = userDoc.exists ? userDoc.data() : null;
+        const isAdmin = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const messageRef = db.collection('chat-messages');
         const newMessage = {
             channelId,
             content,
             senderId: context.auth.uid,
             senderName: senderName || 'Anonymous',
+            userName: senderName || 'Anonymous', // Add userName for compatibility
+            isAdmin: isAdmin || false,
             timestamp: admin.firestore.FieldValue.serverTimestamp(),
             createdAt: admin.firestore.FieldValue.serverTimestamp()
         };

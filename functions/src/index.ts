@@ -872,7 +872,7 @@ export const getChatChannels = functions.https.onCall(async (data: any, context:
 
     // Remove duplicates based on channel name (case-insensitive)
     const uniqueChannels = channels.filter((channel, index, self) => 
-      index === self.findIndex(c => c.name?.toLowerCase() === channel.name?.toLowerCase())
+      index === self.findIndex(c => (c as any).name?.toLowerCase() === (channel as any).name?.toLowerCase())
     );
 
     return {

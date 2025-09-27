@@ -47,15 +47,15 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
   const [billingData, setBillingData] = useState<BillingData | null>(null);
 
   useEffect(() => {
-    // Load cost data for admin users (root and super-admin roles)
-    if (state.currentUser?.isAdmin || state.currentUser?.role === 'super-admin') {
+    // Load cost data for admin users (admin, root and super-admin roles)
+    if (state.currentUser?.isAdmin || state.currentUser?.role === 'super-admin' || state.currentUser?.role === 'content-admin') {
       loadCostData();
     }
   }, [state.currentUser]);
 
   // Check admin access - show toast and redirect if not authorized
   useEffect(() => {
-    if (!state.currentUser?.isAdmin && state.currentUser?.role !== 'super-admin') {
+    if (!state.currentUser?.isAdmin && state.currentUser?.role !== 'super-admin' && state.currentUser?.role !== 'content-admin') {
       showError('Access Denied', 'You don\'t have permission to access cost management features. Admin or Root access required.');
       // Redirect to admin dashboard after showing toast
       setTimeout(() => {
@@ -65,7 +65,7 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
   }, [state.currentUser, showError]);
 
   // Don't render if user doesn't have access
-  if (!state.currentUser?.isAdmin && state.currentUser?.role !== 'root' && state.currentUser?.role !== 'super-admin') {
+  if (!state.currentUser?.isAdmin && state.currentUser?.role !== 'root' && state.currentUser?.role !== 'super-admin' && state.currentUser?.role !== 'content-admin') {
     return null;
   }
 

@@ -43,7 +43,7 @@ const VolunteerPage: React.FC = () => {
   // Use AdminContext instead of direct auth service
   const { state: adminState, addNotification } = useAdmin();
   const currentUser = adminState.currentUser;
-  const isAdmin = currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.SUPER_ADMIN;
+  const isAdmin = currentUser?.role === 'root' || currentUser?.role === 'super-admin' || currentUser?.role === 'content-admin';
 
   // Load volunteer needs and user signups
   useEffect(() => {
@@ -122,12 +122,12 @@ const VolunteerPage: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const getCategoryColor = (categoryId: string) => {
+  const getPublicCategoryColor = (categoryId: string) => {
     const category = categories.find(c => c.id === categoryId);
     return category ? category.color : 'bg-gray-100 text-gray-800';
   };
 
-  const getPriorityColor = (priorityId: string) => {
+  const getPublicPriorityColor = (priorityId: string) => {
     const priority = priorities.find(p => p.id === priorityId);
     return priority ? priority.color : 'bg-gray-100 text-gray-800';
   };
@@ -660,10 +660,10 @@ const VolunteerPage: React.FC = () => {
 
                     {/* Category and Priority */}
                     <div className="flex flex-wrap gap-2 mb-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(need.category)}`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isAdmin ? getCategoryColor(need.category) : getPublicCategoryColor(need.category)}`}>
                         {categories.find(c => c.id === need.category)?.name}
                       </span>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(need.priority)}`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isAdmin ? getPriorityColor(need.priority) : getPublicPriorityColor(need.priority)}`}>
                         {priorities.find(p => p.id === need.priority)?.name}
                       </span>
                     </div>

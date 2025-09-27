@@ -172,7 +172,7 @@ function App() {
           
           {/* Root-only Routes */}
           <Route path="/ai" element={<Layout><RootOnly><AdminAI /></RootOnly></Layout>} />
-          <Route path="/cost-management" element={<Layout><RootOnly><AdminCostManagement /></RootOnly></Layout>} />
+          <Route path="/cost-management" element={<Layout><AdminOnly><AdminCostManagement /></AdminOnly></Layout>} />
           <Route path="/multi-tenant" element={<Layout><RootOnly><MultiTenantManagement /></RootOnly></Layout>} />
           <Route path="/settings" element={<Layout><RootOnly><AdminSettings /></RootOnly></Layout>} />
           

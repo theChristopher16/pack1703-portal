@@ -142,8 +142,8 @@ const EcologyDashboard: React.FC = () => {
     return `${value.toFixed(1)}${unit}`;
   };
 
-  const getCurrentReading = (readings: SensorReading[]) => {
-    return readings[readings.length - 1];
+  const getCurrentReading = (readings: SensorReading[] | BME680Reading[]) => {
+    return readings[readings.length - 1] as SensorReading;
   };
 
   const getStatusColor = (sensor: string, value: number) => {
@@ -189,6 +189,16 @@ const EcologyDashboard: React.FC = () => {
         return <Sun className="w-5 h-5" />;
       case 'soilMoisture':
         return <Leaf className="w-5 h-5" />;
+      case 'gasResistance':
+        return <Zap className="w-5 h-5" />;
+      case 'bme680Temperature':
+        return value < 15 ? <CloudRain className="w-5 h-5" /> : value > 30 ? <Sun className="w-5 h-5" /> : <Thermometer className="w-5 h-5" />;
+      case 'bme680Humidity':
+        return <Droplets className="w-5 h-5" />;
+      case 'bme680Pressure':
+        return <Gauge className="w-5 h-5" />;
+      case 'bme680AirQuality':
+        return <Wind className="w-5 h-5" />;
       default:
         return <Activity className="w-5 h-5" />;
     }
@@ -201,6 +211,15 @@ const EcologyDashboard: React.FC = () => {
     { key: 'airQuality', label: 'Air Quality', icon: Wind, color: 'bg-gradient-to-br from-green-50 to-green-100/50 border-green-200', iconBg: 'bg-green-100', iconColor: 'text-green-600' },
     { key: 'light', label: 'Light Level', icon: Sun, color: 'bg-gradient-to-br from-yellow-50 to-yellow-100/50 border-yellow-200', iconBg: 'bg-yellow-100', iconColor: 'text-yellow-600' },
     { key: 'soilMoisture', label: 'Soil Moisture', icon: Leaf, color: 'bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' }
+  ];
+
+  // BME680 sensor cards
+  const bme680Cards = [
+    { key: 'bme680Temperature', label: 'BME680 Temp', icon: Thermometer, color: 'bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200', iconBg: 'bg-orange-100', iconColor: 'text-orange-600' },
+    { key: 'bme680Humidity', label: 'BME680 Humidity', icon: Droplets, color: 'bg-gradient-to-br from-cyan-50 to-cyan-100/50 border-cyan-200', iconBg: 'bg-cyan-100', iconColor: 'text-cyan-600' },
+    { key: 'bme680Pressure', label: 'BME680 Pressure', icon: Gauge, color: 'bg-gradient-to-br from-violet-50 to-violet-100/50 border-violet-200', iconBg: 'bg-violet-100', iconColor: 'text-violet-600' },
+    { key: 'gasResistance', label: 'Gas Resistance', icon: Zap, color: 'bg-gradient-to-br from-pink-50 to-pink-100/50 border-pink-200', iconBg: 'bg-pink-100', iconColor: 'text-pink-600' },
+    { key: 'bme680AirQuality', label: 'BME680 Air Quality', icon: Wind, color: 'bg-gradient-to-br from-teal-50 to-teal-100/50 border-teal-200', iconBg: 'bg-teal-100', iconColor: 'text-teal-600' }
   ];
 
   return (
@@ -561,6 +580,184 @@ const EcologyDashboard: React.FC = () => {
               </ResponsiveContainer>
             </div>
           </div>
+
+          {/* BME680 Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* BME680 Temperature Chart */}
+            <div className="bg-gradient-to-br from-white/95 to-orange-50/50 backdrop-blur-sm rounded-3xl border border-orange-100 shadow-lg p-6 hover:shadow-xl transition-all duration-300">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <div className="p-2 bg-orange-100 rounded-xl mr-3">
+                  <Thermometer className="w-6 h-6 text-orange-600" />
+                </div>
+                BME680 Temperature
+              </h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={ecologyData.sensors.bme680}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis 
+                    dataKey="timestamp" 
+                    tickFormatter={(value) => formatTime(value)}
+                    fontSize={12}
+                    stroke="#6b7280"
+                  />
+                  <YAxis fontSize={12} stroke="#6b7280" />
+                  <Tooltip 
+                    labelFormatter={(value) => formatTime(Number(value))}
+                    formatter={(value: number, name) => [formatValue(value, '°C'), 'BME680 Temperature']}
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '12px',
+                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="temperature" 
+                    stroke="#f97316" 
+                    strokeWidth={3}
+                    dot={false}
+                    activeDot={{ r: 6, stroke: '#f97316', strokeWidth: 2, fill: '#fff' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* BME680 Gas Resistance Chart */}
+            <div className="bg-gradient-to-br from-white/95 to-pink-50/50 backdrop-blur-sm rounded-3xl border border-pink-100 shadow-lg p-6 hover:shadow-xl transition-all duration-300">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <div className="p-2 bg-pink-100 rounded-xl mr-3">
+                  <Zap className="w-6 h-6 text-pink-600" />
+                </div>
+                Gas Resistance
+              </h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={ecologyData.sensors.bme680}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis 
+                    dataKey="timestamp" 
+                    tickFormatter={(value) => formatTime(value)}
+                    fontSize={12}
+                    stroke="#6b7280"
+                  />
+                  <YAxis fontSize={12} stroke="#6b7280" />
+                  <Tooltip 
+                    labelFormatter={(value) => formatTime(Number(value))}
+                    formatter={(value: number, name) => [formatValue(value, 'Ω'), 'Gas Resistance']}
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '12px',
+                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="gasResistance" 
+                    stroke="#ec4899" 
+                    fill="url(#gasResistanceGradient)"
+                    fillOpacity={0.4}
+                    strokeWidth={3}
+                  />
+                  <defs>
+                    <linearGradient id="gasResistanceGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ec4899" stopOpacity={0.6}/>
+                      <stop offset="95%" stopColor="#ec4899" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* BME680 Humidity and Pressure Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* BME680 Humidity Chart */}
+            <div className="bg-gradient-to-br from-white/95 to-cyan-50/50 backdrop-blur-sm rounded-3xl border border-cyan-100 shadow-lg p-6 hover:shadow-xl transition-all duration-300">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <div className="p-2 bg-cyan-100 rounded-xl mr-3">
+                  <Droplets className="w-6 h-6 text-cyan-600" />
+                </div>
+                BME680 Humidity
+              </h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={ecologyData.sensors.bme680}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis 
+                    dataKey="timestamp" 
+                    tickFormatter={(value) => formatTime(value)}
+                    fontSize={12}
+                    stroke="#6b7280"
+                  />
+                  <YAxis fontSize={12} stroke="#6b7280" />
+                  <Tooltip 
+                    labelFormatter={(value) => formatTime(Number(value))}
+                    formatter={(value: number, name) => [formatValue(value, '%'), 'BME680 Humidity']}
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '12px',
+                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="humidity" 
+                    stroke="#06b6d4" 
+                    fill="url(#bme680HumidityGradient)"
+                    fillOpacity={0.4}
+                    strokeWidth={3}
+                  />
+                  <defs>
+                    <linearGradient id="bme680HumidityGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.6}/>
+                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* BME680 Pressure Chart */}
+            <div className="bg-gradient-to-br from-white/95 to-violet-50/50 backdrop-blur-sm rounded-3xl border border-violet-100 shadow-lg p-6 hover:shadow-xl transition-all duration-300">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <div className="p-2 bg-violet-100 rounded-xl mr-3">
+                  <Gauge className="w-6 h-6 text-violet-600" />
+                </div>
+                BME680 Pressure
+              </h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={ecologyData.sensors.bme680}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis 
+                    dataKey="timestamp" 
+                    tickFormatter={(value) => formatTime(value)}
+                    fontSize={12}
+                    stroke="#6b7280"
+                  />
+                  <YAxis fontSize={12} stroke="#6b7280" />
+                  <Tooltip 
+                    labelFormatter={(value) => formatTime(Number(value))}
+                    formatter={(value: number, name) => [formatValue(value, 'hPa'), 'BME680 Pressure']}
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '12px',
+                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="pressure" 
+                    stroke="#8b5cf6" 
+                    strokeWidth={3}
+                    dot={false}
+                    activeDot={{ r: 6, stroke: '#8b5cf6', strokeWidth: 2, fill: '#fff' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
 
         {/* Educational Section */}
@@ -650,6 +847,105 @@ const EcologyDashboard: React.FC = () => {
               </p>
             </div>
           </div>
+
+          {/* BME680 Educational Content */}
+          <div className="mt-8">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+              <div className="p-3 bg-orange-100 rounded-2xl mr-4 shadow-lg">
+                <Zap className="w-8 h-8 text-orange-600" />
+              </div>
+              ⚡ BME680 Sensor Technology
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-2xl p-6 border border-orange-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                <h4 className="font-bold text-orange-800 mb-3 text-lg">🌡️ BME680 Temperature</h4>
+                <div className="bg-orange-200/50 rounded-lg p-3 mb-3">
+                  <p className="text-sm font-semibold text-orange-800">📊 Good Range: 18-24°C</p>
+                  <p className="text-xs text-orange-700">❄️ Too cold: Below 15°C • 🔥 Too hot: Above 30°C</p>
+                </div>
+                <p className="text-orange-700 leading-relaxed">
+                  The BME680 provides precise temperature readings with ±1°C accuracy. This helps us understand 
+                  microclimate conditions in different parts of our garden!
+                </p>
+              </div>
+              <div className="bg-gradient-to-br from-cyan-50 to-cyan-100/50 rounded-2xl p-6 border border-cyan-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                <h4 className="font-bold text-cyan-800 mb-3 text-lg">💧 BME680 Humidity</h4>
+                <div className="bg-cyan-200/50 rounded-lg p-3 mb-3">
+                  <p className="text-sm font-semibold text-cyan-800">📊 Good Range: 40-60%</p>
+                  <p className="text-xs text-cyan-700">🏜️ Too dry: Below 30% • 🌧️ Too wet: Above 70%</p>
+                </div>
+                <p className="text-cyan-700 leading-relaxed">
+                  The BME680 humidity sensor has ±3% accuracy and helps us understand how moisture affects 
+                  plant growth and soil conditions in real-time!
+                </p>
+              </div>
+              <div className="bg-gradient-to-br from-violet-50 to-violet-100/50 rounded-2xl p-6 border border-violet-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                <h4 className="font-bold text-violet-800 mb-3 text-lg">🌬️ BME680 Pressure</h4>
+                <div className="bg-violet-200/50 rounded-lg p-3 mb-3">
+                  <p className="text-sm font-semibold text-violet-800">📊 Good Range: 1000-1030 hPa</p>
+                  <p className="text-xs text-violet-700">⛈️ Low pressure: Below 1000 hPa • ☀️ High pressure: Above 1030 hPa</p>
+                </div>
+                <p className="text-violet-700 leading-relaxed">
+                  Atmospheric pressure affects weather patterns! The BME680 measures pressure with ±1 hPa accuracy, 
+                  helping us predict weather changes for our garden.
+                </p>
+              </div>
+              <div className="bg-gradient-to-br from-pink-50 to-pink-100/50 rounded-2xl p-6 border border-pink-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                <h4 className="font-bold text-pink-800 mb-3 text-lg">⚡ Gas Resistance</h4>
+                <div className="bg-pink-200/50 rounded-lg p-3 mb-3">
+                  <p className="text-sm font-semibold text-pink-800">📊 Good Range: 30,000-80,000 Ω</p>
+                  <p className="text-xs text-pink-700">🚨 Low resistance: Below 30kΩ • ✅ High resistance: Above 80kΩ</p>
+                </div>
+                <p className="text-pink-700 leading-relaxed">
+                  Gas resistance measures air quality by detecting volatile organic compounds (VOCs). 
+                  Higher resistance means cleaner air - perfect for healthy plants!
+                </p>
+              </div>
+              <div className="bg-gradient-to-br from-teal-50 to-teal-100/50 rounded-2xl p-6 border border-teal-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                <h4 className="font-bold text-teal-800 mb-3 text-lg">🌪️ BME680 Air Quality</h4>
+                <div className="bg-teal-200/50 rounded-lg p-3 mb-3">
+                  <p className="text-sm font-semibold text-teal-800">📊 Good Range: 0-50 AQI</p>
+                  <p className="text-xs text-teal-700">⚠️ Moderate: 51-100 • 🚨 Unhealthy: Above 100</p>
+                </div>
+                <p className="text-teal-700 leading-relaxed">
+                  The BME680 calculates an Air Quality Index from gas resistance data. Clean air helps plants 
+                  grow better and keeps our garden environment healthy!
+                </p>
+              </div>
+              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-2xl p-6 border border-indigo-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                <h4 className="font-bold text-indigo-800 mb-3 text-lg">🔬 Sensor Technology</h4>
+                <div className="bg-indigo-200/50 rounded-lg p-3 mb-3">
+                  <p className="text-sm font-semibold text-indigo-800">🎯 Key Features</p>
+                  <p className="text-xs text-indigo-700">Low Power • High Accuracy • Compact Size</p>
+                </div>
+                <p className="text-indigo-700 leading-relaxed">
+                  The BME680 is an all-in-one environmental sensor that combines temperature, humidity, 
+                  pressure, and gas sensing in one tiny chip!
+                </p>
+              </div>
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-2xl p-6 border border-amber-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                <h4 className="font-bold text-amber-800 mb-3 text-lg">🌱 Plant Health</h4>
+                <div className="bg-amber-200/50 rounded-lg p-3 mb-3">
+                  <p className="text-sm font-semibold text-amber-800">🎯 Garden Benefits</p>
+                  <p className="text-xs text-amber-700">Early Warning • Optimal Conditions • Data-Driven Care</p>
+                </div>
+                <p className="text-amber-700 leading-relaxed">
+                  By monitoring all these environmental factors, we can detect problems early, 
+                  optimize growing conditions, and help our plants thrive!
+                </p>
+              </div>
+              <div className="bg-gradient-to-br from-rose-50 to-rose-100/50 rounded-2xl p-6 border border-rose-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                <h4 className="font-bold text-rose-800 mb-3 text-lg">📱 Smart Technology</h4>
+                <div className="bg-rose-200/50 rounded-lg p-3 mb-3">
+                  <p className="text-sm font-semibold text-rose-800">🎯 Learning Goals</p>
+                  <p className="text-xs text-rose-700">IoT • Data Analysis • Environmental Science</p>
+                </div>
+                <p className="text-rose-700 leading-relaxed">
+                  The BME680 teaches us about Internet of Things (IoT), data collection, and how technology 
+                  can help us understand and protect our environment!
+                </p>
+              </div>
+          </div>
         </div>
 
         {/* Raw Data Toggle */}
@@ -671,20 +967,65 @@ const EcologyDashboard: React.FC = () => {
           </div>
           
           {showRawData && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sensorCards.map(({ key, label, color }) => (
-                <div key={key} className={`bg-white/90 backdrop-blur-sm rounded-2xl p-6 border shadow-lg hover:shadow-xl transition-all duration-300 ${color}`}>
-                  <h4 className="font-bold text-gray-800 mb-4 text-lg">{label}</h4>
-                  <div className="text-sm text-gray-600 space-y-2 max-h-40 overflow-y-auto">
-                    {ecologyData.sensors[key as keyof SensorData].slice(-6).map((reading, index) => (
-                      <div key={index} className="flex justify-between items-center bg-white/50 rounded-lg p-2">
-                        <span className="font-medium">{formatTime(reading.timestamp)}</span>
-                        <span className="font-mono font-bold text-lg">{formatValue(reading.value, reading.unit)}</span>
+            <div className="space-y-8">
+              {/* Standard Sensors Raw Data */}
+              <div>
+                <h4 className="text-xl font-bold text-gray-800 mb-4">📊 Standard Sensors Data</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {sensorCards.map(({ key, label, color }) => (
+                    <div key={key} className={`bg-white/90 backdrop-blur-sm rounded-2xl p-6 border shadow-lg hover:shadow-xl transition-all duration-300 ${color}`}>
+                      <h5 className="font-bold text-gray-800 mb-4 text-lg">{label}</h5>
+                      <div className="text-sm text-gray-600 space-y-2 max-h-40 overflow-y-auto">
+                        {ecologyData.sensors[key as keyof SensorData].slice(-6).map((reading, index) => (
+                          <div key={index} className="flex justify-between items-center bg-white/50 rounded-lg p-2">
+                            <span className="font-medium">{formatTime(reading.timestamp)}</span>
+                            <span className="font-mono font-bold text-lg">{formatValue((reading as SensorReading).value, (reading as SensorReading).unit)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* BME680 Raw Data */}
+              <div>
+                <h4 className="text-xl font-bold text-gray-800 mb-4">⚡ BME680 Sensor Data</h4>
+                <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border shadow-lg hover:shadow-xl transition-all duration-300 border-orange-200">
+                  <div className="text-sm text-gray-600 space-y-2 max-h-60 overflow-y-auto">
+                    {ecologyData.sensors.bme680.slice(-8).map((reading, index) => (
+                      <div key={index} className="bg-white/50 rounded-lg p-3 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{formatTime(reading.timestamp)}</span>
+                          <span className="text-xs text-gray-500">BME680 Reading</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="flex justify-between">
+                            <span>🌡️ Temp:</span>
+                            <span className="font-mono font-bold">{formatValue(reading.temperature, '°C')}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>💧 Humid:</span>
+                            <span className="font-mono font-bold">{formatValue(reading.humidity, '%')}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>🌬️ Press:</span>
+                            <span className="font-mono font-bold">{formatValue(reading.pressure, 'hPa')}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>⚡ Gas:</span>
+                            <span className="font-mono font-bold">{formatValue(reading.gasResistance, 'Ω')}</span>
+                          </div>
+                          <div className="flex justify-between col-span-2">
+                            <span>🌪️ AQI:</span>
+                            <span className="font-mono font-bold">{formatValue(reading.airQualityIndex, 'AQI')}</span>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
           )}
         </div>

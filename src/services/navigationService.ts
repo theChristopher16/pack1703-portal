@@ -255,7 +255,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Cost Management',
     href: '/cost-management',
     icon: DollarSign,
-    roles: [UserRole.SUPER_ADMIN],
+    roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'system',
     description: 'System cost monitoring'
   },

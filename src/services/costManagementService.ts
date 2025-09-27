@@ -898,7 +898,7 @@ class CostManagementService {
 
     // Check service-specific alerts
     Object.entries(thresholds.service).forEach(([service, threshold]) => {
-      const serviceCost = currentUsage.costs.api[service] || 0;
+      const serviceCost = currentUsage.costs.api[service as keyof typeof currentUsage.costs.api] || 0;
       if (serviceCost >= threshold) {
         alerts.push({
           id: `service-${service}-${Date.now()}`,

@@ -182,6 +182,9 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
               <h1 className="text-3xl font-bold text-gray-900 flex items-center">
                 <DollarSign className="w-8 h-8 mr-3 text-green-600" />
                 Cost Management & Analysis
+                <span className="ml-4 px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
+                  ✨ UPDATED - Real Data
+                </span>
               </h1>
               <p className="text-gray-600 mt-2">Comprehensive monitoring of API usage, infrastructure costs, and optimization recommendations</p>
             </div>

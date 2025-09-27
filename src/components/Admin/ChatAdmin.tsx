@@ -789,7 +789,7 @@ const ChatAdmin: React.FC = () => {
   };
 
   const shareMessage = (message: ChatMessage) => {
-    const shareText = `${message.userName}: ${message.message}`;
+    const shareText = `${message.userName || message.senderName}: ${message.content || message.message}`;
     if (navigator.share) {
       navigator.share({
         title: 'Scout Chat Message',
@@ -1355,7 +1355,7 @@ const ChatAdmin: React.FC = () => {
                             message.isSystem ? 'text-yellow-700' : 
                             message.isAdmin ? 'text-blue-700' : 'text-gray-700'
                           }`}>
-                            {renderMessageContent(message.message)}
+                            {renderMessageContent(message.content || message.message || '')}
                           </div>
                           
                           {/* Reactions */}

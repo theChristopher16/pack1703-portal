@@ -49,12 +49,15 @@ export interface ChatUser {
 export interface ChatMessage {
   id: string;
   channelId: string;
-  userId: string;
-  userName: string;
-  message: string;
+  userId?: string;
+  senderId?: string;
+  userName?: string;
+  senderName?: string;
+  message?: string;
+  content?: string;
   timestamp: Date;
-  isSystem: boolean;
-  isAdmin: boolean;
+  isSystem?: boolean;
+  isAdmin?: boolean;
   den?: string;
   reactions?: MessageReaction[];
 }

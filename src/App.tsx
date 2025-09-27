@@ -36,7 +36,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminEvents from './pages/AdminEvents';
 import AdminLocations from './pages/AdminLocations';
 import AdminAnnouncements from './pages/AdminAnnouncements';
-import AdminChat from './pages/AdminChat';
+import UnifiedChat from './components/Chat/UnifiedChat';
 import AdminAI from './pages/AdminAI';
 import AdminPermissionsAudit from './pages/AdminPermissionsAudit';
 import AdminLists from './pages/AdminLists';
@@ -46,14 +46,13 @@ import AdminFundraising from './pages/AdminFundraising';
 import AdminFinances from './pages/AdminFinances';
 import AdminCostManagement from './pages/AdminCostManagement';
 import MultiTenantManagement from './pages/MultiTenantManagement';
-import UserManagement from './components/Admin/UserManagement';
-import ChatPageWrapper from './pages/ChatPageWrapper';
 import JoinPage from './pages/JoinPage';
 import RootAccountSetup from './pages/RootAccountSetup';
 import HackerTab from './pages/HackerTab';
 import AdminSettings from './pages/AdminSettings';
 import UserProfile from './pages/UserProfile';
 import AdminReminders from './pages/AdminReminders';
+import AdminUsers from './pages/AdminUsers';
 import DatabaseMonitor from './components/Admin/DatabaseMonitor';
 import SystemMonitor from './components/Admin/SystemMonitor';
 import PerformanceMonitor from './components/Performance/PerformanceMonitor';
@@ -148,7 +147,7 @@ function App() {
           <Route path="/join/:inviteId" element={<JoinPage />} />
           
           {/* Authenticated Routes */}
-          <Route path="/chat" element={<Layout><AuthenticatedOnly><ChatPageWrapper /></AuthenticatedOnly></Layout>} />
+          <Route path="/chat" element={<Layout><AuthenticatedOnly><UnifiedChat /></AuthenticatedOnly></Layout>} />
           <Route path="/feedback" element={<Layout><AuthenticatedOnly><FeedbackPage /></AuthenticatedOnly></Layout>} />
           <Route path="/data-audit" element={<Layout><AuthenticatedOnly><DataAuditPage /></AuthenticatedOnly></Layout>} />
           
@@ -159,13 +158,12 @@ function App() {
           <Route path="/admin/events" element={<Layout><AdminOnly><AdminEvents /></AdminOnly></Layout>} />
           <Route path="/admin/locations" element={<Layout><AdminOnly><AdminLocations /></AdminOnly></Layout>} />
           <Route path="/admin/announcements" element={<Layout><AdminOnly><AdminAnnouncements /></AdminOnly></Layout>} />
-          <Route path="/admin/chat" element={<Layout><AdminOnly><AdminChat /></AdminOnly></Layout>} />
           <Route path="/admin/lists" element={<Layout><AdminOnly><AdminLists /></AdminOnly></Layout>} />
           <Route path="/admin/volunteer" element={<Layout><AdminOnly><AdminVolunteer /></AdminOnly></Layout>} />
           <Route path="/admin/seasons" element={<Layout><AdminOnly><AdminSeasons /></AdminOnly></Layout>} />
           <Route path="/admin/fundraising" element={<Layout><AdminOnly><AdminFundraising /></AdminOnly></Layout>} />
           <Route path="/admin/finances" element={<Layout><AdminOnly><AdminFinances /></AdminOnly></Layout>} />
-          <Route path="/admin/users" element={<Layout><AdminOnly><UserManagement /></AdminOnly></Layout>} />
+          <Route path="/admin/users" element={<Layout><AdminOnly><AdminUsers /></AdminOnly></Layout>} />
           {/* Temporarily disabled for build
         <Route path="/admin/feedback" element={<Layout><AdminOnly><FeedbackManagementPage /></AdminOnly></Layout>} />
         */}

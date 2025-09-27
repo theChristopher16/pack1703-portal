@@ -1,8 +1,8 @@
 import React from 'react';
-import ChatAdmin from '../components/Admin/ChatAdmin';
+import ChatAdminSimple from '../components/Admin/ChatAdminSimple';
 
 const AdminChat: React.FC = () => {
-  return <ChatAdmin />;
+  return <ChatAdminSimple />;
 };
 
 export default AdminChat;

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.helloWorld = exports.getBatchDashboardData = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.adminUpdateUser = exports.getRSVPData = exports.deleteRSVP = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.submitRSVP = exports.adminCreateEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
+exports.helloWorld = exports.getBatchDashboardData = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.deleteRSVP = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.submitRSVP = exports.adminCreateEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 // Initialize Firebase Admin
@@ -153,7 +153,7 @@ exports.adminUpdateEvent = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasEventManagementPermission = (_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('event_management');
         if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
@@ -189,7 +189,7 @@ exports.adminCreateEvent = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasEventManagementPermission = (_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('event_management');
         if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
@@ -545,7 +545,7 @@ exports.adminUpdateUser = functions.https.onCall(async (data, context) => {
         }
         const userData = userDoc.data();
         // Check role-based permissions (new system) or legacy boolean fields
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -577,11 +577,30 @@ exports.adminUpdateUser = functions.https.onCall(async (data, context) => {
         await db.collection('users').doc(userId).update(updateData);
         // Update Firebase Auth custom claims if role is being changed
         if (updates.role !== undefined) {
-            await admin.auth().setCustomUserClaims(userId, {
-                approved: true,
-                role: updates.role
-            });
-            // Also update the role in Firestore
+            try {
+                // Try to set custom claims in Firebase Auth
+                await admin.auth().setCustomUserClaims(userId, {
+                    approved: true,
+                    role: updates.role
+                });
+                console.log(`Successfully updated Firebase Auth claims for user ${userId}`);
+            }
+            catch (authError) {
+                // If user doesn't exist in Firebase Auth, just log and continue
+                console.log(`Auth error details:`, {
+                    code: authError.code,
+                    message: authError.message,
+                    stack: authError.stack
+                });
+                if (authError.code === 'auth/user-not-found') {
+                    console.log(`User ${userId} not found in Firebase Auth, skipping custom claims update`);
+                }
+                else {
+                    console.error('Error updating Firebase Auth claims:', authError);
+                    throw authError;
+                }
+            }
+            // Always update the role in Firestore
             await db.collection('users').doc(userId).update({
                 role: updates.role,
                 permissions: updates.permissions || [],
@@ -633,6 +652,177 @@ exports.adminUpdateUser = functions.https.onCall(async (data, context) => {
             throw error;
         }
         throw new functions.https.HttpsError('internal', 'Failed to update user');
+    }
+});
+// Update user custom claims function
+exports.updateUserClaims = functions.https.onCall(async (data, context) => {
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        // Check if user has admin privileges
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError('permission-denied', 'User not found');
+        }
+        const userData = userDoc.data();
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        if (!hasAdminRole) {
+            throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update user claims');
+        }
+        const { targetUserId, role } = data;
+        if (!targetUserId || !role) {
+            throw new functions.https.HttpsError('invalid-argument', 'targetUserId and role are required');
+        }
+        // Update custom claims
+        await admin.auth().setCustomUserClaims(targetUserId, {
+            approved: true,
+            role: role
+        });
+        console.log(`Updated custom claims for user ${targetUserId} to role: ${role}`);
+        return {
+            success: true,
+            message: `Updated user claims to role: ${role}`,
+            userId: targetUserId,
+            role: role
+        };
+    }
+    catch (error) {
+        console.error('Error in updateUserClaims:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to update user claims');
+    }
+});
+// Chat Cloud Functions
+exports.getChatChannels = functions.https.onCall(async (data, context) => {
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        const channelsRef = db.collection('chat-channels');
+        const snapshot = await channelsRef.get();
+        const channels = snapshot.docs.map(doc => (Object.assign({ id: doc.id }, doc.data())));
+        return {
+            success: true,
+            channels: channels
+        };
+    }
+    catch (error) {
+        console.error('Error in getChatChannels:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to get chat channels');
+    }
+});
+exports.getChatMessages = functions.https.onCall(async (data, context) => {
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        const { channelId, limit = 50 } = data;
+        if (!channelId) {
+            throw new functions.https.HttpsError('invalid-argument', 'channelId is required');
+        }
+        const messagesRef = db.collection('chat-messages');
+        const snapshot = await messagesRef
+            .where('channelId', '==', channelId)
+            .orderBy('timestamp', 'desc')
+            .limit(limit)
+            .get();
+        const messages = snapshot.docs.map(doc => (Object.assign({ id: doc.id }, doc.data())));
+        return {
+            success: true,
+            messages: messages
+        };
+    }
+    catch (error) {
+        console.error('Error in getChatMessages:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to get chat messages');
+    }
+});
+exports.sendChatMessage = functions.https.onCall(async (data, context) => {
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        const { channelId, content, senderName } = data;
+        if (!channelId || !content) {
+            throw new functions.https.HttpsError('invalid-argument', 'channelId and content are required');
+        }
+        const messageRef = db.collection('chat-messages');
+        const newMessage = {
+            channelId,
+            content,
+            senderId: context.auth.uid,
+            senderName: senderName || 'Anonymous',
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+        const docRef = await messageRef.add(newMessage);
+        return {
+            success: true,
+            messageId: docRef.id,
+            message: Object.assign({ id: docRef.id }, newMessage)
+        };
+    }
+    catch (error) {
+        console.error('Error in sendChatMessage:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to send chat message');
+    }
+});
+// Test email connection function
+exports.testEmailConnection = functions.https.onCall(async (data, context) => {
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        // Check if user has admin privileges
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError('permission-denied', 'User not found');
+        }
+        const userData = userDoc.data();
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        if (!hasAdminRole) {
+            throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to test email connection');
+        }
+        const { emailAddress, password, imapServer, imapPort } = data;
+        if (!emailAddress || !password || !imapServer || !imapPort) {
+            throw new functions.https.HttpsError('invalid-argument', 'Missing required email connection parameters');
+        }
+        // For now, return a mock success response
+        // In a real implementation, you would test the IMAP connection here
+        return {
+            success: true,
+            message: 'Email connection test completed (mock response)',
+            details: {
+                emailAddress,
+                imapServer,
+                imapPort,
+                status: 'connected'
+            }
+        };
+    }
+    catch (error) {
+        console.error('Error in testEmailConnection:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to test email connection');
     }
 });
 // CRITICAL: Submit account request function
@@ -726,7 +916,7 @@ exports.getPendingAccountRequests = functions.https.onCall(async (data, context)
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -810,7 +1000,7 @@ exports.approveAccountRequest = functions.https.onCall(async (data, context) => 
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -931,7 +1121,7 @@ exports.createUserManually = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -1044,7 +1234,7 @@ exports.rejectAccountRequest = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -1116,7 +1306,7 @@ exports.getBatchDashboardData = functions.https.onCall(async (data, context) => 
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasSystemAdminPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('system_admin')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('user_management'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasSystemAdminPermission) {

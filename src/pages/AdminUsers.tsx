@@ -98,7 +98,7 @@ const AdminUsers: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [addNotification]);
+  }, []); // Remove addNotification dependency to prevent infinite loops
 
   const buildUserHierarchyOptimized = (users: AppUser[]): UserWithChildren[] => {
     const userMap = new Map<string, UserWithChildren>();
@@ -179,7 +179,7 @@ const AdminUsers: React.FC = () => {
 
   useEffect(() => {
     loadUsers();
-  }, []); // Only run once on mount
+  }, [loadUsers]); // Include loadUsers dependency
 
   useEffect(() => {
     filterUsers();

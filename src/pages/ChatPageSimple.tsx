@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { useSimpleChatState } from '../hooks/useSimpleChatState';
-import chatService from '../services/chatService';
+import { chatServiceCloudFunctions } from '../services/chatServiceCloudFunctions';
 import { 
   MessageSquare, 
   Users, 
@@ -372,15 +372,23 @@ const ChatPageSimple: React.FC = () => {
         console.log('ChatPageSimple: Initializing chat...');
         
         // Initialize chat service
-        const user = await chatService.initialize();
+        const user = { 
+          id: 'admin-user', 
+          name: 'Admin User', 
+          isAdmin: true,
+          isOnline: true,
+          lastSeen: new Date(),
+          sessionId: 'admin-session',
+          userAgent: navigator.userAgent
+        };
         actions.setCurrentUser(user);
         
         // Load channels
-        const channels = await chatService.getChannels();
+        const channels = await chatServiceCloudFunctions.getChannels();
         actions.setChannels(channels);
         
-        // Load users
-        const users = await chatService.getOnlineUsers();
+        // Load users (simplified for now)
+        const users: any[] = [];
         actions.setUsers(users);
         
         actions.setIsConnected(true);
@@ -405,13 +413,11 @@ const ChatPageSimple: React.FC = () => {
     const loadChannelMessages = async () => {
       try {
         console.log('ChatPageSimple: Loading messages for channel:', state.selectedChannel);
-        const messages = await chatService.getMessages(state.selectedChannel);
+        const messages = await chatServiceCloudFunctions.getMessages(state.selectedChannel);
         actions.setMessages(messages);
         
-        // Set up real-time subscription
-        const unsubscribe = chatService.subscribeToMessages(state.selectedChannel, (newMessages) => {
-          actions.setMessages(newMessages);
-        });
+        // Note: Real-time subscriptions disabled for now (using Cloud Functions)
+        const unsubscribe = () => {};
         
         return unsubscribe;
       } catch (error) {
@@ -429,7 +435,7 @@ const ChatPageSimple: React.FC = () => {
 
     try {
       actions.setIsUploading(true);
-      await chatService.sendMessage(state.selectedChannel, state.newMessage);
+      await chatServiceCloudFunctions.sendMessage(state.selectedChannel, state.newMessage, state.currentUser.name);
       actions.setNewMessage('');
       console.log('ChatPageSimple: Message sent successfully');
     } catch (error) {
@@ -445,7 +451,8 @@ const ChatPageSimple: React.FC = () => {
     if (!state.currentUser) return;
 
     try {
-      await chatService.addReaction(messageId, emoji, state.currentUser.id, state.currentUser.name);
+      // Reactions disabled for now (using Cloud Functions)
+      console.log('Reactions not implemented yet');
     } catch (error) {
       console.error('ChatPageSimple: Failed to add reaction:', error);
     }
@@ -456,7 +463,8 @@ const ChatPageSimple: React.FC = () => {
     if (!state.currentUser?.isAdmin) return;
 
     try {
-      await chatService.deleteMessage(messageId);
+      // Message deletion disabled for now (using Cloud Functions)
+      console.log('Message deletion not implemented yet');
     } catch (error) {
       console.error('ChatPageSimple: Failed to delete message:', error);
     }

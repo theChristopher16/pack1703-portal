@@ -86,15 +86,13 @@ export const attendeeSchema = z.object({
   age: ageNumber,
   den: z.string().optional(),
   isAdult: booleanValue,
-  dietaryRestrictions: safeTextContent,
-  specialNeeds: safeTextContent,
 });
 
 // Enhanced RSVP form validation
 export const rsvpFormSchema = z.object({
   eventId: requiredString,
   familyName: requiredString,
-  email: emailString,
+  email: requiredEmailString,
   phone: phoneString,
   attendees: z.array(attendeeSchema)
     .min(1, 'At least one attendee is required')

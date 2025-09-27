@@ -22,7 +22,17 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
   // Get current user from admin context
   const { state } = useAdmin();
   const currentUser = state.currentUser;
-  const userRole = currentUser?.role as UserRole;
+  
+  // Map AdminContext role back to UserRole enum
+  const roleMap: { [key: string]: UserRole } = {
+    'root': UserRole.ROOT,
+    'super-admin': UserRole.ADMIN,
+    'moderator': UserRole.VOLUNTEER,
+    'viewer': UserRole.PARENT,
+    'ai_assistant': UserRole.AI_ASSISTANT
+  };
+  
+  const userRole = currentUser?.role ? roleMap[currentUser.role] || UserRole.PARENT : undefined;
 
   // REMOVED LOADING CHECK - This was causing redirects
   // The AuthGuard already handles authentication, so we don't need to check again
@@ -53,14 +63,19 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
 export const AdminOnly: React.FC<{ children: React.ReactNode; fallbackPath?: string }> = ({ 
   children, 
   fallbackPath = '/' 
-}) => (
-  <RoleGuard 
-    requiredRoles={[UserRole.ADMIN, UserRole.ROOT]} 
-    fallbackPath={fallbackPath}
-  >
-    {children}
-  </RoleGuard>
-);
+}) => {
+  const { state } = useAdmin();
+  const currentUser = state.currentUser;
+  
+  // Check if user has admin role (either 'super-admin' or 'root')
+  const isAdmin = currentUser?.role === 'super-admin' || currentUser?.role === 'root';
+  
+  if (!isAdmin) {
+    return <Navigate to={fallbackPath} replace />;
+  }
+  
+  return <>{children}</>;
+};
 
 export const RootOnly: React.FC<{ children: React.ReactNode; fallbackPath?: string }> = ({ 
   children, 

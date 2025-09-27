@@ -1,5 +1,16 @@
 {"users": [
 {
+  "localId": "7ZbbLkzQhCXDAEXQmgwzdgzzo8i1",
+  "email": "haileysmith9832@yahoo.com",
+  "emailVerified": false,
+  "passwordHash": "j3qOOs/xNKybOoZefzPH2Glb9f8uT43byX9vld6K3UOjsvJrsNJO9ElXo+dhwGizUwGc0AyaLCuONK6b67urxw==",
+  "salt": "Y8Wl0JIfen5DCA==",
+  "displayName": "Hailey Smith",
+  "lastSignedInAt": "1758677762781",
+  "createdAt": "1758677762781",
+  "providerUserInfo": []
+},
+{
   "localId": "AbnEq9VfIqW4ydRWwdW7IijwZrt1",
   "email": "alisonwmeyer@gmail.com",
   "emailVerified": false,
@@ -40,9 +51,9 @@
   "passwordHash": "iphMoXdhoub7bNif31btdauWNJQ9L2C/8rZJtJ92WHUFXhb0NT9vm/qbAcor0B9nsSeuB41YFpwsQIJP5Mq4Pg==",
   "salt": "cKOP4SMKtbyYeQ==",
   "displayName": "Christopher Smith",
-  "lastSignedInAt": "1758672948492",
+  "lastSignedInAt": "1758776059474",
   "createdAt": "1757556177780",
-  "customAttributes": "{\"role\":\"root\",\"approved\":true,\"permissions\":[\"system_admin\",\"user_management\",\"event_management\",\"content_management\"]}",
+  "customAttributes": "{\"approved\":true,\"role\":\"admin\"}",
   "providerUserInfo": [
     {
       "providerId": "google.com",

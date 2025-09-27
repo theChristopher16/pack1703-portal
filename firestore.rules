@@ -12,8 +12,9 @@ service cloud.firestore {
     }
     
     function isAdmin() {
+      // Updated to include both 'admin' and 'super-admin' roles
       return isAuthenticated() && 
-             request.auth.token.get('role', '') in ['admin', 'root', 'volunteer'];
+             request.auth.token.get('role', '') in ['admin', 'super-admin', 'root', 'volunteer'];
     }
     
     function isRoot() {
@@ -160,12 +161,30 @@ service cloud.firestore {
         request.auth.token.get('role', '') in ['volunteer', 'admin', 'root'];
     }
     
-    // Volunteer signups - users can only access their own signups
+    // Volunteer needs - authenticated users can read, admins can write
+    match /volunteer-needs/{needId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Allow aggregation queries on volunteer-needs collection for authenticated users
+    match /volunteer-needs {
+      allow read: if isAuthenticated();
+    }
+    
+    // Volunteer signups - users can access their own signups, admins can read all
     match /volunteer-signups/{signupId} {
-      allow read, write: if isAuthenticated() && 
+      allow read: if isAuthenticated() && 
+        (resource.data.volunteerUserId == request.auth.uid || isAdmin());
+      allow write: if isAuthenticated() && 
         resource.data.volunteerUserId == request.auth.uid;
       allow create: if isAuthenticated() && 
         request.resource.data.volunteerUserId == request.auth.uid;
+    }
+    
+    // Allow aggregation queries on volunteer-signups collection for admins
+    match /volunteer-signups {
+      allow read: if isAdmin();
     }
     
     // User-pinned announcements - users can only access their own pins
@@ -336,6 +355,47 @@ service cloud.firestore {
     // Allow aggregation queries on AI usage collection for admins
     match /aiUsage {
       allow read: if isAdmin();
+    }
+    
+    // Permissions audit - admin read-only
+    match /permissionsAudit/{auditId} {
+      allow read: if isAdmin();
+      allow write: if false; // Permissions audit is created by Cloud Functions only
+    }
+    
+    // Allow aggregation queries on permissions audit collection for admins
+    match /permissionsAudit {
+      allow read: if isAdmin();
+    }
+    
+    // Allow aggregation queries on system-logs collection for authenticated users
+    match /system-logs {
+      allow read: if isAuthenticated();
+    }
+    
+    // Allow aggregation queries on chat-messages collection for authenticated users
+    match /chat-messages {
+      allow read: if isAuthenticated();
+    }
+    
+    // Allow aggregation queries on chat-channels collection for authenticated users
+    match /chat-channels {
+      allow read: if isAuthenticated();
+    }
+    
+    // Allow aggregation queries on rsvps collection for admins
+    match /rsvps {
+      allow read: if isAdmin();
+    }
+    
+    // Allow aggregation queries on feedback collection for admins
+    match /feedback {
+      allow read: if isAdmin();
+    }
+    
+    // Allow aggregation queries on analytics collection for authenticated users
+    match /analytics {
+      allow read: if isAuthenticated();
     }
     
     // AI interactions - admin read-only

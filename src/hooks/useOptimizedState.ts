@@ -408,7 +408,7 @@ export function useChatState() {
     // Filtered messages based on search query
     filteredMessages: state.searchQuery 
       ? state.messages.filter(message => 
-          message.message.toLowerCase().includes(state.searchQuery.toLowerCase())
+          (message.content || message.message || '').toLowerCase().includes(state.searchQuery.toLowerCase())
         )
       : state.messages,
     

@@ -125,8 +125,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "needId", "mode": "ASCENDING" },
-        { "fieldPath": "volunteerUserId", "mode": "ASCENDING" },
-        { "fieldPath": "status", "mode": "ASCENDING" }
+        { "fieldPath": "volunteerUserId", "mode": "ASCENDING" }
       ]
     }
   ],

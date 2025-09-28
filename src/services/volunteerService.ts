@@ -172,15 +172,16 @@ class VolunteerService {
       const q = query(
         signupsRef,
         where('needId', '==', needId),
-        where('status', '!=', 'cancelled'),
         orderBy('createdAt', 'asc')
       );
       
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as VolunteerSignup));
+      return snapshot.docs
+        .filter(doc => doc.data().status !== 'cancelled') // Filter cancelled signups in code
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as VolunteerSignup));
     } catch (error) {
       console.error('Error fetching volunteer signups for need:', error);
       throw new Error('Failed to fetch volunteer signups for need');
@@ -231,8 +232,7 @@ class VolunteerService {
         signupsRef,
         where('needId', '==', needId),
         where('volunteerUserId', '==', currentUser),
-        where('status', '!=', 'cancelled'),
-        limit(1)
+        limit(10) // Get up to 10 signups and filter in code
       );
       
       const snapshot = await getDocs(q);
@@ -240,7 +240,13 @@ class VolunteerService {
         return null;
       }
 
-      const doc = snapshot.docs[0];
+      // Filter out cancelled signups in code
+      const nonCancelledSignups = snapshot.docs.filter(doc => doc.data().status !== 'cancelled');
+      if (nonCancelledSignups.length === 0) {
+        return null;
+      }
+
+      const doc = nonCancelledSignups[0];
       return {
         id: doc.id,
         ...doc.data()

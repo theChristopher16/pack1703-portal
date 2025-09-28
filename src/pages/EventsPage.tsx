@@ -501,7 +501,9 @@ const EventsPage: React.FC = () => {
           category: eventData.category || 'Meeting',
           seasonId: 'qPEnr3WZN91NhM8jOypp',
           visibility: eventData.visibility || 'public',
-          maxCapacity: eventData.maxCapacity ? parseInt(eventData.maxCapacity.toString()) : null,
+          maxCapacity: eventData.maxCapacity && eventData.maxCapacity.toString().trim() !== '' 
+            ? parseInt(eventData.maxCapacity.toString()) 
+            : undefined,
           sendNotification: false
         };
         
@@ -575,7 +577,9 @@ const EventsPage: React.FC = () => {
           endTime: eventData.endDate?.split('T')[1]?.substring(0, 5) || '17:00',
           category: eventData.category || 'Meeting',
           visibility: eventData.visibility || 'public',
-          maxCapacity: eventData.maxCapacity ? parseInt(eventData.maxCapacity.toString()) : null,
+          maxCapacity: eventData.maxCapacity && eventData.maxCapacity.toString().trim() !== '' 
+            ? parseInt(eventData.maxCapacity.toString()) 
+            : undefined,
         };
         
         console.log('Updating event with data:', eventToUpdate);
@@ -1128,7 +1132,7 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
         currentRSVPs: event?.currentRSVPs || 0
       };
       
-      if (maxCapacity && !isNaN(parseInt(maxCapacity))) {
+      if (maxCapacity && maxCapacity.trim() !== '' && !isNaN(parseInt(maxCapacity))) {
         eventData.maxCapacity = parseInt(maxCapacity);
       }
       

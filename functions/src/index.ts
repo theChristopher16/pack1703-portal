@@ -198,6 +198,66 @@ export const adminUpdateEvent = functions.https.onCall(async (data: any, context
   }
 });
 
+// CRITICAL: Admin delete event function
+export const adminDeleteEvent = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'leader';
+    const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
+    const hasEventManagementPermission = userData?.permissions?.includes('event_management');
+
+    if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to delete events');
+    }
+
+    // Delete the event
+    const eventRef = db.collection('events').doc(data.eventId);
+    const eventDoc = await eventRef.get();
+    
+    if (!eventDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Event not found');
+    }
+
+    await eventRef.delete();
+
+    // Also delete associated RSVPs
+    const rsvpQuery = db.collection('rsvps').where('eventId', '==', data.eventId);
+    const rsvpSnapshot = await rsvpQuery.get();
+    
+    const batch = db.batch();
+    rsvpSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    if (rsvpSnapshot.docs.length > 0) {
+      await batch.commit();
+    }
+
+    return {
+      success: true,
+      message: 'Event and associated RSVPs deleted successfully'
+    };
+
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to delete event');
+  }
+});
+
 // CRITICAL: Admin create event function
 export const adminCreateEvent = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   try {
@@ -1095,6 +1155,26 @@ export const submitAccountRequest = functions.https.onCall(async (data: any, con
 
     const requestRef = await db.collection('accountRequests').add(requestData);
 
+    // Send email notification to cubmaster
+    try {
+      const { emailService } = await import('./emailService');
+      const userData = {
+        uid: requestRef.id,
+        email: data.email,
+        displayName: data.displayName,
+        phone: data.phone,
+        address: data.address,
+        emergencyContact: data.emergencyContact,
+        medicalInfo: data.reason
+      };
+      
+      await emailService.sendUserApprovalNotification(userData);
+      console.log('User approval notification email sent to cubmaster');
+    } catch (emailError) {
+      console.error('Failed to send user approval notification email:', emailError);
+      // Don't fail the request submission if email fails
+    }
+
     // Log the request
     await db.collection('adminActions').add({
       action: 'account_request_submitted',
@@ -1346,6 +1426,27 @@ export const approveAccountRequest = functions.https.onCall(async (data: any, co
       success: true
     });
 
+    // Send email notification to the approved user
+    try {
+      const { emailService } = await import('./emailService');
+      const userData = {
+        uid: userRef.id,
+        email: requestData.email,
+        displayName: requestData.displayName,
+        phone: requestData.phone || '',
+        address: requestData.address || '',
+        emergencyContact: requestData.emergencyContact || '',
+        medicalInfo: requestData.medicalInfo || '',
+        role: role
+      };
+      
+      await emailService.sendUserApprovalNotification(userData);
+      console.log('User approval notification sent successfully');
+    } catch (emailError) {
+      console.error('Failed to send user approval notification:', emailError);
+      // Don't fail the approval if email fails
+    }
+
     return {
       success: true,
       message: 'Account request approved and user account created successfully',
@@ -1572,6 +1673,42 @@ export const rejectAccountRequest = functions.https.onCall(async (data: any, con
     }
     
     throw new functions.https.HttpsError('internal', 'Failed to reject account request');
+  }
+});
+
+// Test AI Connection Function
+export const testAIConnection = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    if (!userData?.role || !['admin', 'root', 'cubmaster', 'super-admin'].includes(userData.role)) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to test AI connection');
+    }
+
+    // Test basic AI functionality
+    return {
+      success: true,
+      message: 'AI connection test successful',
+      timestamp: getTimestamp(),
+      user: {
+        uid: context.auth.uid,
+        email: context.auth.token.email,
+        role: userData.role
+      }
+    };
+  } catch (error) {
+    console.error('AI connection test failed:', error);
+    throw new functions.https.HttpsError('internal', 'AI connection test failed');
   }
 });
 

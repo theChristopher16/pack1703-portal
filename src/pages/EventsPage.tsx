@@ -79,6 +79,7 @@ const EventsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterVisibility, setFilterVisibility] = useState('all');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Debounced filter state
   const [filters, setFilters] = useState<EventFiltersType>({
@@ -462,6 +463,11 @@ const EventsPage: React.FC = () => {
 
   const handleSaveEvent = async (eventData: Partial<Event>) => {
     try {
+      setIsSubmitting(true);
+      
+      // Show loading state
+      addNotification('info', 'Creating Event', 'Please wait while we create your event...');
+      
       if (modalMode === 'create') {
         // Handle location - create or find location ID
         let locationId = 'RwI4opwHcUx3GKKF7Ten'; // Default location ID
@@ -499,9 +505,13 @@ const EventsPage: React.FC = () => {
           sendNotification: false
         };
         
+        console.log('Creating event with data:', cloudFunctionData);
         const result = await adminService.createEvent(cloudFunctionData);
+        console.log('Event creation result:', result);
         
         if (result.success) {
+          console.log('Event created successfully, refreshing events list...');
+          
           // Refresh events list
           const [firebaseEvents] = await Promise.all([
             firestoreService.getEvents()
@@ -546,12 +556,16 @@ const EventsPage: React.FC = () => {
           setEvents(transformedEvents);
           setIsModalOpen(false);
           setSelectedEvent(null);
-          addNotification('success', 'Event Created', 'New event has been successfully created.');
+          addNotification('success', 'Event Created Successfully!', `"${eventData.title}" has been added to the pack calendar.`);
         } else {
-          addNotification('error', 'Creation Failed', result.error || 'Failed to create event. Please try again.');
+          console.error('Event creation failed:', result.error);
+          addNotification('error', 'Event Creation Failed', result.error || 'Failed to create event. Please try again.');
         }
         
       } else if (modalMode === 'edit' && selectedEvent) {
+        // Show loading state for edit
+        addNotification('info', 'Updating Event', 'Please wait while we update your event...');
+        
         const eventToUpdate = {
           title: eventData.title!,
           description: eventData.description!,
@@ -564,9 +578,13 @@ const EventsPage: React.FC = () => {
           maxCapacity: eventData.maxCapacity ? parseInt(eventData.maxCapacity.toString()) : null,
         };
         
+        console.log('Updating event with data:', eventToUpdate);
         const result = await adminService.updateEvent(selectedEvent.id, eventToUpdate);
+        console.log('Event update result:', result);
         
         if (result.success) {
+          console.log('Event updated successfully, refreshing events list...');
+          
           // Refresh events list
           const [firebaseEvents] = await Promise.all([
             firestoreService.getEvents()
@@ -611,14 +629,17 @@ const EventsPage: React.FC = () => {
           setEvents(transformedEvents);
           setIsModalOpen(false);
           setSelectedEvent(null);
-          addNotification('success', 'Event Updated', 'Event has been successfully updated.');
+          addNotification('success', 'Event Updated Successfully!', `"${eventData.title}" has been updated.`);
         } else {
-          addNotification('error', 'Update Failed', result.error || 'Failed to update event. Please try again.');
+          console.error('Event update failed:', result.error);
+          addNotification('error', 'Event Update Failed', result.error || 'Failed to update event. Please try again.');
         }
       }
     } catch (error) {
       console.error('Error saving event:', error);
-      addNotification('error', 'Save Failed', 'Failed to save event. Please try again.');
+      addNotification('error', 'Save Failed', `Failed to save event: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1011,6 +1032,7 @@ const EventsPage: React.FC = () => {
                   mode={modalMode}
                   onSave={handleSaveEvent}
                   onCancel={() => setIsModalOpen(false)}
+                  isSubmitting={isSubmitting}
                 />
               </div>
             </div>
@@ -1027,9 +1049,10 @@ interface EventFormProps {
   mode: 'create' | 'edit';
   onSave: (eventData: Partial<Event>) => void;
   onCancel: () => void;
+  isSubmitting?: boolean;
 }
 
-const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) => {
+const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, isSubmitting = false }) => {
   const [formData, setFormData] = useState({
     title: event?.title || '',
     description: event?.description || '',
@@ -1338,9 +1361,17 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) 
         </button>
         <button
           type="submit"
-          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-xl font-medium transition-all duration-200 shadow-soft"
+          disabled={isSubmitting}
+          className={`px-8 py-3 rounded-xl font-medium transition-all duration-200 shadow-soft ${
+            isSubmitting 
+              ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+              : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+          }`}
         >
-          {mode === 'create' ? 'Create Event' : 'Save Changes'}
+          {isSubmitting 
+            ? (mode === 'create' ? 'Creating...' : 'Saving...') 
+            : (mode === 'create' ? 'Create Event' : 'Save Changes')
+          }
         </button>
       </div>
     </form>

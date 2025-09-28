@@ -488,35 +488,26 @@ service cloud.firestore {
     // COST MANAGEMENT COLLECTIONS
     // ============================================================================
     
-    // Cost tracking - admin only
-    match /costTracking/{trackingId} {
+    // Cost tracking - admin only (using kebab-case to match service)
+    match /cost-tracking/{trackingId} {
       allow read, write: if isAdmin();
     }
     
     // Allow aggregation queries on cost tracking collection for admins
-    match /costTracking {
+    match /cost-tracking {
       allow read: if isAdmin();
     }
     
-    // Cost alerts - admin only
-    match /costAlerts/{alertId} {
+    // Cost alerts - admin only (using kebab-case to match service)
+    match /cost-alerts/{alertId} {
       allow read, write: if isAdmin();
     }
     
     // Allow aggregation queries on cost alerts collection for admins
-    match /costAlerts {
+    match /cost-alerts {
       allow read: if isAdmin();
     }
     
-    // API usage stats - admin only
-    match /apiUsageStats/{statId} {
-      allow read, write: if isAdmin();
-    }
-    
-    // Allow aggregation queries on API usage stats collection for admins
-    match /apiUsageStats {
-      allow read: if isAdmin();
-    }
 
     // ============================================================================
     // MULTI-TENANT DATA

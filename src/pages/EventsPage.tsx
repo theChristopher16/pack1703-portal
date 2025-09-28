@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, List, Filter, Download, Share2 } from 'lucide-react';
+import { Calendar, List, Filter, Download, Share2, Plus, Edit, Trash2 } from 'lucide-react';
 // Removed unused imports - RSVP counting now uses Cloud Functions
 import EventCard from '../components/Events/EventCard';
 import EventCalendar from '../components/Events/EventCalendar';
@@ -8,6 +8,8 @@ import EventFilters, { EventFiltersData as EventFiltersType } from '../component
 import RSVPListViewer from '../components/Admin/RSVPListViewer';
 import { firestoreService } from '../services/firestore';
 import { useAdmin } from '../contexts/AdminContext';
+import { adminService } from '../services/adminService';
+import { authService } from '../services/authService';
 // import { analytics } from '../services/analytics';
 
 interface Event {
@@ -20,7 +22,7 @@ interface Event {
     name: string;
     address: string;
     coordinates?: { lat: number; lng: number };
-  };
+  } | string; // Can be object or string for form data
   category: 'pack-wide' | 'den' | 'camping' | 'overnight' | 'service';
   denTags: string[];
   maxCapacity: number;
@@ -36,6 +38,12 @@ interface Event {
     url: string;
     type: 'pdf' | 'image';
   }>;
+  // Admin-specific fields
+  visibility?: 'public' | 'link-only' | 'private';
+  isActive?: boolean;
+  locationId?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -44,7 +52,7 @@ const DEBOUNCE_DELAY = 300; // Debounce filter changes
 
 const EventsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { state: adminState, hasRole } = useAdmin();
+  const { state: adminState, hasRole, addNotification } = useAdmin();
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
@@ -63,6 +71,14 @@ const EventsPage: React.FC = () => {
   // Admin RSVP viewer state
   const [showRSVPViewer, setShowRSVPViewer] = useState(false);
   const [selectedEventForRSVP, setSelectedEventForRSVP] = useState<Event | null>(null);
+  
+  // Admin event management state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterVisibility, setFilterVisibility] = useState('all');
   
   // Debounced filter state
   const [filters, setFilters] = useState<EventFiltersType>({
@@ -151,7 +167,7 @@ const EventsPage: React.FC = () => {
       filtered = filtered.filter(event => 
         event.title.toLowerCase().includes(searchLower) ||
         event.description.toLowerCase().includes(searchLower) ||
-        event.location.name.toLowerCase().includes(searchLower)
+        (typeof event.location === 'object' ? event.location.name.toLowerCase().includes(searchLower) : event.location.toLowerCase().includes(searchLower))
       );
     }
     
@@ -178,10 +194,13 @@ const EventsPage: React.FC = () => {
     // Apply location filter
     if (filterData.location) {
       const locationLower = filterData.location.toLowerCase();
-      filtered = filtered.filter(event => 
-        event.location.name.toLowerCase().includes(locationLower) ||
-        event.location.address.toLowerCase().includes(locationLower)
-      );
+      filtered = filtered.filter(event => {
+        if (typeof event.location === 'object') {
+          return event.location.name.toLowerCase().includes(locationLower) ||
+                 event.location.address.toLowerCase().includes(locationLower);
+        }
+        return event.location.toLowerCase().includes(locationLower);
+      });
     }
     
     // Apply capacity filter
@@ -348,7 +367,7 @@ const EventsPage: React.FC = () => {
       `DTEND:${new Date(`${event.date}T${event.endTime}`).toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
       `SUMMARY:${event.title}`,
       `DESCRIPTION:${event.description}`,
-      `LOCATION:${event.location.name}, ${event.location.address}`,
+      `LOCATION:${typeof event.location === 'object' ? `${event.location.name}, ${event.location.address}` : event.location}`,
       'END:VEVENT',
       'END:VCALENDAR'
     ].join('\r\n');
@@ -390,6 +409,198 @@ const EventsPage: React.FC = () => {
   const handleCloseRSVPViewer = () => {
     setShowRSVPViewer(false);
     setSelectedEventForRSVP(null);
+  };
+
+  // Admin event management handlers
+  const handleCreateEvent = () => {
+    setModalMode('create');
+    setSelectedEvent(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditEvent = (event: Event) => {
+    setModalMode('edit');
+    setSelectedEvent(event);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    if (window.confirm('Are you sure you want to delete this event?')) {
+      try {
+        const result = await adminService.deleteEvent(eventId);
+        if (result.success) {
+          setEvents(events.filter(e => e.id !== eventId));
+          addNotification('success', 'Event Deleted', 'Event has been successfully deleted.');
+        } else {
+          addNotification('error', 'Delete Failed', result.error || 'Failed to delete event.');
+        }
+      } catch (error) {
+        console.error('Error deleting event:', error);
+        addNotification('error', 'Delete Failed', 'Failed to delete event. Please try again.');
+      }
+    }
+  };
+
+  const handleSaveEvent = async (eventData: Partial<Event>) => {
+    try {
+      if (modalMode === 'create') {
+        // Handle location - create or find location ID
+        let locationId = 'RwI4opwHcUx3GKKF7Ten'; // Default location ID
+        
+        if (eventData.location && typeof eventData.location === 'string' && eventData.location.trim()) {
+          try {
+            const locationResult = await adminService.createLocation({
+              name: eventData.location.trim(),
+              address: '',
+              category: 'other',
+              notesPublic: `Location created for event: ${eventData.title}`,
+              isImportant: false
+            });
+            
+            if (locationResult.success && locationResult.locationId) {
+              locationId = locationResult.locationId;
+            }
+          } catch (error) {
+            console.warn('Error creating location, using default:', error);
+          }
+        }
+        
+        const cloudFunctionData = {
+          title: eventData.title,
+          description: eventData.description,
+          startDate: new Date(eventData.startDate!),
+          endDate: new Date(eventData.endDate!),
+          startTime: eventData.startDate?.split('T')[1]?.substring(0, 5) || '09:00',
+          endTime: eventData.endDate?.split('T')[1]?.substring(0, 5) || '17:00',
+          locationId: locationId,
+          category: eventData.category || 'Meeting',
+          seasonId: 'qPEnr3WZN91NhM8jOypp',
+          visibility: eventData.visibility || 'public',
+          maxCapacity: eventData.maxCapacity ? parseInt(eventData.maxCapacity.toString()) : null,
+          sendNotification: false
+        };
+        
+        const result = await adminService.createEvent(cloudFunctionData);
+        
+        if (result.success) {
+          // Refresh events list
+          const [firebaseEvents] = await Promise.all([
+            firestoreService.getEvents()
+          ]);
+          
+          const eventIds = firebaseEvents.map((event: any) => event.id);
+          const rsvpCounts = await fetchRSVPCounts(eventIds);
+
+          const transformedEvents: Event[] = firebaseEvents.map((firebaseEvent: any) => {
+            return {
+              id: firebaseEvent.id,
+              title: firebaseEvent.title,
+              date: firebaseEvent.startDate?.toDate?.()?.toISOString()?.split('T')[0] || 
+                    (firebaseEvent.startDate && firebaseEvent.startDate.split) ? firebaseEvent.startDate.split('T')[0] : 
+                    firebaseEvent.startDate,
+              startTime: firebaseEvent.startTime || '00:00',
+              endTime: firebaseEvent.endTime || '00:00',
+              location: {
+                name: firebaseEvent.locationName || firebaseEvent.location || 'TBD',
+                address: firebaseEvent.address || 'Address TBD',
+                coordinates: firebaseEvent.coordinates || undefined
+              },
+              category: firebaseEvent.category || 'pack-wide',
+              denTags: firebaseEvent.denTags || [],
+              maxCapacity: firebaseEvent.maxCapacity || null,
+              currentRSVPs: rsvpCounts[firebaseEvent.id] || firebaseEvent.currentRSVPs || 0,
+              description: firebaseEvent.description || '',
+              packingList: firebaseEvent.packingList || [],
+              fees: firebaseEvent.fees || null,
+              contactEmail: firebaseEvent.contactEmail || 'cubmaster@sfpack1703.com',
+              isOvernight: firebaseEvent.isOvernight || false,
+              requiresPermission: firebaseEvent.requiresPermission || false,
+              attachments: firebaseEvent.attachments || [],
+              visibility: firebaseEvent.visibility,
+              isActive: firebaseEvent.isActive,
+              locationId: firebaseEvent.locationId,
+              startDate: firebaseEvent.startDate?.toDate?.()?.toISOString() || firebaseEvent.startDate,
+              endDate: firebaseEvent.endDate?.toDate?.()?.toISOString() || firebaseEvent.endDate
+            };
+          });
+          
+          setEvents(transformedEvents);
+          setIsModalOpen(false);
+          setSelectedEvent(null);
+          addNotification('success', 'Event Created', 'New event has been successfully created.');
+        } else {
+          addNotification('error', 'Creation Failed', result.error || 'Failed to create event. Please try again.');
+        }
+        
+      } else if (modalMode === 'edit' && selectedEvent) {
+        const eventToUpdate = {
+          title: eventData.title!,
+          description: eventData.description!,
+          startDate: new Date(eventData.startDate!),
+          endDate: new Date(eventData.endDate!),
+          startTime: eventData.startDate?.split('T')[1]?.substring(0, 5) || '09:00',
+          endTime: eventData.endDate?.split('T')[1]?.substring(0, 5) || '17:00',
+          category: eventData.category || 'Meeting',
+          visibility: eventData.visibility || 'public',
+          maxCapacity: eventData.maxCapacity ? parseInt(eventData.maxCapacity.toString()) : null,
+        };
+        
+        const result = await adminService.updateEvent(selectedEvent.id, eventToUpdate);
+        
+        if (result.success) {
+          // Refresh events list
+          const [firebaseEvents] = await Promise.all([
+            firestoreService.getEvents()
+          ]);
+          
+          const eventIds = firebaseEvents.map((event: any) => event.id);
+          const rsvpCounts = await fetchRSVPCounts(eventIds);
+
+          const transformedEvents: Event[] = firebaseEvents.map((firebaseEvent: any) => {
+            return {
+              id: firebaseEvent.id,
+              title: firebaseEvent.title,
+              date: firebaseEvent.startDate?.toDate?.()?.toISOString()?.split('T')[0] || 
+                    (firebaseEvent.startDate && firebaseEvent.startDate.split) ? firebaseEvent.startDate.split('T')[0] : 
+                    firebaseEvent.startDate,
+              startTime: firebaseEvent.startTime || '00:00',
+              endTime: firebaseEvent.endTime || '00:00',
+              location: {
+                name: firebaseEvent.locationName || firebaseEvent.location || 'TBD',
+                address: firebaseEvent.address || 'Address TBD',
+                coordinates: firebaseEvent.coordinates || undefined
+              },
+              category: firebaseEvent.category || 'pack-wide',
+              denTags: firebaseEvent.denTags || [],
+              maxCapacity: firebaseEvent.maxCapacity || null,
+              currentRSVPs: rsvpCounts[firebaseEvent.id] || firebaseEvent.currentRSVPs || 0,
+              description: firebaseEvent.description || '',
+              packingList: firebaseEvent.packingList || [],
+              fees: firebaseEvent.fees || null,
+              contactEmail: firebaseEvent.contactEmail || 'cubmaster@sfpack1703.com',
+              isOvernight: firebaseEvent.isOvernight || false,
+              requiresPermission: firebaseEvent.requiresPermission || false,
+              attachments: firebaseEvent.attachments || [],
+              visibility: firebaseEvent.visibility,
+              isActive: firebaseEvent.isActive,
+              locationId: firebaseEvent.locationId,
+              startDate: firebaseEvent.startDate?.toDate?.()?.toISOString() || firebaseEvent.startDate,
+              endDate: firebaseEvent.endDate?.toDate?.()?.toISOString() || firebaseEvent.endDate
+            };
+          });
+          
+          setEvents(transformedEvents);
+          setIsModalOpen(false);
+          setSelectedEvent(null);
+          addNotification('success', 'Event Updated', 'Event has been successfully updated.');
+        } else {
+          addNotification('error', 'Update Failed', result.error || 'Failed to update event. Please try again.');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving event:', error);
+      addNotification('error', 'Save Failed', 'Failed to save event. Please try again.');
+    }
   };
 
   const generateICSFeed = async () => {
@@ -456,11 +667,13 @@ const EventsPage: React.FC = () => {
         {/* Page Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-display font-bold text-gray-900 mb-4">
-            Pack Events & Activities
+            {isAdmin ? 'Events Management' : 'Pack Events & Activities'}
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                          Discover upcoming events, activities, and adventures for scout families. 
-            From den meetings to campouts, there's something for everyone!
+            {isAdmin 
+              ? 'Manage all pack events, including scheduling, visibility, and participant limits.'
+              : 'Discover upcoming events, activities, and adventures for scout families. From den meetings to campouts, there\'s something for everyone!'
+            }
           </p>
         </div>
 
@@ -530,10 +743,67 @@ const EventsPage: React.FC = () => {
               Filters
             </button>
 
+            {/* Admin Controls */}
+            {isAdmin && (
+              <>
+                {/* Admin Search */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search events..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-64 pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-400">🔍</span>
+                  </div>
+                </div>
+
+                {/* Admin Category Filter */}
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">All Categories</option>
+                  <option value="Meeting">Meeting</option>
+                  <option value="Competition">Competition</option>
+                  <option value="Outdoor">Outdoor</option>
+                  <option value="Service">Service</option>
+                  <option value="Social">Social</option>
+                  <option value="Training">Training</option>
+                </select>
+
+                {/* Admin Visibility Filter */}
+                <select
+                  value={filterVisibility}
+                  onChange={(e) => setFilterVisibility(e.target.value)}
+                  className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">All Visibility</option>
+                  <option value="public">Public</option>
+                  <option value="link-only">Link Only</option>
+                  <option value="private">Private</option>
+                </select>
+              </>
+            )}
+
           </div>
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-3">
+            {/* Admin Create Button */}
+            {isAdmin && (
+              <button
+                onClick={handleCreateEvent}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 shadow-soft"
+              >
+                <Plus className="w-4 h-4" />
+                Create Event
+              </button>
+            )}
+
             <button
               onClick={generateICSFeed}
               className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
@@ -579,18 +849,48 @@ const EventsPage: React.FC = () => {
             ) : (
               <>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {paginatedEvents.map((event) => (
-                    <EventCard
-                      key={event.id}
-                      event={event}
-                      onRSVP={handleRSVP}
-                      onViewDetails={handleViewDetails}
-                      onAddToCalendar={handleAddToCalendar}
-                      onShare={handleShare}
-                      onViewRSVPs={isAdmin ? handleViewRSVPs : undefined}
-                      isAdmin={isAdmin}
-                    />
-                  ))}
+                  {paginatedEvents.map((event) => {
+                    // Normalize location to object format for EventCard
+                    const normalizedEvent = {
+                      ...event,
+                      location: typeof event.location === 'string' 
+                        ? { name: event.location, address: '', coordinates: undefined }
+                        : event.location
+                    };
+                    
+                    return (
+                      <div key={event.id} className="relative">
+                        <EventCard
+                          event={normalizedEvent}
+                          onRSVP={handleRSVP}
+                          onViewDetails={handleViewDetails}
+                          onAddToCalendar={handleAddToCalendar}
+                          onShare={handleShare}
+                          onViewRSVPs={isAdmin ? handleViewRSVPs : undefined}
+                          isAdmin={isAdmin}
+                        />
+                      {/* Admin Action Buttons */}
+                      {isAdmin && (
+                        <div className="absolute top-2 right-2 flex gap-2">
+                          <button
+                            onClick={() => handleEditEvent(event)}
+                            className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-lg transition-colors duration-200"
+                            title="Edit Event"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteEvent(event.id)}
+                            className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow-lg transition-colors duration-200"
+                            title="Delete Event"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                      </div>
+                    );
+                  })}
                 </div>
                 
                 {/* Pagination Controls */}
@@ -638,7 +938,12 @@ const EventsPage: React.FC = () => {
         ) : (
           /* Calendar View */
           <EventCalendar
-            events={filteredEvents}
+            events={filteredEvents.map(event => ({
+              ...event,
+              location: typeof event.location === 'string' 
+                ? { name: event.location, address: '', coordinates: undefined }
+                : event.location
+            }))}
             onEventClick={handleEventClick}
             onDateSelect={(date) => console.log('Date selected:', date)}
             onViewChange={handleCalendarViewChange}
@@ -673,8 +978,372 @@ const EventsPage: React.FC = () => {
             onClose={handleCloseRSVPViewer}
           />
         )}
+
+        {/* Admin Event Management Modal */}
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/50 shadow-soft">
+              <div className="p-8">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-3xl font-display font-bold text-gray-900">
+                      {modalMode === 'create' ? 'Create New Event' : 'Edit Event'}
+                    </h2>
+                    <p className="text-gray-600 mt-2">
+                      {modalMode === 'create' 
+                        ? 'Add a new event to the pack calendar' 
+                        : 'Update event details and settings'
+                      }
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setIsModalOpen(false)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors duration-200 text-2xl"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Event Form */}
+                <EventForm 
+                  event={selectedEvent}
+                  mode={modalMode}
+                  onSave={handleSaveEvent}
+                  onCancel={() => setIsModalOpen(false)}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
+  );
+};
+
+// Event Form Component
+interface EventFormProps {
+  event: Event | null;
+  mode: 'create' | 'edit';
+  onSave: (eventData: Partial<Event>) => void;
+  onCancel: () => void;
+}
+
+const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    title: event?.title || '',
+    description: event?.description || '',
+    startDate: event?.startDate ? event.startDate.slice(0, 16) : '',
+    endDate: event?.endDate ? event.endDate.slice(0, 16) : '',
+    location: typeof event?.location === 'object' ? event.location.name : (event?.location || ''),
+    locationId: event?.locationId || '',
+    category: event?.category || 'Meeting',
+    visibility: event?.visibility || 'public',
+    maxCapacity: event?.maxCapacity ? event.maxCapacity.toString() : '',
+    isActive: event?.isActive ?? true
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const categories = ['Meeting', 'Competition', 'Outdoor', 'Service', 'Social', 'Training'];
+  const visibilityOptions = [
+    { value: 'public', label: 'Public', description: 'Visible to everyone' },
+    { value: 'link-only', label: 'Link Only', description: 'Only accessible via direct link' },
+    { value: 'private', label: 'Private', description: 'Only visible to admins' }
+  ];
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.title.trim()) {
+      newErrors.title = 'Event title is required';
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'Event description is required';
+    }
+
+    if (!formData.startDate) {
+      newErrors.startDate = 'Start date is required';
+    }
+
+    if (!formData.endDate) {
+      newErrors.endDate = 'End date is required';
+    }
+
+    if (formData.startDate && formData.endDate && new Date(formData.startDate) >= new Date(formData.endDate)) {
+      newErrors.endDate = 'End date must be after start date';
+    }
+
+    if (!formData.location.trim()) {
+      newErrors.location = 'Location is required';
+    }
+
+    if (formData.maxCapacity && parseInt(formData.maxCapacity) < 1) {
+      newErrors.maxCapacity = 'Maximum participants must be at least 1';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (validateForm()) {
+      const { maxCapacity, locationId, ...formDataWithoutMaxParticipants } = formData;
+      const eventData: Partial<Event> = {
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        category: formData.category as 'pack-wide' | 'den' | 'camping' | 'overnight' | 'service',
+        visibility: formData.visibility,
+        isActive: formData.isActive,
+        locationId: locationId || formData.location,
+        startDate: new Date(formData.startDate).toISOString(),
+        endDate: new Date(formData.endDate).toISOString(),
+        currentRSVPs: event?.currentRSVPs || 0
+      };
+      
+      if (maxCapacity && !isNaN(parseInt(maxCapacity))) {
+        eventData.maxCapacity = parseInt(maxCapacity);
+      }
+      
+      onSave(eventData);
+    }
+  };
+
+  const handleInputChange = (field: string, value: string | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Basic Information */}
+      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <span className="text-blue-600 mr-2">📝</span>
+          Basic Information
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Title */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Event Title *
+            </label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => handleInputChange('title', e.target.value)}
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm ${
+                errors.title ? 'border-red-300' : 'border-gray-200'
+              }`}
+              placeholder="Enter event title..."
+            />
+            {errors.title && (
+              <p className="text-red-600 text-sm mt-1">{errors.title}</p>
+            )}
+          </div>
+
+          {/* Description */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description *
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              rows={4}
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm ${
+                errors.description ? 'border-red-300' : 'border-gray-200'
+              }`}
+              placeholder="Describe the event..."
+            />
+            {errors.description && (
+              <p className="text-red-600 text-sm mt-1">{errors.description}</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Date & Time */}
+      <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <span className="text-green-600 mr-2">📅</span>
+          Date & Time
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Start Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Start Date & Time *
+            </label>
+            <input
+              type="datetime-local"
+              value={formData.startDate}
+              onChange={(e) => handleInputChange('startDate', e.target.value)}
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white/80 backdrop-blur-sm ${
+                errors.startDate ? 'border-red-300' : 'border-gray-200'
+              }`}
+            />
+            {errors.startDate && (
+              <p className="text-red-600 text-sm mt-1">{errors.startDate}</p>
+            )}
+          </div>
+
+          {/* End Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              End Date & Time *
+            </label>
+            <input
+              type="datetime-local"
+              value={formData.endDate}
+              onChange={(e) => handleInputChange('endDate', e.target.value)}
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white/80 backdrop-blur-sm ${
+                errors.endDate ? 'border-red-300' : 'border-gray-200'
+              }`}
+            />
+            {errors.endDate && (
+              <p className="text-red-600 text-sm mt-1">{errors.endDate}</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Location & Category */}
+      <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <span className="text-purple-600 mr-2">📍</span>
+          Location & Category
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Location */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Location *
+            </label>
+            <input
+              type="text"
+              value={formData.location}
+              onChange={(e) => handleInputChange('location', e.target.value)}
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/80 backdrop-blur-sm ${
+                errors.location ? 'border-red-300' : 'border-gray-200'
+              }`}
+              placeholder="Enter event location..."
+            />
+            {errors.location && (
+              <p className="text-red-600 text-sm mt-1">{errors.location}</p>
+            )}
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Category
+            </label>
+            <select
+              value={formData.category}
+              onChange={(e) => handleInputChange('category', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
+            >
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Settings */}
+      <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <span className="text-orange-600 mr-2">⚙️</span>
+          Event Settings
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Visibility */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Visibility
+            </label>
+            <select
+              value={formData.visibility}
+              onChange={(e) => handleInputChange('visibility', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
+            >
+              {visibilityOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              {visibilityOptions.find(opt => opt.value === formData.visibility)?.description}
+            </p>
+          </div>
+
+          {/* Max Participants */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Maximum Participants
+            </label>
+            <input
+              type="number"
+              value={formData.maxCapacity}
+              onChange={(e) => handleInputChange('maxCapacity', e.target.value)}
+              min="1"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white/80 backdrop-blur-sm ${
+                errors.maxCapacity ? 'border-red-300' : 'border-gray-200'
+              }`}
+              placeholder="Leave empty for unlimited"
+            />
+            {errors.maxCapacity && (
+              <p className="text-red-600 text-sm mt-1">{errors.maxCapacity}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Active Status */}
+        <div className="mt-6">
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={formData.isActive}
+              onChange={(e) => handleInputChange('isActive', e.target.checked)}
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <span className="ml-2 text-sm font-medium text-gray-700">
+              Event is active and visible to participants
+            </span>
+          </label>
+        </div>
+      </div>
+
+      {/* Form Actions */}
+      <div className="flex gap-4 justify-end pt-6 border-t border-gray-200">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors duration-200 font-medium"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-xl font-medium transition-all duration-200 shadow-soft"
+        >
+          {mode === 'create' ? 'Create Event' : 'Save Changes'}
+        </button>
+      </div>
+    </form>
   );
 };
 

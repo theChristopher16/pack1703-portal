@@ -34,7 +34,6 @@ import AuthDebugPage from './pages/AuthDebugPage';
 
 // Admin Pages
 import AdminDashboard from './pages/AdminDashboard';
-import AdminEvents from './pages/AdminEvents';
 import AdminLocations from './pages/AdminLocations';
 import AdminAnnouncements from './pages/AdminAnnouncements';
 import UnifiedChat from './components/Chat/UnifiedChat';
@@ -156,7 +155,6 @@ function App() {
           <Route path="/analytics" element={<Layout><AdminOnly><AnalyticsDashboard /></AdminOnly></Layout>} />
           <Route path="/analytics/test" element={<Layout><AdminOnly><AnalyticsTest /></AdminOnly></Layout>} />
           <Route path="/admin" element={<Layout><AdminOnly><AdminDashboard /></AdminOnly></Layout>} />
-          <Route path="/events" element={<Layout><AdminOnly><AdminEvents /></AdminOnly></Layout>} />
           <Route path="/locations" element={<Layout><AdminOnly><AdminLocations /></AdminOnly></Layout>} />
           <Route path="/announcements" element={<Layout><AdminOnly><AdminAnnouncements /></AdminOnly></Layout>} />
           <Route path="/lists" element={<Layout><AdminOnly><AdminLists /></AdminOnly></Layout>} />

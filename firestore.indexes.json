@@ -127,6 +127,14 @@
         { "fieldPath": "needId", "mode": "ASCENDING" },
         { "fieldPath": "volunteerUserId", "mode": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "cost-alerts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "acknowledged", "mode": "ASCENDING" },
+        { "fieldPath": "date", "mode": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

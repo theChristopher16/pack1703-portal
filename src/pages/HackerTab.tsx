@@ -230,27 +230,27 @@ const HackerTab: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 text-gray-900">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 border-b-2 border-yellow-400 p-4 shadow-2xl">
+      <div className="bg-gradient-to-r from-amber-100 via-orange-100 to-yellow-100 border-b-4 border-amber-300 p-6 shadow-glow-solar backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-300 drop-shadow-lg animate-pulse">
+            <h1 className="text-4xl font-bold text-gradient animate-solar-glow">
               🖥️ SOC CONSOLE
             </h1>
-            <span className="text-sm text-yellow-200 bg-gradient-to-r from-yellow-600 to-yellow-700 px-3 py-1 rounded-full font-semibold shadow-lg border border-yellow-400">
+            <span className="text-sm text-amber-800 bg-gradient-to-r from-amber-200 to-orange-200 px-4 py-2 rounded-full font-semibold shadow-glow-primary border-2 border-amber-300 animate-pulse">
               ROOT ACCESS GRANTED
             </span>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-yellow-200 bg-slate-700 px-3 py-1 rounded border border-yellow-400">User: {currentUser?.email}</span>
-            <span className="text-sm text-yellow-200 bg-slate-700 px-3 py-1 rounded border border-yellow-400">Role: ROOT</span>
+            <span className="text-sm text-amber-800 bg-white/80 backdrop-blur-sm px-3 py-2 rounded-lg border-2 border-amber-300 shadow-soft">User: {currentUser?.email}</span>
+            <span className="text-sm text-amber-800 bg-white/80 backdrop-blur-sm px-3 py-2 rounded-lg border-2 border-amber-300 shadow-soft">Role: ROOT</span>
             <button
               onClick={() => setDebugMode(!debugMode)}
-              className={`px-4 py-2 rounded text-sm font-semibold transition-all duration-300 ${
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 border-2 ${
                 debugMode 
-                  ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-slate-900 shadow-lg border border-yellow-300' 
-                  : 'bg-slate-700 text-yellow-300 hover:bg-slate-600 border border-yellow-400'
+                  ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-white shadow-glow-primary border-amber-500 animate-pulse' 
+                  : 'bg-white/80 text-amber-800 hover:bg-white border-amber-300 hover:shadow-glow-primary'
               }`}
             >
               DEBUG: {debugMode ? 'ON' : 'OFF'}
@@ -260,16 +260,16 @@ const HackerTab: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <div className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 border-b-2 border-yellow-400 p-3 shadow-lg">
-        <div className="flex flex-wrap gap-2">
+      <div className="bg-gradient-to-r from-amber-200 via-orange-200 to-yellow-200 border-b-4 border-amber-300 p-4 shadow-glow-solar backdrop-blur-sm">
+        <div className="flex flex-wrap gap-3">
           {['overview', 'system', 'security', 'ai', 'debug', 'emergency', 'logs', 'performance'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
+              className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 border-2 ${
                 activeTab === tab 
-                  ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-slate-900 shadow-lg transform scale-105 border border-yellow-300' 
-                  : 'text-yellow-200 bg-slate-700 hover:bg-slate-600 hover:text-yellow-100 border border-yellow-500 hover:border-yellow-400 hover:shadow-md'
+                  ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-white shadow-glow-primary transform scale-105 border-amber-500 animate-pulse' 
+                  : 'text-amber-800 bg-white/80 hover:bg-white hover:text-amber-900 border-amber-300 hover:border-amber-400 hover:shadow-glow-primary backdrop-blur-sm'
               }`}
             >
               {tab.toUpperCase()}
@@ -279,19 +279,19 @@ const HackerTab: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="p-6 bg-gradient-to-br from-slate-800 via-slate-700 to-slate-800 min-h-screen">
+      <div className="p-6 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 min-h-screen">
         {loading && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-yellow-900 to-yellow-800 border-2 border-yellow-400 rounded-lg shadow-lg">
-            <div className="flex items-center space-x-3">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-300"></div>
-              <span className="text-yellow-200 font-semibold">Executing system command...</span>
+          <div className="mb-6 p-6 bg-gradient-to-r from-amber-100 to-orange-100 border-4 border-amber-300 rounded-2xl shadow-glow-solar backdrop-blur-sm">
+            <div className="flex items-center space-x-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-3 border-amber-500"></div>
+              <span className="text-amber-800 font-semibold text-lg">Executing system command...</span>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-red-900 to-red-800 border-2 border-red-400 rounded-lg shadow-lg">
-            <span className="text-red-200 font-semibold">ERROR: {error}</span>
+          <div className="mb-6 p-6 bg-gradient-to-r from-red-100 to-pink-100 border-4 border-red-300 rounded-2xl shadow-glow backdrop-blur-sm">
+            <span className="text-red-800 font-semibold text-lg">ERROR: {error}</span>
           </div>
         )}
 
@@ -299,123 +299,123 @@ const HackerTab: React.FC = () => {
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* System Status Banner */}
-            <div className="bg-gradient-to-r from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg">
+            <div className="bg-white/90 backdrop-blur-sm border-4 border-amber-300 p-8 rounded-2xl shadow-glow-solar hover:shadow-glow-primary transition-all duration-300">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400 mb-2">🖥️ System Status</h2>
-                  <p className="text-yellow-200">All systems operational - Last updated: {new Date().toLocaleTimeString()}</p>
+                  <h2 className="text-3xl font-bold text-gradient mb-3">🖥️ System Status</h2>
+                  <p className="text-amber-800 text-lg">All systems operational - Last updated: {new Date().toLocaleTimeString()}</p>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl text-yellow-400 animate-pulse">🟢</div>
-                  <div className="text-sm text-yellow-200 font-semibold">ONLINE</div>
+                  <div className="text-4xl text-secondary-500 animate-pulse">🟢</div>
+                  <div className="text-lg text-amber-800 font-bold">ONLINE</div>
                 </div>
               </div>
             </div>
 
             {/* Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg hover:shadow-yellow-400/25 transition-all duration-300">
-                <h3 className="text-lg font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">📊 System Metrics</h3>
+              <div className="bg-white/90 backdrop-blur-sm border-4 border-amber-300 p-6 rounded-2xl shadow-glow-solar hover:shadow-glow-primary transition-all duration-300 hover:-translate-y-1">
+                <h3 className="text-xl font-bold mb-4 text-gradient">📊 System Metrics</h3>
                 {systemMetrics ? (
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-yellow-200">Users:</span>
-                      <span className="text-yellow-300 font-semibold">{systemMetrics.totalUsers} / {systemMetrics.activeUsers} active</span>
+                      <span className="text-amber-700">Users:</span>
+                      <span className="text-amber-900 font-semibold">{systemMetrics.totalUsers} / {systemMetrics.activeUsers} active</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-yellow-200">Events:</span>
-                      <span className="text-yellow-300 font-semibold">{systemMetrics.totalEvents}</span>
+                      <span className="text-amber-700">Events:</span>
+                      <span className="text-amber-900 font-semibold">{systemMetrics.totalEvents}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-yellow-200">RSVPs:</span>
-                      <span className="text-yellow-300 font-semibold">{systemMetrics.totalRSVPs}</span>
+                      <span className="text-amber-700">RSVPs:</span>
+                      <span className="text-amber-900 font-semibold">{systemMetrics.totalRSVPs}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-yellow-200">Storage:</span>
-                      <span className="text-yellow-300 font-semibold">{systemMetrics.storageUsed}GB / {systemMetrics.storageLimit}GB</span>
+                      <span className="text-amber-700">Storage:</span>
+                      <span className="text-amber-900 font-semibold">{systemMetrics.storageUsed}GB / {systemMetrics.storageLimit}GB</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-yellow-200">Functions:</span>
-                      <span className="text-yellow-300 font-semibold">{systemMetrics.functionsExecutions} executions</span>
+                      <span className="text-amber-700">Functions:</span>
+                      <span className="text-amber-900 font-semibold">{systemMetrics.functionsExecutions} executions</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-yellow-200">Database:</span>
-                      <span className="text-yellow-300 font-semibold">{systemMetrics.databaseReads} reads, {systemMetrics.databaseWrites} writes</span>
+                      <span className="text-amber-700">Database:</span>
+                      <span className="text-amber-900 font-semibold">{systemMetrics.databaseReads} reads, {systemMetrics.databaseWrites} writes</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-yellow-400">Loading...</div>
+                  <div className="text-amber-600">Loading...</div>
                 )}
               </div>
 
-              <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg hover:shadow-yellow-400/25 transition-all duration-300">
-                <h3 className="text-lg font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">🤖 AI Status</h3>
+              <div className="bg-white/90 backdrop-blur-sm border-4 border-amber-300 p-6 rounded-2xl shadow-glow-solar hover:shadow-glow-primary transition-all duration-300 hover:-translate-y-1">
+                <h3 className="text-xl font-bold mb-4 text-gradient">🤖 AI Status</h3>
                 {systemStatus ? (
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-yellow-200">Model:</span>
-                      <span className="text-yellow-300 font-semibold">{systemStatus.model}</span>
+                      <span className="text-amber-700">Model:</span>
+                      <span className="text-amber-900 font-semibold">{systemStatus.model}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-yellow-200">Connected:</span>
-                      <span className="text-yellow-300 font-semibold">{systemStatus.connected ? '✅' : '❌'}</span>
+                      <span className="text-amber-700">Connected:</span>
+                      <span className="text-amber-900 font-semibold">{systemStatus.connected ? '✅' : '❌'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-yellow-200">Max Tokens:</span>
-                      <span className="text-yellow-300 font-semibold">{systemStatus.maxTokens}</span>
+                      <span className="text-amber-700">Max Tokens:</span>
+                      <span className="text-amber-900 font-semibold">{systemStatus.maxTokens}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-yellow-200">Temperature:</span>
-                      <span className="text-yellow-300 font-semibold">{systemStatus.temperature}</span>
+                      <span className="text-amber-700">Temperature:</span>
+                      <span className="text-amber-900 font-semibold">{systemStatus.temperature}</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-yellow-400">Checking...</div>
+                  <div className="text-amber-600">Checking...</div>
                 )}
               </div>
 
-              <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg hover:shadow-yellow-400/25 transition-all duration-300">
-                <h3 className="text-lg font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">🔧 Quick Actions</h3>
+              <div className="bg-white/90 backdrop-blur-sm border-4 border-amber-300 p-6 rounded-2xl shadow-glow-solar hover:shadow-glow-primary transition-all duration-300 hover:-translate-y-1">
+                <h3 className="text-xl font-bold mb-4 text-gradient">🔧 Quick Actions</h3>
                 <div className="space-y-3">
                   <button
                     onClick={clearSystemCache}
-                    className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg text-sm font-semibold text-white transition-all duration-300 shadow-lg hover:shadow-blue-500/25"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700 rounded-xl text-sm font-semibold text-white transition-all duration-300 shadow-glow-accent hover:shadow-glow-accent/80 hover:-translate-y-1"
                   >
                     Clear Cache
                   </button>
                   <button
                     onClick={checkSystemStatus}
-                    className="w-full px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 rounded-lg text-sm font-semibold text-white transition-all duration-300 shadow-lg hover:shadow-yellow-500/25"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 rounded-xl text-sm font-semibold text-white transition-all duration-300 shadow-glow-primary hover:shadow-glow-primary/80 hover:-translate-y-1"
                   >
                     Refresh Status
                   </button>
                   <button
                     onClick={() => setActiveTab('debug')}
-                    className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 rounded-lg text-sm font-semibold text-white transition-all duration-300 shadow-lg hover:shadow-purple-500/25"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 rounded-xl text-sm font-semibold text-white transition-all duration-300 shadow-glow-secondary hover:shadow-glow-secondary/80 hover:-translate-y-1"
                   >
                     Debug Console
                   </button>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg hover:shadow-yellow-400/25 transition-all duration-300">
-                <h3 className="text-lg font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">⚡ Performance</h3>
+              <div className="bg-white/90 backdrop-blur-sm border-4 border-amber-300 p-6 rounded-2xl shadow-glow-solar hover:shadow-glow-primary transition-all duration-300 hover:-translate-y-1">
+                <h3 className="text-xl font-bold mb-4 text-gradient">⚡ Performance</h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-yellow-200">Uptime:</span>
-                    <span className="text-yellow-300 font-semibold">99.9%</span>
+                    <span className="text-amber-700">Uptime:</span>
+                    <span className="text-amber-900 font-semibold">99.9%</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-yellow-200">Response Time:</span>
-                    <span className="text-yellow-300 font-semibold">45ms</span>
+                    <span className="text-amber-700">Response Time:</span>
+                    <span className="text-amber-900 font-semibold">45ms</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-yellow-200">Memory Usage:</span>
-                    <span className="text-yellow-300 font-semibold">68%</span>
+                    <span className="text-amber-700">Memory Usage:</span>
+                    <span className="text-amber-900 font-semibold">68%</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-yellow-200">CPU Usage:</span>
-                    <span className="text-yellow-300 font-semibold">23%</span>
+                    <span className="text-amber-700">CPU Usage:</span>
+                    <span className="text-amber-900 font-semibold">23%</span>
                   </div>
                 </div>
               </div>
@@ -426,49 +426,49 @@ const HackerTab: React.FC = () => {
         {/* System Tab */}
         {activeTab === 'system' && (
           <div className="space-y-6">
-            <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg">
-              <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">⚙️ System Configuration</h3>
+            <div className="bg-white/90 backdrop-blur-sm border-4 border-amber-300 p-8 rounded-2xl shadow-glow-solar">
+              <h3 className="text-3xl font-bold mb-6 text-gradient">⚙️ System Configuration</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="font-bold mb-4 text-yellow-300">Environment Variables</h4>
-                  <div className="space-y-2 text-sm bg-slate-800 p-4 rounded border border-yellow-400">
-                    <div className="text-yellow-200">OPENAI_MODEL: <span className="text-yellow-300">gpt-5</span></div>
-                    <div className="text-yellow-200">OPENAI_MAX_TOKENS: <span className="text-yellow-300">4000</span></div>
-                    <div className="text-yellow-200">OPENAI_TEMPERATURE: <span className="text-yellow-300">0.7</span></div>
-                    <div className="text-yellow-200">MCP_SERVER_PORT: <span className="text-yellow-300">3001</span></div>
-                    <div className="text-yellow-200">LLM_RATE_LIMIT_ENABLED: <span className="text-yellow-300">true</span></div>
+                  <h4 className="font-bold mb-4 text-amber-800 text-lg">Environment Variables</h4>
+                  <div className="space-y-3 text-sm bg-amber-50 p-6 rounded-xl border-2 border-amber-200">
+                    <div className="text-amber-700">OPENAI_MODEL: <span className="text-amber-900 font-semibold">gpt-5</span></div>
+                    <div className="text-amber-700">OPENAI_MAX_TOKENS: <span className="text-amber-900 font-semibold">4000</span></div>
+                    <div className="text-amber-700">OPENAI_TEMPERATURE: <span className="text-amber-900 font-semibold">0.7</span></div>
+                    <div className="text-amber-700">MCP_SERVER_PORT: <span className="text-amber-900 font-semibold">3001</span></div>
+                    <div className="text-amber-700">LLM_RATE_LIMIT_ENABLED: <span className="text-amber-900 font-semibold">true</span></div>
                   </div>
                 </div>
                 <div>
-                  <h4 className="font-bold mb-4 text-yellow-300">System Settings</h4>
-                  <div className="space-y-2 text-sm bg-slate-800 p-4 rounded border border-yellow-400">
-                    <div className="text-yellow-200">Debug Mode: <span className="text-yellow-300">{debugMode ? 'Enabled' : 'Disabled'}</span></div>
-                    <div className="text-yellow-200">Log Level: <span className="text-yellow-300">INFO</span></div>
-                    <div className="text-yellow-200">Cache TTL: <span className="text-yellow-300">3600s</span></div>
-                    <div className="text-yellow-200">Rate Limit: <span className="text-yellow-300">100/min</span></div>
+                  <h4 className="font-bold mb-4 text-amber-800 text-lg">System Settings</h4>
+                  <div className="space-y-3 text-sm bg-amber-50 p-6 rounded-xl border-2 border-amber-200">
+                    <div className="text-amber-700">Debug Mode: <span className="text-amber-900 font-semibold">{debugMode ? 'Enabled' : 'Disabled'}</span></div>
+                    <div className="text-amber-700">Log Level: <span className="text-amber-900 font-semibold">INFO</span></div>
+                    <div className="text-amber-700">Cache TTL: <span className="text-amber-900 font-semibold">3600s</span></div>
+                    <div className="text-amber-700">Rate Limit: <span className="text-amber-900 font-semibold">100/min</span></div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg">
-              <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">🛠️ System Maintenance</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white/90 backdrop-blur-sm border-4 border-amber-300 p-8 rounded-2xl shadow-glow-solar">
+              <h3 className="text-3xl font-bold mb-6 text-gradient">🛠️ System Maintenance</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <button
                   onClick={clearSystemCache}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-blue-500/25"
+                  className="px-8 py-4 bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700 rounded-xl text-white font-semibold transition-all duration-300 shadow-glow-accent hover:shadow-glow-accent/80 hover:-translate-y-1"
                 >
                   Clear Cache
                 </button>
                 <button
                   onClick={resetSystemSettings}
-                  className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 rounded-lg text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-yellow-500/25"
+                  className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 rounded-xl text-white font-semibold transition-all duration-300 shadow-glow-primary hover:shadow-glow-primary/80 hover:-translate-y-1"
                 >
                   Reset Settings
                 </button>
                 <button
                   onClick={() => executeSystemCommand('optimize_database')}
-                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-lg text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-green-500/25"
+                  className="px-8 py-4 bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 rounded-xl text-white font-semibold transition-all duration-300 shadow-glow-secondary hover:shadow-glow-secondary/80 hover:-translate-y-1"
                 >
                   Optimize Database
                 </button>
@@ -480,27 +480,27 @@ const HackerTab: React.FC = () => {
         {/* Security Tab */}
         {activeTab === 'security' && (
           <div className="space-y-6">
-            <div className="bg-gradient-to-br from-slate-700 to-slate-600 border-2 border-yellow-400 p-6 rounded-lg shadow-lg">
-              <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-400">🔒 Security Logs</h3>
-              <div className="max-h-96 overflow-y-auto bg-slate-800 border border-yellow-400 rounded p-4">
+            <div className="bg-white/90 backdrop-blur-sm border-4 border-amber-300 p-8 rounded-2xl shadow-glow-solar">
+              <h3 className="text-3xl font-bold mb-6 text-gradient">🔒 Security Logs</h3>
+              <div className="max-h-96 overflow-y-auto bg-amber-50 border-2 border-amber-200 rounded-xl p-6">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-yellow-400">
-                      <th className="text-left p-2 text-yellow-300">Time</th>
-                      <th className="text-left p-2 text-yellow-300">Action</th>
-                      <th className="text-left p-2 text-yellow-300">User</th>
-                      <th className="text-left p-2 text-yellow-300">IP</th>
-                      <th className="text-left p-2 text-yellow-300">Status</th>
+                    <tr className="border-b-2 border-amber-300">
+                      <th className="text-left p-3 text-amber-800 font-semibold">Time</th>
+                      <th className="text-left p-3 text-amber-800 font-semibold">Action</th>
+                      <th className="text-left p-3 text-amber-800 font-semibold">User</th>
+                      <th className="text-left p-3 text-amber-800 font-semibold">IP</th>
+                      <th className="text-left p-3 text-amber-800 font-semibold">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {securityLogs.map((log) => (
-                      <tr key={log.id} className="border-b border-slate-600">
-                        <td className="p-2 text-yellow-200">{log.timestamp.toLocaleString()}</td>
-                        <td className="p-2 text-yellow-200">{log.action}</td>
-                        <td className="p-2 text-yellow-200">{log.userEmail}</td>
-                        <td className="p-2 text-yellow-200">{log.ipAddress}</td>
-                        <td className="p-2 text-yellow-200">{log.success ? '✅' : '❌'}</td>
+                      <tr key={log.id} className="border-b border-amber-200 hover:bg-amber-100 transition-colors duration-200">
+                        <td className="p-3 text-amber-700">{log.timestamp.toLocaleString()}</td>
+                        <td className="p-3 text-amber-700">{log.action}</td>
+                        <td className="p-3 text-amber-700">{log.userEmail}</td>
+                        <td className="p-3 text-amber-700">{log.ipAddress}</td>
+                        <td className="p-3 text-amber-700">{log.success ? '✅' : '❌'}</td>
                       </tr>
                     ))}
                   </tbody>

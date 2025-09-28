@@ -39,6 +39,7 @@ interface EventCardProps {
   onViewRSVPs?: (event: Event) => void;
   isAuthenticated?: boolean;
   isAdmin?: boolean;
+  isDeleting?: boolean;
 }
 
 const EventCard: React.FC<EventCardProps> = ({ 
@@ -46,10 +47,11 @@ const EventCard: React.FC<EventCardProps> = ({
   onRSVP, 
   onViewDetails, 
   onAddToCalendar, 
-  onShare,
-  onViewRSVPs,
-  isAuthenticated = true,
-  isAdmin = false
+  onShare, 
+  onViewRSVPs, 
+  isAuthenticated = true, 
+  isAdmin = false,
+  isDeleting = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -358,11 +360,16 @@ const EventCard: React.FC<EventCardProps> = ({
                     const deleteEvent = new CustomEvent('deleteEvent', { detail: event.id });
                     window.dispatchEvent(deleteEvent);
                   }}
-                  className="flex items-center space-x-2 text-sm text-red-600 hover:text-red-700 transition-colors duration-200"
-                  title="Delete Event (Admin Only)"
+                  className={`flex items-center space-x-2 text-sm transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isDeleting 
+                      ? 'text-yellow-600 cursor-wait' 
+                      : 'text-red-600 hover:text-red-700'
+                  }`}
+                  title={isDeleting ? "Deleting..." : "Delete Event (Admin Only)"}
+                  disabled={isDeleting}
                 >
                   <Trash2 className="w-4 h-4" />
-                  <span>Delete</span>
+                  <span>{isDeleting ? 'Deleting...' : 'Delete'}</span>
                 </button>
               </>
             )}

@@ -80,6 +80,7 @@ const EventsPage: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterVisibility, setFilterVisibility] = useState('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
   
   // Debounced filter state
   const [filters, setFilters] = useState<EventFiltersType>({
@@ -445,18 +446,34 @@ const EventsPage: React.FC = () => {
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    if (window.confirm('Are you sure you want to delete this event?')) {
+    if (window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
       try {
+        setDeletingEventId(eventId);
+        
+        // Show loading notification
+        addNotification('info', 'Deleting Event', 'Please wait while we delete the event...');
+        
+        console.log('Deleting event with ID:', eventId);
         const result = await adminService.deleteEvent(eventId);
+        console.log('Event deletion result:', result);
+        
         if (result.success) {
+          console.log('Event deleted successfully, updating events list...');
+          
+          // Remove the event from the local state immediately
           setEvents(events.filter(e => e.id !== eventId));
-          addNotification('success', 'Event Deleted', 'Event has been successfully deleted.');
+          
+          // Show success notification
+          addNotification('success', 'Event Deleted Successfully!', 'The event has been removed from the pack calendar.');
         } else {
-          addNotification('error', 'Delete Failed', result.error || 'Failed to delete event.');
+          console.error('Event deletion failed:', result.error);
+          addNotification('error', 'Event Deletion Failed', result.error || 'Failed to delete event. Please try again.');
         }
       } catch (error) {
         console.error('Error deleting event:', error);
-        addNotification('error', 'Delete Failed', 'Failed to delete event. Please try again.');
+        addNotification('error', 'Event Deletion Failed', `Failed to delete event: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
+      } finally {
+        setDeletingEventId(null);
       }
     }
   };
@@ -912,6 +929,7 @@ const EventsPage: React.FC = () => {
                           onShare={handleShare}
                           onViewRSVPs={isAdmin ? handleViewRSVPs : undefined}
                           isAdmin={isAdmin}
+                          isDeleting={deletingEventId === event.id}
                         />
                       </div>
                     );

@@ -1,5 +1,5 @@
 import { getFirestore } from 'firebase/firestore';
-import { collection, doc, getDocs, addDoc, query, orderBy, limit, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, orderBy, limit, Timestamp } from 'firebase/firestore';
 
 // Initialize Firestore
 const db = getFirestore();
@@ -30,17 +30,34 @@ export interface SensorData {
   bme680: BME680Reading[];
 }
 
+export interface CameraImage {
+  id: string;
+  timestamp: number;
+  imageUrl: string;
+  thumbnailUrl?: string;
+  metadata?: {
+    resolution: string;
+    fileSize: number;
+    format: string;
+  };
+}
+
 export interface EcologyData {
   sensors: SensorData;
+  camera: {
+    latestImage?: CameraImage;
+    isOnline: boolean;
+    lastCapture: number;
+  };
   lastUpdated: number;
   isLive: boolean;
   location: string;
 }
 
 // Firebase collection names
-const ECOLOGY_COLLECTION = 'ecology';
 const BME680_COLLECTION = 'bme680_readings';
 const SENSOR_READINGS_COLLECTION = 'sensor_readings';
+const CAMERA_IMAGES_COLLECTION = 'camera_images';
 
 class EcologyService {
   /**
@@ -156,12 +173,64 @@ class EcologyService {
   }
 
   /**
+   * Fetch latest camera image from Firebase
+   * @returns Promise<CameraImage | null>
+   */
+  async getLatestCameraImage(): Promise<CameraImage | null> {
+    try {
+      const q = query(
+        collection(db, CAMERA_IMAGES_COLLECTION),
+        orderBy('timestamp', 'desc'),
+        limit(1)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        return null;
+      }
+      
+      const doc = querySnapshot.docs[0];
+      const data = doc.data();
+      
+      return {
+        id: doc.id,
+        timestamp: data.timestamp?.toMillis() || Date.now(),
+        imageUrl: data.imageUrl || '',
+        thumbnailUrl: data.thumbnailUrl,
+        metadata: data.metadata
+      };
+    } catch (error) {
+      console.error('Error fetching latest camera image:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Add a new camera image to Firebase
+   * @param imageData Camera image data
+   * @returns Promise<string> Document ID
+   */
+  async addCameraImage(imageData: Omit<CameraImage, 'id' | 'timestamp'>): Promise<string> {
+    try {
+      const docRef = await addDoc(collection(db, CAMERA_IMAGES_COLLECTION), {
+        ...imageData,
+        timestamp: Timestamp.fromDate(new Date())
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error('Error adding camera image:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Fetch complete ecology data from Firebase
    * @returns Promise<EcologyData>
    */
   async getEcologyData(): Promise<EcologyData> {
     try {
-      // Fetch all sensor types in parallel
+      // Fetch all sensor types and camera data in parallel
       const [
         temperature,
         humidity,
@@ -169,7 +238,8 @@ class EcologyService {
         airQuality,
         light,
         soilMoisture,
-        bme680
+        bme680,
+        latestImage
       ] = await Promise.all([
         this.getSensorReadings('temperature'),
         this.getSensorReadings('humidity'),
@@ -177,7 +247,8 @@ class EcologyService {
         this.getSensorReadings('airQuality'),
         this.getSensorReadings('light'),
         this.getSensorReadings('soilMoisture'),
-        this.getBME680Readings()
+        this.getBME680Readings(),
+        this.getLatestCameraImage()
       ]);
 
       return {
@@ -189,6 +260,11 @@ class EcologyService {
           light,
           soilMoisture,
           bme680
+        },
+        camera: {
+          latestImage: latestImage || undefined,
+          isOnline: latestImage ? (Date.now() - latestImage.timestamp) < 300000 : false, // Online if image is less than 5 minutes old
+          lastCapture: latestImage?.timestamp || 0
         },
         lastUpdated: Date.now(),
         isLive: true,
@@ -206,6 +282,11 @@ class EcologyService {
           light: [],
           soilMoisture: [],
           bme680: []
+        },
+        camera: {
+          latestImage: undefined,
+          isOnline: false,
+          lastCapture: 0
         },
         lastUpdated: Date.now(),
         isLive: false,

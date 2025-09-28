@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Activity, 
   Users, 
   Calendar, 
-  MapPin, 
   MessageSquare, 
   HardDrive, 
   Zap, 
@@ -15,25 +13,39 @@ import {
   BarChart3,
   ChevronDown,
   ChevronUp,
-  Mail
+  Mail,
+  RefreshCw,
+  Cpu
 } from 'lucide-react';
 import systemMonitorService, { SystemMetrics } from '../../services/systemMonitorService';
 import emailMonitorService from '../../services/emailMonitorService';
+import browserPerformanceService, { BrowserPerformanceMetrics } from '../../services/browserPerformanceService';
 
 const SystemMonitor: React.FC = () => {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
+  const [browserMetrics, setBrowserMetrics] = useState<BrowserPerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['overview']));
   const [emailStatus, setEmailStatus] = useState<{ isActive: boolean; lastChecked: Date | null; config: any } | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
 
   useEffect(() => {
     const loadMetrics = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const data = await systemMonitorService.getSystemMetrics();
-        setMetrics(data);
+        
+        // Load system metrics and browser metrics in parallel
+        const [systemData, browserData] = await Promise.all([
+          systemMonitorService.getSystemMetrics(),
+          browserPerformanceService.collectMetricsNow()
+        ]);
+        
+        setMetrics(systemData);
+        setBrowserMetrics(browserData);
+        setLastRefreshTime(new Date());
       } catch (err) {
         setError('Failed to load system metrics');
         console.error('Error loading metrics:', err);
@@ -42,8 +54,11 @@ const SystemMonitor: React.FC = () => {
       }
     };
 
-    const initializeEmailMonitoring = async () => {
+    const initializeServices = async () => {
       try {
+        // Initialize browser performance monitoring
+        await browserPerformanceService.initialize();
+        
         // Initialize email monitoring
         const success = await emailMonitorService.initialize();
         if (success) {
@@ -66,7 +81,7 @@ const SystemMonitor: React.FC = () => {
           });
         }
       } catch (error) {
-        console.error('Failed to initialize email monitoring:', error);
+        console.error('Failed to initialize services:', error);
         setEmailStatus({
           isActive: false,
           lastChecked: null,
@@ -79,11 +94,12 @@ const SystemMonitor: React.FC = () => {
     };
 
     loadMetrics();
-    initializeEmailMonitoring();
+    initializeServices();
 
     // Set up real-time updates
     const unsubscribe = systemMonitorService.subscribeToMetrics((newMetrics) => {
       setMetrics(newMetrics);
+      setLastRefreshTime(new Date());
     });
 
     // Update email status periodically
@@ -103,11 +119,48 @@ const SystemMonitor: React.FC = () => {
       }
     }, 30000); // Update every 30 seconds
 
+    // Update browser metrics periodically
+    const browserMetricsInterval = setInterval(async () => {
+      try {
+        const browserData = await browserPerformanceService.collectMetricsNow();
+        if (browserData) {
+          setBrowserMetrics(browserData);
+        }
+      } catch (error) {
+        console.error('Failed to update browser metrics:', error);
+      }
+    }, 60000); // Update every minute
+
     return () => {
       unsubscribe();
       clearInterval(emailStatusInterval);
+      clearInterval(browserMetricsInterval);
     };
   }, []);
+
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      setError(null);
+      
+      // Clear cache and force refresh
+      systemMonitorService.clearCache();
+      
+      const [systemData, browserData] = await Promise.all([
+        systemMonitorService.getSystemMetrics(),
+        browserPerformanceService.collectMetricsNow()
+      ]);
+      
+      setMetrics(systemData);
+      setBrowserMetrics(browserData);
+      setLastRefreshTime(new Date());
+    } catch (err) {
+      setError('Failed to refresh metrics');
+      console.error('Error refreshing metrics:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const toggleSection = (sectionId: string) => {
     const newExpanded = new Set(expandedSections);
@@ -237,9 +290,19 @@ const SystemMonitor: React.FC = () => {
           <BarChart3 className="w-6 h-6 mr-3 text-primary-600" />
           Live System Status
         </h2>
-        <span className="text-sm text-gray-500 font-normal">
-          Last updated: {metrics.lastUpdated.toLocaleTimeString()}
-        </span>
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <span className="text-sm text-gray-500 font-normal">
+            Last updated: {lastRefreshTime ? lastRefreshTime.toLocaleTimeString() : 'Never'}
+          </span>
+        </div>
       </div>
 
       {/* Key Metrics Overview */}
@@ -249,7 +312,7 @@ const SystemMonitor: React.FC = () => {
             <div>
               <p className="text-blue-100 text-sm font-medium">Users</p>
               <p className="text-xl font-bold">{metrics.totalUsers}</p>
-              <p className="text-blue-200 text-xs">{metrics.activeUsers} active</p>
+              <p className="text-blue-200 text-xs">{metrics.activeUsers} active • {metrics.newUsersThisMonth} new</p>
             </div>
             <Users className="w-6 h-6 text-blue-200" />
           </div>
@@ -258,9 +321,9 @@ const SystemMonitor: React.FC = () => {
         <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-green-100 text-sm font-medium">Events</p>
+              <p className="text-green-100 text-sm font-medium">Events & RSVPs</p>
               <p className="text-xl font-bold">{metrics.totalEvents}</p>
-              <p className="text-green-200 text-xs">Active events</p>
+              <p className="text-green-200 text-xs">{metrics.totalRSVPs} RSVPs • {metrics.eventsThisMonth} new</p>
             </div>
             <Calendar className="w-6 h-6 text-green-200" />
           </div>
@@ -269,9 +332,9 @@ const SystemMonitor: React.FC = () => {
         <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-purple-100 text-sm font-medium">Messages</p>
+              <p className="text-purple-100 text-sm font-medium">Activity</p>
               <p className="text-xl font-bold">{metrics.totalMessages}</p>
-              <p className="text-purple-200 text-xs">{metrics.messagesThisMonth} this month</p>
+              <p className="text-purple-200 text-xs">{metrics.messagesThisMonth} messages this month</p>
             </div>
             <MessageSquare className="w-6 h-6 text-purple-200" />
           </div>
@@ -280,23 +343,27 @@ const SystemMonitor: React.FC = () => {
         <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-orange-100 text-sm font-medium">Monthly Cost</p>
-              <p className="text-xl font-bold">{formatCurrency(metrics.estimatedMonthlyCost)}</p>
-              <p className="text-orange-200 text-xs">Estimated</p>
+              <p className="text-orange-100 text-sm font-medium">Performance</p>
+              <p className="text-xl font-bold">{Math.round(metrics.averageResponseTime)}ms</p>
+              <p className="text-orange-200 text-xs">{metrics.uptimePercentage}% uptime • {formatCurrency(metrics.estimatedMonthlyCost)}</p>
             </div>
-            <DollarSign className="w-6 h-6 text-orange-200" />
+            <Zap className="w-6 h-6 text-orange-200" />
           </div>
         </div>
       </div>
 
       {/* Collapsible Sections */}
       <div className="space-y-4">
-        <CollapsibleSection id="performance" title="Performance & Infrastructure" icon={Zap}>
+        <CollapsibleSection id="performance" title="Server Performance & Infrastructure" icon={Zap}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
               <div className="flex justify-between items-center py-2 border-b border-gray-200">
                 <span className="text-gray-600 font-medium">Response Time:</span>
                 <span className="text-gray-800 font-mono">{Math.round(metrics.averageResponseTime)}ms</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                <span className="text-gray-600 font-medium">Function Response:</span>
+                <span className="text-gray-800 font-mono">{metrics.functionResponseTime ? `${metrics.functionResponseTime}ms` : 'N/A'}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-gray-200">
                 <span className="text-gray-600 font-medium">Uptime:</span>
@@ -316,15 +383,104 @@ const SystemMonitor: React.FC = () => {
                 </span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                <span className="text-gray-600 font-medium">Cache Hit Rate:</span>
+                <span className="text-gray-800 font-mono">{metrics.cacheHitRate || 85}%</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                <span className="text-gray-600 font-medium">Database Connections:</span>
+                <span className="text-gray-800 font-mono">{metrics.databaseConnections || 1}</span>
+              </div>
+              <div className="flex justify-between items-center py-2">
                 <span className="text-gray-600 font-medium">Project ID:</span>
                 <span className="text-gray-800 font-mono bg-gray-200 px-2 py-1 rounded text-xs">pack-1703-portal</span>
               </div>
+            </div>
+          </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection id="browser" title="Browser Performance" icon={Cpu}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                <span className="text-gray-600 font-medium">Performance Score:</span>
+                <span className={`font-mono font-semibold ${
+                  browserPerformanceService.getPerformanceScore() >= 90 ? 'text-green-600' :
+                  browserPerformanceService.getPerformanceScore() >= 70 ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                  {browserPerformanceService.getPerformanceScore()}/100
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                <span className="text-gray-600 font-medium">Page Load Time:</span>
+                <span className="text-gray-800 font-mono">{browserMetrics?.pageLoadTime ? `${Math.round(browserMetrics.pageLoadTime)}ms` : 'N/A'}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                <span className="text-gray-600 font-medium">Time to Interactive:</span>
+                <span className="text-gray-800 font-mono">{browserMetrics?.timeToInteractive ? `${Math.round(browserMetrics.timeToInteractive)}ms` : 'N/A'}</span>
+              </div>
               <div className="flex justify-between items-center py-2">
-                <span className="text-gray-600 font-medium">Environment:</span>
-                <span className="text-gray-800 font-mono">Production</span>
+                <span className="text-gray-600 font-medium">DOM Content Loaded:</span>
+                <span className="text-gray-800 font-mono">{browserMetrics?.domContentLoaded ? `${Math.round(browserMetrics.domContentLoaded)}ms` : 'N/A'}</span>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                <span className="text-gray-600 font-medium">LCP (Largest Contentful Paint):</span>
+                <span className={`font-mono ${
+                  (browserMetrics?.lcp || 0) < 2500 ? 'text-green-600' :
+                  (browserMetrics?.lcp || 0) < 4000 ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                  {browserMetrics?.lcp ? `${Math.round(browserMetrics.lcp)}ms` : 'N/A'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                <span className="text-gray-600 font-medium">FID (First Input Delay):</span>
+                <span className={`font-mono ${
+                  (browserMetrics?.fid || 0) < 100 ? 'text-green-600' :
+                  (browserMetrics?.fid || 0) < 300 ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                  {browserMetrics?.fid ? `${Math.round(browserMetrics.fid)}ms` : 'N/A'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                <span className="text-gray-600 font-medium">CLS (Cumulative Layout Shift):</span>
+                <span className={`font-mono ${
+                  (browserMetrics?.cls || 0) < 0.1 ? 'text-green-600' :
+                  (browserMetrics?.cls || 0) < 0.25 ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                  {browserMetrics?.cls ? browserMetrics.cls.toFixed(3) : 'N/A'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-gray-600 font-medium">Memory Usage:</span>
+                <span className="text-gray-800 font-mono">{browserMetrics?.memoryUsage ? `${Math.round(browserMetrics.memoryUsage)}MB` : 'N/A'}</span>
               </div>
             </div>
           </div>
+          
+          {browserMetrics && (
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Network & Device Info</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-600">Connection:</span>
+                  <div className="font-mono text-gray-800">{browserMetrics.connectionType || 'Unknown'}</div>
+                </div>
+                <div>
+                  <span className="text-gray-600">Effective Type:</span>
+                  <div className="font-mono text-gray-800">{browserMetrics.effectiveType || 'Unknown'}</div>
+                </div>
+                <div>
+                  <span className="text-gray-600">Device Memory:</span>
+                  <div className="font-mono text-gray-800">{browserMetrics.deviceMemory ? `${browserMetrics.deviceMemory}GB` : 'Unknown'}</div>
+                </div>
+                <div>
+                  <span className="text-gray-600">CPU Cores:</span>
+                  <div className="font-mono text-gray-800">{browserMetrics.hardwareConcurrency || 'Unknown'}</div>
+                </div>
+              </div>
+            </div>
+          )}
         </CollapsibleSection>
 
         <CollapsibleSection id="email" title="Email Monitoring" icon={Mail}>

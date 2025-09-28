@@ -13,7 +13,12 @@ import {
   Leaf,
   Sun,
   CloudRain,
-  Zap
+  Zap,
+  Camera,
+  Wifi,
+  WifiOff,
+  Download,
+  Maximize2
 } from 'lucide-react';
 import {
   LineChart,
@@ -45,8 +50,25 @@ interface SensorData {
   soilMoisture: SensorReading[];
 }
 
+interface CameraImage {
+  id: string;
+  timestamp: number;
+  imageUrl: string;
+  thumbnailUrl?: string;
+  metadata?: {
+    resolution: string;
+    fileSize: number;
+    format: string;
+  };
+}
+
 interface EcologyData {
   sensors: SensorData;
+  camera: {
+    latestImage?: CameraImage;
+    isOnline: boolean;
+    lastCapture: number;
+  };
   lastUpdated: number;
   isLive: boolean;
   location: string;
@@ -72,6 +94,21 @@ const generateMockData = (): EcologyData => {
       light: generateSensorData(800, 200, 'lux'),
       soilMoisture: generateSensorData(60, 20, '%')
     },
+    camera: {
+      latestImage: {
+        id: 'mock-image-1',
+        timestamp: now - 120000, // 2 minutes ago
+        imageUrl: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&h=600&fit=crop&crop=center',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=150&fit=crop&crop=center',
+        metadata: {
+          resolution: '800x600',
+          fileSize: 245760,
+          format: 'JPEG'
+        }
+      },
+      isOnline: true,
+      lastCapture: now - 120000
+    },
     lastUpdated: now,
     isLive: true,
     location: 'Pack 1703 Scout Garden'
@@ -83,6 +120,7 @@ const EcologyDashboard: React.FC = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState<'1h' | '6h' | '24h' | '7d'>('24h');
   const [isLiveMode, setIsLiveMode] = useState(true);
   const [showRawData, setShowRawData] = useState(false);
+  const [showFullImage, setShowFullImage] = useState(false);
 
   // Simulate real-time data updates
   useEffect(() => {
@@ -221,6 +259,144 @@ const EcologyDashboard: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Camera Section */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-br from-white/95 to-indigo-50/50 backdrop-blur-sm rounded-3xl border border-indigo-100 shadow-lg p-6 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 flex items-center">
+                <div className="p-3 bg-indigo-100 rounded-2xl mr-4 shadow-lg">
+                  <Camera className="w-8 h-8 text-indigo-600" />
+                </div>
+                📸 Garden Camera Feed
+              </h3>
+              <div className="flex items-center space-x-3">
+                <div className={`flex items-center px-3 py-2 rounded-full text-sm font-medium ${
+                  ecologyData.camera.isOnline 
+                    ? 'bg-green-100 text-green-800 border border-green-200' 
+                    : 'bg-red-100 text-red-800 border border-red-200'
+                }`}>
+                  {ecologyData.camera.isOnline ? (
+                    <Wifi className="w-4 h-4 mr-2" />
+                  ) : (
+                    <WifiOff className="w-4 h-4 mr-2" />
+                  )}
+                  {ecologyData.camera.isOnline ? 'Online' : 'Offline'}
+                </div>
+                {ecologyData.camera.latestImage && (
+                  <button
+                    onClick={() => setShowFullImage(true)}
+                    className="flex items-center px-4 py-2 bg-indigo-100 text-indigo-700 rounded-xl hover:bg-indigo-200 transition-colors duration-200"
+                  >
+                    <Maximize2 className="w-4 h-4 mr-2" />
+                    Full View
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {ecologyData.camera.latestImage ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Image Display */}
+                <div className="relative">
+                  <div className="relative rounded-2xl overflow-hidden shadow-lg bg-gray-100">
+                    <img
+                      src={ecologyData.camera.latestImage.imageUrl}
+                      alt="Garden camera view"
+                      className="w-full h-64 lg:h-80 object-cover hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgdmlld0JveD0iMCAwIDgwMCA2MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI4MDAiIGhlaWdodD0iNjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zNTAgMjUwSDQ1MFYzNTBIMzUwVjI1MFoiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTM3NSAyNzVIMzUwVjI1MEgzNzVWMjc1WiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNNDI1IDI3NUg0NTBWMjUwSDQyNVYyNzVaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik0zNzUgMzI1SDM1MFYzNTBIMzc1VjMyNVoiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTQyNSAzMjVINDUwVjM1MEg0MjVWMzI1WiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNMzUwIDI3NUg0NTBWMTUwSDM1MFYyNzVaIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zNzUgMjAwSDQyNVYyNTBIMzc1VjIwMFoiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTM1MCAzNTBINDAwVjQ1MEgzNTBWMzUwWiIgZmlsbD0iI0YzRjRGNiIvPgo8cGF0aCBkPSJNMzUwIDM1MEg0MDBWNDUwSDM1MFYzNTBaIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjQwMCIgeT0iNTAwIiBmaWxsPSIjNkI3MjgwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkdhcmRlbiBDYW1lcmE8L3RleHQ+Cjx0ZXh0IHg9IjQwMCIgeT0iNTMwIiBmaWxsPSIjNkI3MjgwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkVzcGVyYSB0byBzZWUgbGl2ZSBmZWVkIGZyb20gRVNQMzI8L3RleHQ+Cjwvc3ZnPgo=';
+                      }}
+                    />
+                    <div className="absolute top-4 left-4 bg-black/70 text-white px-3 py-1 rounded-lg text-sm font-medium">
+                      📸 Live Feed
+                    </div>
+                    <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-lg text-sm font-medium flex items-center">
+                      <div className="w-2 h-2 bg-white rounded-full animate-pulse mr-2"></div>
+                      Recording
+                    </div>
+                  </div>
+                </div>
+
+                {/* Image Info */}
+                <div className="space-y-4">
+                  <div className="bg-white/80 rounded-2xl p-6 border border-indigo-100">
+                    <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                      <Camera className="w-5 h-5 mr-2 text-indigo-600" />
+                      Image Details
+                    </h4>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 font-medium">📅 Captured:</span>
+                        <span className="text-gray-900 font-bold">{formatTime(ecologyData.camera.latestImage.timestamp)}</span>
+                      </div>
+                      {ecologyData.camera.latestImage.metadata && (
+                        <>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600 font-medium">📐 Resolution:</span>
+                            <span className="text-gray-900 font-bold">{ecologyData.camera.latestImage.metadata.resolution}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600 font-medium">📁 Format:</span>
+                            <span className="text-gray-900 font-bold">{ecologyData.camera.latestImage.metadata.format}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600 font-medium">💾 Size:</span>
+                            <span className="text-gray-900 font-bold">{(ecologyData.camera.latestImage.metadata.fileSize / 1024).toFixed(1)} KB</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100">
+                    <h4 className="text-lg font-bold text-green-800 mb-3 flex items-center">
+                      <Leaf className="w-5 h-5 mr-2 text-green-600" />
+                      Garden Status
+                    </h4>
+                    <div className="space-y-2 text-green-700">
+                      <p className="text-sm">🌱 <strong>Plants:</strong> Growing well in current conditions</p>
+                      <p className="text-sm">☀️ <strong>Light:</strong> Optimal for photosynthesis</p>
+                      <p className="text-sm">💧 <strong>Moisture:</strong> Soil conditions are healthy</p>
+                      <p className="text-sm">🌡️ <strong>Temperature:</strong> Within ideal range for growth</p>
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => ecologyData.camera.latestImage && window.open(ecologyData.camera.latestImage.imageUrl, '_blank')}
+                      className="flex-1 flex items-center justify-center px-4 py-3 bg-indigo-100 text-indigo-700 rounded-xl hover:bg-indigo-200 transition-colors duration-200 font-medium"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download
+                    </button>
+                    <button
+                      onClick={() => setShowFullImage(true)}
+                      className="flex-1 flex items-center justify-center px-4 py-3 bg-green-100 text-green-700 rounded-xl hover:bg-green-200 transition-colors duration-200 font-medium"
+                    >
+                      <Maximize2 className="w-4 h-4 mr-2" />
+                      Full Screen
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Camera className="w-12 h-12 text-gray-400" />
+                </div>
+                <h4 className="text-xl font-bold text-gray-600 mb-2">Camera Offline</h4>
+                <p className="text-gray-500 mb-4">The ESP32 camera is currently not available</p>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 max-w-md mx-auto">
+                  <p className="text-yellow-800 text-sm">
+                    🔧 <strong>Setup in Progress:</strong> We're working on connecting the ESP32 camera to provide live garden monitoring!
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Sensor Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -655,6 +831,46 @@ const EcologyDashboard: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Full Screen Image Modal */}
+      {showFullImage && ecologyData.camera.latestImage && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+          <div className="relative max-w-6xl max-h-full">
+            <button
+              onClick={() => setShowFullImage(false)}
+              className="absolute top-4 right-4 z-10 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full transition-colors duration-200"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <img
+              src={ecologyData.camera.latestImage.imageUrl}
+              alt="Garden camera view - full screen"
+              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgdmlld0JveD0iMCAwIDgwMCA2MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI4MDAiIGhlaWdodD0iNjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zNTAgMjUwSDQ1MFYzNTBIMzUwVjI1MFoiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTM3NSAyNzVIMzUwVjI1MEgzNzVWMjc1WiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNNDI1IDI3NUg0NTBWMjUwSDQyNVYyNzVaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik0zNzUgMzI1SDM1MFYzNTBIMzc1VjMyNVoiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTQyNSAzMjVINDUwVjM1MEg0MjVWMzI1WiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNMzUwIDI3NUg0NTBWMTUwSDM1MFYyNzVaIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0zNzUgMjAwSDQyNVYyNTBIMzc1VjIwMFoiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTM1MCAzNTBINDAwVjQ1MEgzNTBWMzUwWiIgZmlsbD0iI0YzRjRGNiIvPgo8cGF0aCBkPSJNMzUwIDM1MEg0MDBWNDUwSDM1MFYzNTBaIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjQwMCIgeT0iNTAwIiBmaWxsPSIjNkI3MjgwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkdhcmRlbiBDYW1lcmE8L3RleHQ+Cjx0ZXh0IHg9IjQwMCIgeT0iNTMwIiBmaWxsPSIjNkI3MjgwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkVzcGVyYSB0byBzZWUgbGl2ZSBmZWVkIGZyb20gRVNQMzI8L3RleHQ+Cjwvc3ZnPgo=';
+              }}
+            />
+            <div className="absolute bottom-4 left-4 right-4 bg-black/70 text-white p-4 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-bold">📸 Garden Camera Feed</p>
+                  <p className="text-sm opacity-80">Captured: {formatTime(ecologyData.camera.latestImage.timestamp)}</p>
+                </div>
+                <button
+                  onClick={() => ecologyData.camera.latestImage && window.open(ecologyData.camera.latestImage.imageUrl, '_blank')}
+                  className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors duration-200"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

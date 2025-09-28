@@ -8,9 +8,11 @@ import {
   limit,
   where,
   Timestamp,
-  serverTimestamp
+  serverTimestamp,
+  addDoc
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 // Storage imports temporarily disabled to prevent CORS errors
 // import { getStorage, ref, listAll } from 'firebase/storage';
 
@@ -25,7 +27,10 @@ export interface SystemMetrics {
   totalLocations: number;
   totalAnnouncements: number;
   totalMessages: number;
+  totalRSVPs: number;
   messagesThisMonth: number;
+  eventsThisMonth: number;
+  rsvpsThisMonth: number;
   
   // Storage Usage
   storageUsed: number; // in MB
@@ -36,6 +41,7 @@ export interface SystemMetrics {
   averageResponseTime: number; // in ms
   uptimePercentage: number;
   errorRate: number;
+  functionResponseTime?: number; // Time to execute the Cloud Function
   
   // Costs (estimated based on usage)
   estimatedMonthlyCost: number;
@@ -49,6 +55,11 @@ export interface SystemMetrics {
   // Infrastructure
   firebaseStatus: 'operational' | 'degraded' | 'outage';
   lastUpdated: Date;
+  
+  // Additional metrics
+  databaseConnections?: number;
+  cacheHitRate?: number;
+  memoryUsage?: number;
 }
 
 export interface CostEstimate {
@@ -74,8 +85,9 @@ export interface CostEstimate {
 
 class SystemMonitorService {
   private cache: SystemMetrics | null = null;
-  private cacheExpiry: number = 5 * 60 * 1000; // 5 minutes
+  private cacheExpiry: number = 2 * 60 * 1000; // 2 minutes (shorter for real-time data)
   private lastCacheTime: number = 0;
+  private functions = getFunctions();
 
   async getSystemMetrics(): Promise<SystemMetrics> {
     const now = Date.now();
@@ -86,85 +98,42 @@ class SystemMonitorService {
     }
 
     try {
-      const db = getFirestore();
       const auth = getAuth();
-      // const storage = getStorage(); // Temporarily disabled
-
+      
       // Check if user has admin permissions
       const isAdmin = auth.currentUser?.email?.includes('admin') || 
                      auth.currentUser?.email?.includes('cubmaster') ||
                      auth.currentUser?.email?.includes('denleader');
 
-      // Fetch metrics based on user permissions
-      let usersCount, eventsCount, locationsCount, announcementsCount, messagesCount, recentMessages, storageUsage, costEstimate;
-
-      if (isAdmin) {
-        // Admin users get full access to all metrics
-        [usersCount, eventsCount, locationsCount, announcementsCount, messagesCount, recentMessages, storageUsage, costEstimate] = await Promise.all([
-          this.getUsersCount(db),
-          this.getCollectionCount(db, 'events'),
-          this.getCollectionCount(db, 'locations'),
-          this.getCollectionCount(db, 'announcements'),
-          this.getCollectionCount(db, 'chat-messages'),
-          this.getRecentMessages(db),
-          this.getStorageUsage(null),
-          this.estimateCosts(db, null)
-        ]);
-      } else {
-        // Non-admin users get limited access with fallback data
-        [usersCount, eventsCount, locationsCount, announcementsCount, messagesCount, recentMessages, storageUsage, costEstimate] = await Promise.all([
-          this.getUsersCount(db),
-          this.getCollectionCount(db, 'events'),
-          this.getCollectionCount(db, 'locations'),
-          this.getCollectionCount(db, 'announcements'),
-          this.getCollectionCount(db, 'chat-messages'),
-          this.getRecentMessages(db),
-          this.getStorageUsage(null),
-          this.estimateCosts(db, null)
-        ]);
+      if (!isAdmin) {
+        // For non-admin users, return limited metrics
+        return this.getLimitedMetrics();
       }
 
-      // Calculate active users (users who have logged in within last 30 days)
-      const activeUsers = Math.floor(usersCount * 0.7); // Estimate 70% of users are active
-      const newUsersThisMonth = Math.floor(usersCount * 0.1); // Estimate 10% new users this month
-      const messagesThisMonth = recentMessages.length;
+      // Use Cloud Function for real-time metrics
+      const getSystemMetrics = httpsCallable(this.functions, 'getSystemMetrics');
+      const startTime = Date.now();
+      
+      const result = await getSystemMetrics({});
+      
+      if (result.data && typeof result.data === 'object' && 'success' in result.data && result.data.success) {
+        const data = result.data as { success: boolean; metrics: SystemMetrics };
+        const metrics = data.metrics;
+        
+        // Add client-side performance metrics
+        const clientResponseTime = Date.now() - startTime;
+        
+        // Store performance metrics for tracking
+        await this.storePerformanceMetric('client_response_time', clientResponseTime);
+        
+        // Cache the results
+        this.cache = metrics;
+        this.lastCacheTime = now;
 
-      // Calculate performance metrics
-      const averageResponseTime = this.calculateAverageResponseTime();
-      const uptimePercentage = 99.9; // Firebase typically has 99.9% uptime
-      const errorRate = 0.1; // Estimate 0.1% error rate
-
-      const metrics: SystemMetrics = {
-        activeUsers,
-        totalUsers: usersCount,
-        newUsersThisMonth,
-        totalEvents: eventsCount,
-        totalLocations: locationsCount,
-        totalAnnouncements: announcementsCount,
-        totalMessages: messagesCount,
-        messagesThisMonth,
-        storageUsed: storageUsage.bytesUsed / (1024 * 1024), // Convert to MB
-        storageLimit: 5 * 1024, // 5GB limit
-        storagePercentage: (storageUsage.bytesUsed / (5 * 1024 * 1024 * 1024)) * 100,
-        averageResponseTime,
-        uptimePercentage,
-        errorRate,
-        estimatedMonthlyCost: costEstimate.total,
-        costBreakdown: {
-          firestore: costEstimate.firestore.estimatedCost,
-          storage: costEstimate.storage.estimatedCost,
-          hosting: costEstimate.hosting.estimatedCost,
-          functions: costEstimate.functions.estimatedCost
-        },
-        firebaseStatus: 'operational',
-        lastUpdated: new Date()
-      };
-
-      // Cache the results
-      this.cache = metrics;
-      this.lastCacheTime = now;
-
-      return metrics;
+        return metrics;
+      } else {
+        throw new Error('Invalid response from Cloud Function');
+      }
     } catch (error) {
       console.error('Error fetching system metrics:', error);
       
@@ -174,6 +143,76 @@ class SystemMonitorService {
       }
 
       return this.getDefaultMetrics();
+    }
+  }
+
+  private async getLimitedMetrics(): Promise<SystemMetrics> {
+    try {
+      const db = getFirestore();
+      const auth = getAuth();
+      
+      // Get basic counts for non-admin users
+      const [usersCount, eventsCount, announcementsCount] = await Promise.all([
+        this.getUsersCount(db),
+        this.getCollectionCount(db, 'events'),
+        this.getCollectionCount(db, 'announcements')
+      ]);
+
+      const activeUsers = Math.floor(usersCount * 0.7);
+      const newUsersThisMonth = Math.floor(usersCount * 0.1);
+
+      return {
+        activeUsers,
+        totalUsers: usersCount,
+        newUsersThisMonth,
+        totalEvents: eventsCount,
+        totalLocations: 0, // Limited access
+        totalAnnouncements: announcementsCount,
+        totalMessages: 0, // Limited access
+        totalRSVPs: 0, // Limited access
+        messagesThisMonth: 0,
+        eventsThisMonth: 0,
+        rsvpsThisMonth: 0,
+        storageUsed: 0,
+        storageLimit: 5120,
+        storagePercentage: 0,
+        averageResponseTime: 45,
+        uptimePercentage: 99.9,
+        errorRate: 0.1,
+        estimatedMonthlyCost: 0,
+        costBreakdown: {
+          firestore: 0,
+          storage: 0,
+          hosting: 0,
+          functions: 0
+        },
+        firebaseStatus: 'operational',
+        lastUpdated: new Date()
+      };
+    } catch (error) {
+      console.error('Error fetching limited metrics:', error);
+      return this.getDefaultMetrics();
+    }
+  }
+
+  private async storePerformanceMetric(metricName: string, value: number): Promise<void> {
+    try {
+      const db = getFirestore();
+      const auth = getAuth();
+      
+      if (!auth.currentUser) return;
+
+      await addDoc(collection(db, 'performance_metrics'), {
+        metric: metricName,
+        value: value,
+        userId: auth.currentUser.uid,
+        userAgent: navigator.userAgent,
+        timestamp: serverTimestamp(),
+        url: window.location.href,
+        page: window.location.pathname
+      });
+    } catch (error) {
+      console.warn('Failed to store performance metric:', error);
     }
   }
 
@@ -315,7 +354,10 @@ class SystemMonitorService {
       totalLocations: 12,
       totalAnnouncements: 8,
       totalMessages: 1250,
+      totalRSVPs: 0,
       messagesThisMonth: 180,
+      eventsThisMonth: 0,
+      rsvpsThisMonth: 0,
       storageUsed: 50,
       storageLimit: 5120,
       storagePercentage: 0.98,

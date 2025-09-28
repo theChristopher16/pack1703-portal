@@ -898,25 +898,25 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Target Monthly Cost:</span>
-                    <span className="font-medium text-green-600">$50.00</span>
+                    <span className="font-medium text-green-600">$200.00</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Potential Savings:</span>
                     <span className="font-medium text-green-600">
-                      {currentUsage ? formatCurrency(Math.max(0, currentUsage.costs.total.monthly - 50)) : '$0.00'}
+                      {currentUsage ? formatCurrency(Math.max(0, currentUsage.costs.total.monthly - 200)) : '$0.00'}
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3">
                     <div 
                       className="bg-green-600 h-3 rounded-full transition-all duration-300" 
                       style={{ 
-                        width: `${Math.min((currentUsage?.costs.total.monthly || 0) / 50 * 100, 100)}%` 
+                        width: `${Math.min((currentUsage?.costs.total.monthly || 0) / 200 * 100, 100)}%` 
                       }}
                     ></div>
                   </div>
                   <div className="text-xs text-gray-500 text-center">
                     {currentUsage ? 
-                      `${((currentUsage.costs.total.monthly / 50) * 100).toFixed(1)}% of target budget used` : 
+                      `${((currentUsage.costs.total.monthly / 200) * 100).toFixed(1)}% of target budget used` : 
                       '0% of target budget used'
                     }
                   </div>

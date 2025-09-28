@@ -461,7 +461,7 @@ const EventsPage: React.FC = () => {
           console.log('Event deleted successfully, updating events list...');
           
           // Remove the event from the local state immediately
-          setEvents(events.filter(e => e.id !== eventId));
+          setEvents(prevEvents => prevEvents.filter(e => e.id !== eventId));
           
           // Show success notification
           addNotification('success', 'Event Deleted Successfully!', 'The event has been removed from the pack calendar.');

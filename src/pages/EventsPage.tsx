@@ -745,7 +745,7 @@ const EventsPage: React.FC = () => {
 
             {/* Admin Controls */}
             {isAdmin && (
-              <>
+              <div className="flex items-center gap-3 bg-white/50 backdrop-blur-sm rounded-lg p-2 border border-gray-200/50">
                 {/* Admin Search */}
                 <div className="relative">
                   <input
@@ -753,10 +753,10 @@ const EventsPage: React.FC = () => {
                     placeholder="Search events..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-64 pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-48 pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/80"
                   />
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-400">🔍</span>
+                  <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                    <span className="text-gray-400 text-sm">🔍</span>
                   </div>
                 </div>
 
@@ -764,7 +764,7 @@ const EventsPage: React.FC = () => {
                 <select
                   value={filterCategory}
                   onChange={(e) => setFilterCategory(e.target.value)}
-                  className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/80"
                 >
                   <option value="all">All Categories</option>
                   <option value="Meeting">Meeting</option>
@@ -779,14 +779,14 @@ const EventsPage: React.FC = () => {
                 <select
                   value={filterVisibility}
                   onChange={(e) => setFilterVisibility(e.target.value)}
-                  className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/80"
                 >
                   <option value="all">All Visibility</option>
                   <option value="public">Public</option>
                   <option value="link-only">Link Only</option>
                   <option value="private">Private</option>
                 </select>
-              </>
+              </div>
             )}
 
           </div>
@@ -797,7 +797,7 @@ const EventsPage: React.FC = () => {
             {isAdmin && (
               <button
                 onClick={handleCreateEvent}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 shadow-soft"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
               >
                 <Plus className="w-4 h-4" />
                 Create Event
@@ -806,18 +806,18 @@ const EventsPage: React.FC = () => {
 
             <button
               onClick={generateICSFeed}
-              className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+              className="px-3 py-2 bg-white/80 border border-gray-200 text-gray-600 rounded-lg hover:bg-white hover:text-gray-800 transition-all duration-200 text-sm"
             >
-              <Download className="w-4 h-4 inline mr-2" />
+              <Download className="w-4 h-4 inline mr-1.5" />
               ICS Feed
             </button>
             
             <button
               onClick={shareCalendar}
-              className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+              className="px-3 py-2 bg-white/80 border border-gray-200 text-gray-600 rounded-lg hover:bg-white hover:text-gray-800 transition-all duration-200 text-sm"
             >
-              <Share2 className="w-4 h-4 inline mr-2" />
-              Share Calendar
+              <Share2 className="w-4 h-4 inline mr-1.5" />
+              Share
             </button>
           </div>
         </div>
@@ -871,20 +871,20 @@ const EventsPage: React.FC = () => {
                         />
                       {/* Admin Action Buttons */}
                       {isAdmin && (
-                        <div className="absolute top-2 right-2 flex gap-2">
+                        <div className="absolute top-3 right-3 flex gap-1">
                           <button
                             onClick={() => handleEditEvent(event)}
-                            className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-lg transition-colors duration-200"
+                            className="bg-white/90 hover:bg-white text-gray-600 hover:text-blue-600 p-1.5 rounded-md shadow-sm hover:shadow-md transition-all duration-200 backdrop-blur-sm border border-gray-200/50"
                             title="Edit Event"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteEvent(event.id)}
-                            className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow-lg transition-colors duration-200"
+                            className="bg-white/90 hover:bg-white text-gray-600 hover:text-red-600 p-1.5 rounded-md shadow-sm hover:shadow-md transition-all duration-200 backdrop-blur-sm border border-gray-200/50"
                             title="Delete Event"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       )}

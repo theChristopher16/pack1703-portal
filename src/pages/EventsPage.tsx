@@ -328,6 +328,25 @@ const EventsPage: React.FC = () => {
     loadEvents();
   }, [fetchRSVPCounts]);
 
+  // Handle custom events from EventCard
+  useEffect(() => {
+    const handleEditEventFromCard = (event: CustomEvent) => {
+      handleEditEvent(event.detail);
+    };
+
+    const handleDeleteEventFromCard = (event: CustomEvent) => {
+      handleDeleteEvent(event.detail);
+    };
+
+    window.addEventListener('editEvent', handleEditEventFromCard as EventListener);
+    window.addEventListener('deleteEvent', handleDeleteEventFromCard as EventListener);
+
+    return () => {
+      window.removeEventListener('editEvent', handleEditEventFromCard as EventListener);
+      window.removeEventListener('deleteEvent', handleDeleteEventFromCard as EventListener);
+    };
+  }, []);
+
   // Optimized filter change handler
   const handleFiltersChange = useCallback((newFilters: EventFiltersType) => {
     setFilters(newFilters);
@@ -869,25 +888,6 @@ const EventsPage: React.FC = () => {
                           onViewRSVPs={isAdmin ? handleViewRSVPs : undefined}
                           isAdmin={isAdmin}
                         />
-                      {/* Admin Action Buttons */}
-                      {isAdmin && (
-                        <div className="absolute top-3 right-3 flex gap-1">
-                          <button
-                            onClick={() => handleEditEvent(event)}
-                            className="bg-white/90 hover:bg-white text-gray-600 hover:text-blue-600 p-1.5 rounded-md shadow-sm hover:shadow-md transition-all duration-200 backdrop-blur-sm border border-gray-200/50"
-                            title="Edit Event"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteEvent(event.id)}
-                            className="bg-white/90 hover:bg-white text-gray-600 hover:text-red-600 p-1.5 rounded-md shadow-sm hover:shadow-md transition-all duration-200 backdrop-blur-sm border border-gray-200/50"
-                            title="Delete Event"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      )}
                       </div>
                     );
                   })}

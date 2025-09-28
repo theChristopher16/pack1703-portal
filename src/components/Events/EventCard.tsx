@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, Clock, Users, Tent, MountainSnow, Heart, Share2, Download, ExternalLink } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Tent, MountainSnow, Heart, Share2, Download, ExternalLink, Edit, Trash2 } from 'lucide-react';
+import WeatherForecastComponent from '../Weather/WeatherForecast';
 
 interface Event {
   id: string;
@@ -163,9 +164,23 @@ const EventCard: React.FC<EventCardProps> = ({
         {/* Location */}
         <div className="flex items-start space-x-2 mb-4">
           <MapPin className="w-4 h-4 text-accent-500 mt-0.5 flex-shrink-0" />
-          <div>
+          <div className="flex-1">
             <div className="font-medium text-gray-900">{event.location.name}</div>
             <div className="text-sm text-gray-600">{event.location.address}</div>
+            
+            {/* Weather Forecast */}
+            {event.location.coordinates && (
+              <div className="mt-2">
+                <WeatherForecastComponent
+                  location={{
+                    name: event.location.name,
+                    coordinates: event.location.coordinates
+                  }}
+                  eventDate={new Date(event.date)}
+                  className="text-xs"
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -237,6 +252,22 @@ const EventCard: React.FC<EventCardProps> = ({
             </div>
           )}
 
+          {/* Weather Details */}
+          {event.location.coordinates && (
+            <div className="mb-4">
+              <h4 className="font-semibold text-gray-900 mb-2">Weather Forecast</h4>
+              <WeatherForecastComponent
+                location={{
+                  name: event.location.name,
+                  coordinates: event.location.coordinates
+                }}
+                eventDate={new Date(event.date)}
+                showDetails={true}
+                className="text-sm"
+              />
+            </div>
+          )}
+
           {/* Contact */}
           <div className="mb-4">
             <h4 className="font-semibold text-gray-900 mb-2">Contact</h4>
@@ -303,6 +334,37 @@ const EventCard: React.FC<EventCardProps> = ({
                 <Users className="w-4 h-4" />
                 <span>View RSVPs</span>
               </button>
+            )}
+
+            {/* Admin Edit/Delete Buttons */}
+            {isAdmin && (
+              <>
+                <button
+                  onClick={() => {
+                    // This will be handled by the parent component
+                    const editEvent = new CustomEvent('editEvent', { detail: event });
+                    window.dispatchEvent(editEvent);
+                  }}
+                  className="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-700 transition-colors duration-200"
+                  title="Edit Event (Admin Only)"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span>Edit</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    // This will be handled by the parent component
+                    const deleteEvent = new CustomEvent('deleteEvent', { detail: event.id });
+                    window.dispatchEvent(deleteEvent);
+                  }}
+                  className="flex items-center space-x-2 text-sm text-red-600 hover:text-red-700 transition-colors duration-200"
+                  title="Delete Event (Admin Only)"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Delete</span>
+                </button>
+              </>
             )}
           </div>
 

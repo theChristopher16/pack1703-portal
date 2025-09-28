@@ -98,6 +98,11 @@ class SecureKeyManager {
       return key.startsWith('AIza');
     }
 
+    // OpenWeather API keys (32 character alphanumeric)
+    if (keyName.includes('OPENWEATHER')) {
+      return /^[a-zA-Z0-9]{32}$/.test(key);
+    }
+
     // reCAPTCHA keys
     if (keyName.includes('RECAPTCHA')) {
       return key.startsWith('6L');

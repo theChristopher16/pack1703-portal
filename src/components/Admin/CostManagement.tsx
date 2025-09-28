@@ -667,21 +667,31 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
                 Cost Trends (Last 30 Days)
               </h3>
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={historicalData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => [`$${value}`, 'Cost']} />
-                    <Line 
-                      type="monotone" 
-                      dataKey="totalCost" 
-                      stroke="#3b82f6" 
-                      strokeWidth={2}
-                      dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                {historicalData && historicalData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={historicalData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => [`$${value}`, 'Cost']} />
+                      <Line 
+                        type="monotone" 
+                        dataKey="totalCost" 
+                        stroke="#3b82f6" 
+                        strokeWidth={2}
+                        dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                      <p className="text-gray-500">No historical data available</p>
+                      <p className="text-sm text-gray-400">Data will appear as usage is tracked</p>
+                    </div>
+                  </div>
+                )}
                 {billingData && (
                   <p className="text-sm text-blue-600 mt-2 text-center">
                     Real billing data: {formatCurrency(billingData.totalCost)} this month
@@ -691,14 +701,14 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
             </div>
 
             {/* Cost Distribution Pie Chart */}
-            {billingData && (
-              <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <PieChart className="w-5 h-5 mr-2 text-green-600" />
-                  Cost Distribution
-                </h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="h-64">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <PieChart className="w-5 h-5 mr-2 text-green-600" />
+                Cost Distribution
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="h-64">
+                  {billingData && billingData.services && billingData.services.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <RechartsPieChart>
                         <Pie
@@ -711,7 +721,7 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
                           cy="50%"
                           outerRadius={80}
                           dataKey="value"
-                          label={({ name, percent }: any) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          label={false}
                         >
                           {billingData.services.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'][index % 8]} />
@@ -720,10 +730,20 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
                         <Tooltip formatter={(value) => [`$${value}`, 'Cost']} />
                       </RechartsPieChart>
                     </ResponsiveContainer>
-                  </div>
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-gray-900">Service Breakdown</h4>
-                    {billingData.services.map((service, index) => (
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <PieChart className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                        <p className="text-gray-500">No cost data available</p>
+                        <p className="text-sm text-gray-400">Cost distribution will appear here</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-3">
+                  <h4 className="font-medium text-gray-900">Service Breakdown</h4>
+                  {billingData && billingData.services ? (
+                    billingData.services.map((service, index) => (
                       <div key={service.serviceId} className="flex items-center justify-between">
                         <div className="flex items-center">
                           <div 
@@ -734,11 +754,15 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
                         </div>
                         <span className="text-sm font-medium text-gray-900">{formatCurrency(service.cost)}</span>
                       </div>
-                    ))}
-                  </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-gray-500 py-4">
+                      <p>No service data available</p>
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
           </div>
         )}
 

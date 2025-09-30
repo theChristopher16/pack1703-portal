@@ -3,7 +3,8 @@ import { Navigate } from 'react-router-dom';
 import { useAdmin } from '../../contexts/AdminContext';
 import SocialLogin from './SocialLogin';
 import AccountRequestModal from './AccountRequestModal';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Key } from 'lucide-react';
+import { authService } from '../../services/authService';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -13,6 +14,44 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const { state } = useAdmin();
   const { currentUser, isLoading } = state;
   const [showAccountRequestModal, setShowAccountRequestModal] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!resetEmail) {
+      setResetMessage('Please enter your email address');
+      return;
+    }
+
+    setResetLoading(true);
+    setResetMessage(null);
+
+    try {
+      await authService.sendPasswordResetEmail(resetEmail);
+      setResetMessage('Password reset email sent! Check your inbox for instructions.');
+      setResetEmail('');
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      setResetMessage(error.message || 'Failed to send reset email. Please try again.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleOpenResetPassword = () => {
+    setShowResetPassword(true);
+    setResetMessage(null);
+  };
+
+  const handleCloseResetPassword = () => {
+    setShowResetPassword(false);
+    setResetEmail('');
+    setResetMessage(null);
+  };
 
   // REMOVED LOADING SCREEN - User requested to remove it
   // The loading screen was causing page reloads and poor UX
@@ -48,6 +87,26 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                 }}
                 showEmailOption={true}
               />
+            </div>
+
+            {/* Password Reset Section */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="text-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Forgot your password?
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Enter your email to receive a reset link
+                </p>
+              </div>
+              
+              <button
+                onClick={handleOpenResetPassword}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                <Key className="w-5 h-5" />
+                Reset Password
+              </button>
             </div>
 
             {/* Account Request Section */}
@@ -92,6 +151,69 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             // The user will be automatically signed in by the authService
           }}
         />
+
+        {/* Password Reset Modal */}
+        {showResetPassword && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">Reset Password</h3>
+                <button
+                  onClick={handleCloseResetPassword}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div>
+                  <label htmlFor="resetEmail" className="block text-sm font-medium text-gray-700 mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    id="resetEmail"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter your email address"
+                    required
+                  />
+                </div>
+
+                {resetMessage && (
+                  <div className={`p-3 rounded-xl ${
+                    resetMessage.includes('sent') 
+                      ? 'bg-green-50 border border-green-200 text-green-600' 
+                      : 'bg-red-50 border border-red-200 text-red-600'
+                  }`}>
+                    <p className="text-sm">{resetMessage}</p>
+                  </div>
+                )}
+
+                <div className="flex space-x-3">
+                  <button
+                    type="button"
+                    onClick={handleCloseResetPassword}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={resetLoading}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {resetLoading ? 'Sending...' : 'Send Reset Email'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </>
     );
   }

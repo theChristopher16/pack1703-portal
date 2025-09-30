@@ -498,18 +498,19 @@ const HackerTab: React.FC = () => {
 
       {/* Navigation */}
       <div className="bg-gradient-to-r from-amber-200 via-orange-200 to-yellow-200 border-b-4 border-amber-300 p-4 shadow-glow-solar backdrop-blur-sm">
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3 overflow-x-auto">
           {['overview', 'alerts', 'threats', 'security', 'ai', 'debug', 'emergency', 'logs', 'performance'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 border-2 ${
+              className={`px-3 sm:px-6 py-2 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 border-2 whitespace-nowrap ${
                 activeTab === tab 
                   ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-white shadow-glow-primary transform scale-105 border-amber-500 animate-pulse' 
                   : 'text-amber-800 bg-white/80 hover:bg-white hover:text-amber-900 border-amber-300 hover:border-amber-400 hover:shadow-glow-primary backdrop-blur-sm'
               }`}
             >
-              {tab.toUpperCase()}
+              <span className="hidden sm:inline">{tab.toUpperCase()}</span>
+              <span className="sm:hidden">{tab.charAt(0).toUpperCase() + tab.slice(1, 3)}</span>
             </button>
           ))}
         </div>

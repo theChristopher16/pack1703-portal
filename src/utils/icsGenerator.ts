@@ -196,7 +196,9 @@ export const generateICSFeedURL = async (options: ICSFeedOptions = {}): Promise<
       categories: options.categories,
       denTags: options.dens,
       startDate: options.startDate,
-      endDate: options.endDate
+      endDate: options.endDate,
+      includeDescription: options.includeDescription,
+      includeLocation: options.includeLocation
     });
     
     const data = result.data as any;
@@ -218,6 +220,33 @@ export const generateICSFeedURL = async (options: ICSFeedOptions = {}): Promise<
     console.error('Error generating ICS feed:', error);
     throw error;
   }
+};
+
+/**
+ * Get the public ICS feed URL for calendar subscription
+ */
+export const getPublicICSFeedURL = (options: ICSFeedOptions = {}): string => {
+  const baseUrl = 'https://us-central1-sfpack1703app.cloudfunctions.net/publicICSFeed';
+  const params = new URLSearchParams();
+  
+  if (options.categories && options.categories.length > 0) {
+    params.append('categories', options.categories.join(','));
+  }
+  
+  if (options.dens && options.dens.length > 0) {
+    params.append('dens', options.dens.join(','));
+  }
+  
+  if (options.startDate) {
+    params.append('startDate', options.startDate);
+  }
+  
+  if (options.endDate) {
+    params.append('endDate', options.endDate);
+  }
+  
+  const queryString = params.toString();
+  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
 };
 
 /**

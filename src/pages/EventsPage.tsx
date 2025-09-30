@@ -6,6 +6,7 @@ import EventCard from '../components/Events/EventCard';
 import EventCalendar from '../components/Events/EventCalendar';
 import EventFilters, { EventFiltersData as EventFiltersType } from '../components/Events/EventFilters';
 import RSVPListViewer from '../components/Admin/RSVPListViewer';
+import ICSFeedComponent from '../components/Events/ICSFeedComponent';
 import { firestoreService } from '../services/firestore';
 import { useAdmin } from '../contexts/AdminContext';
 import { adminService } from '../services/adminService';
@@ -1002,6 +1003,11 @@ const EventsPage: React.FC = () => {
             onViewChange={handleCalendarViewChange}
           />
         )}
+
+        {/* ICS Feed Component */}
+        <div className="mt-12">
+          <ICSFeedComponent />
+        </div>
 
         {/* Quick Stats */}
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">

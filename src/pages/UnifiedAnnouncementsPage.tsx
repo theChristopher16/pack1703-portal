@@ -24,6 +24,7 @@ interface AdminAnnouncement {
   category: 'general' | 'event' | 'reminder' | 'emergency' | 'achievement';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   sendEmail?: boolean;
+  sendSMS?: boolean;
   testMode?: boolean;
   createdAt: string;
   updatedAt: string;
@@ -69,6 +70,7 @@ const UnifiedAnnouncementsPage: React.FC = () => {
     category: 'general' as const,
     priority: 'medium' as const,
     sendEmail: false,
+    sendSMS: false,
     testMode: false,
     pinned: false,
     expiresAt: '',
@@ -134,6 +136,7 @@ const UnifiedAnnouncementsPage: React.FC = () => {
       category: 'general',
       priority: 'medium',
       sendEmail: false,
+      sendSMS: false,
       testMode: false,
       pinned: false,
       expiresAt: '',
@@ -151,6 +154,7 @@ const UnifiedAnnouncementsPage: React.FC = () => {
       category: announcement.category as any,
       priority: announcement.priority as any,
       sendEmail: announcement.sendEmail || false,
+      sendSMS: announcement.sendSMS || false,
       testMode: announcement.testMode || false,
       pinned: announcement.pinned,
       expiresAt: announcement.expiresAt || '',
@@ -183,6 +187,7 @@ const UnifiedAnnouncementsPage: React.FC = () => {
         category: formData.category,
         priority: formData.priority,
         sendEmail: formData.sendEmail,
+        sendSMS: formData.sendSMS,
         testMode: formData.testMode,
         pinned: formData.pinned,
         expiresAt: formData.expiresAt || null,
@@ -204,6 +209,7 @@ const UnifiedAnnouncementsPage: React.FC = () => {
         category: 'general',
         priority: 'medium',
         sendEmail: false,
+        sendSMS: false,
         testMode: false,
         pinned: false,
         expiresAt: '',
@@ -483,6 +489,12 @@ const UnifiedAnnouncementsPage: React.FC = () => {
                             <span className="text-green-600">Email sent</span>
                           </>
                         )}
+                        {announcement.sendSMS && (
+                          <>
+                            <span className="mx-2">•</span>
+                            <span className="text-blue-600">SMS sent</span>
+                          </>
+                        )}
                         {announcement.testMode && (
                           <>
                             <span className="mx-2">•</span>
@@ -695,6 +707,22 @@ const UnifiedAnnouncementsPage: React.FC = () => {
                     <label htmlFor="sendEmail" className="ml-2 text-sm text-gray-700">
                       Send email notification
                     </label>
+                  </div>
+
+                  <div className="flex items-center opacity-60">
+                    <input
+                      type="checkbox"
+                      id="sendSMS"
+                      checked={false}
+                      disabled={true}
+                      className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="sendSMS" className="ml-2 text-sm text-gray-700">
+                      Send SMS notification
+                    </label>
+                    <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                      Coming Soon
+                    </span>
                   </div>
 
                   <div className="flex items-center">

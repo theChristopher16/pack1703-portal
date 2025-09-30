@@ -167,11 +167,8 @@ class ResourceService {
         fileSize = file.size;
       }
 
-      const newResource = {
+      const newResource: any = {
         ...resourceData,
-        fileName,
-        fileUrl,
-        fileSize,
         createdBy: user.uid,
         createdByName: user.displayName || user.email || 'Unknown',
         createdAt: serverTimestamp(),
@@ -179,6 +176,13 @@ class ResourceService {
         downloadCount: 0,
         isActive: true,
       };
+
+      // Only add file-related fields if a file was uploaded
+      if (file) {
+        newResource.fileName = fileName;
+        newResource.fileUrl = fileUrl;
+        newResource.fileSize = fileSize;
+      }
 
       const docRef = await addDoc(collection(db, 'resources'), newResource);
       return docRef.id;

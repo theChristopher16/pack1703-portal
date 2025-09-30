@@ -352,6 +352,22 @@ export const firestoreService = {
           }
         }
       }
+
+      // Send SMS notification to users if this is a high priority announcement or SMS is explicitly requested
+      // TODO: SMS notifications are currently disabled - coming soon
+      if (false && (announcementData.priority === 'high' || announcementData.sendSMS === true)) {
+        try {
+          await this.sendAnnouncementSMSViaCloudFunction(announcement, testMode);
+        } catch (smsError) {
+          console.error('Failed to send announcement SMS via Cloud Function:', smsError);
+          console.log('📱 Falling back to client-side SMS service...');
+          try {
+            await this.sendAnnouncementSMS(announcement, testMode);
+          } catch (fallbackError) {
+            console.error('Failed to send announcement SMS via fallback:', fallbackError);
+          }
+        }
+      }
       
       return announcement;
     } catch (error) {
@@ -604,6 +620,116 @@ export const firestoreService = {
       
     } catch (error) {
       console.error('Error sending announcement emails:', error);
+      throw error;
+    }
+  },
+
+  // Send announcement SMS to users (respecting preferences and test mode)
+  async sendAnnouncementSMSViaCloudFunction(announcement: any, testMode: boolean = false): Promise<void> {
+    try {
+      console.log('📱 Calling Cloud Function sendAnnouncementSMS with:', { announcement, testMode });
+      const sendAnnouncementSMSFunction = httpsCallable(functions, 'sendAnnouncementSMS');
+      const result = await sendAnnouncementSMSFunction({
+        announcement,
+        testMode
+      });
+      
+      console.log('📱 Cloud Function SMS result:', result.data);
+    } catch (error) {
+      console.error('❌ Error calling sendAnnouncementSMS Cloud Function:', error);
+      console.error('❌ Error details:', error);
+      throw error;
+    }
+  },
+
+  async sendAnnouncementSMS(announcement: any, testMode: boolean = false): Promise<void> {
+    try {
+      // Import SMS service
+      const { smsService } = await import('./smsService');
+      
+      // Get users based on announcement targeting
+      let targetUsers: any[] = [];
+      
+      if (announcement.targetDens && announcement.targetDens.length > 0) {
+        // Get users for specific dens
+        for (const denId of announcement.targetDens) {
+          const denUsersQuery = query(
+            collection(db, 'users'),
+            where('status', '==', 'approved'),
+            where('dens', 'array-contains', denId)
+          );
+          const denUsersSnapshot = await getDocs(denUsersQuery);
+          
+          denUsersSnapshot.forEach(userDoc => {
+            const userData = userDoc.data();
+            // Avoid duplicates if user is in multiple targeted dens
+            if (!targetUsers.find(u => u.id === userDoc.id)) {
+              targetUsers.push({ id: userDoc.id, ...userData });
+            }
+          });
+        }
+      } else {
+        // Get all approved users (no specific targeting)
+        const usersQuery = query(
+          collection(db, 'users'),
+          where('status', '==', 'approved')
+        );
+        const usersSnapshot = await getDocs(usersQuery);
+        
+        usersSnapshot.forEach((userDoc) => {
+          targetUsers.push({ id: userDoc.id, ...userDoc.data() });
+        });
+      }
+      
+      const smsPromises: Promise<any>[] = [];
+      const testPhones = ['+15551234567', '+15559876543']; // Test phone numbers
+      
+      targetUsers.forEach((userData) => {
+        // Skip if no phone number
+        if (!userData.phone) return;
+        
+        // In test mode, only send to test phones
+        if (testMode && !testPhones.includes(userData.phone)) {
+          console.log(`🧪 Test mode: Skipping ${userData.phone}`);
+          return;
+        }
+        
+        // Check user SMS preferences
+        const smsEnabled = userData.preferences?.smsNotifications === true;
+        
+        if (!smsEnabled) {
+          console.log(`📱 SMS disabled for ${userData.phone}, skipping`);
+          return;
+        }
+        
+        // Format phone number
+        const formattedPhone = smsService.formatPhoneNumber(userData.phone);
+        
+        // Validate phone number
+        if (!smsService.isValidPhoneNumber(formattedPhone)) {
+          console.warn(`📱 Invalid phone number for user ${userData.id}: ${userData.phone}`);
+          return;
+        }
+        
+        smsPromises.push(
+          smsService.sendAnnouncementSMS(formattedPhone, announcement)
+        );
+      });
+      
+      // Send all SMS messages in parallel
+      const results = await Promise.allSettled(smsPromises);
+      
+      const successful = results.filter(result => 
+        result.status === 'fulfilled' && result.value.success === true
+      ).length;
+      
+      const failed = results.length - successful;
+      
+      const modeText = testMode ? ' (TEST MODE)' : '';
+      console.log(`📱 Announcement SMS sent${modeText}: ${successful} successful, ${failed} failed`);
+      
+    } catch (error) {
+      console.error('Error sending announcement SMS:', error);
       throw error;
     }
   }

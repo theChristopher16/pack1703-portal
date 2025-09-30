@@ -142,9 +142,7 @@ const ResourceManagementModal: React.FC<ResourceManagementModalProps> = ({
         throw new Error('Description is required');
       }
 
-      if (!selectedFile && !formData.url.trim()) {
-        throw new Error('Either a file or URL is required');
-      }
+      // File upload and URL are both optional - resources can be informational only
 
       if (mode === 'create') {
         await resourceService.createResource({
@@ -265,7 +263,7 @@ const ResourceManagementModal: React.FC<ResourceManagementModalProps> = ({
           {/* File Upload or URL */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Resource Content *
+              Resource Content (Optional)
             </label>
             
             {/* File Upload */}
@@ -310,7 +308,7 @@ const ResourceManagementModal: React.FC<ResourceManagementModalProps> = ({
                 type="url"
                 value={formData.url}
                 onChange={(e) => handleInputChange('url', e.target.value)}
-                placeholder="https://example.com/resource"
+                placeholder="https://example.com/resource (optional)"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 disabled={!!selectedFile}
               />

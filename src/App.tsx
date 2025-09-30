@@ -33,7 +33,6 @@ import TestNavigation from './pages/TestNavigation';
 import AuthDebugPage from './pages/AuthDebugPage';
 
 // Admin Pages
-import AdminDashboard from './pages/AdminDashboard';
 import AdminLocations from './pages/AdminLocations';
 import UnifiedChat from './components/Chat/UnifiedChat';
 import AdminAI from './pages/AdminAI';
@@ -150,7 +149,6 @@ function App() {
           {/* Admin Routes */}
           <Route path="/analytics" element={<Layout><AdminOnly><AnalyticsDashboard /></AdminOnly></Layout>} />
           <Route path="/analytics/test" element={<Layout><AdminOnly><AnalyticsTest /></AdminOnly></Layout>} />
-          <Route path="/admin" element={<Layout><AdminOnly><AdminDashboard /></AdminOnly></Layout>} />
           <Route path="/locations" element={<Layout><AdminOnly><AdminLocations /></AdminOnly></Layout>} />
           <Route path="/lists" element={<Layout><AdminOnly><AdminLists /></AdminOnly></Layout>} />
           <Route path="/seasons" element={<Layout><AdminOnly><AdminSeasons /></AdminOnly></Layout>} />

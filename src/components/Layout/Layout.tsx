@@ -447,26 +447,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       
                       {/* Login/Admin Link */}
                       <div className="border-t border-gray-200 mt-2 pt-2">
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (currentUser) {
-                              navigate('/admin');
-                            } else {
-                              setIsLoginModalOpen(true);
-                            }
-                            setIsDropdownOpen(false);
-                          }}
-                          className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg cursor-pointer ${
-                            isActive('/admin')
-                              ? 'text-blue-600 bg-blue-100 border border-blue-200 shadow-sm'
-                              : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 hover:shadow-sm hover:border hover:border-blue-100'
-                          }`}
-                        >
-                          <Settings className="w-4 h-4" />
-                          <span>{currentUser ? 'Admin Portal' : 'Login'}</span>
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -590,16 +570,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         >
                           <LogOut className="w-4 h-4" />
                           <span>Logout</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            handleNavigation('/admin');
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200 border-t border-gray-100"
-                        >
-                          <Settings className="w-4 h-4" />
-                          <span>Admin Portal</span>
                         </button>
                       </>
                     ) : (

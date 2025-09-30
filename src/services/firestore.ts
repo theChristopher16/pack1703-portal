@@ -66,20 +66,36 @@ const safeFirestoreCall = async <T>(firestoreCall: () => Promise<T>): Promise<T>
   }
 };
 
+// Client-side cache for events
+let eventsCache: { data: any[]; timestamp: number } | null = null;
+const EVENTS_CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
+
 // Firestore operations
 export const firestoreService = {
   // Events
   async getEvents(): Promise<any[]> {
+    // Check cache first
+    if (eventsCache && (Date.now() - eventsCache.timestamp) < EVENTS_CACHE_DURATION) {
+      console.log('📦 Using cached events data');
+      return eventsCache.data;
+    }
+
     return safeFirestoreCall(async () => {
       const eventsRef = collection(db, 'events');
-      const q = query(eventsRef, orderBy('startDate'));
-      const snapshot = await getDocs(q);
-      const allEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
-      
-      // Filter for public events or events without visibility field (default to public)
-      return allEvents.filter((event: any) => 
-        !event.visibility || event.visibility === 'public'
+      // Use composite index for better performance: visibility + startDate
+      const q = query(
+        eventsRef, 
+        where('visibility', 'in', ['public', null]), // Filter at database level
+        orderBy('startDate')
       );
+      const snapshot = await getDocs(q);
+      const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+      
+      // Update cache
+      eventsCache = { data: events, timestamp: Date.now() };
+      console.log('💾 Cached events data');
+      
+      return events;
     });
   },
 
@@ -92,6 +108,12 @@ export const firestoreService = {
       }
       throw new Error('Event not found');
     });
+  },
+
+  // Clear events cache (call when events are updated)
+  clearEventsCache(): void {
+    eventsCache = null;
+    console.log('🗑️ Cleared events cache');
   },
 
   // Locations

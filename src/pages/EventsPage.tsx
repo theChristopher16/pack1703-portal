@@ -263,21 +263,13 @@ const EventsPage: React.FC = () => {
       setUsingFallbackData(false);
       
       try {
-        // Load events and RSVP counts in parallel
-        const [firebaseEvents] = await Promise.all([
-          firestoreService.getEvents()
-        ]);
+        // Load events first (with caching)
+        const firebaseEvents = await firestoreService.getEvents();
         
         // Track successful data load
         console.log('Events loaded from database:', firebaseEvents.length);
         
-        // Get event IDs for RSVP count fetching
-        const eventIds = firebaseEvents.map((event: any) => event.id);
-        
-        // Fetch RSVP counts using optimized batch function
-        const rsvpCounts = await fetchRSVPCounts(eventIds);
-
-        // Transform Firebase data to match our interface
+        // Transform events first (without RSVP counts)
         const transformedEvents: Event[] = firebaseEvents.map((firebaseEvent: any) => {
           const transformedEvent = {
             id: firebaseEvent.id,
@@ -295,7 +287,7 @@ const EventsPage: React.FC = () => {
             category: firebaseEvent.category || 'pack-wide',
             denTags: firebaseEvent.denTags || [],
             maxCapacity: firebaseEvent.maxCapacity || null,
-            currentRSVPs: rsvpCounts[firebaseEvent.id] || firebaseEvent.currentRSVPs || 0,
+            currentRSVPs: 0, // Will be updated after RSVP counts are fetched
             description: firebaseEvent.description || '',
             packingList: firebaseEvent.packingList || [],
             fees: firebaseEvent.fees || null,
@@ -308,7 +300,25 @@ const EventsPage: React.FC = () => {
           return transformedEvent;
         });
         
+        // Set events immediately (without RSVP counts)
         setEvents(transformedEvents);
+        
+        // Get event IDs for RSVP count fetching
+        const eventIds = firebaseEvents.map((event: any) => event.id);
+        
+        // Fetch RSVP counts in background (non-blocking)
+        fetchRSVPCounts(eventIds).then(rsvpCounts => {
+          // Update events with RSVP counts
+          setEvents(prevEvents => 
+            prevEvents.map(event => ({
+              ...event,
+              currentRSVPs: rsvpCounts[event.id] || 0
+            }))
+          );
+        }).catch(error => {
+          console.warn('Failed to load RSVP counts:', error);
+          // Events are already displayed, just without accurate counts
+        });
         
         // Track successful data load
         console.log('Events loaded successfully:', transformedEvents.length);

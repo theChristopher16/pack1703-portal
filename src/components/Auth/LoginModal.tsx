@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { X, Mail, Lock, Eye, EyeOff, Shield, UserPlus, Key } from 'lucide-react';
 import { authService } from '../../services/authService';
 import SocialLogin from './SocialLogin';
-import SignupModal from './SignupModal';
 import { useRecaptcha } from '../../hooks/useRecaptcha';
 
 interface LoginModalProps {
@@ -19,7 +18,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showSignupModal, setShowSignupModal] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
@@ -82,15 +80,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
     setError(error);
   };
 
-  const handleSignupSuccess = (user: any) => {
-    onSuccess?.(user);
-    setShowSignupModal(false);
-    onClose();
-  };
-
-  const handleOpenSignup = () => {
-    setShowSignupModal(true);
-  };
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -363,31 +352,20 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
                 </a>
               </p>
               
-              {/* Sign Up Link */}
+              {/* Account Request Link */}
               <div className="border-t border-gray-200 pt-4">
                 <p className="text-sm text-gray-600 mb-3">
                   Don't have an account?
                 </p>
-                <button
-                  type="button"
-                  onClick={handleOpenSignup}
-                  className="w-full flex items-center justify-center py-2 px-4 border border-primary-300 rounded-xl text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
-                >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Create Account
-                </button>
+                <p className="text-xs text-gray-500 text-center">
+                  Contact pack leadership to request account access
+                </p>
               </div>
             </div>
           </div>
         </div>        </div>
       </div>
       
-      {/* Signup Modal */}
-      <SignupModal
-        isOpen={showSignupModal}
-        onClose={() => setShowSignupModal(false)}
-        onSuccess={handleSignupSuccess}
-      />
     </>
   );
 };

@@ -7,7 +7,7 @@ import { authService, UserRole } from '../services/authService';
 import { heroButtonService, HeroButtonConfig } from '../services/heroButtonService';
 import { usageTrackingService } from '../services/usageTrackingService';
 import { useAdmin } from '../contexts/AdminContext';
-import SignupModal from '../components/Auth/SignupModal';
+import AccountRequestModal from '../components/Auth/AccountRequestModal';
 
 const HomePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -15,7 +15,7 @@ const HomePage: React.FC = () => {
   const [isDownloadingAudit, setIsDownloadingAudit] = useState(false);
   const [animationsTriggered, setAnimationsTriggered] = useState(false);
   const [heroButtons, setHeroButtons] = useState<HeroButtonConfig[]>([]);
-  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [showAccountRequestModal, setShowAccountRequestModal] = useState(false);
   
   // Use AdminContext instead of direct auth service
   const { state: adminState } = useAdmin();
@@ -322,14 +322,14 @@ const HomePage: React.FC = () => {
                     Discover Locations
                   </Link>
                   
-                  {/* Sign Up Button for Anonymous Users */}
+                  {/* Request Account Button for Anonymous Users */}
                   {!userRole && (
                     <button
-                      onClick={() => setShowSignupModal(true)}
+                      onClick={() => setShowAccountRequestModal(true)}
                       className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-semibold text-lg rounded-2xl shadow-glow-secondary hover:shadow-glow-secondary/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-secondary-300/50"
                     >
                       <UserPlus className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-200" />
-                      Join Pack 1703
+                      Request Account Access
                       <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform duration-200" />
                     </button>
                   )}
@@ -575,14 +575,14 @@ const HomePage: React.FC = () => {
         </div>
       </div>
       
-      {/* Signup Modal */}
-      <SignupModal
-        isOpen={showSignupModal}
-        onClose={() => setShowSignupModal(false)}
-        onSuccess={(user) => {
-          console.log('Signup successful:', user);
-          setShowSignupModal(false);
-          // The user will be automatically logged in and the page will update
+      {/* Account Request Modal */}
+      <AccountRequestModal
+        isOpen={showAccountRequestModal}
+        onClose={() => setShowAccountRequestModal(false)}
+        onSuccess={(requestId) => {
+          console.log('Account request submitted:', requestId);
+          setShowAccountRequestModal(false);
+          // Show success message or redirect
         }}
       />
     </div>

@@ -229,7 +229,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         item.href.includes('/soc') ||
         item.href.includes('/database') ||
         item.href.includes('/system') ||
-        item.href.includes('/performance') ||
         item.href.includes('/security') ||
         item.href.includes('/permissions') ||
         item.href.includes('/api')

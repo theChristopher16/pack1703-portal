@@ -51,7 +51,6 @@ import UserProfile from './pages/UserProfile';
 import AdminReminders from './pages/AdminReminders';
 import AdminUsers from './pages/AdminUsers';
 import SystemMonitor from './components/Admin/SystemMonitor';
-import PerformanceMonitor from './components/Performance/PerformanceMonitor';
 import { AdminProvider } from './contexts/AdminContext';
 import { MultiTenantProvider } from './contexts/MultiTenantContext';
 
@@ -170,7 +169,6 @@ function App() {
           <Route path="/profile" element={<Layout><AuthenticatedOnly><UserProfile /></AuthenticatedOnly></Layout>} />
           <Route path="/soc" element={<Layout><RootOnly><HackerTab /></RootOnly></Layout>} />
           <Route path="/system" element={<Layout><RootOnly><SystemMonitor /></RootOnly></Layout>} />
-          <Route path="/performance" element={<Layout><RootOnly><PerformanceMonitor /></RootOnly></Layout>} />
           <Route path="/root-setup" element={<RootAccountSetup />} />
           
           {/* Development/Test Routes */}

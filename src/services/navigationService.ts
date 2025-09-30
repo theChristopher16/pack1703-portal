@@ -8,7 +8,6 @@ import {
   MessageSquare, 
   MessageCircle, 
   BarChart3, 
-  Settings, 
   DollarSign, 
   UserPlus, 
   Cog, 
@@ -17,17 +16,10 @@ import {
   Building,
   Target,
   List,
-  HandHeart,
   Sprout,
   Bot,
   Activity,
-  TrendingUp,
   CreditCard,
-  Award,
-  Globe,
-  Lock,
-  Eye,
-  Zap,
   User,
   Leaf
 } from 'lucide-react';
@@ -233,14 +225,6 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
     description: 'System health monitoring'
-  },
-  {
-    name: 'Performance Monitor',
-    href: '/performance',
-    icon: TrendingUp,
-    roles: [UserRole.SUPER_ADMIN],
-    category: 'system',
-    description: 'Application performance tracking'
   },
 ];
 

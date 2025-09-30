@@ -198,23 +198,27 @@ const CostManagement: React.FC<CostManagementProps> = ({ className = '' }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                <DollarSign className="w-8 h-8 mr-3 text-green-600" />
-                Cost Management & Analysis
-                <span className="ml-4 px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
-                  ✨ UPDATED - Real Data
-                </span>
-                <span className="ml-2 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
-                  📊 Live Tracking
-                </span>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <div className="flex items-center">
+                  <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3 text-green-600" />
+                  Cost Management & Analysis
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-2 sm:px-3 py-1 bg-green-100 text-green-800 text-xs sm:text-sm rounded-full whitespace-nowrap">
+                    ✨ UPDATED - Real Data
+                  </span>
+                  <span className="px-2 sm:px-3 py-1 bg-blue-100 text-blue-800 text-xs sm:text-sm rounded-full whitespace-nowrap">
+                    📊 Live Tracking
+                  </span>
+                </div>
               </h1>
-              <p className="text-gray-600 mt-2">Comprehensive monitoring of API usage, infrastructure costs, and optimization recommendations</p>
+              <p className="text-gray-600 mt-2 text-sm sm:text-base">Comprehensive monitoring of API usage, infrastructure costs, and optimization recommendations</p>
             </div>
             <button
               onClick={loadCostData}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center w-full sm:w-auto"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh

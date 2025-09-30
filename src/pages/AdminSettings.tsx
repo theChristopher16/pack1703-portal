@@ -168,21 +168,22 @@ const AdminSettings: React.FC = () => {
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-200 mb-8">
-        <nav className="-mb-px flex space-x-8">
+        <nav className="-mb-px flex flex-wrap gap-x-4 gap-y-2 overflow-x-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                <Icon className="w-4 h-4 mr-2" />
-                {tab.label}
+                <Icon className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
               </button>
             );
           })}

@@ -440,15 +440,6 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
           </div>
         </div>
         
-        {!isEditMode && (
-          <button
-            onClick={() => setIsEditMode(true)}
-            className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            <Edit className="w-4 h-4 mr-2" />
-            Edit Profile
-          </button>
-        )}
       </div>
 
       {/* Error/Success Messages */}

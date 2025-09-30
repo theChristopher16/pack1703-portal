@@ -119,6 +119,13 @@ const UnifiedChat: React.FC = () => {
     try {
       const messageData = await chatService.getMessages(channelId, 50);
       setMessages(messageData); // Messages are already in chronological order
+      
+      // Auto-scroll to bottom when loading messages for a new channel
+      setTimeout(() => {
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+      }, 100);
     } catch (error) {
       console.error('Failed to load messages:', error);
       showError('Failed to load chat messages');

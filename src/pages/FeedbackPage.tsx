@@ -7,7 +7,8 @@ import {
   Search,
   User,
   Calendar,
-  Tag
+  Tag,
+  X
 } from 'lucide-react';
 import { authService } from '../services/authService';
 import { useAdmin } from '../contexts/AdminContext';
@@ -84,23 +85,25 @@ const FeedbackPage: React.FC = () => {
     ['admin', 'super-admin', 'root'].includes(user.role);
 
   // Load all feedback for admin users
-  useEffect(() => {
-    const loadAllFeedback = async () => {
-      if (!canManageFeedback) return;
-      
-      try {
-        setIsLoadingAllFeedback(true);
-        const feedback = await feedbackService.getAllFeedback(undefined, user);
-        setAllFeedback(feedback);
-      } catch (error) {
-        console.error('Error loading all feedback:', error);
-        setAllFeedback([]);
-      } finally {
-        setIsLoadingAllFeedback(false);
-      }
-    };
+  const loadAllFeedback = async () => {
+    if (!canManageFeedback) return;
+    
+    try {
+      setIsLoadingAllFeedback(true);
+      const feedback = await feedbackService.getAllFeedback(undefined, user);
+      setAllFeedback(feedback);
+    } catch (error) {
+      console.error('Error loading all feedback:', error);
+      setAllFeedback([]);
+    } finally {
+      setIsLoadingAllFeedback(false);
+    }
+  };
 
-    loadAllFeedback();
+  useEffect(() => {
+    if (canManageFeedback) {
+      loadAllFeedback();
+    }
   }, [canManageFeedback]);
 
   // Apply filters to all feedback
@@ -693,7 +696,12 @@ const FeedbackPage: React.FC = () => {
                 <div className="flex items-center">
                   <AlertCircle className="h-8 w-8 text-orange-600 mr-3" />
                   <div>
-                    <p className="text-sm font-medium text-orange-800">Pending</p>
+                    <p className="text-sm font-medium text-orange-800 flex items-center">
+                      Pending
+                      <span className="ml-1 text-xs text-orange-600" title="Feedback that hasn't been responded to yet">
+                        ⓘ
+                      </span>
+                    </p>
                     <p className="text-2xl font-bold text-orange-900">
                       {allFeedback.filter(f => !f.hasResponse).length}
                     </p>
@@ -830,6 +838,43 @@ const FeedbackPage: React.FC = () => {
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Response Form Modal */}
+        {showResponseForm && selectedFeedback && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Add Response</h3>
+                  <button
+                    onClick={() => {
+                      setShowResponseForm(false);
+                      setSelectedFeedback(null);
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+                
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-2">Original Feedback:</h4>
+                  <p className="text-gray-700 text-sm">{selectedFeedback.message}</p>
+                </div>
+                
+                <FeedbackResponseForm
+                  feedback={selectedFeedback}
+                  onResponseAdded={(response) => {
+                    // Refresh the feedback list
+                    loadAllFeedback();
+                    setShowResponseForm(false);
+                    setSelectedFeedback(null);
+                  }}
+                />
+              </div>
             </div>
           </div>
         )}

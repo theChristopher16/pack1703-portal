@@ -409,11 +409,26 @@ User ID: ${userData.uid || 'Unknown'}
             <p>You can now access the portal and enjoy all the features available to members of Pack 1703.</p>
             
             <div style="text-align: center;">
-                <a href="https://sfpack1703.com" class="button">Access Portal</a>
+                <a href="https://pack1703-portal.web.app" class="button">Access Portal</a>
+            </div>
+            
+            <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #92400e; margin-top: 0;">🔐 Setting Your Password</h3>
+                <p style="margin-bottom: 10px;"><strong>To sign in for the first time:</strong></p>
+                <ol style="margin-bottom: 10px;">
+                    <li>Go to the portal login page</li>
+                    <li>Click "Reset Password" below the login form</li>
+                    <li>Enter your email address (${userData.email})</li>
+                    <li>Check your email for a password reset link</li>
+                    <li>Click the link and set your new password</li>
+                    <li>Sign in with your email and new password</li>
+                </ol>
+                <p style="margin: 0; font-size: 14px; color: #92400e;"><strong>Note:</strong> You must set your password before you can access the portal.</p>
             </div>
             
             <p><strong>What's Next?</strong></p>
             <ul>
+                <li>Set your password using the reset link above</li>
                 <li>Sign in to your account using your email address</li>
                 <li>Complete your profile information</li>
                 <li>Explore the portal features and upcoming events</li>
@@ -450,13 +465,25 @@ Your Account Details:
 
 You can now access the portal and enjoy all the features available to members of Pack 1703.
 
-Access Portal: https://sfpack1703.com
+Access Portal: https://pack1703-portal.web.app
+
+🔐 Setting Your Password
+To sign in for the first time:
+1. Go to the portal login page
+2. Click "Reset Password" below the login form
+3. Enter your email address (${userData.email})
+4. Check your email for a password reset link
+5. Click the link and set your new password
+6. Sign in with your email and new password
+
+Note: You must set your password before you can access the portal.
 
 What's Next?
-1. Sign in to your account using your email address
-2. Complete your profile information
-3. Explore the portal features and upcoming events
-4. Connect with other pack members
+1. Set your password using the reset link above
+2. Sign in to your account using your email address
+3. Complete your profile information
+4. Explore the portal features and upcoming events
+5. Connect with other pack members
 
 If you have any questions or need assistance, please don't hesitate to contact the pack leadership.
 

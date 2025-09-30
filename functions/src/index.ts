@@ -1494,9 +1494,53 @@ export const approveAccountRequest = functions.https.onCall(async (data: any, co
       approvedAt: getTimestamp()
     };
 
-    // Create user document in Firestore
-    const userRef = db.collection('users').doc();
-    await userRef.set(newUserData);
+    // Create Firebase Auth account first
+    let firebaseAuthUser;
+    try {
+      // Generate a temporary password (will be reset via email)
+      const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
+      
+      firebaseAuthUser = await admin.auth().createUser({
+        email: requestData.email,
+        displayName: requestData.displayName,
+        password: tempPassword,
+        emailVerified: false
+      });
+
+      console.log('Firebase Auth user created:', firebaseAuthUser.uid);
+    } catch (authError: any) {
+      console.error('Error creating Firebase Auth user:', authError);
+      if (authError.code === 'auth/email-already-exists') {
+        // User already exists in Firebase Auth, get their UID
+        try {
+          firebaseAuthUser = await admin.auth().getUserByEmail(requestData.email);
+          console.log('Found existing Firebase Auth user:', firebaseAuthUser.uid);
+        } catch (getUserError) {
+          throw new functions.https.HttpsError('internal', 'Failed to create or retrieve user account');
+        }
+      } else {
+        throw new functions.https.HttpsError('internal', 'Failed to create user account');
+      }
+    }
+
+    // Create user document in Firestore using Firebase Auth UID
+    const userRef = db.collection('users').doc(firebaseAuthUser.uid);
+    await userRef.set({
+      ...newUserData,
+      uid: firebaseAuthUser.uid // Ensure UID is set
+    });
+
+    // Set custom claims for the user
+    try {
+      await admin.auth().setCustomUserClaims(firebaseAuthUser.uid, {
+        approved: true,
+        role: role
+      });
+      console.log('Custom claims set for user:', firebaseAuthUser.uid);
+    } catch (claimsError) {
+      console.error('Error setting custom claims:', claimsError);
+      // Don't fail the approval if claims fail
+    }
 
     // Update request status
     await requestRef.update({
@@ -1505,7 +1549,7 @@ export const approveAccountRequest = functions.https.onCall(async (data: any, co
       approvedAt: getTimestamp(),
       approvedRole: role,
       updatedAt: getTimestamp(),
-      userId: userRef.id // Link to the created user
+      userId: firebaseAuthUser.uid // Link to the Firebase Auth user
     });
 
     // Log the approval
@@ -1519,7 +1563,7 @@ export const approveAccountRequest = functions.https.onCall(async (data: any, co
       details: {
         email: requestData.email,
         approvedRole: role,
-        createdUserId: userRef.id
+        createdUserId: firebaseAuthUser.uid
       },
       timestamp: getTimestamp(),
       ipAddress: context.rawRequest?.ip || 'unknown',
@@ -1531,7 +1575,7 @@ export const approveAccountRequest = functions.https.onCall(async (data: any, co
     try {
       const { emailService } = await import('./emailService');
       const userData = {
-        uid: userRef.id,
+        uid: firebaseAuthUser.uid,
         email: requestData.email,
         displayName: requestData.displayName,
         phone: requestData.phone || '',
@@ -1551,7 +1595,7 @@ export const approveAccountRequest = functions.https.onCall(async (data: any, co
     return {
       success: true,
       message: 'Account request approved and user account created successfully',
-      userId: userRef.id
+      userId: firebaseAuthUser.uid
     };
 
   } catch (error) {

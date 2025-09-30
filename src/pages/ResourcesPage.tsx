@@ -8,20 +8,19 @@ import {
   Users, 
   Shield, 
   BookOpen,
-  Search
+  Search,
+  Plus,
+  Edit,
+  Trash2,
+  MoreVertical,
+  Eye,
+  EyeOff
 } from 'lucide-react';
+import { useAdmin } from '../contexts/AdminContext';
+import { Resource, ResourceCategory, resourceService } from '../services/resourceService';
+import { ResourceManagementModal } from '../components/Resources';
 
-interface Resource {
-  id: string;
-  title: string;
-  description: string;
-  category: 'packing-list' | 'medical' | 'policy' | 'guide' | 'form' | 'reference';
-  tags: string[];
-  url?: string;
-  fileType?: 'pdf' | 'doc' | 'image';
-  lastUpdated: string;
-  isActive: boolean;
-}
+// Resource interface is now imported from resourceService
 
 const ResourcesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,41 +28,30 @@ const ResourcesPage: React.FC = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingResource, setEditingResource] = useState<Resource | null>(null);
+  const [showManagementModal, setShowManagementModal] = useState(false);
+  const [deletingResource, setDeletingResource] = useState<string | null>(null);
+  
+  const { state } = useAdmin();
 
   // Load resources from Firebase
   useEffect(() => {
-    const loadResources = async () => {
-      try {
-        // Import Firebase functions
-        const { collection, query, where, getDocs, orderBy } = await import('firebase/firestore');
-        const { db } = await import('../firebase/config');
-        
-        // Query resources
-        const resourcesRef = collection(db, 'resources');
-        const q = query(
-          resourcesRef, 
-          where('isActive', '==', true),
-          orderBy('lastUpdated', 'desc')
-        );
-        
-        const snapshot = await getDocs(q);
-        const resourcesData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Resource[];
-        
-        setResources(resourcesData);
-      } catch (error) {
-        console.error('Error loading resources:', error);
-        // Fallback to empty array if error
-        setResources([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadResources();
   }, []);
+
+  const loadResources = async () => {
+    try {
+      setLoading(true);
+      const resourcesData = await resourceService.getResources({ isActive: true });
+      setResources(resourcesData);
+    } catch (error) {
+      console.error('Error loading resources:', error);
+      setResources([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const categories = [
     { id: 'all', name: 'All Resources', icon: BookOpen, color: 'bg-gray-100 text-gray-800' },
@@ -72,7 +60,29 @@ const ResourcesPage: React.FC = () => {
     { id: 'policy', name: 'Policies', icon: BookOpen, color: 'bg-purple-100 text-purple-800' },
     { id: 'guide', name: 'Guides', icon: BookOpen, color: 'bg-green-100 text-green-800' },
     { id: 'form', name: 'Forms', icon: FileText, color: 'bg-yellow-100 text-yellow-800' },
-    { id: 'reference', name: 'Reference', icon: BookOpen, color: 'bg-indigo-100 text-indigo-800' }
+    { id: 'reference', name: 'Reference', icon: BookOpen, color: 'bg-indigo-100 text-indigo-800' },
+    { id: 'scout-handbook', name: 'Scout Handbook', icon: BookOpen, color: 'bg-orange-100 text-orange-800' },
+    { id: 'advancement', name: 'Advancement', icon: BookOpen, color: 'bg-pink-100 text-pink-800' },
+    { id: 'safety', name: 'Safety', icon: Shield, color: 'bg-red-100 text-red-800' },
+    { id: 'camping', name: 'Camping', icon: MapPin, color: 'bg-green-100 text-green-800' },
+    { id: 'hiking', name: 'Hiking', icon: MapPin, color: 'bg-green-100 text-green-800' },
+    { id: 'cooking', name: 'Cooking', icon: BookOpen, color: 'bg-yellow-100 text-yellow-800' },
+    { id: 'crafts', name: 'Crafts', icon: BookOpen, color: 'bg-purple-100 text-purple-800' },
+    { id: 'games', name: 'Games', icon: BookOpen, color: 'bg-blue-100 text-blue-800' },
+    { id: 'ceremonies', name: 'Ceremonies', icon: BookOpen, color: 'bg-indigo-100 text-indigo-800' },
+    { id: 'leadership', name: 'Leadership', icon: Users, color: 'bg-purple-100 text-purple-800' },
+    { id: 'fundraising', name: 'Fundraising', icon: BookOpen, color: 'bg-green-100 text-green-800' },
+    { id: 'uniform', name: 'Uniform', icon: BookOpen, color: 'bg-blue-100 text-blue-800' },
+    { id: 'awards', name: 'Awards', icon: BookOpen, color: 'bg-yellow-100 text-yellow-800' },
+    { id: 'outdoor-skills', name: 'Outdoor Skills', icon: MapPin, color: 'bg-green-100 text-green-800' },
+    { id: 'environmental', name: 'Environmental', icon: BookOpen, color: 'bg-green-100 text-green-800' },
+    { id: 'community-service', name: 'Community Service', icon: Users, color: 'bg-blue-100 text-blue-800' },
+    { id: 'parent-resources', name: 'Parent Resources', icon: Users, color: 'bg-purple-100 text-purple-800' },
+    { id: 'den-specific', name: 'Den Specific', icon: Users, color: 'bg-indigo-100 text-indigo-800' },
+    { id: 'pack-specific', name: 'Pack Specific', icon: Users, color: 'bg-blue-100 text-blue-800' },
+    { id: 'district', name: 'District', icon: BookOpen, color: 'bg-gray-100 text-gray-800' },
+    { id: 'council', name: 'Council', icon: BookOpen, color: 'bg-gray-100 text-gray-800' },
+    { id: 'national', name: 'National', icon: BookOpen, color: 'bg-gray-100 text-gray-800' }
   ];
 
   const allTags = Array.from(new Set(resources.flatMap(r => r.tags))).sort();
@@ -98,13 +108,54 @@ const ResourcesPage: React.FC = () => {
     );
   };
 
-  const handleDownload = (resource: Resource) => {
+  // Check if user can manage resources
+  const canManageResources = state.currentUser && resourceService.canManageResources(state.currentUser);
+
+  const handleDownload = async (resource: Resource) => {
     if (resource.url) {
-      // TODO: Implement actual file download
-      console.log(`Downloading: ${resource.title}`);
-      // For now, just open in new tab
-      window.open(resource.url, '_blank');
+      try {
+        // Increment download count
+        await resourceService.incrementDownloadCount(resource.id);
+        
+        // Open in new tab
+        window.open(resource.url, '_blank');
+      } catch (error) {
+        console.error('Error downloading resource:', error);
+        // Still try to open the URL even if count increment fails
+        window.open(resource.url, '_blank');
+      }
     }
+  };
+
+  const handleEditResource = (resource: Resource) => {
+    setEditingResource(resource);
+    setShowManagementModal(true);
+  };
+
+  const handleDeleteResource = async (resource: Resource) => {
+    if (window.confirm(`Are you sure you want to delete "${resource.title}"? This action cannot be undone.`)) {
+      try {
+        setDeletingResource(resource.id);
+        await resourceService.deleteResource(resource.id);
+        await loadResources(); // Refresh the list
+      } catch (error) {
+        console.error('Error deleting resource:', error);
+        alert('Failed to delete resource. Please try again.');
+      } finally {
+        setDeletingResource(null);
+      }
+    }
+  };
+
+  const handleModalClose = () => {
+    setShowCreateModal(false);
+    setShowManagementModal(false);
+    setEditingResource(null);
+  };
+
+  const handleModalSave = async () => {
+    await loadResources(); // Refresh the list
+    handleModalClose();
   };
 
   const getCategoryIcon = (categoryId: string) => {
@@ -141,10 +192,23 @@ const ResourcesPage: React.FC = () => {
           <h1 className="text-4xl md:text-5xl font-display font-bold text-gray-900 mb-6">
             <span className="text-gradient">Resources</span> & Downloads
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
             Access all the resources you need for scout activities, including packing lists, 
             medical forms, policies, and helpful guides for families.
           </p>
+          
+          {/* Add Resource Button */}
+          {canManageResources && (
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                <Plus className="h-5 w-5" />
+                Add New Resource
+              </button>
+            </div>
+          )}
         </div>
 
         {loading ? (
@@ -236,14 +300,43 @@ const ResourcesPage: React.FC = () => {
                           <CategoryIcon className="h-6 w-6" />
                         </div>
                         <div className="flex items-center space-x-2">
+                          {!resource.isPublic && (
+                            <div className="p-1 text-gray-400" title="Private resource">
+                              <EyeOff className="h-4 w-4" />
+                            </div>
+                          )}
                           {getFileTypeIcon(resource.fileType)}
                           {resource.url && (
                             <button
                               onClick={() => handleDownload(resource)}
                               className="p-2 text-gray-400 hover:text-primary-600 transition-colors duration-200"
+                              title="Download"
                             >
                               <Download className="h-4 w-4" />
                             </button>
+                          )}
+                          {canManageResources && (
+                            <div className="flex items-center space-x-1">
+                              <button
+                                onClick={() => handleEditResource(resource)}
+                                className="p-2 text-gray-400 hover:text-blue-600 transition-colors duration-200"
+                                title="Edit resource"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteResource(resource)}
+                                disabled={deletingResource === resource.id}
+                                className="p-2 text-gray-400 hover:text-red-600 transition-colors duration-200 disabled:opacity-50"
+                                title="Delete resource"
+                              >
+                                {deletingResource === resource.id ? (
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -285,6 +378,22 @@ const ResourcesPage: React.FC = () => {
             )}
           </>
         )}
+
+        {/* Resource Management Modals */}
+        <ResourceManagementModal
+          isOpen={showCreateModal}
+          onClose={handleModalClose}
+          onSave={handleModalSave}
+          mode="create"
+        />
+
+        <ResourceManagementModal
+          isOpen={showManagementModal}
+          onClose={handleModalClose}
+          onSave={handleModalSave}
+          resource={editingResource || undefined}
+          mode="edit"
+        />
       </div>
     </div>
   );

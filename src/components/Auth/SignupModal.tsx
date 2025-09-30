@@ -17,7 +17,12 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuccess })
     email: '',
     password: '',
     confirmPassword: '',
-    displayName: ''
+    displayName: '',
+    preferences: {
+      emailNotifications: true,
+      pushNotifications: true,
+      smsNotifications: false
+    }
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -36,11 +41,23 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuccess })
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    const { name, value, type, checked } = e.target;
+    
+    if (name.startsWith('preference_')) {
+      const preferenceName = name.replace('preference_', '');
+      setFormData(prev => ({
+        ...prev,
+        preferences: {
+          ...prev.preferences,
+          [preferenceName]: type === 'checkbox' ? checked : value
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+    }
     setError(null);
   };
 
@@ -78,7 +95,8 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuccess })
       const user = await userApprovalService.signUp(
         formData.email,
         formData.password,
-        formData.displayName
+        formData.displayName,
+        formData.preferences
       );
       
       onSuccess?.(user);
@@ -322,6 +340,51 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuccess })
                       <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                     )}
                   </button>
+                </div>
+              </div>
+
+              {/* Email Preferences */}
+              <div className="space-y-3">
+                <h4 className="text-md font-medium text-gray-700 border-t border-gray-200 pt-4">Notification Preferences</h4>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label htmlFor="preference_emailNotifications" className="text-sm font-medium text-gray-700">
+                      📧 Email Notifications
+                    </label>
+                    <p className="text-xs text-gray-500">Receive important announcements and updates via email</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id="preference_emailNotifications"
+                      name="preference_emailNotifications"
+                      checked={formData.preferences.emailNotifications}
+                      onChange={handleInputChange}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label htmlFor="preference_pushNotifications" className="text-sm font-medium text-gray-700">
+                      🔔 Push Notifications
+                    </label>
+                    <p className="text-xs text-gray-500">Receive browser notifications</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id="preference_pushNotifications"
+                      name="preference_pushNotifications"
+                      checked={formData.preferences.pushNotifications}
+                      onChange={handleInputChange}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
                 </div>
               </div>
 

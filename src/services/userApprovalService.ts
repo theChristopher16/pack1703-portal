@@ -133,7 +133,7 @@ export class UserApprovalService {
   /**
    * Sign up a new user
    */
-  async signUp(email: string, password: string, displayName?: string): Promise<{ success: boolean; message: string }> {
+  async signUp(email: string, password: string, displayName?: string, preferences?: any): Promise<{ success: boolean; message: string }> {
     try {
       console.log('🔐 UserApprovalService: Starting signup process for:', email);
       
@@ -153,7 +153,12 @@ export class UserApprovalService {
       const result = await createPendingUserFunction({
         userId: user.uid,
         email: user.email,
-        displayName: displayName || user.displayName || ''
+        displayName: displayName || user.displayName || '',
+        preferences: preferences || {
+          emailNotifications: true,
+          pushNotifications: true,
+          smsNotifications: false
+        }
       });
       
       console.log('🔐 UserApprovalService: createPendingUser result:', result.data);

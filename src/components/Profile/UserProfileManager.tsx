@@ -30,7 +30,7 @@ import {
   Plus,
   Minus
 } from 'lucide-react';
-import { authService, AppUser, UserRole, Permission, SocialProvider, SELECTABLE_ROLES } from '../../services/authService';
+import { authService, AppUser, UserRole, Permission, SocialProvider, SELECTABLE_ROLES, ScoutInfo } from '../../services/authService';
 import chatService from '../../services/chatService';
 // import { useAuth } from '../../contexts/AuthContext';
 
@@ -77,6 +77,7 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
     familyId: '',
     parentNames: [] as string[],
     siblings: [] as string[],
+    scouts: [] as ScoutInfo[],
     // username: '', // TODO: Add username to profile structure
     role: UserRole.PARENT,
     isActive: true,
@@ -129,6 +130,7 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
         familyId: user.profile?.familyId || '',
         parentNames: user.profile?.parentNames || [],
         siblings: user.profile?.siblings || [],
+        scouts: user.profile?.scouts || [],
         // username: user.profile?.username || '', // TODO: Add username to profile structure
         role: user.role,
         isActive: user.isActive,
@@ -212,13 +214,13 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
           address: formData.address,
           emergencyContact: formData.emergencyContact,
           scoutRank: formData.scoutRank,
-          den: formData.den,
           packNumber: formData.packNumber,
           scoutAge: formData.scoutAge ? parseInt(formData.scoutAge) : undefined,
           scoutGrade: formData.scoutGrade,
           familyId: formData.familyId,
           parentNames: formData.parentNames,
           siblings: formData.siblings,
+          scouts: formData.scouts,
           // username: formData.username,
           preferences: formData.preferences
         }
@@ -340,6 +342,47 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
     setFormData(prev => ({
       ...prev,
       siblings: prev.siblings.map((sibling, i) => i === index ? value : sibling)
+    }));
+  };
+
+  // Scout management functions
+  const addScout = () => {
+    const newScout: ScoutInfo = {
+      id: `scout_${Date.now()}`,
+      name: '',
+      age: 5,
+      scoutRank: '',
+      grade: '',
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    setFormData(prev => ({
+      ...prev,
+      scouts: [...prev.scouts, newScout]
+    }));
+  };
+
+  const removeScout = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      scouts: prev.scouts.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateScout = (index: number, field: keyof ScoutInfo, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      scouts: prev.scouts.map((scout, i) => 
+        i === index 
+          ? { 
+              ...scout, 
+              [field]: value,
+              updatedAt: new Date()
+            } 
+          : scout
+      )
     }));
   };
 
@@ -753,6 +796,129 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Scout Management */}
+          <div>
+            <h3 className="text-md font-medium text-gray-900 mb-4">Scout Management</h3>
+            <div className="space-y-4">
+              {formData.scouts.map((scout, index) => (
+                <div key={scout.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-medium text-gray-900">
+                      Scout {index + 1}
+                    </h4>
+                    {isEditMode && (
+                      <button
+                        onClick={() => removeScout(index)}
+                        className="p-2 text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Scout Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={scout.name}
+                        onChange={(e) => updateScout(index, 'name', e.target.value)}
+                        disabled={!isEditMode}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50"
+                        placeholder="Enter scout's name"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Age *
+                      </label>
+                      <input
+                        type="number"
+                        value={scout.age}
+                        onChange={(e) => updateScout(index, 'age', parseInt(e.target.value) || 5)}
+                        disabled={!isEditMode}
+                        min="5"
+                        max="18"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Den/Rank
+                      </label>
+                      <select
+                        value={scout.scoutRank || ''}
+                        onChange={(e) => updateScout(index, 'scoutRank', e.target.value)}
+                        disabled={!isEditMode}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50"
+                      >
+                        <option value="">Select Den/Rank</option>
+                        {scoutRanks.map(rank => (
+                          <option key={rank} value={rank}>{rank}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Grade
+                      </label>
+                      <select
+                        value={scout.grade || ''}
+                        onChange={(e) => updateScout(index, 'grade', e.target.value)}
+                        disabled={!isEditMode}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50"
+                      >
+                        <option value="">Select Grade</option>
+                        {grades.map(grade => (
+                          <option key={grade} value={grade}>{grade}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="flex items-center md:col-span-2">
+                      <input
+                        type="checkbox"
+                        id={`scout-active-${index}`}
+                        checked={scout.isActive}
+                        onChange={(e) => updateScout(index, 'isActive', e.target.checked)}
+                        disabled={!isEditMode}
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded disabled:bg-gray-50"
+                      />
+                      <label htmlFor={`scout-active-${index}`} className="ml-2 block text-sm text-gray-900">
+                        Scout is active
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {isEditMode && (
+                <button
+                  onClick={addScout}
+                  className="inline-flex items-center px-4 py-2 text-sm text-primary-600 hover:text-primary-700 border border-primary-300 rounded-lg hover:bg-primary-50"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Scout
+                </button>
+              )}
+              
+              {formData.scouts.length === 0 && !isEditMode && (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p>No scouts added yet</p>
+                  <p className="text-sm">Click "Edit Profile" to add your scouts</p>
+                </div>
+              )}
             </div>
           </div>
 

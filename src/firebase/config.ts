@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { getStorage } from 'firebase/storage';
 // import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check'; // DISABLED
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
@@ -31,6 +32,9 @@ export const functions = getFunctions(app, 'us-central1');
 
 // Initialize Auth
 export const auth = getAuth(app);
+
+// Initialize Storage
+export const storage = getStorage(app);
 
 // Configure auth persistence to LOCAL (persists across browser sessions)
 setPersistence(auth, browserLocalPersistence).then(() => {

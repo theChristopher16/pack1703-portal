@@ -10,6 +10,13 @@ export interface AdminUser {
   permissions: AdminPermission[];
   lastLogin: Date;
   isActive: boolean;
+  preferences?: {
+    emailNotifications?: boolean;
+    pushNotifications?: boolean;
+    smsNotifications?: boolean;
+    language?: string;
+    timezone?: string;
+  };
 }
 
 export type AdminRole = 'root' | 'super-admin' | 'content-admin' | 'moderator' | 'viewer';

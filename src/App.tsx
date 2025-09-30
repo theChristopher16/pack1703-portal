@@ -15,7 +15,7 @@ import AuthGuard from './components/Auth/AuthGuard';
 import HomePage from './pages/HomePage';
 import EventsPage from './pages/EventsPage';
 import LocationsPage from './pages/LocationsPage';
-import AnnouncementsPage from './pages/AnnouncementsPage';
+import UnifiedAnnouncementsPage from './pages/UnifiedAnnouncementsPage';
 import ResourcesPage from './pages/ResourcesPage';
 import VolunteerPage from './pages/VolunteerPage';
 import EcologyPage from './pages/EcologyPage';
@@ -35,10 +35,8 @@ import AuthDebugPage from './pages/AuthDebugPage';
 // Admin Pages
 import AdminDashboard from './pages/AdminDashboard';
 import AdminLocations from './pages/AdminLocations';
-import AdminAnnouncements from './pages/AdminAnnouncements';
 import UnifiedChat from './components/Chat/UnifiedChat';
 import AdminAI from './pages/AdminAI';
-import AdminPermissionsAudit from './pages/AdminPermissionsAudit';
 import AdminLists from './pages/AdminLists';
 import AdminSeasons from './pages/AdminSeasons';
 import AdminFundraising from './pages/AdminFundraising';
@@ -52,7 +50,6 @@ import AdminSettings from './pages/AdminSettings';
 import UserProfile from './pages/UserProfile';
 import AdminReminders from './pages/AdminReminders';
 import AdminUsers from './pages/AdminUsers';
-import DatabaseMonitor from './components/Admin/DatabaseMonitor';
 import SystemMonitor from './components/Admin/SystemMonitor';
 import PerformanceMonitor from './components/Performance/PerformanceMonitor';
 import { AdminProvider } from './contexts/AdminContext';
@@ -138,7 +135,7 @@ function App() {
           <Route path="/test-navigation" element={<TestNavigation />} />
           <Route path="/auth-debug" element={<AuthDebugPage />} />
           <Route path="/locations" element={<Layout><LocationsPage /></Layout>} />
-          <Route path="/announcements" element={<Layout><AnnouncementsPage /></Layout>} />
+          <Route path="/announcements" element={<Layout><UnifiedAnnouncementsPage /></Layout>} />
           <Route path="/resources" element={<Layout><ResourcesPage /></Layout>} />
           <Route path="/volunteer" element={<Layout><VolunteerPage /></Layout>} />
           <Route path="/ecology" element={<Layout><EcologyPage /></Layout>} />
@@ -156,16 +153,11 @@ function App() {
           <Route path="/analytics/test" element={<Layout><AdminOnly><AnalyticsTest /></AdminOnly></Layout>} />
           <Route path="/admin" element={<Layout><AdminOnly><AdminDashboard /></AdminOnly></Layout>} />
           <Route path="/locations" element={<Layout><AdminOnly><AdminLocations /></AdminOnly></Layout>} />
-          <Route path="/announcements" element={<Layout><AdminOnly><AdminAnnouncements /></AdminOnly></Layout>} />
           <Route path="/lists" element={<Layout><AdminOnly><AdminLists /></AdminOnly></Layout>} />
           <Route path="/seasons" element={<Layout><AdminOnly><AdminSeasons /></AdminOnly></Layout>} />
           <Route path="/fundraising" element={<Layout><AdminOnly><AdminFundraising /></AdminOnly></Layout>} />
           <Route path="/finances" element={<Layout><AdminOnly><AdminFinances /></AdminOnly></Layout>} />
           <Route path="/users" element={<Layout><AdminOnly><AdminUsers /></AdminOnly></Layout>} />
-          {/* Temporarily disabled for build
-        <Route path="/feedback" element={<Layout><AdminOnly><FeedbackManagementPage /></AdminOnly></Layout>} />
-        */}
-          <Route path="/permissions-audit" element={<Layout><AdminOnly><AdminPermissionsAudit /></AdminOnly></Layout>} />
           <Route path="/reminders" element={<Layout><AdminOnly><AdminReminders /></AdminOnly></Layout>} />
           
           {/* Root-only Routes */}
@@ -177,7 +169,6 @@ function App() {
           {/* User Profile Route */}
           <Route path="/profile" element={<Layout><AuthenticatedOnly><UserProfile /></AuthenticatedOnly></Layout>} />
           <Route path="/soc" element={<Layout><RootOnly><HackerTab /></RootOnly></Layout>} />
-          <Route path="/database" element={<Layout><RootOnly><DatabaseMonitor /></RootOnly></Layout>} />
           <Route path="/system" element={<Layout><RootOnly><SystemMonitor /></RootOnly></Layout>} />
           <Route path="/performance" element={<Layout><RootOnly><PerformanceMonitor /></RootOnly></Layout>} />
           <Route path="/root-setup" element={<RootAccountSetup />} />

@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { authService } from './authService';
+import { DenService } from './denService';
 
 export interface UserPinnedAnnouncement {
   id: string;
@@ -196,13 +197,38 @@ class UserAnnouncementService {
       const announcementsRef = collection(db, 'announcements');
       const announcementsQuery = query(announcementsRef, orderBy('createdAt', 'desc'), limit(50));
       const announcementsSnapshot = await getDocs(announcementsQuery);
-      const announcements = announcementsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const allAnnouncements = announcementsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Get current user
+      const currentUser = await authService.getCurrentUser();
+      let userDens: string[] = [];
+      
+      if (currentUser) {
+        // Get user's den assignments
+        userDens = await DenService.getUserDens(currentUser.uid);
+      }
+
+      // Filter announcements based on user's den assignments
+      const filteredAnnouncements = allAnnouncements.filter(announcement => {
+        // If announcement has no targetDens, show to everyone
+        if (!(announcement as any).targetDens || (announcement as any).targetDens.length === 0) {
+          return true;
+        }
+        
+        // If user is not logged in or has no den assignments, don't show den-specific announcements
+        if (!currentUser || userDens.length === 0) {
+          return false;
+        }
+        
+        // Check if user's dens overlap with announcement's target dens
+        return userDens.some(userDen => (announcement as any).targetDens.includes(userDen));
+      });
 
       // Get user's pinned announcement IDs
       const pinnedIds = await this.getUserPinnedAnnouncementIds();
 
       // Add user-specific pin status to each announcement
-      return announcements.map(announcement => ({
+      return filteredAnnouncements.map(announcement => ({
         ...announcement,
         pinned: pinnedIds.includes(announcement.id)
       }));

@@ -76,6 +76,7 @@ export interface Location {
   specialInstructions?: string; // Special access or usage instructions
   contactInfo?: string; // Contact person or information
   isImportant?: boolean; // Marked as important/favorite location
+  operatingHours?: OperatingHours; // Operating hours for the location
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -91,6 +92,33 @@ export interface ParkingInfo {
   instructions?: string;
 }
 
+export interface OperatingHours {
+  monday?: DayHours;
+  tuesday?: DayHours;
+  wednesday?: DayHours;
+  thursday?: DayHours;
+  friday?: DayHours;
+  saturday?: DayHours;
+  sunday?: DayHours;
+  specialHours?: SpecialHours[]; // Holiday hours, special events, etc.
+  timezone?: string; // e.g., "America/Chicago"
+  notes?: string; // Additional notes about hours
+}
+
+export interface DayHours {
+  open: string; // e.g., "09:00"
+  close: string; // e.g., "17:00"
+  isClosed?: boolean; // If true, location is closed this day
+}
+
+export interface SpecialHours {
+  date: string; // e.g., "2024-12-25"
+  name: string; // e.g., "Christmas Day"
+  hours?: DayHours;
+  isClosed?: boolean;
+  notes?: string;
+}
+
 // ============================================================================
 // ANNOUNCEMENTS
 // ============================================================================
@@ -102,6 +130,10 @@ export interface Announcement {
   pinned: boolean;
   eventId?: string; // Optional reference to /events/{eventId}
   attachments?: AnnouncementAttachment[];
+  targetDens?: string[]; // Array of den IDs this announcement targets (empty = all dens)
+  priority?: 'low' | 'medium' | 'high';
+  category?: string;
+  createdBy?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

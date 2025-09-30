@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { Megaphone, Edit, Trash2, Plus, Search, Pin, Calendar, Link, FileText } from 'lucide-react';
 import { firestoreService } from '../services/firestore';
+import { DEN_INFO, ALL_DENS, INDIVIDUAL_DENS, DEN_TYPES } from '../constants/dens';
 
 interface Announcement {
   id: string;
@@ -18,6 +19,7 @@ interface Announcement {
   category: 'general' | 'event' | 'reminder' | 'emergency' | 'achievement';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   isActive: boolean;
+  targetDens?: string[];
   createdAt: string;
   updatedAt: string;
   expiresAt?: string;
@@ -120,7 +122,10 @@ const AdminAnnouncements: React.FC = () => {
           pinned: false, // Default to unpinned
           isActive: true,
           priority: announcementData.priority || 'medium',
-          category: announcementData.category || 'general'
+          category: announcementData.category || 'general',
+          targetDens: announcementData.targetDens && announcementData.targetDens.length > 0 
+            ? announcementData.targetDens 
+            : undefined
         });
         
         // Update local state with the returned announcement (includes Firestore ID)
@@ -421,7 +426,8 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({ announcement, mod
     pinned: false,
     category: 'general',
     priority: 'medium',
-    isActive: true
+    isActive: true,
+    targetDens: []
   });
 
   useEffect(() => {
@@ -434,7 +440,8 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({ announcement, mod
         pinned: false,
         category: 'general',
         priority: 'medium',
-        isActive: true
+        isActive: true,
+        targetDens: []
       });
     }
   }, [announcement, mode]);
@@ -519,6 +526,83 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({ announcement, mod
                   <option value="urgent">Urgent</option>
                 </select>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Target Dens
+              </label>
+              <div className="text-sm text-gray-500 mb-3">
+                Select specific dens to target this announcement. Leave empty to send to all dens.
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {ALL_DENS.map(denId => {
+                  const denInfo = DEN_INFO[denId as keyof typeof DEN_INFO];
+                  const isPack = denId === DEN_TYPES.PACK;
+                  const currentDens = formData.targetDens || [];
+                  const isSelected = isPack 
+                    ? currentDens.length === 0 || currentDens.length === INDIVIDUAL_DENS.length
+                    : currentDens.includes(denId);
+                  
+                  return (
+                    <label
+                      key={denId}
+                      className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                        isSelected
+                          ? 'border-indigo-500 bg-indigo-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      } ${isPack ? 'border-indigo-600 bg-indigo-100' : ''}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          const currentDens = formData.targetDens || [];
+                          
+                          if (isPack) {
+                            // Pack selected = select all individual dens
+                            if (e.target.checked) {
+                              setFormData(prev => ({ ...prev, targetDens: INDIVIDUAL_DENS }));
+                            } else {
+                              setFormData(prev => ({ ...prev, targetDens: [] }));
+                            }
+                          } else {
+                            // Individual den selected
+                            const newTargetDens = e.target.checked
+                              ? [...currentDens, denId]
+                              : currentDens.filter(id => id !== denId);
+                            setFormData(prev => ({ ...prev, targetDens: newTargetDens }));
+                          }
+                        }}
+                        className="sr-only"
+                      />
+                      <div className="flex items-center space-x-3">
+                        <span className="text-2xl">{denInfo?.emoji || '🏕️'}</span>
+                        <div>
+                          <div className="font-medium text-gray-900">{denInfo?.displayName || denId}</div>
+                          <div className="text-sm text-gray-500">{denInfo?.grade}</div>
+                        </div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+              
+              {((formData.targetDens || []).length > 0 || (formData.targetDens || []).length === 0) && (
+                <div className="mt-3 p-3 bg-indigo-50 rounded-lg">
+                  <div className="text-sm text-indigo-800">
+                    <strong>Targeting:</strong> {
+                      (formData.targetDens || []).length === 0 
+                        ? 'Pack (All Dens)' 
+                        : (formData.targetDens || []).length === INDIVIDUAL_DENS.length
+                        ? 'Pack (All Dens)'
+                        : (formData.targetDens || []).map(denId => 
+                            DEN_INFO[denId as keyof typeof DEN_INFO]?.displayName || denId
+                          ).join(', ')
+                    }
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center">

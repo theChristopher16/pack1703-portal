@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { List, Edit, Trash2, Plus, Search, Filter, Tag, FileText } from 'lucide-react';
-import DatabaseMonitor from '../components/Admin/DatabaseMonitor';
 
 interface PackList {
   id: string;
@@ -197,10 +196,6 @@ const AdminLists: React.FC = () => {
           </p>
         </div>
 
-        {/* Database Monitor */}
-        <div className="mb-8">
-          <DatabaseMonitor />
-        </div>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

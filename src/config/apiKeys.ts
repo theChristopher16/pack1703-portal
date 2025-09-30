@@ -272,7 +272,22 @@ export const API_STATUS = {
 
 // Helper Functions - Updated for Admin/User separation
 export const isValidApiKey = (key: string): boolean => {
-  return Boolean(key && key !== 'demo_key' && key.length > 10);
+  if (!key || key === 'demo_key' || key.length <= 10) {
+    return false;
+  }
+  
+  // OpenWeather API keys are typically 32 characters long
+  if (key.length === 32 && /^[a-fA-F0-9]+$/.test(key)) {
+    return true;
+  }
+  
+  // Google API keys are typically 39 characters long and start with 'AIza'
+  if (key.length === 39 && key.startsWith('AIza')) {
+    return true;
+  }
+  
+  // Other API keys should be at least 20 characters
+  return key.length >= 20;
 };
 
 export const getApiKey = (type: 'ADMIN' | 'USER', service: string): string => {

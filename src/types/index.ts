@@ -17,6 +17,31 @@ export type {
   WeatherData
 } from './firestore';
 
+// Financial types
+export type {
+  FinancialTransaction,
+  BudgetCategory,
+  FinancialAccount,
+  FinancialReport,
+  FinancialGoal,
+  RecurringTransaction,
+  FinancialSettings,
+  FinancialDashboard,
+  FinancialAnalytics,
+  TransactionType,
+  TransactionCategory,
+  PaymentMethod,
+  TransactionStatus,
+  BudgetPeriod,
+  BudgetStatus,
+  AccountType,
+  AccountStatus,
+  GoalType,
+  GoalStatus,
+  RecurrenceType,
+  RecurrenceStatus
+} from './finance';
+
 export type {
   EventCategory,
   EventVisibility,

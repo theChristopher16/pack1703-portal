@@ -192,7 +192,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       items: adminNav.filter(item => 
         item.href.includes('/users') || 
         item.href.includes('/volunteer') ||
-        item.href.includes('/permissions-audit')
+        false
       ),
       icon: '👥'
     },

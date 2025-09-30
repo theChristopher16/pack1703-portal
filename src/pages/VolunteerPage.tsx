@@ -538,7 +538,7 @@ const VolunteerPage: React.FC = () => {
                 key={signup.id}
                 className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-soft"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center space-x-4 mb-3">
                       <div className="w-12 h-12 bg-gradient-to-br from-secondary-400 to-accent-500 rounded-xl flex items-center justify-center shadow-glow">
@@ -580,11 +580,11 @@ const VolunteerPage: React.FC = () => {
                     )}
                   </div>
                   
-                  <div className="flex flex-col space-y-2 ml-6">
+                  <div className="flex flex-row lg:flex-col space-x-2 lg:space-x-0 lg:space-y-2 lg:ml-6">
                     <select
                       value={signup.status}
                       onChange={(e) => handleUpdateSignupStatus(signup.id, e.target.value as any)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="flex-1 lg:flex-none px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       <option value="pending">Pending</option>
                       <option value="confirmed">Confirmed</option>
@@ -599,7 +599,8 @@ const VolunteerPage: React.FC = () => {
                       className="flex items-center justify-center px-3 py-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors duration-200"
                     >
                       <Eye className="w-4 h-4 mr-1" />
-                      View Details
+                      <span className="hidden sm:inline">View Details</span>
+                      <span className="sm:hidden">View</span>
                     </button>
                   </div>
                 </div>

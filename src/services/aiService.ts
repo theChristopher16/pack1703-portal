@@ -3441,7 +3441,7 @@ class AIService {
   /**
    * Create announcement with comprehensive data
    */
-  async createAnnouncement(announcementData: any): Promise<string> {
+  async createAnnouncement(announcementData: any, testMode: boolean = false): Promise<string> {
     try {
       // Security check: Ensure AI can perform this action
       if (!this.canAIPerformAction('create', 'announcements')) {
@@ -3457,8 +3457,8 @@ class AIService {
         lastUpdated: new Date().toISOString()
       };
 
-      const announcementId = await firestoreService.createAnnouncement(enhancedAnnouncementData);
-      console.log('✅ AI created announcement:', announcementId);
+      const announcementId = await firestoreService.createAnnouncement(enhancedAnnouncementData, testMode);
+      console.log(`✅ AI created announcement${testMode ? ' (TEST MODE)' : ''}:`, announcementId);
       return announcementId;
     } catch (error) {
       console.error('❌ AI failed to create announcement:', error);

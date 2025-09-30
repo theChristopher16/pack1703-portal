@@ -22,49 +22,38 @@ import {
   Download,
   Upload,
   Eye,
-  EyeOff
+  EyeOff,
+  RefreshCw,
+  Settings,
+  Target
 } from 'lucide-react';
-import { firestoreService } from '../services/firestore';
+import { 
+  FinancialTransaction, 
+  TransactionType, 
+  TransactionCategory, 
+  PaymentMethod,
+  TransactionStatus 
+} from '../types/finance';
+import { financeService } from '../services/financeService';
+import { TransactionModal, BudgetManager, FinancialDashboard } from '../components/Finance';
+import ReceiptViewer from '../components/Finance/ReceiptViewer';
 
-interface FinancialTransaction {
-  id: string;
-  type: 'income' | 'expense';
-  category: 'fundraising' | 'dues' | 'camping' | 'equipment' | 'supplies' | 'events' | 'general';
-  amount: number;
-  description: string;
-  date: string;
-  paymentMethod: 'cash' | 'check' | 'card' | 'online' | 'transfer';
-  status: 'pending' | 'completed' | 'failed' | 'cancelled';
-  reference?: string;
-  notes?: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface BudgetCategory {
-  id: string;
-  name: string;
-  allocated: number;
-  spent: number;
-  remaining: number;
-  fiscalYear: string;
-  isActive: boolean;
-}
 
 const AdminFinances: React.FC = () => {
-  const { addNotification } = useAdmin();
+  const { addNotification, state } = useAdmin();
+  const { currentUser } = state;
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
-  const [budgets, setBudgets] = useState<BudgetCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTransaction, setSelectedTransaction] = useState<FinancialTransaction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [isReceiptViewerOpen, setIsReceiptViewerOpen] = useState(false);
+  const [selectedReceipts, setSelectedReceipts] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [activeTab, setActiveTab] = useState<'transactions' | 'budgets' | 'reports' | 'analytics'>('transactions');
+  const [filterType, setFilterType] = useState<TransactionType | 'all'>('all');
+  const [filterCategory, setFilterCategory] = useState<TransactionCategory | 'all'>('all');
+  const [filterStatus, setFilterStatus] = useState<TransactionStatus | 'all'>('all');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'transactions' | 'budgets' | 'reports' | 'analytics'>('dashboard');
   const [showSensitiveData, setShowSensitiveData] = useState(false);
 
   // Fetch financial data from database
@@ -72,24 +61,26 @@ const AdminFinances: React.FC = () => {
     const fetchFinancialData = async () => {
       try {
         setLoading(true);
-        // TODO: Add financial service methods to firestoreService
-        // const transactionsData = await firestoreService.getFinancialTransactions();
-        // const budgetsData = await firestoreService.getBudgetCategories();
         
-        // For now, set empty arrays until service methods are implemented
-        setTransactions([]);
-        setBudgets([]);
+        // Initialize financial system if user is admin
+        if (currentUser) {
+          await financeService.initializeFinancialSystem(currentUser.uid);
+        }
+        
+        // Fetch transactions
+        const transactionsData = await financeService.getTransactions();
+        setTransactions(transactionsData);
       } catch (error) {
         console.error('Error fetching financial data:', error);
+        addNotification('error', 'Error', 'Failed to load financial data');
         setTransactions([]);
-        setBudgets([]);
       } finally {
         setLoading(false);
       }
     };
     
     fetchFinancialData();
-  }, []);
+  }, [currentUser, addNotification]);
 
   const handleCreateTransaction = () => {
     setModalMode('create');
@@ -106,11 +97,31 @@ const AdminFinances: React.FC = () => {
   const handleDeleteTransaction = async (transactionId: string) => {
     if (window.confirm('Are you sure you want to delete this transaction?')) {
       try {
+        await financeService.deleteTransaction(transactionId);
         setTransactions(prev => prev.filter(t => t.id !== transactionId));
         addNotification('success', 'Transaction Deleted', 'Financial transaction has been successfully deleted.');
       } catch (error) {
         addNotification('error', 'Delete Failed', 'Failed to delete transaction. Please try again.');
       }
+    }
+  };
+
+  const handleViewReceipts = (transaction: FinancialTransaction) => {
+    if (transaction.attachments && transaction.attachments.length > 0) {
+      setSelectedReceipts(transaction.attachments);
+      setIsReceiptViewerOpen(true);
+    } else {
+      addNotification('info', 'No Receipts', 'No receipts attached to this transaction.');
+    }
+  };
+
+  const handleTransactionSuccess = async () => {
+    // Refresh transactions after create/update
+    try {
+      const transactionsData = await financeService.getTransactions();
+      setTransactions(transactionsData);
+    } catch (error) {
+      console.error('Error refreshing transactions:', error);
     }
   };
 
@@ -154,8 +165,6 @@ const AdminFinances: React.FC = () => {
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
   const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
   const netBalance = totalIncome - totalExpenses;
-  const totalBudgetAllocated = budgets.reduce((sum, b) => sum + b.allocated, 0);
-  const totalBudgetSpent = budgets.reduce((sum, b) => sum + b.spent, 0);
 
   if (loading) {
     return (
@@ -184,7 +193,7 @@ const AdminFinances: React.FC = () => {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
           <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-2xl p-6 shadow-soft">
             <div className="flex items-center justify-between">
               <div>
@@ -221,7 +230,7 @@ const AdminFinances: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-purple-100 text-sm font-medium">Budget Used</p>
-                <p className="text-3xl font-bold">{Math.round((totalBudgetSpent / totalBudgetAllocated) * 100)}%</p>
+                <p className="text-3xl font-bold">0%</p>
               </div>
               <PieChart className="w-8 h-8 text-purple-200" />
             </div>
@@ -230,61 +239,79 @@ const AdminFinances: React.FC = () => {
 
         {/* Tab Navigation */}
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-2 mb-8">
-          <div className="flex space-x-1">
+          <div className="flex space-x-1 overflow-x-auto scrollbar-hide">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`flex-shrink-0 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
+                activeTab === 'dashboard'
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-soft'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2 whitespace-nowrap">
+                <BarChart3 className="w-4 h-4" />
+                Dashboard
+              </div>
+            </button>
             <button
               onClick={() => setActiveTab('transactions')}
-              className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
+              className={`flex-shrink-0 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
                 activeTab === 'transactions'
                   ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-soft'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center gap-2 whitespace-nowrap">
                 <Receipt className="w-4 h-4" />
                 Transactions
               </div>
             </button>
             <button
               onClick={() => setActiveTab('budgets')}
-              className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
+              className={`flex-shrink-0 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
                 activeTab === 'budgets'
                   ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-soft'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center gap-2 whitespace-nowrap">
                 <PieChart className="w-4 h-4" />
                 Budgets
               </div>
             </button>
             <button
               onClick={() => setActiveTab('reports')}
-              className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
+              className={`flex-shrink-0 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
                 activeTab === 'reports'
                   ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-soft'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <div className="flex items-center justify-center gap-2">
-                <BarChart3 className="w-4 h-4" />
+              <div className="flex items-center justify-center gap-2 whitespace-nowrap">
+                <Download className="w-4 h-4" />
                 Reports
               </div>
             </button>
             <button
               onClick={() => setActiveTab('analytics')}
-              className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
+              className={`flex-shrink-0 py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200 ${
                 activeTab === 'analytics'
                   ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-soft'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center gap-2 whitespace-nowrap">
                 <TrendingUp className="w-4 h-4" />
                 Analytics
               </div>
             </button>
           </div>
         </div>
+
+        {/* Dashboard Tab */}
+        {activeTab === 'dashboard' && (
+          <FinancialDashboard />
+        )}
 
         {/* Transactions Tab */}
         {activeTab === 'transactions' && (
@@ -310,7 +337,7 @@ const AdminFinances: React.FC = () => {
                   {/* Type Filter */}
                   <select
                     value={filterType}
-                    onChange={(e) => setFilterType(e.target.value)}
+                    onChange={(e) => setFilterType(e.target.value as TransactionType | 'all')}
                     className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
                   >
                     <option value="all">All Types</option>
@@ -321,7 +348,7 @@ const AdminFinances: React.FC = () => {
                   {/* Category Filter */}
                   <select
                     value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value)}
+                    onChange={(e) => setFilterCategory(e.target.value as TransactionCategory | 'all')}
                     className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
                   >
                     <option value="all">All Categories</option>
@@ -337,7 +364,7 @@ const AdminFinances: React.FC = () => {
                   {/* Status Filter */}
                   <select
                     value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
+                    onChange={(e) => setFilterStatus(e.target.value as TransactionStatus | 'all')}
                     className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
                   >
                     <option value="all">All Status</option>
@@ -365,53 +392,66 @@ const AdminFinances: React.FC = () => {
                 <h2 className="text-2xl font-display font-bold text-gray-900 mb-6">Recent Transactions</h2>
                 <div className="space-y-4">
                   {filteredTransactions.map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          transaction.type === 'income' 
-                            ? 'bg-gradient-to-r from-green-500 to-green-600' 
-                            : 'bg-gradient-to-r from-red-500 to-red-600'
-                        }`}>
-                          <DollarSign className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{transaction.description}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(transaction.type)}`}>
-                              {transaction.type}
-                            </span>
-                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(transaction.category)}`}>
-                              {transaction.category}
-                            </span>
-                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(transaction.status)}`}>
-                              {transaction.status}
-                            </span>
+                    <div key={transaction.id} className="bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200 overflow-hidden">
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              transaction.type === 'income' 
+                                ? 'bg-gradient-to-r from-green-500 to-green-600' 
+                                : 'bg-gradient-to-r from-red-500 to-red-600'
+                            }`}>
+                              <DollarSign className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-900 truncate">{transaction.description}</p>
+                              <div className="flex flex-wrap items-center gap-1 mt-1">
+                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(transaction.type)}`}>
+                                  {transaction.type}
+                                </span>
+                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(transaction.category)}`}>
+                                  {transaction.category}
+                                </span>
+                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(transaction.status)}`}>
+                                  {transaction.status}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1 truncate">
+                                {transaction.date.toDate().toLocaleDateString()} • {transaction.paymentMethod}
+                                {transaction.reference && ` • Ref: ${transaction.reference}`}
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {new Date(transaction.date).toLocaleDateString()} • {transaction.paymentMethod}
-                            {transaction.reference && ` • Ref: ${transaction.reference}`}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <p className={`font-bold text-lg ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                            {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString()}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEditTransaction(transaction)}
-                            className="text-gray-400 hover:text-blue-600 transition-colors"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTransaction(transaction.id)}
-                            className="text-gray-400 hover:text-red-600 transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="text-right">
+                              <p className={`font-bold text-lg ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="flex gap-1">
+                              {transaction.attachments && transaction.attachments.length > 0 && (
+                                <button
+                                  onClick={() => handleViewReceipts(transaction)}
+                                  className="text-gray-400 hover:text-green-600 transition-colors p-1"
+                                  title="View Receipts"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleEditTransaction(transaction)}
+                                className="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTransaction(transaction.id)}
+                                className="text-gray-400 hover:text-red-600 transition-colors p-1"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -449,68 +489,7 @@ const AdminFinances: React.FC = () => {
 
         {/* Budgets Tab */}
         {activeTab === 'budgets' && (
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-6">
-            <h2 className="text-2xl font-display font-bold text-gray-900 mb-6">Budget Management</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {budgets.map((budget) => {
-                const percentageUsed = (budget.spent / budget.allocated) * 100;
-                const getProgressColor = (percentage: number) => {
-                  if (percentage >= 90) return 'bg-red-500';
-                  if (percentage >= 75) return 'bg-yellow-500';
-                  return 'bg-green-500';
-                };
-
-                return (
-                  <div key={budget.id} className="bg-gray-50 rounded-xl p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">{budget.name}</h3>
-                      <span className="text-sm text-gray-600">{budget.fiscalYear}</span>
-                    </div>
-
-                    <div className="space-y-3 mb-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Allocated:</span>
-                        <span className="font-medium text-gray-900">${budget.allocated.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Spent:</span>
-                        <span className="font-medium text-gray-900">${budget.spent.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Remaining:</span>
-                        <span className={`font-medium ${budget.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          ${budget.remaining.toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="mb-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-gray-600">Usage:</span>
-                        <span className="text-sm font-medium text-gray-900">{Math.round(percentageUsed)}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${getProgressColor(percentageUsed)}`}
-                          style={{ width: `${Math.min(percentageUsed, 100)}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-soft">
-                        Edit
-                      </button>
-                      <button className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 shadow-soft">
-                        View Details
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <BudgetManager />
         )}
 
         {/* Reports Tab */}
@@ -545,7 +524,7 @@ const AdminFinances: React.FC = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-700">This Month:</span>
                     <span className="text-sm font-medium text-gray-900">
-                      {transactions.filter(t => new Date(t.date).getMonth() === new Date().getMonth()).length}
+                      {transactions.filter(t => t.date.toDate().getMonth() === new Date().getMonth()).length}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -589,17 +568,15 @@ const AdminFinances: React.FC = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-700">Total Allocated:</span>
-                    <span className="text-sm font-medium text-gray-900">${totalBudgetAllocated.toLocaleString()}</span>
+                    <span className="text-sm font-medium text-gray-900">$0</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-700">Total Spent:</span>
-                    <span className="text-sm font-medium text-gray-900">${totalBudgetSpent.toLocaleString()}</span>
+                    <span className="text-sm font-medium text-gray-900">$0</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-700">Utilization:</span>
-                    <span className="text-sm font-medium text-gray-900">
-                      {Math.round((totalBudgetSpent / totalBudgetAllocated) * 100)}%
-                    </span>
+                    <span className="text-sm font-medium text-gray-900">0%</span>
                   </div>
                 </div>
               </div>
@@ -608,34 +585,20 @@ const AdminFinances: React.FC = () => {
         )}
       </div>
 
-      {/* Transaction Modal - Placeholder for now */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/50 shadow-soft">
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                {modalMode === 'create' ? 'Add New Transaction' : 'Edit Transaction'}
-              </h2>
-              <p className="text-gray-600 mb-6">
-                Transaction creation/editing form will be implemented here.
-              </p>
-              <div className="flex gap-3 justify-end">
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 shadow-soft"
-                >
-                  {modalMode === 'create' ? 'Add Transaction' : 'Save Changes'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Transaction Modal */}
+      <TransactionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        transaction={selectedTransaction}
+        mode={modalMode}
+        onSuccess={handleTransactionSuccess}
+      />
+
+      <ReceiptViewer
+        attachments={selectedReceipts}
+        isOpen={isReceiptViewerOpen}
+        onClose={() => setIsReceiptViewerOpen(false)}
+      />
     </div>
   );
 };

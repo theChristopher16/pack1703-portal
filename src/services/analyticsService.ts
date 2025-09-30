@@ -137,6 +137,7 @@ class AnalyticsService {
       const now = new Date();
       const daysAgo = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
       const startDate = new Date(now.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
+      console.log('AnalyticsService - Time range:', timeRange, 'Start date:', startDate);
 
       // Get all analytics data and filter in memory to avoid composite index requirements
       const analyticsQuery = query(
@@ -145,6 +146,7 @@ class AnalyticsService {
         limit(1000) // Limit to recent data to avoid performance issues
       );
       const analyticsSnapshot = await getDocs(analyticsQuery);
+      console.log('AnalyticsService - Total analytics documents:', analyticsSnapshot.docs.length);
 
       // Filter data in memory
       const allData = analyticsSnapshot.docs.map(doc => ({
@@ -154,11 +156,15 @@ class AnalyticsService {
         const itemDate = (item as any).timestamp?.toDate ? (item as any).timestamp.toDate() : new Date((item as any).timestamp);
         return itemDate >= startDate;
       });
+      console.log('AnalyticsService - Filtered data count:', allData.length);
 
       // Separate by type
       const pageViews = allData.filter(item => (item as any).type === 'page_view');
       const featureUsage = allData.filter(item => (item as any).type === 'feature_usage');
       const sessions = allData.filter(item => (item as any).type === 'session_end');
+      console.log('AnalyticsService - Page views:', pageViews.length, 'Feature usage:', featureUsage.length, 'Sessions:', sessions.length);
+      console.log('AnalyticsService - Feature usage data:', featureUsage);
+      console.log('AnalyticsService - Session durations:', sessions.map(s => (s as any).duration));
 
       // Process page views
       const pageCounts: { [key: string]: number } = {};
@@ -173,6 +179,7 @@ class AnalyticsService {
         const featureName = (item as any).feature || 'Unknown';
         featureCounts[featureName] = (featureCounts[featureName] || 0) + 1;
       });
+      console.log('AnalyticsService - Feature counts:', featureCounts);
 
       // Process device types
       const deviceCounts: { [key: string]: number } = {};
@@ -184,13 +191,15 @@ class AnalyticsService {
         deviceCounts[deviceType] = (deviceCounts[deviceType] || 0) + 1;
       });
 
-      // Calculate session duration
+      // Calculate session duration (convert milliseconds to seconds)
       const sessionDurations = sessions.map(item => (item as any).duration || 0);
+      console.log('AnalyticsService - Raw session durations (ms):', sessionDurations.slice(0, 5));
       const averageSessionDuration = sessionDurations.length > 0 
-        ? Math.floor(sessionDurations.reduce((a, b) => a + b, 0) / sessionDurations.length)
+        ? Math.floor(sessionDurations.reduce((a, b) => a + b, 0) / sessionDurations.length / 1000)
         : 0;
+      console.log('AnalyticsService - Average session duration (seconds):', averageSessionDuration);
 
-      return {
+      const result = {
         pageViews: pageViews.length,
         topPages: Object.entries(pageCounts)
           .map(([name, views]) => ({ name, views }))
@@ -205,6 +214,8 @@ class AnalyticsService {
           .sort((a, b) => b.count - a.count),
         averageSessionDuration
       };
+      console.log('AnalyticsService - Final result:', result);
+      return result;
     } catch (error) {
       console.error('Error getting analytics data:', error);
       return {

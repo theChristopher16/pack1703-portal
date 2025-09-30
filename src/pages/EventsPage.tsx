@@ -806,15 +806,15 @@ const EventsPage: React.FC = () => {
 
             {/* Admin Controls */}
             {isAdmin && (
-              <div className="flex items-center gap-3 bg-white/50 backdrop-blur-sm rounded-lg p-2 border border-gray-200/50">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white/50 backdrop-blur-sm rounded-lg p-2 border border-gray-200/50">
                 {/* Admin Search */}
-                <div className="relative">
+                <div className="relative flex-1">
                   <input
                     type="text"
                     placeholder="Search events..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-48 pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/80"
+                    className="w-full sm:w-48 pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/80"
                   />
                   <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
                     <span className="text-gray-400 text-sm">🔍</span>
@@ -825,7 +825,7 @@ const EventsPage: React.FC = () => {
                 <select
                   value={filterCategory}
                   onChange={(e) => setFilterCategory(e.target.value)}
-                  className="px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/80"
+                  className="w-full sm:w-auto px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/80"
                 >
                   <option value="all">All Categories</option>
                   <option value="Meeting">Meeting</option>
@@ -840,7 +840,7 @@ const EventsPage: React.FC = () => {
                 <select
                   value={filterVisibility}
                   onChange={(e) => setFilterVisibility(e.target.value)}
-                  className="px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/80"
+                  className="w-full sm:w-auto px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/80"
                 >
                   <option value="all">All Visibility</option>
                   <option value="public">Public</option>

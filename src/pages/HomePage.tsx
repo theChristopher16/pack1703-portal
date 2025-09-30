@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, MapPin, FileText, Users, ArrowRight, Compass, MessageSquare, Download, BarChart3, Shield, MessageCircle, CreditCard, UserPlus } from 'lucide-react';
 import { LoadingSpinner, SkeletonLoader } from '../components/Loading';
-import { SecurityAuditService } from '../services/securityAuditService';
+import { dataAuditService } from '../services/dataAuditService';
 import { authService, UserRole } from '../services/authService';
 import { heroButtonService, HeroButtonConfig } from '../services/heroButtonService';
 import { usageTrackingService } from '../services/usageTrackingService';
@@ -114,7 +114,37 @@ const HomePage: React.FC = () => {
   const handleDownloadAudit = async () => {
     try {
       setIsDownloadingAudit(true);
-      await SecurityAuditService.downloadAuditReport();
+      
+      // Check if user is logged in
+      if (currentUser) {
+        // Use user-specific data audit
+        const jsonData = await dataAuditService.exportUserDataAsJSON();
+        
+        // Create and download file
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `my-data-audit-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        // Use public data audit for non-logged-in users
+        const jsonData = await dataAuditService.exportPublicDataAsJSON();
+        
+        // Create and download file
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `public-data-audit-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
     } catch (error) {
       console.error('Error downloading audit:', error);
       alert('Failed to download audit report. Please try again.');

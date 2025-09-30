@@ -313,6 +313,18 @@ export const SELECTABLE_ROLES: UserRole[] = [
   UserRole.SUPER_ADMIN
 ];
 
+// Scout information interface
+export interface ScoutInfo {
+  id: string;
+  name: string;
+  age: number;
+  scoutRank?: string; // Den/Rank (Lion, Tiger, Wolf, Bear, Webelos, Arrow of Light)
+  grade?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // User interface with enhanced profile data
 export interface AppUser {
   uid: string;
@@ -340,7 +352,8 @@ export interface AppUser {
     
     // Scouting info
     scoutRank?: string;
-    den?: string;
+    den?: string; // Primary den (for backwards compatibility)
+    dens?: string[]; // All dens this user belongs to (for announcements)
     packNumber?: string;
     scoutAge?: number;
     scoutGrade?: string;
@@ -349,6 +362,7 @@ export interface AppUser {
     familyId?: string;
     parentNames?: string[];
     siblings?: string[];
+    scouts?: ScoutInfo[];
     
     // Social login data
     socialData?: {

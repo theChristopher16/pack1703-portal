@@ -25,6 +25,7 @@ class EmailService {
 
       // Try multiple email services in sequence
       const services = [
+        () => this.sendViaGoogleWorkspace(emailData),
         () => this.sendViaEmailJS(emailData),
         () => this.sendViaResend(emailData),
         () => this.sendViaBrevo(emailData)
@@ -57,18 +58,80 @@ class EmailService {
     }
   }
 
-  // EmailJS service (free tier available)
-  private async sendViaEmailJS(emailData: any): Promise<boolean> {
+  // Google Workspace SMTP service
+  private async sendViaGoogleWorkspace(emailData: any): Promise<boolean> {
     try {
+      const smtpConfig = {
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: process.env.REACT_APP_GOOGLE_WORKSPACE_EMAIL || 'cubmaster@sfpack1703.com',
+          pass: process.env.REACT_APP_GOOGLE_WORKSPACE_APP_PASSWORD
+        }
+      };
+
+      if (!smtpConfig.auth.pass) {
+        console.log('❌ Google Workspace app password not configured');
+        return false;
+      }
+
+      // For client-side, we'll use EmailJS with Gmail service
       const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          service_id: 'service_uh9s99n',
-          template_id: 'template_3b7j7qg', // Your actual template ID
-          user_id: 'zrC6Dk8TxiDkjrDLqzcTm', // Your private key
+          service_id: process.env.REACT_APP_EMAILJS_GMAIL_SERVICE_ID || 'gmail',
+          template_id: process.env.REACT_APP_EMAILJS_GMAIL_TEMPLATE_ID || 'template_gmail',
+          user_id: process.env.REACT_APP_EMAILJS_USER_ID,
+          template_params: {
+            to_email: emailData.to,
+            to_name: emailData.to.split('@')[0],
+            from_email: emailData.from,
+            subject: emailData.subject,
+            message_html: emailData.html,
+            message_text: emailData.text
+          }
+        })
+      });
+
+      if (response.ok) {
+        console.log('✅ Email sent via Google Workspace');
+        return true;
+      } else {
+        console.log('❌ Google Workspace email failed:', response.statusText);
+        return false;
+      }
+    } catch (error) {
+      console.log('❌ Google Workspace email error:', error);
+      return false;
+    }
+  }
+
+  // EmailJS service (free tier available)
+  private async sendViaEmailJS(emailData: any): Promise<boolean> {
+    try {
+      // Check if EmailJS is configured
+      const serviceId = process.env.REACT_APP_EMAILJS_SERVICE_ID;
+      const templateId = process.env.REACT_APP_EMAILJS_TEMPLATE_ID;
+      const userId = process.env.REACT_APP_EMAILJS_USER_ID;
+      
+      if (!serviceId || !templateId || !userId) {
+        console.log('EmailJS not configured - missing environment variables');
+        return false;
+      }
+
+      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          service_id: serviceId,
+          template_id: templateId,
+          user_id: userId,
           template_params: {
             to_email: emailData.to,
             to_name: emailData.to.split('@')[0],
@@ -167,6 +230,34 @@ class EmailService {
 
     return this.sendEmail({
       to,
+      from: this.SENDER_EMAIL,
+      subject,
+      html: htmlContent,
+      text: textContent
+    });
+  }
+
+  async sendAnnouncementEmail(to: string, announcement: any): Promise<boolean> {
+    const subject = `📢 Pack 1703 Announcement: ${announcement.title}`;
+    const htmlContent = this.generateAnnouncementEmailHTML(announcement);
+    const textContent = this.generateAnnouncementEmailText(announcement);
+
+    return this.sendEmail({
+      to,
+      from: this.SENDER_EMAIL,
+      subject,
+      html: htmlContent,
+      text: textContent
+    });
+  }
+
+  async sendUserApprovalNotification(userData: any): Promise<boolean> {
+    const subject = `🔔 New User Request - Pack 1703 Portal`;
+    const htmlContent = this.generateUserApprovalEmailHTML(userData);
+    const textContent = this.generateUserApprovalEmailText(userData);
+
+    return this.sendEmail({
+      to: this.SENDER_EMAIL, // Send to cubmaster
       from: this.SENDER_EMAIL,
       subject,
       html: htmlContent,
@@ -283,6 +374,203 @@ Pack 1703 Leadership
 ---
 This invitation was sent to ${invite.email}
 If you didn't expect this invitation, please ignore this email.
+    `.trim();
+  }
+
+  private generateAnnouncementEmailHTML(announcement: any): string {
+    const priorityColor = announcement.priority === 'high' ? '#ff4444' : 
+                         announcement.priority === 'medium' ? '#ff8800' : '#4CAF50';
+    const priorityText = announcement.priority?.toUpperCase() || 'GENERAL';
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Pack 1703 Announcement</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .priority-badge { display: inline-block; background: ${priorityColor}; color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; margin: 10px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🏕️ Pack 1703 Announcement</h1>
+            <p>Important information for our Scout families</p>
+          </div>
+          
+          <div class="content">
+            <h2>${announcement.title}</h2>
+            <div class="priority-badge">${priorityText}</div>
+            
+            <div style="margin: 20px 0; padding: 15px; background: white; border-radius: 8px; border-left: 4px solid ${priorityColor};">
+              ${announcement.content.replace(/\n/g, '<br>')}
+            </div>
+            
+            ${announcement.category ? `<p><strong>Category:</strong> ${announcement.category}</p>` : ''}
+            
+            <p>Please review this announcement carefully and take any necessary action.</p>
+            
+            <p>Best regards,<br>
+            <strong>Pack 1703 Leadership</strong></p>
+          </div>
+          
+          <div class="footer">
+            <p>This announcement was sent to all Pack 1703 families.</p>
+            <p>If you have questions, please contact the cubmaster at ${this.SENDER_EMAIL}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  private generateAnnouncementEmailText(announcement: any): string {
+    const priorityText = announcement.priority?.toUpperCase() || 'GENERAL';
+    
+    return `
+Pack 1703 Announcement
+
+${announcement.title}
+Priority: ${priorityText}
+
+${announcement.content}
+
+${announcement.category ? `Category: ${announcement.category}` : ''}
+
+Please review this announcement carefully and take any necessary action.
+
+Best regards,
+Pack 1703 Leadership
+
+---
+This announcement was sent to all Pack 1703 families.
+If you have questions, please contact the cubmaster at ${this.SENDER_EMAIL}
+    `.trim();
+  }
+
+  private generateUserApprovalEmailHTML(userData: any): string {
+    const requestDate = new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>New User Request - Pack 1703</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .user-info { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ff6b6b; }
+          .action-button { display: inline-block; background: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 10px 5px; }
+          .deny-button { background: #f44336; }
+          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🔔 New User Request</h1>
+            <p>Someone wants to join Pack 1703 Portal</p>
+          </div>
+          
+          <div class="content">
+            <h2>User Details</h2>
+            
+            <div class="user-info">
+              <p><strong>Name:</strong> ${userData.displayName || 'Not provided'}</p>
+              <p><strong>Email:</strong> ${userData.email}</p>
+              <p><strong>Request Date:</strong> ${requestDate}</p>
+              ${userData.phone ? `<p><strong>Phone:</strong> ${userData.phone}</p>` : ''}
+              ${userData.address ? `<p><strong>Address:</strong> ${userData.address}</p>` : ''}
+              ${userData.emergencyContact ? `<p><strong>Emergency Contact:</strong> ${userData.emergencyContact}</p>` : ''}
+              ${userData.medicalInfo ? `<p><strong>Medical Info:</strong> ${userData.medicalInfo}</p>` : ''}
+            </div>
+            
+            <p>This user has requested access to the Pack 1703 Portal. Please review their information and approve or deny their request.</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${window.location.origin}/admin/users" class="action-button">Review User Request</a>
+            </div>
+            
+            <p><strong>Next Steps:</strong></p>
+            <ul>
+              <li>Review the user's information above</li>
+              <li>Click the button above to go to the admin panel</li>
+              <li>Approve or deny the user request</li>
+              <li>Assign appropriate role and permissions</li>
+            </ul>
+            
+            <p>Best regards,<br>
+            <strong>Pack 1703 Portal System</strong></p>
+          </div>
+          
+          <div class="footer">
+            <p>This notification was sent because a new user requested access to the Pack 1703 Portal.</p>
+            <p>User ID: ${userData.uid || 'Unknown'}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  private generateUserApprovalEmailText(userData: any): string {
+    const requestDate = new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    return `
+New User Request - Pack 1703 Portal
+
+Someone wants to join Pack 1703 Portal
+
+User Details:
+- Name: ${userData.displayName || 'Not provided'}
+- Email: ${userData.email}
+- Request Date: ${requestDate}
+${userData.phone ? `- Phone: ${userData.phone}` : ''}
+${userData.address ? `- Address: ${userData.address}` : ''}
+${userData.emergencyContact ? `- Emergency Contact: ${userData.emergencyContact}` : ''}
+${userData.medicalInfo ? `- Medical Info: ${userData.medicalInfo}` : ''}
+
+This user has requested access to the Pack 1703 Portal. Please review their information and approve or deny their request.
+
+To review this request, go to: ${window.location.origin}/admin/users
+
+Next Steps:
+1. Review the user's information above
+2. Go to the admin panel
+3. Approve or deny the user request
+4. Assign appropriate role and permissions
+
+Best regards,
+Pack 1703 Portal System
+
+---
+This notification was sent because a new user requested access to the Pack 1703 Portal.
+User ID: ${userData.uid || 'Unknown'}
     `.trim();
   }
 }

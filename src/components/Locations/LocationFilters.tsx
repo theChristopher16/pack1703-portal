@@ -3,18 +3,18 @@ import { Search, Filter, MapPin, X } from 'lucide-react';
 import { Location, LocationCategory } from '../../types/firestore';
 import CyclingScoutIcon from '../ui/CyclingScoutIcon';
 
-interface LocationFiltersProps {
-  locations: Location[];
-  onFiltersChange: (filteredLocations: Location[]) => void;
-  className?: string;
-}
-
-interface FilterState {
+export interface FilterState {
   search: string;
   category: string;
   showImportantOnly: boolean;
   hasParking: boolean;
   hasGeoData: boolean;
+}
+
+interface LocationFiltersProps {
+  locations: Location[];
+  onFiltersChange: (filters: FilterState) => void;
+  className?: string;
 }
 
 const LocationFilters: React.FC<LocationFiltersProps> = ({
@@ -42,8 +42,8 @@ const LocationFilters: React.FC<LocationFiltersProps> = ({
     return uniqueCategories;
   }, [locations]);
 
-  // Apply filters to locations
-  const filteredLocations = useMemo(() => {
+  // Calculate filtered count for display
+  const filteredCount = useMemo(() => {
     return locations.filter(location => {
       // Search filter
       if (filters.search) {
@@ -77,29 +77,28 @@ const LocationFilters: React.FC<LocationFiltersProps> = ({
       }
 
       return true;
-    });
+    }).length;
   }, [locations, filters]);
 
-  // Update parent component when filters change
-  React.useEffect(() => {
-    onFiltersChange(filteredLocations);
-  }, [filteredLocations, onFiltersChange]);
-
   const handleFilterChange = (key: keyof FilterState, value: string | boolean) => {
-    setFilters(prev => ({
-      ...prev,
+    const newFilters = {
+      ...filters,
       [key]: value
-    }));
+    };
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   const clearFilters = () => {
-    setFilters({
+    const newFilters: FilterState = {
       search: '',
       category: '',
       showImportantOnly: false,
       hasParking: false,
       hasGeoData: false
-    });
+    };
+    setFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   const hasActiveFilters = Object.values(filters).some(value => 
@@ -231,7 +230,7 @@ const LocationFilters: React.FC<LocationFiltersProps> = ({
       {/* Results Summary */}
       <div className="flex items-center justify-between pt-4 border-t border-gray-100">
         <div className="text-sm text-gray-600">
-          Showing <span className="font-semibold text-gray-900">{filteredLocations.length}</span> of{' '}
+          Showing <span className="font-semibold text-gray-900">{filteredCount}</span> of{' '}
           <span className="font-semibold text-gray-900">{locations.length}</span> locations
         </div>
         

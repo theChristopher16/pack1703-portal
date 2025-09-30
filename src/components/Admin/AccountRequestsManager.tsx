@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   UserPlus, 
   CheckCircle, 
@@ -14,8 +14,8 @@ import {
 } from 'lucide-react';
 import { accountRequestService, AccountRequest } from '../../services/accountRequestService';
 import { useAdmin } from '../../contexts/AdminContext';
-
-const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes cache for account requests
+import { collection, query, where, orderBy, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { db } from '../../firebase/config';
 
 const AccountRequestsManager: React.FC = () => {
   const { addNotification } = useAdmin();
@@ -23,36 +23,81 @@ const AccountRequestsManager: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
   const hasLoaded = useRef(false);
+  const unsubscribeRef = useRef<Unsubscribe | null>(null);
 
-  const loadRequests = async (forceRefresh: boolean = false) => {
+  // Set up real-time listener for account requests
+  useEffect(() => {
+    console.log('Setting up real-time listener for account requests');
+    
     try {
       setIsLoading(true);
       setError(null);
       
-      const result = await accountRequestService.getPendingRequests();
+      // Query for pending account requests
+      const requestsQuery = query(
+        collection(db, 'accountRequests'),
+        where('status', '==', 'pending'),
+        orderBy('createdAt', 'desc')
+      );
       
-      if (result.success) {
-        setRequests(result.requests || []);
-        setLastFetchTime(Date.now());
-        hasLoaded.current = true;
-      } else {
-        setError(result.message);
-        addNotification('error', 'Error', result.message);
-      }
+      // Set up real-time listener
+      const unsubscribe = onSnapshot(
+        requestsQuery,
+        (snapshot) => {
+          console.log('Account requests updated:', snapshot.size, 'pending requests');
+          
+          const requestsData: AccountRequest[] = [];
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            requestsData.push({
+              id: doc.id,
+              email: data.email,
+              displayName: data.displayName,
+              phone: data.phone || '',
+              address: data.address || '',
+              scoutRank: data.scoutRank || '',
+              den: data.den || '',
+              emergencyContact: data.emergencyContact || '',
+              reason: data.reason || '',
+              status: data.status,
+              submittedAt: data.submittedAt,
+              createdAt: data.createdAt,
+              approvedBy: data.approvedBy,
+              approvedAt: data.approvedAt,
+              approvedRole: data.approvedRole,
+              rejectedBy: data.rejectedBy,
+              rejectedAt: data.rejectedAt,
+              rejectionReason: data.rejectionReason
+            });
+          });
+          
+          setRequests(requestsData);
+          setIsLoading(false);
+          hasLoaded.current = true;
+        },
+        (error) => {
+          console.error('Error listening to account requests:', error);
+          setError('Failed to load account requests');
+          setIsLoading(false);
+        }
+      );
+      
+      // Store unsubscribe function
+      unsubscribeRef.current = unsubscribe;
+      
+      // Cleanup function
+      return () => {
+        if (unsubscribeRef.current) {
+          console.log('Cleaning up account requests listener');
+          unsubscribeRef.current();
+          unsubscribeRef.current = null;
+        }
+      };
     } catch (error: any) {
-      setError(error.message);
-      addNotification('error', 'Error', 'Failed to load account requests');
-    } finally {
+      console.error('Error setting up account requests listener:', error);
+      setError('Failed to set up real-time updates');
       setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // Only load once on mount
-    if (!hasLoaded.current) {
-      loadRequests();
     }
   }, []); // Empty dependency array - only run once
 
@@ -64,7 +109,7 @@ const AccountRequestsManager: React.FC = () => {
       
       if (result.success) {
         addNotification('success', 'Success', result.message);
-        await loadRequests(); // Reload to update the list
+        // No need to reload - real-time listener will update automatically
       } else {
         addNotification('error', 'Error', result.message);
       }
@@ -83,7 +128,7 @@ const AccountRequestsManager: React.FC = () => {
       
       if (result.success) {
         addNotification('success', 'Success', result.message);
-        await loadRequests(); // Reload to update the list
+        // No need to reload - real-time listener will update automatically
       } else {
         addNotification('error', 'Error', result.message);
       }
@@ -147,8 +192,13 @@ const AccountRequestsManager: React.FC = () => {
         
         <button
           onClick={() => {
-            hasLoaded.current = false;
-            loadRequests(true);
+            // Force a refresh by temporarily disabling and re-enabling the listener
+            if (unsubscribeRef.current) {
+              unsubscribeRef.current();
+              unsubscribeRef.current = null;
+            }
+            // The useEffect will automatically restart the listener
+            window.location.reload();
           }}
           className="flex items-center gap-2 px-6 py-3 bg-white/90 backdrop-blur-sm text-gray-700 hover:text-gray-900 hover:bg-white rounded-xl transition-all duration-200 border border-gray-200/50 font-medium"
           disabled={isLoading}

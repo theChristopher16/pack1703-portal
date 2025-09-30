@@ -2,6 +2,7 @@ import { onCall } from 'firebase-functions/v2/https';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
+import { emailService } from './emailService';
 
 // User roles enum - Updated to match AuthService
 export enum UserRole {
@@ -26,6 +27,11 @@ export interface UserDocument {
   status: UserStatus;
   role: UserRole;
   permissions: string[];
+  preferences?: {
+    emailNotifications: boolean;
+    pushNotifications: boolean;
+    smsNotifications: boolean;
+  };
   createdAt: FieldValue;
   approvedAt: FieldValue | null;
   approvedBy: string | null;
@@ -178,7 +184,7 @@ function getRolePermissions(role: UserRole): string[] {
  * This should be called after Firebase Auth user creation
  */
 export const createPendingUser = onCall(async (request: any) => {
-  const { userId, email, displayName } = request.data;
+  const { userId, email, displayName, preferences } = request.data;
 
   if (!userId || !email) {
     throw new Error('Missing required parameters: userId and email');
@@ -201,6 +207,11 @@ export const createPendingUser = onCall(async (request: any) => {
       status: UserStatus.PENDING,
       role: UserRole.PARENT,
       permissions: getRolePermissions(UserRole.PARENT), // Set default permissions
+      preferences: preferences || {
+        emailNotifications: true,
+        pushNotifications: true,
+        smsNotifications: false
+      },
       createdAt: FieldValue.serverTimestamp(),
       approvedAt: null,
       approvedBy: null
@@ -210,6 +221,25 @@ export const createPendingUser = onCall(async (request: any) => {
     await db.collection('users').doc(userId).set(userDoc);
     
     logger.info('User document created with pending status:', userId);
+    
+    // Send email notification to cubmaster
+    try {
+      const userData = {
+        uid: userId,
+        email: email,
+        displayName: displayName || '',
+        phone: '', // Will be filled from profile if available
+        address: '',
+        emergencyContact: '',
+        medicalInfo: ''
+      };
+      
+      await emailService.sendUserApprovalNotification(userData);
+      logger.info('User approval notification email sent to cubmaster');
+    } catch (emailError) {
+      logger.error('Failed to send user approval notification email:', emailError);
+      // Don't fail the user creation if email fails
+    }
     
     return {
       success: true,

@@ -22,18 +22,16 @@ import {
 } from '../types/feedback';
 
 class FeedbackService {
-  private currentUser = authService.getCurrentUser();
-
   /**
    * Get all feedback submissions (for den leaders and up)
    */
-  async getAllFeedback(filters?: FeedbackFilters): Promise<FeedbackSubmission[]> {
-    if (!this.currentUser) {
+  async getAllFeedback(filters?: FeedbackFilters, currentUser?: any): Promise<FeedbackSubmission[]> {
+    if (!currentUser) {
       throw new Error('User must be authenticated');
     }
 
     // Check if user has permission to view all feedback
-    const canViewAll = this.canViewAllFeedback();
+    const canViewAll = this.canViewAllFeedback(currentUser);
     if (!canViewAll) {
       throw new Error('Insufficient permissions to view all feedback');
     }
@@ -80,8 +78,8 @@ class FeedbackService {
   /**
    * Get feedback submissions for the current user
    */
-  async getUserFeedback(): Promise<FeedbackSubmission[]> {
-    if (!this.currentUser) {
+  async getUserFeedback(currentUser?: any): Promise<FeedbackSubmission[]> {
+    if (!currentUser) {
       throw new Error('User must be authenticated');
     }
 
@@ -89,7 +87,7 @@ class FeedbackService {
       const feedbackRef = collection(db, 'feedback');
       const q = query(
         feedbackRef, 
-        where('userId', '==', this.currentUser.uid),
+        where('userId', '==', currentUser.uid),
         orderBy('createdAt', 'desc')
       );
 
@@ -123,8 +121,8 @@ class FeedbackService {
   /**
    * Get a specific feedback submission by ID
    */
-  async getFeedbackById(feedbackId: string): Promise<FeedbackSubmission | null> {
-    if (!this.currentUser) {
+  async getFeedbackById(feedbackId: string, currentUser?: any): Promise<FeedbackSubmission | null> {
+    if (!currentUser) {
       throw new Error('User must be authenticated');
     }
 
@@ -139,8 +137,8 @@ class FeedbackService {
       const data = snapshot.data();
       
       // Check permissions
-      const canViewAll = this.canViewAllFeedback();
-      const isOwner = data.userId === this.currentUser.uid;
+      const canViewAll = this.canViewAllFeedback(currentUser);
+      const isOwner = data.userId === currentUser.uid;
       
       if (!canViewAll && !isOwner) {
         throw new Error('Insufficient permissions to view this feedback');
@@ -168,13 +166,13 @@ class FeedbackService {
   /**
    * Add a response to feedback (for den leaders and up)
    */
-  async addResponse(responseData: FeedbackResponseData): Promise<FeedbackResponse> {
-    if (!this.currentUser) {
+  async addResponse(responseData: FeedbackResponseData, currentUser?: any): Promise<FeedbackResponse> {
+    if (!currentUser) {
       throw new Error('User must be authenticated');
     }
 
     // Check if user has permission to respond to feedback
-    const canRespond = this.canRespondToFeedback();
+    const canRespond = this.canRespondToFeedback(currentUser);
     if (!canRespond) {
       throw new Error('Insufficient permissions to respond to feedback');
     }
@@ -193,9 +191,9 @@ class FeedbackService {
       // Create the response
       const response: Omit<FeedbackResponse, 'id'> = {
         feedbackId: responseData.feedbackId,
-        responderId: this.currentUser.uid,
-        responderName: this.currentUser.displayName || this.currentUser.email || 'Unknown',
-        responderRole: this.currentUser.role || 'unknown',
+        responderId: currentUser.uid,
+        responderName: currentUser.displayName || currentUser.email || 'Unknown',
+        responderRole: currentUser.role || 'unknown',
         response: responseData.response,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -229,44 +227,48 @@ class FeedbackService {
   /**
    * Check if current user can view all feedback
    */
-  private canViewAllFeedback(): boolean {
-    if (!this.currentUser) return false;
+  private canViewAllFeedback(currentUser: any): boolean {
+    if (!currentUser) return false;
     
-    const allowedRoles = [UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN];
-    return allowedRoles.includes(this.currentUser.role);
+    // Only admin and up roles can view all feedback
+    // Handle both UserRole enum format and AdminContext format
+    const allowedRoles = ['admin', 'super-admin', 'root', UserRole.ADMIN, UserRole.SUPER_ADMIN];
+    return allowedRoles.includes(currentUser.role);
   }
 
   /**
    * Check if current user can respond to feedback
    */
-  private canRespondToFeedback(): boolean {
-    if (!this.currentUser) return false;
+  private canRespondToFeedback(currentUser: any): boolean {
+    if (!currentUser) return false;
     
-    const allowedRoles = [UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN];
-    return allowedRoles.includes(this.currentUser.role);
+    // Only admin and up roles can respond to feedback
+    // Handle both UserRole enum format and AdminContext format
+    const allowedRoles = ['admin', 'super-admin', 'root', UserRole.ADMIN, UserRole.SUPER_ADMIN];
+    return allowedRoles.includes(currentUser.role);
   }
 
   /**
    * Get feedback statistics (for den leaders and up)
    */
-  async getFeedbackStats(): Promise<{
+  async getFeedbackStats(currentUser?: any): Promise<{
     total: number;
     withResponses: number;
     withoutResponses: number;
     byCategory: Record<string, number>;
     recentResponses: number;
   }> {
-    if (!this.currentUser) {
+    if (!currentUser) {
       throw new Error('User must be authenticated');
     }
 
-    const canViewAll = this.canViewAllFeedback();
+    const canViewAll = this.canViewAllFeedback(currentUser);
     if (!canViewAll) {
       throw new Error('Insufficient permissions to view feedback statistics');
     }
 
     try {
-      const allFeedback = await this.getAllFeedback();
+      const allFeedback = await this.getAllFeedback(undefined, currentUser);
       
       const stats = {
         total: allFeedback.length,

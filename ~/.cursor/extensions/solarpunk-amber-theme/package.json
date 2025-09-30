@@ -1,0 +1,35 @@
+{
+  "name": "solarpunk-amber-theme",
+  "displayName": "Solarpunk Amber Theme",
+  "description": "A nature-inspired solarpunk theme with golden amber highlights",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.0.0"
+  },
+  "categories": [
+    "Themes"
+  ],
+  "contributes": {
+    "themes": [
+      {
+        "label": "Solarpunk Amber",
+        "uiTheme": "vs-dark",
+        "path": "./themes/solarpunk-amber-color-theme.json"
+      }
+    ]
+  },
+  "publisher": "solarpunk",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/solarpunk/solarpunk-amber-theme"
+  },
+  "keywords": [
+    "solarpunk",
+    "nature",
+    "amber",
+    "green",
+    "dark",
+    "theme"
+  ]
+}
+

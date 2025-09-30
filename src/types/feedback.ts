@@ -19,6 +19,7 @@ export interface FeedbackSubmission {
   rating: number;
   title: string;
   message: string;
+  status?: 'submitted' | 'reviewing' | 'in-progress' | 'resolved' | 'closed';
   contactEmail?: string;
   contactName?: string;
   eventId?: string;

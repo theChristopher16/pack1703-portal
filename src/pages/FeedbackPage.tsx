@@ -13,10 +13,10 @@ import { authService } from '../services/authService';
 import { useAdmin } from '../contexts/AdminContext';
 import { feedbackService } from '../services/feedbackService';
 import { FeedbackSubmission } from '../types/feedback';
-import { FeedbackResponsesList } from '../components/Feedback/FeedbackResponseComponents';
+import { FeedbackResponsesList, FeedbackResponseForm } from '../components/Feedback/FeedbackResponseComponents';
 
 const FeedbackPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'submit' | 'history'>('submit');
+  const [activeTab, setActiveTab] = useState<'submit' | 'history' | 'admin'>('submit');
   
   // Use AdminContext instead of direct auth service
   const { state: adminState } = useAdmin();
@@ -47,6 +47,16 @@ const FeedbackPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  
+  // Admin state variables
+  const [allFeedback, setAllFeedback] = useState<FeedbackSubmission[]>([]);
+  const [filteredAllFeedback, setFilteredAllFeedback] = useState<FeedbackSubmission[]>([]);
+  const [isLoadingAllFeedback, setIsLoadingAllFeedback] = useState(false);
+  const [adminSearchTerm, setAdminSearchTerm] = useState('');
+  const [adminSelectedCategory, setAdminSelectedCategory] = useState('all');
+  const [adminSelectedStatus, setAdminSelectedStatus] = useState('all');
+  const [selectedFeedback, setSelectedFeedback] = useState<FeedbackSubmission | null>(null);
+  const [showResponseForm, setShowResponseForm] = useState(false);
 
   // Load user submissions from Firebase using the new service
   useEffect(() => {
@@ -55,7 +65,7 @@ const FeedbackPage: React.FC = () => {
       
       try {
         setIsLoadingHistory(true);
-        const submissions = await feedbackService.getUserFeedback();
+        const submissions = await feedbackService.getUserFeedback(user);
         setUserSubmissions(submissions);
       } catch (error) {
         console.error('Error loading user submissions:', error);
@@ -68,6 +78,58 @@ const FeedbackPage: React.FC = () => {
 
     loadUserSubmissions();
   }, [user]);
+
+  // Check if user can manage feedback (admin and up only)
+  const canManageFeedback = user && 
+    ['admin', 'super-admin', 'root'].includes(user.role);
+
+  // Load all feedback for admin users
+  useEffect(() => {
+    const loadAllFeedback = async () => {
+      if (!canManageFeedback) return;
+      
+      try {
+        setIsLoadingAllFeedback(true);
+        const feedback = await feedbackService.getAllFeedback(undefined, user);
+        setAllFeedback(feedback);
+      } catch (error) {
+        console.error('Error loading all feedback:', error);
+        setAllFeedback([]);
+      } finally {
+        setIsLoadingAllFeedback(false);
+      }
+    };
+
+    loadAllFeedback();
+  }, [canManageFeedback]);
+
+  // Apply filters to all feedback
+  useEffect(() => {
+    let filtered = [...allFeedback];
+
+    // Apply search term
+    if (adminSearchTerm) {
+      const term = adminSearchTerm.toLowerCase();
+      filtered = filtered.filter(f => 
+        f.title.toLowerCase().includes(term) ||
+        f.message.toLowerCase().includes(term) ||
+        f.userName.toLowerCase().includes(term) ||
+        f.category.toLowerCase().includes(term)
+      );
+    }
+
+    // Apply category filter
+    if (adminSelectedCategory !== 'all') {
+      filtered = filtered.filter(f => f.category === adminSelectedCategory);
+    }
+
+    // Apply status filter
+    if (adminSelectedStatus !== 'all') {
+      filtered = filtered.filter(f => (f.status || 'submitted') === adminSelectedStatus);
+    }
+
+    setFilteredAllFeedback(filtered);
+  }, [allFeedback, adminSearchTerm, adminSelectedCategory, adminSelectedStatus]);
 
   // Format date helper
   const formatDate = (date: Date) => {
@@ -253,6 +315,18 @@ const FeedbackPage: React.FC = () => {
                 }`}
               >
                 My Submissions
+              </button>
+            )}
+            {canManageFeedback && (
+              <button
+                onClick={() => setActiveTab('admin')}
+                className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+                  activeTab === 'admin'
+                    ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-lg'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
+                }`}
+              >
+                Manage All Feedback
               </button>
             )}
           </div>
@@ -576,6 +650,183 @@ const FeedbackPage: React.FC = () => {
                         <FeedbackResponsesList responses={submission.responses} />
                       </div>
                     )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Admin Tab - Manage All Feedback */}
+        {activeTab === 'admin' && (
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft">
+            <div className="mb-6">
+              <h2 className="text-2xl font-display font-bold text-gray-800 mb-2">Manage All Feedback</h2>
+              <p className="text-gray-600">
+                Review and respond to feedback from all pack members
+              </p>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+                <div className="flex items-center">
+                  <MessageSquare className="h-8 w-8 text-blue-600 mr-3" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-800">Total Feedback</p>
+                    <p className="text-2xl font-bold text-blue-900">{allFeedback.length}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
+                <div className="flex items-center">
+                  <CheckCircle className="h-8 w-8 text-green-600 mr-3" />
+                  <div>
+                    <p className="text-sm font-medium text-green-800">With Responses</p>
+                    <p className="text-2xl font-bold text-green-900">
+                      {allFeedback.filter(f => f.hasResponse).length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
+                <div className="flex items-center">
+                  <AlertCircle className="h-8 w-8 text-orange-600 mr-3" />
+                  <div>
+                    <p className="text-sm font-medium text-orange-800">Pending</p>
+                    <p className="text-2xl font-bold text-orange-900">
+                      {allFeedback.filter(f => !f.hasResponse).length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
+                <div className="flex items-center">
+                  <Calendar className="h-8 w-8 text-purple-600 mr-3" />
+                  <div>
+                    <p className="text-sm font-medium text-purple-800">This Week</p>
+                    <p className="text-2xl font-bold text-purple-900">
+                      {allFeedback.filter(f => {
+                        const weekAgo = new Date();
+                        weekAgo.setDate(weekAgo.getDate() - 7);
+                        return new Date(f.timestamp) > weekAgo;
+                      }).length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Search and Filters */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder="Search feedback..."
+                  value={adminSearchTerm}
+                  onChange={(e) => setAdminSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+              </div>
+              <select
+                value={adminSelectedCategory}
+                onChange={(e) => setAdminSelectedCategory(e.target.value)}
+                className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="all">All Categories</option>
+                {categories.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.icon} {category.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={adminSelectedStatus}
+                onChange={(e) => setAdminSelectedStatus(e.target.value)}
+                className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                {statuses.map(status => (
+                  <option key={status.id} value={status.id}>
+                    {status.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Feedback List */}
+            <div className="space-y-4">
+              {isLoadingAllFeedback ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-600">Loading feedback...</p>
+                </div>
+              ) : filteredAllFeedback.length === 0 ? (
+                <div className="text-center py-12">
+                  <MessageSquare className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-800">No feedback found</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {adminSearchTerm || adminSelectedCategory !== 'all' || adminSelectedStatus !== 'all'
+                      ? 'Try adjusting your search or filters.'
+                      : 'No feedback has been submitted yet.'}
+                  </p>
+                </div>
+              ) : (
+                filteredAllFeedback.map((feedback) => (
+                  <div key={feedback.id} className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-soft">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center flex-1">
+                        <MessageSquare className="h-5 w-5 text-primary-600 mr-2" />
+                        <h3 className="text-lg font-semibold text-gray-800 flex-1">{feedback.title}</h3>
+                      </div>
+                      <div className="ml-2 flex items-center gap-2">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(feedback.category)}`}>
+                          {categories.find(c => c.id === feedback.category)?.icon} {feedback.category}
+                        </span>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(feedback.status || 'submitted')}`}>
+                          {feedback.status || 'submitted'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* User Info */}
+                    <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+                      <div className="flex items-center">
+                        <User className="h-4 w-4 mr-1" />
+                        <span>{feedback.userName}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        <span>{formatDate(feedback.timestamp)}</span>
+                      </div>
+                    </div>
+
+                    {/* Message */}
+                    <div className="mb-4">
+                      <p className="text-gray-700 leading-relaxed">{feedback.message}</p>
+                    </div>
+
+                    {/* Responses */}
+                    {feedback.responses && feedback.responses.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <h4 className="text-sm font-medium text-gray-800 mb-2">Responses ({feedback.responses.length})</h4>
+                        <FeedbackResponsesList responses={feedback.responses} />
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => {
+                          setSelectedFeedback(feedback);
+                          setShowResponseForm(true);
+                        }}
+                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+                      >
+                        Add Response
+                      </button>
+                    </div>
                   </div>
                 ))
               )}

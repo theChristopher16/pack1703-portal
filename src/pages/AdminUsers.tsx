@@ -31,6 +31,11 @@ import AccountRequestsManager from '../components/Admin/AccountRequestsManager';
 interface UserWithChildren extends AppUser {
   children?: UserWithChildren[];
   parentId?: string;
+  preferences?: {
+    emailNotifications?: boolean;
+    pushNotifications?: boolean;
+    smsNotifications?: boolean;
+  };
 }
 
 const AdminUsers: React.FC = () => {
@@ -385,6 +390,14 @@ const AdminUsers: React.FC = () => {
                           )}
                         </div>
                       )}
+                      
+                      {/* Email Preferences */}
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Mail className="w-4 h-4 mr-2 flex-shrink-0" />
+                        <span className="text-xs px-2 py-1 bg-blue-100 rounded-full">
+                          📧 {(user.preferences?.emailNotifications !== false) ? 'Email ON' : 'Email OFF'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 

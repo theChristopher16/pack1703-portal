@@ -865,8 +865,9 @@ class ChatService {
   }
 
   async createChannel(name: string, description: string, denType?: string): Promise<string> {
-    if (!this.currentUser?.isAdmin) {
-      throw new Error('Only admins can create channels');
+    // Allow volunteers (den leaders) and up to create channels
+    if (!this.currentUser?.isAdmin && !this.currentUser?.role && !['super-admin', 'admin', 'volunteer'].includes(this.currentUser?.role || '')) {
+      throw new Error('Only volunteers (den leaders) and up can create channels');
     }
 
     try {
@@ -882,7 +883,7 @@ class ChatService {
         denLevel: denType,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        createdBy: this.currentUser.id
+        createdBy: this.currentUser?.id || 'unknown'
       });
 
       // Clear cache to force refresh
@@ -919,8 +920,15 @@ class ChatService {
   }
 
   async deleteChannel(channelId: string): Promise<void> {
-    if (!this.currentUser?.isAdmin) {
-      throw new Error('Only admins can delete channels');
+    // Allow volunteers (den leaders) and up to delete channels
+    if (!this.currentUser?.isAdmin && !this.currentUser?.role && !['super-admin', 'admin', 'volunteer'].includes(this.currentUser?.role || '')) {
+      throw new Error('Only volunteers (den leaders) and up can delete channels');
+    }
+
+    // Protect default channels from deletion
+    const protectedChannels = ['general', 'announcements', 'events', 'lion-den', 'tiger-den', 'wolf-den', 'bear-den', 'webelos-den', 'arrow-of-light'];
+    if (protectedChannels.includes(channelId)) {
+      throw new Error('Default channels cannot be deleted');
     }
 
     try {
@@ -928,14 +936,20 @@ class ChatService {
       await updateDoc(channelRef, {
         isActive: false,
         deletedAt: serverTimestamp(),
-        deletedBy: this.currentUser.id
+        deletedBy: this.currentUser?.id || 'unknown'
       });
 
       // Clear cache to force refresh
       this.channelsCache = null;
       this.channelsCacheTime = 0;
 
-      await this.sendSystemMessage('general', 'Channel has been deleted');
+      // Try to send system message, but don't fail if it doesn't work
+      try {
+        await this.sendSystemMessage('general', 'Channel has been deleted');
+      } catch (error) {
+        console.warn('Failed to send system message after channel deletion:', error);
+        // Don't throw - the channel deletion was successful
+      }
     } catch (error) {
       console.error('Failed to delete channel:', error);
       throw error;

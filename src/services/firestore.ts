@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase/config';
+import { emailService } from './emailService';
 // import configService from './configService';
 
 // Cloud Function calls
@@ -97,8 +98,8 @@ export const firestoreService = {
   async getLocations(): Promise<any[]> {
     return safeFirestoreCall(async () => {
       const locationsRef = collection(db, 'locations');
-      const q = query(locationsRef, orderBy('name'));
-      const snapshot = await getDocs(q);
+      // Temporarily remove onleOrder to avoid index issues when no data exists
+      const snapshot = await getDocs(locationsRef);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     });
   },
@@ -243,16 +244,35 @@ export const firestoreService = {
     }
   },
 
-  async createAnnouncement(announcementData: any): Promise<any> {
+  async createAnnouncement(announcementData: any, testMode: boolean = false): Promise<any> {
     try {
       const announcementsRef = collection(db, 'announcements');
       const docRef = await addDoc(announcementsRef, {
         ...announcementData,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
-        createdBy: 'ai_solyn'
+        createdBy: 'ai_solyn',
+        testMode: testMode
       });
-      return { id: docRef.id, ...announcementData };
+      
+      const announcement = { id: docRef.id, ...announcementData, testMode };
+      
+      // Send email notification to users if this is a high priority announcement
+      if (announcementData.priority === 'high' || announcementData.sendEmail === true) {
+        try {
+          await this.sendAnnouncementEmailsViaCloudFunction(announcement, testMode);
+        } catch (emailError) {
+          console.error('Failed to send announcement emails via Cloud Function:', emailError);
+          console.log('📧 Falling back to client-side email service...');
+          try {
+            await this.sendAnnouncementEmails(announcement, testMode);
+          } catch (fallbackError) {
+            console.error('Failed to send announcement emails via fallback:', fallbackError);
+          }
+        }
+      }
+      
+      return announcement;
     } catch (error) {
       console.error('Failed to create announcement in Firestore:', error);
       throw error;
@@ -294,10 +314,12 @@ export const firestoreService = {
 
   async deleteLocation(locationId: string): Promise<void> {
     try {
+      console.log('🗑️ Firestore: Attempting to delete location with ID:', locationId);
       const locationRef = doc(db, 'locations', locationId);
       await deleteDoc(locationRef);
+      console.log('🗑️ Firestore: Successfully deleted location with ID:', locationId);
     } catch (error) {
-      console.error('Failed to delete location in Firestore:', error);
+      console.error('❌ Firestore: Failed to delete location with ID:', locationId, error);
       throw error;
     }
   },
@@ -314,6 +336,19 @@ export const firestoreService = {
       return { id: docRef.id, ...locationData };
     } catch (error) {
       console.error('Failed to create location in Firestore:', error);
+      throw error;
+    }
+  },
+
+  async updateLocation(locationId: string, locationData: any): Promise<void> {
+    try {
+      const locationRef = doc(db, 'locations', locationId);
+      await updateDoc(locationRef, {
+        ...locationData,
+        updatedAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Failed to update location in Firestore:', error);
       throw error;
     }
   },
@@ -391,6 +426,105 @@ export const firestoreService = {
         });
       }
     });
+  },
+
+  // Send announcement emails to users (respecting preferences and test mode)
+  async sendAnnouncementEmailsViaCloudFunction(announcement: any, testMode: boolean = false): Promise<void> {
+    try {
+      console.log('📧 Calling Cloud Function sendAnnouncementEmails with:', { announcement, testMode });
+      const sendAnnouncementEmailsFunction = httpsCallable(functions, 'sendAnnouncementEmails');
+      const result = await sendAnnouncementEmailsFunction({
+        announcement,
+        testMode
+      });
+      
+      console.log('📧 Cloud Function email result:', result.data);
+      
+    } catch (error) {
+      console.error('❌ Failed to send announcement emails via Cloud Function:', error);
+      console.error('❌ Error details:', error);
+      throw error;
+    }
+  },
+
+  async sendAnnouncementEmails(announcement: any, testMode: boolean = false): Promise<void> {
+    try {
+      // Get users based on announcement targeting
+      let targetUsers: any[] = [];
+      
+      if (announcement.targetDens && announcement.targetDens.length > 0) {
+        // Get users for specific dens
+        for (const denId of announcement.targetDens) {
+          const denUsersQuery = query(
+            collection(db, 'users'),
+            where('status', '==', 'approved'),
+            where('dens', 'array-contains', denId)
+          );
+          const denUsersSnapshot = await getDocs(denUsersQuery);
+          
+          denUsersSnapshot.forEach(userDoc => {
+            const userData = userDoc.data();
+            // Avoid duplicates if user is in multiple targeted dens
+            if (!targetUsers.find(u => u.id === userDoc.id)) {
+              targetUsers.push({ id: userDoc.id, ...userData });
+            }
+          });
+        }
+      } else {
+        // Get all approved users (no specific targeting)
+        const usersQuery = query(
+          collection(db, 'users'),
+          where('status', '==', 'approved')
+        );
+        const usersSnapshot = await getDocs(usersQuery);
+        
+        usersSnapshot.forEach((userDoc) => {
+          targetUsers.push({ id: userDoc.id, ...userDoc.data() });
+        });
+      }
+      
+      const emailPromises: Promise<boolean>[] = [];
+      const testEmails = ['christopher@smithstation.io', 'welcome-test@smithstation.io'];
+      
+      targetUsers.forEach((userData) => {
+        // Skip if no email
+        if (!userData.email) return;
+        
+        // In test mode, only send to test emails
+        if (testMode && !testEmails.includes(userData.email)) {
+          console.log(`🧪 Test mode: Skipping ${userData.email}`);
+          return;
+        }
+        
+        // Check user email preferences
+        const emailEnabled = userData.preferences?.emailNotifications !== false; // Default to true if not set
+        
+        if (!emailEnabled) {
+          console.log(`📧 Email disabled for ${userData.email}, skipping`);
+          return;
+        }
+        
+        emailPromises.push(
+          emailService.sendAnnouncementEmail(userData.email, announcement)
+        );
+      });
+      
+      // Send all emails in parallel
+      const results = await Promise.allSettled(emailPromises);
+      
+      const successful = results.filter(result => 
+        result.status === 'fulfilled' && result.value === true
+      ).length;
+      
+      const failed = results.length - successful;
+      
+      const modeText = testMode ? ' (TEST MODE)' : '';
+      console.log(`📧 Announcement emails sent${modeText}: ${successful} successful, ${failed} failed`);
+      
+    } catch (error) {
+      console.error('Error sending announcement emails:', error);
+      throw error;
+    }
   }
 };
 

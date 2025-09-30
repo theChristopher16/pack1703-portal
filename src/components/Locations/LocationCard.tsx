@@ -1,23 +1,98 @@
-import React, { useState } from 'react';
-import { MapPin, Clock, Car, Info, ExternalLink, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { MapPin, Clock, Car, Info, ExternalLink, Star, Edit, Trash2, Cloud } from 'lucide-react';
 import { Location } from '../../types/firestore';
+import { weatherService, WeatherForecast } from '../../services/weatherService';
+import { operatingHoursService, OperatingStatus } from '../../services/operatingHoursService';
 
 interface LocationCardProps {
   location: Location;
   onLocationClick?: (location: Location) => void;
+  onEdit?: (location: Location) => void;
+  onDelete?: (location: Location) => void;
   showMap?: boolean;
+  showEditControls?: boolean;
 }
 
 const LocationCard: React.FC<LocationCardProps> = ({ 
   location, 
-  onLocationClick, 
-  showMap = false 
+  onLocationClick,
+  onEdit,
+  onDelete,
+  showMap = false,
+  showEditControls = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [currentWeather, setCurrentWeather] = useState<WeatherForecast | null>(null);
+  const [isLoadingWeather, setIsLoadingWeather] = useState(false);
+  const [forecastData, setForecastData] = useState<WeatherForecast[]>([]);
+  const [isLoadingForecast, setIsLoadingForecast] = useState(false);
+  const [operatingStatus, setOperatingStatus] = useState<OperatingStatus | null>(null);
+
+  // Load weather data when component mounts
+  useEffect(() => {
+    const loadWeather = async () => {
+      if (location.geo?.lat && location.geo?.lng) {
+        setIsLoadingWeather(true);
+        try {
+          const weather = await weatherService.getCurrentWeather({
+            name: location.name,
+            coordinates: { lat: location.geo.lat, lng: location.geo.lng }
+          });
+          setCurrentWeather(weather);
+        } catch (error) {
+          console.error('Error loading weather:', error);
+        } finally {
+          setIsLoadingWeather(false);
+        }
+      }
+    };
+
+    loadWeather();
+  }, [location.geo, location.name]);
+
+  // Load forecast data when expanded
+  const loadForecast = async () => {
+    if (location.geo?.lat && location.geo?.lng && forecastData.length === 0) {
+      setIsLoadingForecast(true);
+      try {
+        const forecast = await weatherService.getFiveDayForecast({
+          name: location.name,
+          coordinates: { lat: location.geo.lat, lng: location.geo.lng }
+        });
+        setForecastData(forecast);
+      } catch (error) {
+        console.error('Error loading forecast:', error);
+      } finally {
+        setIsLoadingForecast(false);
+      }
+    }
+  };
+
+  // Load operating hours status
+  useEffect(() => {
+    if (location.operatingHours) {
+      const status = operatingHoursService.getCurrentStatus(location.operatingHours);
+      setOperatingStatus(status);
+    }
+  }, [location.operatingHours]);
 
   const handleCardClick = () => {
     if (onLocationClick) {
       onLocationClick(location);
+    }
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onEdit) {
+      onEdit(location);
+    }
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete && window.confirm('Are you sure you want to delete this location? This action cannot be undone.')) {
+      onDelete(location);
     }
   };
 
@@ -126,6 +201,24 @@ const LocationCard: React.FC<LocationCardProps> = ({
             <span>Gate: {location.gateCode}</span>
           </div>
         )}
+
+        {/* Weather Info */}
+        {currentWeather && (
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <span className="text-lg">{weatherService.getWeatherEmoji(currentWeather.icon)}</span>
+            <span>{currentWeather.temperature.current}°F</span>
+          </div>
+        )}
+
+        {/* Operating Status */}
+        {operatingStatus && (
+          <div className="flex items-center space-x-2 text-sm">
+            <span className="text-lg">{operatingHoursService.getStatusIcon(operatingStatus)}</span>
+            <span className={operatingHoursService.getStatusColorClass(operatingStatus)}>
+              {operatingStatus.statusText}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Parking Information */}
@@ -156,20 +249,143 @@ const LocationCard: React.FC<LocationCardProps> = ({
           <span>Directions</span>
         </button>
         
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsExpanded(!isExpanded);
-          }}
-          className="flex items-center space-x-2 px-4 py-2 text-primary-600 text-sm font-medium hover:bg-primary-50 rounded-xl transition-all duration-200"
-        >
-          <span>{isExpanded ? 'Show Less' : 'Show More'}</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          {/* Edit Controls */}
+          {showEditControls && (
+            <>
+              {onEdit && (
+                <button
+                  onClick={handleEdit}
+                  className="flex items-center space-x-2 px-3 py-2 text-blue-600 text-sm font-medium hover:bg-blue-50 rounded-xl transition-all duration-200"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span>Edit</span>
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={handleDelete}
+                  className="flex items-center space-x-2 px-3 py-2 text-red-600 text-sm font-medium hover:bg-red-50 rounded-xl transition-all duration-200"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Delete</span>
+                </button>
+              )}
+            </>
+          )}
+          
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isExpanded) {
+                loadForecast();
+              }
+              setIsExpanded(!isExpanded);
+            }}
+            className="flex items-center space-x-2 px-3 py-2 text-primary-600 text-sm font-medium hover:bg-primary-50 rounded-xl transition-all duration-200"
+          >
+            <span>{isExpanded ? 'Less' : 'More'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Expanded Content */}
       {isExpanded && (
         <div className="mt-4 pt-4 border-t border-gray-100 animate-slide-down">
+          {/* Weather Details */}
+          {currentWeather && (
+            <div className="mb-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
+              <h4 className="text-sm font-semibold text-blue-700 mb-2 flex items-center">
+                <Cloud className="w-4 h-4 mr-2" />
+                Current Weather
+              </h4>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl">{weatherService.getWeatherEmoji(currentWeather.icon)}</span>
+                  <div>
+                    <div className="text-lg font-semibold text-blue-900">
+                      {currentWeather.temperature.current}°F
+                    </div>
+                    <div className="text-sm text-blue-600 capitalize">
+                      {currentWeather.description}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-xs text-blue-600">
+                  <div>Humidity: {currentWeather.humidity}%</div>
+                  <div>Wind: {currentWeather.windSpeed} mph</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 5-Day Forecast */}
+          {isExpanded && (
+            <div className="mb-4 p-3 bg-indigo-50 rounded-xl border border-indigo-200">
+              <h4 className="text-sm font-semibold text-indigo-700 mb-3 flex items-center">
+                <Cloud className="w-4 h-4 mr-2" />
+                5-Day Forecast
+              </h4>
+              {isLoadingForecast ? (
+                <div className="text-sm text-indigo-600">Loading forecast...</div>
+              ) : forecastData.length > 0 ? (
+                <div className="space-y-2">
+                  {forecastData.map((day, index) => {
+                    const date = new Date(day.date);
+                    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                    const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    
+                    return (
+                      <div key={index} className="flex items-center justify-between py-2 border-b border-indigo-100 last:border-b-0">
+                        <div className="flex items-center space-x-3">
+                          <div className="text-center min-w-[50px]">
+                            <div className="text-xs font-medium text-indigo-900">{dayName}</div>
+                            <div className="text-xs text-indigo-600">{monthDay}</div>
+                          </div>
+                          <span className="text-xl">{weatherService.getWeatherEmoji(day.icon)}</span>
+                          <div className="text-sm text-indigo-700 capitalize">
+                            {day.description}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-semibold text-indigo-900">
+                            {day.temperature.max}°/{day.temperature.min}°
+                          </div>
+                          <div className="text-xs text-indigo-600">
+                            {day.humidity}% humidity
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-sm text-indigo-600">Forecast unavailable</div>
+              )}
+            </div>
+          )}
+
+          {/* Operating Hours Details */}
+          {operatingStatus && location.operatingHours && (
+            <div className="mb-4 p-3 bg-green-50 rounded-xl border border-green-200">
+              <h4 className="text-sm font-semibold text-green-700 mb-2 flex items-center">
+                <Clock className="w-4 h-4 mr-2" />
+                Hours & Status
+              </h4>
+              <div className="flex items-center space-x-2 mb-2">
+                <span className="text-lg">{operatingHoursService.getStatusIcon(operatingStatus)}</span>
+                <span className={`text-sm font-medium ${operatingHoursService.getStatusColorClass(operatingStatus)}`}>
+                  {operatingStatus.statusText}
+                </span>
+              </div>
+              {operatingStatus.currentHours && !operatingStatus.currentHours.isClosed && (
+                <div className="text-xs text-green-600">
+                  Today: {operatingStatus.currentHours.open} - {operatingStatus.currentHours.close}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Additional Details */}
           {location.amenities && location.amenities.length > 0 && (
             <div className="mb-4">

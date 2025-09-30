@@ -45,6 +45,10 @@ service cloud.firestore {
       return email is string && 
              email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
     }
+    
+    function getUserDenData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.dens;
+    }
 
     // ============================================================================
     // USER DATA SECURITY - Users can only access their own data
@@ -220,26 +224,39 @@ service cloud.firestore {
                       resource.data.startDate < resource.data.endDate;
     }
     
-    // Allow aggregation queries on events collection for admins
+    // Allow aggregation queries on events collection for authenticated users
     match /events {
-      allow read: if isAdmin();
+      allow read: if isAuthenticated();
     }
     
-    // Announcements - public read, admin write
+    // Announcements - den-based access for read, admin write
     match /announcements/{announcementId} {
-      allow read: if true; // Public announcements
-      allow write: if isAdmin() &&
+      allow read: if isAdmin() || // Admins can read all
+                     (!resource.data.targetDens || // No targeting = public
+                      resource.data.targetDens.size() == 0) ||
+                     (isAuthenticated() && 
+                      resource.data.targetDens != null &&
+                      resource.data.targetDens.size() > 0 &&
+                      getUserDenData().hasAny(resource.data.targetDens));
+      allow create: if isAdmin() &&
+                      isValidString(request.resource.data.title, 200) &&
+                      isValidString(request.resource.data.content, 5000);
+      allow update: if isAdmin() &&
                       isValidString(resource.data.title, 200) &&
-                      isValidString(resource.data.content, 5000) &&
-                      isValidTimestamp(resource.data.createdAt);
+                      isValidString(resource.data.content, 5000);
+      allow delete: if isAdmin();
     }
     
     // Locations - public read, admin write
     match /locations/{locationId} {
       allow read: if true;
-      allow write: if isAdmin() &&
+      allow create: if isAdmin() &&
+                      isValidString(request.resource.data.name, 100) &&
+                      isValidString(request.resource.data.address, 500);
+      allow update: if isAdmin() &&
                       isValidString(resource.data.name, 100) &&
                       isValidString(resource.data.address, 500);
+      allow delete: if isAdmin();
     }
     
     // Categories - public read, admin write
@@ -357,14 +374,26 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
     
-    // Permissions audit - admin read-only
-    match /permissionsAudit/{auditId} {
+    
+    // System metrics - admin read-only
+    match /systemMetrics/{metricId} {
       allow read: if isAdmin();
-      allow write: if false; // Permissions audit is created by Cloud Functions only
+      allow write: if false; // System metrics are created by Cloud Functions only
     }
     
-    // Allow aggregation queries on permissions audit collection for admins
-    match /permissionsAudit {
+    // Allow aggregation queries on system metrics collection for admins
+    match /systemMetrics {
+      allow read: if isAdmin();
+    }
+    
+    // Performance metrics - admin read-only
+    match /performanceMetrics/{metricId} {
+      allow read: if isAdmin();
+      allow write: if false; // Performance metrics are created by Cloud Functions only
+    }
+    
+    // Allow aggregation queries on performance metrics collection for admins
+    match /performanceMetrics {
       allow read: if isAdmin();
     }
     
@@ -510,6 +539,81 @@ service cloud.firestore {
     
 
     // ============================================================================
+    // FINANCIAL MANAGEMENT COLLECTIONS - Admin only
+    // ============================================================================
+    
+    // Financial transactions - admin only
+    match /financial-transactions/{transactionId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Allow aggregation queries on financial transactions for admins
+    match /financial-transactions {
+      allow read: if isAdmin();
+    }
+    
+    // Financial accounts - admin only
+    match /financial-accounts/{accountId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Allow aggregation queries on financial accounts for admins
+    match /financial-accounts {
+      allow read: if isAdmin();
+    }
+    
+    // Budget categories - admin only
+    match /budget-categories/{categoryId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Allow aggregation queries on budget categories for admins
+    match /budget-categories {
+      allow read: if isAdmin();
+    }
+    
+    // Financial reports - admin only
+    match /financial-reports/{reportId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Allow aggregation queries on financial reports for admins
+    match /financial-reports {
+      allow read: if isAdmin();
+    }
+    
+    // Financial goals - admin only
+    match /financial-goals/{goalId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Allow aggregation queries on financial goals for admins
+    match /financial-goals {
+      allow read: if isAdmin();
+    }
+    
+    // Recurring transactions - admin only
+    match /recurring-transactions/{recurringId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Allow aggregation queries on recurring transactions for admins
+    match /recurring-transactions {
+      allow read: if isAdmin();
+    }
+    
+    // Financial settings - admin only
+    match /financial-settings/{settingId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Allow aggregation queries on financial settings for admins
+    match /financial-settings {
+      allow read: if isAdmin();
+    }
+
+
+    // ============================================================================
     // MULTI-TENANT DATA
     // ============================================================================
     
@@ -528,12 +632,52 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // ACCOUNT REQUESTS - Admin only
+    // ============================================================================
+    
+    // Account requests - admins can read and write
+    match /accountRequests/{requestId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Allow aggregation queries on account requests collection for admins
+    match /accountRequests {
+      allow read: if isAdmin();
+    }
+
+    // ============================================================================
     // TEST COLLECTIONS (for monitoring and testing)
     // ============================================================================
     
     // Test connection collection - allow all access for testing
     match /_test_connection/{document} {
       allow read, write: if true;
+    }
+    
+    // ============================================================================
+    // SECURITY COLLECTIONS - SOC Console Data
+    // ============================================================================
+    
+    // Security alerts - admin read-only
+    match /securityAlerts/{alertId} {
+      allow read: if isAdmin();
+      allow write: if false; // Security alerts are created by Cloud Functions only
+    }
+    
+    // Allow aggregation queries on security alerts for admins
+    match /securityAlerts {
+      allow read: if isAdmin();
+    }
+    
+    // Threat intelligence - admin read-only
+    match /threatIntelligence/{threatId} {
+      allow read: if isAdmin();
+      allow write: if false; // Threat intelligence is created by Cloud Functions only
+    }
+    
+    // Allow aggregation queries on threat intelligence for admins
+    match /threatIntelligence {
+      allow read: if isAdmin();
     }
     
     // ============================================================================

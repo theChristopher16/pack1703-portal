@@ -1,4 +1,5 @@
 import { logger } from 'firebase-functions';
+import * as functions from 'firebase-functions';
 
 interface EmailData {
   to: string;
@@ -62,18 +63,22 @@ class EmailService {
     try {
       const nodemailer = require('nodemailer');
       
-      const transporter = nodemailer.createTransporter({
-        service: 'gmail',
-        auth: {
-          user: process.env.GOOGLE_WORKSPACE_EMAIL || 'cubmaster@sfpack1703.com',
-          pass: process.env.GOOGLE_WORKSPACE_APP_PASSWORD
-        }
-      });
-
-      if (!process.env.GOOGLE_WORKSPACE_APP_PASSWORD) {
+      const config = functions.config();
+      const email = config.google?.workspace_email || 'cubmaster@sfpack1703.com';
+      const password = config.google?.workspace_app_password;
+      
+      if (!password) {
         logger.warn('❌ Google Workspace app password not configured');
         return false;
       }
+
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: email,
+          pass: password
+        }
+      });
 
       const mailOptions = {
         from: `"${this.SENDER_NAME}" <${this.SENDER_EMAIL}>`,
@@ -219,6 +224,34 @@ class EmailService {
     });
   }
 
+  async sendWelcomeEmail(userData: any): Promise<boolean> {
+    const subject = `🎉 Welcome to Pack 1703 Portal!`;
+    const htmlContent = this.generateWelcomeEmailHTML(userData);
+    const textContent = this.generateWelcomeEmailText(userData);
+
+    return this.sendEmail({
+      to: userData.email, // Send to the user
+      from: this.SENDER_EMAIL,
+      subject,
+      html: htmlContent,
+      text: textContent
+    });
+  }
+
+  async sendAnnouncementEmail(to: string, announcement: any): Promise<boolean> {
+    const subject = `📢 Pack 1703 Announcement: ${announcement.title}`;
+    const htmlContent = this.generateAnnouncementEmailHTML(announcement);
+    const textContent = this.generateAnnouncementEmailText(announcement);
+
+    return this.sendEmail({
+      to,
+      from: this.SENDER_EMAIL,
+      subject,
+      html: htmlContent,
+      text: textContent
+    });
+  }
+
   private generateUserApprovalEmailHTML(userData: any): string {
     const requestDate = new Date().toLocaleDateString('en-US', { 
       weekday: 'long', 
@@ -335,6 +368,161 @@ Pack 1703 Portal System
 ---
 This notification was sent because a new user requested access to the Pack 1703 Portal.
 User ID: ${userData.uid || 'Unknown'}
+    `.trim();
+  }
+
+  private generateWelcomeEmailHTML(userData: any): string {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Pack 1703 Portal</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #1e40af; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #f8fafc; padding: 30px; border-radius: 0 0 8px 8px; }
+        .button { display: inline-block; background: #1e40af; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 Welcome to Pack 1703 Portal!</h1>
+        </div>
+        <div class="content">
+            <h2>Hello ${userData.displayName}!</h2>
+            
+            <p>Great news! Your account request has been approved and you're now a member of the Pack 1703 Portal.</p>
+            
+            <p><strong>Your Account Details:</strong></p>
+            <ul>
+                <li><strong>Name:</strong> ${userData.displayName}</li>
+                <li><strong>Email:</strong> ${userData.email}</li>
+                <li><strong>Role:</strong> ${userData.role || 'Member'}</li>
+                <li><strong>Status:</strong> Active</li>
+            </ul>
+            
+            <p>You can now access the portal and enjoy all the features available to members of Pack 1703.</p>
+            
+            <div style="text-align: center;">
+                <a href="https://sfpack1703.com" class="button">Access Portal</a>
+            </div>
+            
+            <p><strong>What's Next?</strong></p>
+            <ul>
+                <li>Sign in to your account using your email address</li>
+                <li>Complete your profile information</li>
+                <li>Explore the portal features and upcoming events</li>
+                <li>Connect with other pack members</li>
+            </ul>
+            
+            <p>If you have any questions or need assistance, please don't hesitate to contact the pack leadership.</p>
+            
+            <p>Welcome to the Pack 1703 family!</p>
+        </div>
+        <div class="footer">
+            <p>Best regards,<br>Pack 1703 Leadership Team</p>
+            <p>This email was sent because your account was approved for the Pack 1703 Portal.</p>
+        </div>
+    </div>
+</body>
+</html>
+    `.trim();
+  }
+
+  private generateWelcomeEmailText(userData: any): string {
+    return `
+🎉 Welcome to Pack 1703 Portal!
+
+Hello ${userData.displayName}!
+
+Great news! Your account request has been approved and you're now a member of the Pack 1703 Portal.
+
+Your Account Details:
+- Name: ${userData.displayName}
+- Email: ${userData.email}
+- Role: ${userData.role || 'Member'}
+- Status: Active
+
+You can now access the portal and enjoy all the features available to members of Pack 1703.
+
+Access Portal: https://sfpack1703.com
+
+What's Next?
+1. Sign in to your account using your email address
+2. Complete your profile information
+3. Explore the portal features and upcoming events
+4. Connect with other pack members
+
+If you have any questions or need assistance, please don't hesitate to contact the pack leadership.
+
+Welcome to the Pack 1703 family!
+
+Best regards,
+Pack 1703 Leadership Team
+
+This email was sent because your account was approved for the Pack 1703 Portal.
+    `.trim();
+  }
+
+  private generateAnnouncementEmailHTML(announcement: any): string {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pack 1703 Announcement</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #1e40af; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #f8fafc; padding: 30px; border-radius: 0 0 8px 8px; }
+        .announcement-title { color: #1e40af; font-size: 1.5em; margin-bottom: 15px; }
+        .announcement-content { margin: 20px 0; }
+        .footer { text-align: center; font-size: 0.8em; color: #777; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📢 Pack 1703 Announcement</h1>
+        </div>
+        <div class="content">
+            <h2 class="announcement-title">${announcement.title}</h2>
+            <div class="announcement-content">
+                ${announcement.content || announcement.body || ''}
+            </div>
+            <p>Stay connected with Pack 1703!</p>
+            <p>Best regards,<br>Pack 1703 Leadership Team</p>
+        </div>
+        <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} Pack 1703. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+    `.trim();
+  }
+
+  private generateAnnouncementEmailText(announcement: any): string {
+    return `
+Pack 1703 Announcement
+
+${announcement.title}
+
+${announcement.content || announcement.body || ''}
+
+Stay connected with Pack 1703!
+
+Best regards,
+Pack 1703 Leadership Team
+
+© ${new Date().getFullYear()} Pack 1703. All rights reserved.
     `.trim();
   }
 

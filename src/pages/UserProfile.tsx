@@ -25,6 +25,7 @@ import {
   Unlink
 } from 'lucide-react';
 import AccountLinking from '../components/Admin/AccountLinking';
+import UserProfileManager from '../components/Profile/UserProfileManager';
 
 const UserProfile: React.FC = () => {
   const { state } = useAdmin();
@@ -95,11 +96,11 @@ const UserProfile: React.FC = () => {
         scoutAge: '',
         scoutGrade: '',
         preferences: {
-          emailNotifications: true,
-          pushNotifications: true,
-          smsNotifications: false,
-          language: 'en',
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          emailNotifications: currentUser.preferences?.emailNotifications !== false, // Default to true
+          pushNotifications: currentUser.preferences?.pushNotifications !== false, // Default to true
+          smsNotifications: currentUser.preferences?.smsNotifications === true, // Default to false
+          language: currentUser.preferences?.language || 'en',
+          timezone: currentUser.preferences?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
         }
       });
     }
@@ -122,10 +123,21 @@ const UserProfile: React.FC = () => {
 
     try {
       const updates: Partial<AdminUser> = {
-        displayName: formData.displayName
+        displayName: formData.displayName,
+        preferences: formData.preferences
       };
 
-      // For now, just update local state since we need to implement proper profile update
+      // Update Firestore user document
+      const { doc, updateDoc } = await import('firebase/firestore');
+      const { db } = await import('../firebase/config');
+      
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        displayName: formData.displayName,
+        preferences: formData.preferences
+      });
+
+      // Update local state
       setUser({ ...user, ...updates });
       
       setSuccess('Profile updated successfully!');
@@ -239,163 +251,76 @@ const UserProfile: React.FC = () => {
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-200 mb-8">
-        <nav className="-mb-px flex space-x-8">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <Icon className="w-4 h-4 mr-2" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <nav className="-mb-px flex flex-wrap gap-x-4 gap-y-2 overflow-x-auto">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                </button>
+              );
+            })}
+          </nav>
+          
+          {/* Edit Profile Button - only show for profile tab */}
+          {activeTab === 'profile' && !isEditMode && (
+            <button
+              onClick={() => setIsEditMode(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto justify-center"
+            >
+              <Settings className="w-4 h-4" />
+              Edit Profile
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tab Content */}
       <div className="space-y-6">
         {/* Profile Tab */}
-        {activeTab === 'profile' && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
-              {!isEditMode ? (
-                <button
-                  onClick={() => setIsEditMode(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Settings className="w-4 h-4" />
-                  Edit Profile
-                </button>
-              ) : (
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleCancel}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={isLoading}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Save className="w-4 h-4" />
-                    )}
-                    Save Changes
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Basic Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900">Basic Information</h3>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Display Name</label>
-                  <input
-                    type="text"
-                    name="displayName"
-                    value={formData.displayName}
-                    onChange={handleInputChange}
-                    disabled={!isEditMode}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
-                  />
-                </div>
-
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={user.email || ''}
-                    disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    disabled={!isEditMode}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                  <textarea
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    disabled={!isEditMode}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
-                  />
-                </div>
-              </div>
-
-              {/* Contact Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900">Contact Information</h3>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    disabled={!isEditMode}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                  <textarea
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    disabled={!isEditMode}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Emergency Contact</label>
-                  <input
-                    type="text"
-                    name="emergencyContact"
-                    value={formData.emergencyContact}
-                    onChange={handleInputChange}
-                    disabled={!isEditMode}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+        {activeTab === 'profile' && user && (
+          <UserProfileManager 
+            user={{
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+              photoURL: user.photoURL,
+              role: user.role as any,
+              permissions: (user.permissions || []) as any,
+              isActive: user.isActive,
+              status: 'approved',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              lastLoginAt: new Date(),
+              authProvider: 'google',
+              profile: (user as any).profile || {}
+            } as unknown as AppUser}
+            isEditing={isEditMode}
+            onSave={(updatedUser) => {
+              setUser(updatedUser as unknown as AdminUser);
+              setSuccess('Profile updated successfully!');
+              setIsEditMode(false);
+              setTimeout(() => setSuccess(null), 3000);
+            }}
+            onCancel={() => {
+              setIsEditMode(false);
+              setError(null);
+              setSuccess(null);
+            }}
+            canEditRole={false}
+            canEditPermissions={false}
+          />
         )}
 
         {/* Notifications Tab */}

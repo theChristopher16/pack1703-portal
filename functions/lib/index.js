@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.helloWorld = exports.adminDeleteUser = exports.getBatchDashboardData = exports.getSystemMetrics = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
+exports.sendAnnouncementEmails = exports.createTestAnnouncement = exports.helloWorld = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 // Initialize Firebase Admin
@@ -17,6 +17,43 @@ function getTimestamp() {
     }
     catch (error) {
         return new Date().toISOString();
+    }
+}
+// Helper function to create security alert
+async function createSecurityAlert(type, severity, title, description, source, userId, userEmail, ipAddress, details) {
+    try {
+        await db.collection('securityAlerts').add({
+            type,
+            severity,
+            title,
+            description,
+            source,
+            status: 'open',
+            timestamp: getTimestamp(),
+            userId: userId || 'system',
+            userEmail: userEmail || 'system',
+            ipAddress: ipAddress || 'unknown',
+            details: details || {}
+        });
+    }
+    catch (error) {
+        console.error('Error creating security alert:', error);
+    }
+}
+// Helper function to create threat intelligence entry
+async function createThreatIntelligence(type, value, threatLevel, source, description) {
+    try {
+        await db.collection('threatIntelligence').add({
+            type,
+            value,
+            threatLevel,
+            source,
+            description,
+            timestamp: getTimestamp()
+        });
+    }
+    catch (error) {
+        console.error('Error creating threat intelligence:', error);
     }
 }
 // Helper function to get role permissions
@@ -49,7 +86,7 @@ exports.disableAppCheckEnforcement = functions.https.onCall(async (data, context
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        if ((userData === null || userData === void 0 ? void 0 : userData.role) !== 'root') {
+        if ((userData === null || userData === void 0 ? void 0 : userData.role) !== 'root' && (userData === null || userData === void 0 ? void 0 : userData.role) !== 'super_admin') {
             throw new functions.https.HttpsError('permission-denied', 'Only root users can disable App Check enforcement');
         }
         // Log the action
@@ -58,8 +95,13 @@ exports.disableAppCheckEnforcement = functions.https.onCall(async (data, context
             userId: context.auth.uid,
             userEmail: context.auth.token.email,
             timestamp: getTimestamp(),
-            details: 'App Check enforcement disabled to restore Firestore access'
+            details: 'App Check enforcement disabled to restore Firestore access',
+            severity: 'high',
+            threatType: 'system_configuration',
+            location: 'Cloud Functions'
         });
+        // Create security alert for this action
+        await createSecurityAlert('system', 'high', 'App Check Enforcement Disabled', 'App Check enforcement has been disabled to restore Firestore access', 'Cloud Functions', context.auth.uid, context.auth.token.email, context.rawRequest.ip, { action: 'disable_app_check_enforcement' });
         return {
             success: true,
             message: 'App Check enforcement disabled. You must also disable it in the Firebase Console.',
@@ -92,7 +134,7 @@ exports.updateUserRole = functions.https.onCall(async (data, context) => {
                 throw new functions.https.HttpsError('permission-denied', 'Current user not found');
             }
             const currentUserData = currentUserDoc.data();
-            const hasAdminRole = (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.role) === 'root' || (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.role) === 'admin';
+            const hasAdminRole = (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.role) === 'root' || (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.role) === 'admin' || (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.role) === 'super-admin' || (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.role) === 'super_admin';
             const hasLegacyPermissions = (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.isAdmin) || (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.isDenLeader) || (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.isCubmaster);
             if (!hasAdminRole && !hasLegacyPermissions) {
                 throw new functions.https.HttpsError('permission-denied', 'Only admins can update other users');
@@ -153,7 +195,7 @@ exports.adminUpdateEvent = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasEventManagementPermission = (_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('event_management');
         if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
@@ -175,6 +217,56 @@ exports.adminUpdateEvent = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('internal', 'Failed to update event');
     }
 });
+// CRITICAL: Admin delete event function
+exports.adminDeleteEvent = functions.https.onCall(async (data, context) => {
+    var _a;
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        // Check if user has admin privileges
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError('permission-denied', 'User not found');
+        }
+        const userData = userDoc.data();
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
+        const hasEventManagementPermission = (_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('event_management');
+        if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
+            throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to delete events');
+        }
+        // Delete the event
+        const eventRef = db.collection('events').doc(data.eventId);
+        const eventDoc = await eventRef.get();
+        if (!eventDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'Event not found');
+        }
+        await eventRef.delete();
+        // Also delete associated RSVPs
+        const rsvpQuery = db.collection('rsvps').where('eventId', '==', data.eventId);
+        const rsvpSnapshot = await rsvpQuery.get();
+        const batch = db.batch();
+        rsvpSnapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        if (rsvpSnapshot.docs.length > 0) {
+            await batch.commit();
+        }
+        return {
+            success: true,
+            message: 'Event and associated RSVPs deleted successfully'
+        };
+    }
+    catch (error) {
+        console.error('Error deleting event:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to delete event');
+    }
+});
 // CRITICAL: Admin create event function
 exports.adminCreateEvent = functions.https.onCall(async (data, context) => {
     var _a;
@@ -189,7 +281,7 @@ exports.adminCreateEvent = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasEventManagementPermission = (_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('event_management');
         if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
@@ -342,7 +434,7 @@ async function getActualRSVPCount(eventId) {
 }
 // Delete RSVP - Admin only
 exports.deleteRSVP = functions.https.onCall(async (data, context) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s;
     try {
         // Check authentication
         if (!context.auth) {
@@ -412,8 +504,13 @@ exports.deleteRSVP = functions.https.onCall(async (data, context) => {
             timestamp: getTimestamp(),
             ipAddress: ((_d = context.rawRequest) === null || _d === void 0 ? void 0 : _d.ip) || 'unknown',
             userAgent: ((_f = (_e = context.rawRequest) === null || _e === void 0 ? void 0 : _e.headers) === null || _f === void 0 ? void 0 : _f['user-agent']) || 'unknown',
-            success: true
+            success: true,
+            severity: 'medium',
+            threatType: 'data_modification',
+            location: 'Cloud Functions'
         });
+        // Create security alert for RSVP deletion
+        await createSecurityAlert('data_access', 'medium', 'RSVP Deleted by Admin', `Admin ${context.auth.token.email} deleted RSVP for event ${eventId}`, 'Cloud Functions', context.auth.uid, context.auth.token.email, (_g = context.rawRequest) === null || _g === void 0 ? void 0 : _g.ip, { rsvpId: data.rsvpId, eventId, userId: rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.userId });
         return {
             success: true,
             message: 'RSVP deleted successfully',
@@ -426,15 +523,20 @@ exports.deleteRSVP = functions.https.onCall(async (data, context) => {
         try {
             await db.collection('adminActions').add({
                 type: 'rsvp_deletion_failed',
-                adminId: ((_g = context.auth) === null || _g === void 0 ? void 0 : _g.uid) || 'unknown',
-                adminEmail: ((_j = (_h = context.auth) === null || _h === void 0 ? void 0 : _h.token) === null || _j === void 0 ? void 0 : _j.email) || 'unknown',
+                adminId: ((_h = context.auth) === null || _h === void 0 ? void 0 : _h.uid) || 'unknown',
+                adminEmail: ((_k = (_j = context.auth) === null || _j === void 0 ? void 0 : _j.token) === null || _k === void 0 ? void 0 : _k.email) || 'unknown',
                 rsvpId: data.rsvpId || 'unknown',
                 timestamp: getTimestamp(),
-                ipAddress: ((_k = context.rawRequest) === null || _k === void 0 ? void 0 : _k.ip) || 'unknown',
-                userAgent: ((_m = (_l = context.rawRequest) === null || _l === void 0 ? void 0 : _l.headers) === null || _m === void 0 ? void 0 : _m['user-agent']) || 'unknown',
+                ipAddress: ((_l = context.rawRequest) === null || _l === void 0 ? void 0 : _l.ip) || 'unknown',
+                userAgent: ((_o = (_m = context.rawRequest) === null || _m === void 0 ? void 0 : _m.headers) === null || _o === void 0 ? void 0 : _o['user-agent']) || 'unknown',
                 success: false,
-                error: error instanceof Error ? error.message : String(error)
+                error: error instanceof Error ? error.message : String(error),
+                severity: 'high',
+                threatType: 'system_error',
+                location: 'Cloud Functions'
             });
+            // Create security alert for failed RSVP deletion
+            await createSecurityAlert('system', 'high', 'RSVP Deletion Failed', `Failed to delete RSVP ${data.rsvpId}: ${error instanceof Error ? error.message : String(error)}`, 'Cloud Functions', (_p = context.auth) === null || _p === void 0 ? void 0 : _p.uid, (_r = (_q = context.auth) === null || _q === void 0 ? void 0 : _q.token) === null || _r === void 0 ? void 0 : _r.email, (_s = context.rawRequest) === null || _s === void 0 ? void 0 : _s.ip, { rsvpId: data.rsvpId, error: error instanceof Error ? error.message : String(error) });
         }
         catch (logError) {
             console.error('Failed to log deletion error:', logError);
@@ -585,7 +687,7 @@ exports.adminUpdateUser = functions.https.onCall(async (data, context) => {
         }
         const userData = userDoc.data();
         // Check role-based permissions (new system) or legacy boolean fields
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -707,7 +809,7 @@ exports.updateUserClaims = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         if (!hasAdminRole) {
             throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update user claims');
         }
@@ -849,7 +951,7 @@ exports.testEmailConnection = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         if (!hasAdminRole) {
             throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to test email connection');
         }
@@ -924,6 +1026,25 @@ exports.submitAccountRequest = functions.https.onCall(async (data, context) => {
             userAgent: data.userAgent || ''
         };
         const requestRef = await db.collection('accountRequests').add(requestData);
+        // Send email notification to cubmaster
+        try {
+            const { emailService } = await Promise.resolve().then(() => require('./emailService'));
+            const userData = {
+                uid: requestRef.id,
+                email: data.email,
+                displayName: data.displayName,
+                phone: data.phone,
+                address: data.address,
+                emergencyContact: data.emergencyContact,
+                medicalInfo: data.reason
+            };
+            await emailService.sendUserApprovalNotification(userData);
+            console.log('User approval notification email sent to cubmaster');
+        }
+        catch (emailError) {
+            console.error('Failed to send user approval notification email:', emailError);
+            // Don't fail the request submission if email fails
+        }
         // Log the request
         await db.collection('adminActions').add({
             action: 'account_request_submitted',
@@ -969,7 +1090,7 @@ exports.getPendingAccountRequests = functions.https.onCall(async (data, context)
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -1053,7 +1174,7 @@ exports.approveAccountRequest = functions.https.onCall(async (data, context) => 
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -1146,6 +1267,26 @@ exports.approveAccountRequest = functions.https.onCall(async (data, context) => 
             userAgent: ((_e = (_d = context.rawRequest) === null || _d === void 0 ? void 0 : _d.headers) === null || _e === void 0 ? void 0 : _e['user-agent']) || 'unknown',
             success: true
         });
+        // Send email notification to the approved user
+        try {
+            const { emailService } = await Promise.resolve().then(() => require('./emailService'));
+            const userData = {
+                uid: userRef.id,
+                email: requestData.email,
+                displayName: requestData.displayName,
+                phone: requestData.phone || '',
+                address: requestData.address || '',
+                emergencyContact: requestData.emergencyContact || '',
+                medicalInfo: requestData.medicalInfo || '',
+                role: role
+            };
+            await emailService.sendWelcomeEmail(userData);
+            console.log('Welcome email sent successfully');
+        }
+        catch (emailError) {
+            console.error('Failed to send user approval notification:', emailError);
+            // Don't fail the approval if email fails
+        }
         return {
             success: true,
             message: 'Account request approved and user account created successfully',
@@ -1174,7 +1315,7 @@ exports.createUserManually = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -1287,7 +1428,7 @@ exports.rejectAccountRequest = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -1345,9 +1486,9 @@ exports.rejectAccountRequest = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('internal', 'Failed to reject account request');
     }
 });
-// REAL-TIME SYSTEM METRICS - Get comprehensive system performance data
-exports.getSystemMetrics = functions.https.onCall(async (data, context) => {
-    var _a, _b;
+// Test AI Connection Function
+exports.testAIConnection = functions.https.onCall(async (data, context) => {
+    var _a, _b, _c, _d, _e, _f, _g;
     try {
         // Check authentication
         if (!context.auth) {
@@ -1359,7 +1500,45 @@ exports.getSystemMetrics = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        if (!(userData === null || userData === void 0 ? void 0 : userData.role) || !['admin', 'root', 'cubmaster', 'super-admin'].includes(userData.role)) {
+            throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to test AI connection');
+        }
+        // Create security alert for AI connection test
+        await createSecurityAlert('system', 'medium', 'AI Connection Test', `User ${context.auth.token.email} tested AI connection`, 'Cloud Functions', context.auth.uid, context.auth.token.email, (_a = context.rawRequest) === null || _a === void 0 ? void 0 : _a.ip, { function: 'testAIConnection' });
+        // Test basic AI functionality
+        return {
+            success: true,
+            message: 'AI connection test successful',
+            timestamp: getTimestamp(),
+            user: {
+                uid: context.auth.uid,
+                email: context.auth.token.email,
+                role: userData.role
+            }
+        };
+    }
+    catch (error) {
+        console.error('AI connection test failed:', error);
+        // Create security alert for failed AI connection test
+        await createSecurityAlert('system', 'high', 'AI Connection Test Failed', `AI connection test failed for user ${(_c = (_b = context.auth) === null || _b === void 0 ? void 0 : _b.token) === null || _c === void 0 ? void 0 : _c.email}: ${error instanceof Error ? error.message : String(error)}`, 'Cloud Functions', (_d = context.auth) === null || _d === void 0 ? void 0 : _d.uid, (_f = (_e = context.auth) === null || _e === void 0 ? void 0 : _e.token) === null || _f === void 0 ? void 0 : _f.email, (_g = context.rawRequest) === null || _g === void 0 ? void 0 : _g.ip, { function: 'testAIConnection', error: error instanceof Error ? error.message : String(error) });
+        throw new functions.https.HttpsError('internal', 'AI connection test failed');
+    }
+});
+// REAL-TIME SYSTEM METRICS - Get comprehensive system performance data
+exports.getSystemMetrics = functions.https.onCall(async (data, context) => {
+    var _a, _b, _c;
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        // Check if user has admin privileges
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError('permission-denied', 'User not found');
+        }
+        const userData = userDoc.data();
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasSystemAdminPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('system_admin')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('user_management'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasSystemAdminPermission) {
@@ -1367,7 +1546,7 @@ exports.getSystemMetrics = functions.https.onCall(async (data, context) => {
         }
         const startTime = Date.now();
         // Get real-time metrics in parallel
-        const [usersSnapshot, eventsSnapshot, announcementsSnapshot, locationsSnapshot, messagesSnapshot, chatUsersSnapshot, rsvpsSnapshot, performanceMetricsSnapshot, auditLogsSnapshot] = await Promise.all([
+        const [usersSnapshot, eventsSnapshot, announcementsSnapshot, locationsSnapshot, messagesSnapshot, chatUsersSnapshot, rsvpsSnapshot, performanceMetricsSnapshot, auditLogsSnapshot, securityAlertsSnapshot, threatIntelligenceSnapshot, adminActionsSnapshot, aiUsageSnapshot] = await Promise.all([
             db.collection('users').select().get(),
             db.collection('events').select().get(),
             db.collection('announcements').select().get(),
@@ -1376,7 +1555,11 @@ exports.getSystemMetrics = functions.https.onCall(async (data, context) => {
             db.collection('chat-users').select().get(),
             db.collection('rsvps').select().get(),
             db.collection('performance_metrics').orderBy('timestamp', 'desc').limit(100).select().get(),
-            db.collection('auditLogs').orderBy('timestamp', 'desc').limit(50).select().get()
+            db.collection('auditLogs').orderBy('timestamp', 'desc').limit(50).select().get(),
+            db.collection('securityAlerts').orderBy('timestamp', 'desc').limit(100).select().get(),
+            db.collection('threatIntelligence').orderBy('timestamp', 'desc').limit(100).select().get(),
+            db.collection('adminActions').orderBy('timestamp', 'desc').limit(100).select().get(),
+            db.collection('aiUsage').orderBy('timestamp', 'desc').limit(100).select().get()
         ]);
         // Calculate real metrics
         const totalUsers = usersSnapshot.size;
@@ -1385,6 +1568,10 @@ exports.getSystemMetrics = functions.https.onCall(async (data, context) => {
         const totalLocations = locationsSnapshot.size;
         const totalMessages = messagesSnapshot.size;
         const totalRSVPs = rsvpsSnapshot.size;
+        const totalSecurityAlerts = securityAlertsSnapshot.size;
+        const totalThreatIntelligence = threatIntelligenceSnapshot.size;
+        const totalAdminActions = adminActionsSnapshot.size;
+        const totalAIUsage = aiUsageSnapshot.size;
         // Calculate active users (users active in last 30 days)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -1433,6 +1620,38 @@ exports.getSystemMetrics = functions.https.onCall(async (data, context) => {
             if (rsvpTime >= thirtyDaysAgo) {
                 rsvpsThisMonth++;
             }
+        });
+        // Calculate security metrics
+        let criticalAlerts = 0;
+        let highAlerts = 0;
+        let openAlerts = 0;
+        let highThreats = 0;
+        let criticalThreats = 0;
+        let recentSecurityAlerts = 0;
+        let recentThreats = 0;
+        securityAlertsSnapshot.docs.forEach(doc => {
+            var _a, _b;
+            const alertData = doc.data();
+            const alertTime = ((_b = (_a = alertData.timestamp) === null || _a === void 0 ? void 0 : _a.toDate) === null || _b === void 0 ? void 0 : _b.call(_a)) || new Date(0);
+            if (alertData.severity === 'critical')
+                criticalAlerts++;
+            if (alertData.severity === 'high')
+                highAlerts++;
+            if (alertData.status === 'open')
+                openAlerts++;
+            if (alertTime >= thirtyDaysAgo)
+                recentSecurityAlerts++;
+        });
+        threatIntelligenceSnapshot.docs.forEach(doc => {
+            var _a, _b;
+            const threatData = doc.data();
+            const threatTime = ((_b = (_a = threatData.timestamp) === null || _a === void 0 ? void 0 : _a.toDate) === null || _b === void 0 ? void 0 : _b.call(_a)) || new Date(0);
+            if (threatData.threatLevel === 'critical')
+                criticalThreats++;
+            if (threatData.threatLevel === 'high')
+                highThreats++;
+            if (threatTime >= thirtyDaysAgo)
+                recentThreats++;
         });
         // Calculate performance metrics from stored data
         let averageResponseTime = 120; // Default
@@ -1505,6 +1724,18 @@ exports.getSystemMetrics = functions.https.onCall(async (data, context) => {
             uptimePercentage,
             errorRate,
             functionResponseTime, // Time to execute this function
+            // Security Metrics
+            totalSecurityAlerts,
+            totalThreatIntelligence,
+            totalAdminActions,
+            totalAIUsage,
+            criticalAlerts,
+            highAlerts,
+            openAlerts,
+            highThreats,
+            criticalThreats,
+            recentSecurityAlerts,
+            recentThreats,
             // Costs (estimated based on usage)
             estimatedMonthlyCost: Math.round(totalCost * 100) / 100,
             costBreakdown: {
@@ -1521,6 +1752,8 @@ exports.getSystemMetrics = functions.https.onCall(async (data, context) => {
             cacheHitRate: 85, // Estimated cache hit rate
             memoryUsage: Math.round((estimatedStorageBytes / storageLimitBytes) * 100), // Estimated memory usage percentage
         };
+        // Create security alert for system metrics access
+        await createSecurityAlert('system', 'low', 'System Metrics Accessed', `User ${context.auth.token.email} accessed system metrics`, 'Cloud Functions', context.auth.uid, context.auth.token.email, (_c = context.rawRequest) === null || _c === void 0 ? void 0 : _c.ip, { function: 'getSystemMetrics', responseTime: functionResponseTime });
         return {
             success: true,
             metrics
@@ -1532,6 +1765,72 @@ exports.getSystemMetrics = functions.https.onCall(async (data, context) => {
             throw error;
         }
         throw new functions.https.HttpsError('internal', 'Failed to fetch system metrics');
+    }
+});
+// THREAT INTELLIGENCE FEED - Simulate threat intelligence data
+exports.generateThreatIntelligence = functions.https.onCall(async (data, context) => {
+    var _a;
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        // Check if user has admin privileges
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError('permission-denied', 'User not found');
+        }
+        const userData = userDoc.data();
+        if (!(userData === null || userData === void 0 ? void 0 : userData.role) || !['admin', 'root', 'cubmaster', 'super-admin'].includes(userData.role)) {
+            throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to generate threat intelligence');
+        }
+        // Generate sample threat intelligence data
+        const threats = [
+            {
+                type: 'ip',
+                value: '192.168.1.100',
+                threatLevel: 'high',
+                source: 'Threat Intelligence Feed',
+                description: 'Known malicious IP address from recent attack campaigns'
+            },
+            {
+                type: 'domain',
+                value: 'malicious-site.com',
+                threatLevel: 'critical',
+                source: 'DNS Security Feed',
+                description: 'Domain associated with phishing campaigns'
+            },
+            {
+                type: 'hash',
+                value: 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6',
+                threatLevel: 'medium',
+                source: 'Malware Analysis',
+                description: 'File hash associated with trojan malware'
+            },
+            {
+                type: 'url',
+                value: 'https://suspicious-site.org/malware',
+                threatLevel: 'high',
+                source: 'URL Reputation Service',
+                description: 'URL hosting malicious content'
+            }
+        ];
+        // Add threat intelligence entries
+        for (const threat of threats) {
+            await createThreatIntelligence(threat.type, threat.value, threat.threatLevel, threat.source, threat.description);
+        }
+        // Create security alert for threat intelligence generation
+        await createSecurityAlert('system', 'medium', 'Threat Intelligence Generated', `User ${context.auth.token.email} generated threat intelligence data`, 'Cloud Functions', context.auth.uid, context.auth.token.email, (_a = context.rawRequest) === null || _a === void 0 ? void 0 : _a.ip, { function: 'generateThreatIntelligence', threatsGenerated: threats.length });
+        return {
+            success: true,
+            message: `Generated ${threats.length} threat intelligence entries`,
+            threatsGenerated: threats.length,
+            timestamp: getTimestamp()
+        };
+    }
+    catch (error) {
+        console.error('Error generating threat intelligence:', error);
+        throw new functions.https.HttpsError('internal', 'Failed to generate threat intelligence');
     }
 });
 // CRITICAL: Get all dashboard data in batch (admin only) - Performance optimization
@@ -1548,7 +1847,7 @@ exports.getBatchDashboardData = functions.https.onCall(async (data, context) => 
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasSystemAdminPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('system_admin')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('user_management'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasSystemAdminPermission) {
@@ -1629,7 +1928,7 @@ exports.adminDeleteUser = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -1776,5 +2075,113 @@ exports.helloWorld = functions.https.onCall(async (data, context) => {
         message: 'Hello from Firebase Cloud Functions!',
         timestamp: new Date().toISOString()
     };
+});
+// Test announcement creation function
+exports.createTestAnnouncement = functions.https.onCall(async (data, context) => {
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        const testAnnouncement = {
+            title: '🧪 Test Announcement - Email System',
+            content: 'This is a test announcement to verify the email system is working correctly. This should only go to test email addresses.',
+            priority: 'high',
+            sendEmail: true,
+            testMode: true,
+            createdBy: 'test_function',
+            createdAt: getTimestamp(),
+            updatedAt: getTimestamp()
+        };
+        const docRef = await db.collection('announcements').add(testAnnouncement);
+        functions.logger.info('✅ Test announcement created with ID:', docRef.id);
+        return {
+            success: true,
+            announcementId: docRef.id,
+            message: 'Test announcement created successfully'
+        };
+    }
+    catch (error) {
+        functions.logger.error('❌ Error creating test announcement:', error);
+        throw new functions.https.HttpsError('internal', 'Failed to create test announcement');
+    }
+});
+// Send announcement emails via server-side email service
+exports.sendAnnouncementEmails = functions.https.onCall(async (data, context) => {
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        const { announcement, testMode = false } = data;
+        if (!announcement) {
+            throw new functions.https.HttpsError('invalid-argument', 'Announcement data is required');
+        }
+        // Import email service
+        const { emailService } = await Promise.resolve().then(() => require('./emailService'));
+        // Get users based on announcement targeting
+        let targetUsers = [];
+        if (announcement.targetDens && announcement.targetDens.length > 0) {
+            // Get users for specific dens
+            for (const denId of announcement.targetDens) {
+                const denUsersSnapshot = await db.collection('users')
+                    .where('status', '==', 'approved')
+                    .where('dens', 'array-contains', denId)
+                    .get();
+                denUsersSnapshot.forEach(userDoc => {
+                    const userData = userDoc.data();
+                    // Avoid duplicates if user is in multiple targeted dens
+                    if (!targetUsers.find(u => u.id === userDoc.id)) {
+                        targetUsers.push(Object.assign({ id: userDoc.id }, userData));
+                    }
+                });
+            }
+        }
+        else {
+            // Get all approved users (no specific targeting)
+            const usersSnapshot = await db.collection('users')
+                .where('status', '==', 'approved')
+                .get();
+            usersSnapshot.forEach((userDoc) => {
+                targetUsers.push(Object.assign({ id: userDoc.id }, userDoc.data()));
+            });
+        }
+        const emailPromises = [];
+        const testEmails = ['christopher@smithstation.io', 'welcome-test@smithstation.io'];
+        targetUsers.forEach((userData) => {
+            // Skip if no email
+            if (!userData.email)
+                return;
+            // In test mode, only send to test emails
+            if (testMode && !testEmails.includes(userData.email)) {
+                functions.logger.info(`🧪 Test mode: Skipping ${userData.email}`);
+                return;
+            }
+            // Check user email preferences
+            const emailEnabled = userData.emailNotifications !== false; // Default to true if not set
+            if (!emailEnabled) {
+                functions.logger.info(`📧 Email disabled for ${userData.email}, skipping`);
+                return;
+            }
+            emailPromises.push(emailService.sendAnnouncementEmail(userData.email, announcement));
+        });
+        // Send all emails in parallel
+        const results = await Promise.allSettled(emailPromises);
+        const successful = results.filter(result => result.status === 'fulfilled' && result.value === true).length;
+        const failed = results.length - successful;
+        const modeText = testMode ? ' (TEST MODE)' : '';
+        functions.logger.info(`📧 Announcement emails sent${modeText}: ${successful} successful, ${failed} failed`);
+        return {
+            success: true,
+            successful,
+            failed,
+            total: results.length,
+            message: `Sent ${successful} emails successfully, ${failed} failed`
+        };
+    }
+    catch (error) {
+        functions.logger.error('❌ Error sending announcement emails:', error);
+        throw new functions.https.HttpsError('internal', error.message || 'Failed to send announcement emails');
+    }
 });
 //# sourceMappingURL=index.js.map

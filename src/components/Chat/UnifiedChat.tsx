@@ -3,7 +3,7 @@ import chatService from '../../services/chatService';
 import { ChatChannel, ChatMessage } from '../../services/chatService';
 import { useToast } from '../../contexts/ToastContext';
 import { useAdmin } from '../../contexts/AdminContext';
-import { Send, MessageCircle, Users, Settings, Trash2, MoreVertical, ChevronDown, ChevronRight } from 'lucide-react';
+import { Send, MessageCircle, Users, Settings, Trash2, MoreVertical, ChevronDown, ChevronRight, Plus } from 'lucide-react';
 
 const UnifiedChat: React.FC = () => {
   const [channels, setChannels] = useState<ChatChannel[]>([]);
@@ -13,18 +13,30 @@ const UnifiedChat: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
-    pack: true,
-    dens: true
+    pack: false,
+    dens: false
   });
+  const [showCreateChannelModal, setShowCreateChannelModal] = useState(false);
+  const [showChannelMenu, setShowChannelMenu] = useState<string | null>(null);
+  const [newChannelName, setNewChannelName] = useState('');
+  const [newChannelDescription, setNewChannelDescription] = useState('');
+  const [newChannelType, setNewChannelType] = useState<'pack' | 'lion' | 'tiger' | 'wolf' | 'bear' | 'webelos' | 'arrow-of-light'>('pack');
   const { showError, showSuccess } = useToast();
   const { state } = useAdmin();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   
   // Check if user can delete messages (admin and up)
-  const canDeleteMessages = state.currentUser?.role === 'super-admin' ||
+  const canDeleteMessages = state.currentUser?.role === 'root' ||
+                           state.currentUser?.role === 'super-admin' ||
+                           state.currentUser?.role === 'content-admin';
+  
+  // Check if user can manage channels (moderators and up)
+  const canManageChannels = state.currentUser?.role === 'root' ||
+                           state.currentUser?.role === 'super-admin' ||
                            state.currentUser?.role === 'content-admin' ||
                            state.currentUser?.role === 'moderator';
+  
   const currentUserName = state.currentUser?.displayName || state.currentUser?.email || 'Anonymous User';
 
   // Initialize chat service and load channels on component mount
@@ -201,6 +213,46 @@ const UnifiedChat: React.FC = () => {
     }));
   };
 
+  const handleCreateChannel = async () => {
+    if (!newChannelName.trim()) {
+      showError('Channel name is required');
+      return;
+    }
+
+    try {
+      await chatService.createChannel(newChannelName.trim(), newChannelDescription.trim(), newChannelType);
+      showSuccess(`Channel "${newChannelName}" created successfully`);
+      setNewChannelName('');
+      setNewChannelDescription('');
+      setNewChannelType('pack');
+      setShowCreateChannelModal(false);
+      await loadChannels(); // Reload channels to show the new one
+    } catch (error) {
+      console.error('Failed to create channel:', error);
+      showError('Failed to create channel');
+    }
+  };
+
+  const handleDeleteChannel = async (channelId: string, channelName: string) => {
+    if (!window.confirm(`Are you sure you want to delete "${channelName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await chatService.deleteChannel(channelId);
+      showSuccess(`Channel "${channelName}" deleted successfully`);
+      await loadChannels(); // Reload channels
+      
+      // If the deleted channel was selected, switch to general
+      if (selectedChannel === channelId) {
+        setSelectedChannel('general');
+      }
+    } catch (error) {
+      console.error('Failed to delete channel:', error);
+      showError('Failed to delete channel');
+    }
+  };
+
   const getChannelEmoji = (channelName: string) => {
     const name = channelName.toLowerCase();
     
@@ -316,10 +368,21 @@ const UnifiedChat: React.FC = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* Channel List */}
         <aside className="w-48 sm:w-64 bg-white/60 backdrop-blur-sm border-r border-primary-200/50 p-2 sm:p-4 overflow-y-auto">
-          <h2 className="text-sm sm:text-lg font-semibold mb-3 sm:mb-4 text-gradient flex items-center">
-            <MessageCircle className="h-4 w-4 mr-2" />
-            Channels
-          </h2>
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h2 className="text-sm sm:text-lg font-semibold text-gradient flex items-center">
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Channels
+            </h2>
+            {canManageChannels && (
+              <button
+                onClick={() => setShowCreateChannelModal(true)}
+                className="p-1.5 text-primary-600 hover:text-primary-800 hover:bg-primary-100 rounded-lg transition-colors duration-200"
+                title="Create Channel"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           
           {(() => {
             const { packChannels, denChannels, otherChannels } = organizeChannels();
@@ -360,9 +423,23 @@ const UnifiedChat: React.FC = () => {
                                   <span className="mr-1">{getChannelEmoji(channel.name)}</span>
                                   {channel.name}
                                 </span>
-                                {canDeleteMessages && (
-                                  <MoreVertical className="h-3 w-3 opacity-50 flex-shrink-0 ml-1" />
-                                )}
+                                <div className="flex items-center space-x-1">
+                                  {canManageChannels && !['general', 'announcements', 'events', 'lion-den', 'tiger-den', 'wolf-den', 'bear-den', 'webelos-den', 'arrow-of-light'].includes(channel.id) && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteChannel(channel.id, channel.name);
+                                      }}
+                                      className="p-1 text-red-500 hover:text-red-700 hover:bg-red-100 rounded transition-colors duration-200"
+                                      title="Delete Channel"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                  {canDeleteMessages && (
+                                    <MoreVertical className="h-3 w-3 opacity-50 flex-shrink-0 ml-1" />
+                                  )}
+                                </div>
                               </div>
                               {channel.description && (
                                 <div className="text-xs text-gray-500 mt-1 truncate">{channel.description}</div>
@@ -409,9 +486,23 @@ const UnifiedChat: React.FC = () => {
                                   <span className="mr-1">{getChannelEmoji(channel.name)}</span>
                                   {channel.name}
                                 </span>
-                                {canDeleteMessages && (
-                                  <MoreVertical className="h-3 w-3 opacity-50 flex-shrink-0 ml-1" />
-                                )}
+                                <div className="flex items-center space-x-1">
+                                  {canManageChannels && !['general', 'announcements', 'events', 'lion-den', 'tiger-den', 'wolf-den', 'bear-den', 'webelos-den', 'arrow-of-light'].includes(channel.id) && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteChannel(channel.id, channel.name);
+                                      }}
+                                      className="p-1 text-red-500 hover:text-red-700 hover:bg-red-100 rounded transition-colors duration-200"
+                                      title="Delete Channel"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                  {canDeleteMessages && (
+                                    <MoreVertical className="h-3 w-3 opacity-50 flex-shrink-0 ml-1" />
+                                  )}
+                                </div>
                               </div>
                               {channel.description && (
                                 <div className="text-xs text-gray-500 mt-1 truncate">{channel.description}</div>
@@ -447,9 +538,23 @@ const UnifiedChat: React.FC = () => {
                                     <span className="mr-1">{getChannelEmoji(channel.name)}</span>
                                     {channel.name}
                                   </span>
-                                  {canDeleteMessages && (
-                                    <MoreVertical className="h-3 w-3 opacity-50 flex-shrink-0 ml-1" />
-                                  )}
+                                  <div className="flex items-center space-x-1">
+                                    {canManageChannels && !['general', 'announcements', 'events', 'lion-den', 'tiger-den', 'wolf-den', 'bear-den', 'webelos-den', 'arrow-of-light'].includes(channel.id) && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteChannel(channel.id, channel.name);
+                                        }}
+                                        className="p-1 text-red-500 hover:text-red-700 hover:bg-red-100 rounded transition-colors duration-200"
+                                        title="Delete Channel"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    )}
+                                    {canDeleteMessages && (
+                                      <MoreVertical className="h-3 w-3 opacity-50 flex-shrink-0 ml-1" />
+                                    )}
+                                  </div>
                                 </div>
                                 {channel.description && (
                                   <div className="text-xs text-gray-500 mt-1 truncate">{channel.description}</div>
@@ -557,6 +662,82 @@ const UnifiedChat: React.FC = () => {
           <div ref={messagesEndRef} />
         </main>
       </div>
+
+      {/* Create Channel Modal */}
+      {showCreateChannelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Channel</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Channel Name
+                </label>
+                <input
+                  type="text"
+                  value={newChannelName}
+                  onChange={(e) => setNewChannelName(e.target.value)}
+                  placeholder="Enter channel name"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={newChannelDescription}
+                  onChange={(e) => setNewChannelDescription(e.target.value)}
+                  placeholder="Enter channel description"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Channel Type
+                </label>
+                <select
+                  value={newChannelType}
+                  onChange={(e) => setNewChannelType(e.target.value as any)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="pack">Pack Channel</option>
+                  <option value="lion">Lion Den</option>
+                  <option value="tiger">Tiger Den</option>
+                  <option value="wolf">Wolf Den</option>
+                  <option value="bear">Bear Den</option>
+                  <option value="webelos">Webelos Den</option>
+                  <option value="arrow-of-light">Arrow of Light</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowCreateChannelModal(false);
+                  setNewChannelName('');
+                  setNewChannelDescription('');
+                  setNewChannelType('pack');
+                }}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateChannel}
+                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors duration-200"
+              >
+                Create Channel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

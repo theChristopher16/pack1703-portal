@@ -5,6 +5,7 @@ const https_1 = require("firebase-functions/v2/https");
 const auth_1 = require("firebase-admin/auth");
 const firestore_1 = require("firebase-admin/firestore");
 const firebase_functions_1 = require("firebase-functions");
+const emailService_1 = require("./emailService");
 // User roles enum - Updated to match AuthService
 var UserRole;
 (function (UserRole) {
@@ -154,7 +155,7 @@ function getRolePermissions(role) {
  * This should be called after Firebase Auth user creation
  */
 exports.createPendingUser = (0, https_1.onCall)(async (request) => {
-    const { userId, email, displayName } = request.data;
+    const { userId, email, displayName, preferences } = request.data;
     if (!userId || !email) {
         throw new Error('Missing required parameters: userId and email');
     }
@@ -173,6 +174,11 @@ exports.createPendingUser = (0, https_1.onCall)(async (request) => {
             status: UserStatus.PENDING,
             role: UserRole.PARENT,
             permissions: getRolePermissions(UserRole.PARENT), // Set default permissions
+            preferences: preferences || {
+                emailNotifications: true,
+                pushNotifications: true,
+                smsNotifications: false
+            },
             createdAt: firestore_1.FieldValue.serverTimestamp(),
             approvedAt: null,
             approvedBy: null
@@ -180,6 +186,24 @@ exports.createPendingUser = (0, https_1.onCall)(async (request) => {
         // Create the user document in Firestore
         await db.collection('users').doc(userId).set(userDoc);
         firebase_functions_1.logger.info('User document created with pending status:', userId);
+        // Send email notification to cubmaster
+        try {
+            const userData = {
+                uid: userId,
+                email: email,
+                displayName: displayName || '',
+                phone: '', // Will be filled from profile if available
+                address: '',
+                emergencyContact: '',
+                medicalInfo: ''
+            };
+            await emailService_1.emailService.sendUserApprovalNotification(userData);
+            firebase_functions_1.logger.info('User approval notification email sent to cubmaster');
+        }
+        catch (emailError) {
+            firebase_functions_1.logger.error('Failed to send user approval notification email:', emailError);
+            // Don't fail the user creation if email fails
+        }
         return {
             success: true,
             message: 'User document created successfully',

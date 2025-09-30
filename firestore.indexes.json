@@ -135,6 +135,14 @@
         { "fieldPath": "acknowledged", "mode": "ASCENDING" },
         { "fieldPath": "date", "mode": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "accountRequests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

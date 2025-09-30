@@ -20,7 +20,6 @@ import {
   HandHeart,
   Sprout,
   Bot,
-  Database,
   Activity,
   TrendingUp,
   CreditCard,
@@ -146,38 +145,6 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     description: 'Usage analytics and insights'
   },
   {
-    name: 'Event Management',
-    href: '/events',
-    icon: Calendar,
-    roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
-    category: 'admin',
-    description: 'Create and manage events'
-  },
-  {
-    name: 'News Management',
-    href: '/announcements',
-    icon: MessageSquare,
-    roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
-    category: 'admin',
-    description: 'Manage announcements and news'
-  },
-  {
-    name: 'Location Management',
-    href: '/locations',
-    icon: MapPin,
-    roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
-    category: 'admin',
-    description: 'Manage pack locations'
-  },
-  {
-    name: 'Volunteer Management',
-    href: '/volunteer',
-    icon: HandHeart,
-    roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
-    category: 'admin',
-    description: 'Manage volunteer opportunities'
-  },
-  {
     name: 'User Management',
     href: '/users',
     icon: UserPlus,
@@ -216,14 +183,6 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
     description: 'Manage pack lists and inventories'
-  },
-  {
-    name: 'Feedback Management',
-    href: '/feedback',
-    icon: MessageSquare,
-    roles: [UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN],
-    category: 'admin',
-    description: 'Review and respond to feedback'
   },
 
   // SYSTEM ITEMS (root only)
@@ -268,14 +227,6 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     description: 'System configuration'
   },
   {
-    name: 'Database Monitor',
-    href: '/database',
-    icon: Database,
-    roles: [UserRole.SUPER_ADMIN],
-    category: 'system',
-    description: 'Database performance monitoring'
-  },
-  {
     name: 'System Monitor',
     href: '/system',
     icon: Activity,
@@ -291,14 +242,6 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     category: 'system',
     description: 'Application performance tracking'
   },
-  {
-    name: 'Permissions Audit',
-    href: '/permissions-audit',
-    icon: Eye,
-    roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
-    category: 'admin',
-    description: 'User permissions audit'
-  }
 ];
 
 // Helper function to get navigation items for a specific role

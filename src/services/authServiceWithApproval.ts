@@ -78,7 +78,8 @@ export interface UserDocument {
   allergies?: string;
   medicalConditions?: string;
   tshirtSize?: string;
-  den?: string;
+  den?: string; // Primary den (for backwards compatibility)
+  dens?: string[]; // All dens this user belongs to (for announcements)
   grade?: string;
   school?: string;
   parentEmail?: string;

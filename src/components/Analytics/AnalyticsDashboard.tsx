@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, Users, Clock, TrendingUp, Activity, Eye, MousePointer, Smartphone } from 'lucide-react';
-import { getFirestore, collection, getCountFromServer, getDoc, doc } from 'firebase/firestore';
+import { BarChart3, Users, Clock, TrendingUp, Activity, Eye, Smartphone } from 'lucide-react';
+import { getFirestore, collection, getCountFromServer, getDoc, doc, query, getDocs, orderBy, limit } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import analyticsService from '../../services/analyticsService';
+import { useAnalytics } from '../../hooks/useAnalytics';
 import PerformanceMonitor from '../Performance/PerformanceMonitor';
+import RealTimeAnalytics from './RealTimeAnalytics';
+import UserEngagementMetrics from './UserEngagementMetrics';
+import AnalyticsCharts from './AnalyticsCharts';
+import AnalyticsExport from './AnalyticsExport';
+import AnalyticsTrends from './AnalyticsTrends';
 
 interface AnalyticsData {
   totalUsers: number;
@@ -21,6 +27,7 @@ interface AnalyticsData {
 }
 
 const AnalyticsDashboard: React.FC = () => {
+  const { trackFeatureClick } = useAnalytics();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
     totalUsers: 0,
     activeUsers: 0,
@@ -39,8 +46,7 @@ const AnalyticsDashboard: React.FC = () => {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
 
   // Load real analytics data from Firebase
-  useEffect(() => {
-    const loadAnalyticsData = async () => {
+  const loadAnalyticsData = async (timeRangeParam?: '7d' | '30d' | '90d') => {
       try {
         const db = getFirestore();
         const auth = getAuth();
@@ -55,7 +61,10 @@ const AnalyticsDashboard: React.FC = () => {
         // Get user document to check admin status
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
         const userData = userDoc.data();
-        const isAdmin = userData?.role === 'admin' || userData?.role === 'super-admin';
+        console.log('Analytics Dashboard - User data:', userData);
+        console.log('Analytics Dashboard - User role:', userData?.role);
+        const isAdmin = userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'super_admin';
+        console.log('Analytics Dashboard - Is admin:', isAdmin);
         
         if (!isAdmin) {
           console.warn('Non-admin user accessing analytics dashboard');
@@ -81,19 +90,56 @@ const AnalyticsDashboard: React.FC = () => {
         const usersSnapshot = await getCountFromServer(collection(db, 'users'));
         const totalUsers = usersSnapshot.data().count;
         
-        // Get analytics data from service
-        const analyticsData = await analyticsService.getAnalyticsData(timeRange);
+        // Calculate real active users (users who have analytics events in the time range)
+        const activeUsersQuery = query(
+          collection(db, 'analytics'),
+          orderBy('timestamp', 'desc'),
+          limit(1000)
+        );
+        const activeUsersSnapshot = await getDocs(activeUsersQuery);
+        const activeUsersData = activeUsersSnapshot.docs.map(doc => doc.data());
+        const uniqueActiveUsers = new Set(activeUsersData.map(item => item.userId).filter(Boolean));
+        const activeUsers = uniqueActiveUsers.size;
         
-        // Performance metrics (these would come from real performance monitoring)
+        // Get analytics data from service
+        const selectedTimeRange = timeRangeParam || timeRange;
+        console.log('Analytics Dashboard - Getting analytics data for time range:', selectedTimeRange);
+        const analyticsData = await analyticsService.getAnalyticsData(selectedTimeRange);
+        console.log('Analytics Dashboard - Analytics data received:', analyticsData);
+        
+        // Get real performance metrics from Firestore
+        const performanceQuery = query(
+          collection(db, 'performance_metrics'),
+          orderBy('timestamp', 'desc'),
+          limit(100)
+        );
+        const performanceSnapshot = await getDocs(performanceQuery);
+        
+        const performanceData = performanceSnapshot.docs.map(doc => doc.data());
+        console.log('Analytics Dashboard - Performance data:', performanceData);
+        console.log('Analytics Dashboard - Performance data count:', performanceData.length);
+        
+        const lcpValues = performanceData.filter(p => p.metric === 'LCP').map(p => p.value);
+        const clsValues = performanceData.filter(p => p.metric === 'CLS').map(p => p.value);
+        const ttfbValues = performanceData.filter(p => p.metric === 'TTFB').map(p => p.value);
+        
+        console.log('Analytics Dashboard - LCP values:', lcpValues);
+        console.log('Analytics Dashboard - CLS values:', clsValues);
+        console.log('Analytics Dashboard - TTFB values:', ttfbValues);
+        
         const performanceMetrics = {
-          averageLoadTime: 1200, // This would be calculated from real performance data
-          averageLCP: 1800,
-          averageCLS: 0.08,
+          averageLoadTime: ttfbValues.length > 0 ? Math.round(ttfbValues.reduce((a, b) => a + b, 0) / ttfbValues.length) : 0,
+          averageLCP: lcpValues.length > 0 ? Math.round(lcpValues.reduce((a, b) => a + b, 0) / lcpValues.length) : 0,
+          averageCLS: clsValues.length > 0 ? Math.round((clsValues.reduce((a, b) => a + b, 0) / clsValues.length) * 100) / 100 : 0,
         };
+        
+        console.log('Analytics Dashboard - Calculated performance metrics:', performanceMetrics);
+        
+        console.log('Analytics Dashboard - Setting analytics data with session duration:', analyticsData.averageSessionDuration);
         
         setAnalyticsData({
           totalUsers,
-          activeUsers: totalUsers, // For now, assume all users are active
+          activeUsers,
           pageViews: analyticsData.pageViews,
           averageSessionDuration: analyticsData.averageSessionDuration,
           topPages: analyticsData.topPages,
@@ -122,8 +168,15 @@ const AnalyticsDashboard: React.FC = () => {
       }
     };
 
+  useEffect(() => {
     loadAnalyticsData();
   }, [timeRange]);
+
+  const handleTimeRangeChange = (newTimeRange: '7d' | '30d' | '90d') => {
+    setTimeRange(newTimeRange);
+    trackFeatureClick('analytics_time_range_change', { timeRange: newTimeRange });
+    loadAnalyticsData(newTimeRange);
+  };
 
   const formatDuration = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -153,7 +206,7 @@ const AnalyticsDashboard: React.FC = () => {
         <div className="flex justify-center mb-8">
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-1 border border-white/50 shadow-soft">
             <button
-              onClick={() => setTimeRange('7d')}
+              onClick={() => handleTimeRangeChange('7d')}
               className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
                 timeRange === '7d'
                   ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-lg'
@@ -163,7 +216,7 @@ const AnalyticsDashboard: React.FC = () => {
               7 Days
             </button>
             <button
-              onClick={() => setTimeRange('30d')}
+              onClick={() => handleTimeRangeChange('30d')}
               className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
                 timeRange === '30d'
                   ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-lg'
@@ -173,7 +226,7 @@ const AnalyticsDashboard: React.FC = () => {
               30 Days
             </button>
             <button
-              onClick={() => setTimeRange('90d')}
+              onClick={() => handleTimeRangeChange('90d')}
               className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
                 timeRange === '90d'
                   ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-lg'
@@ -295,6 +348,21 @@ const AnalyticsDashboard: React.FC = () => {
           </h3>
           <PerformanceMonitor />
         </div>
+
+        {/* Real-Time Analytics */}
+        <RealTimeAnalytics />
+
+        {/* User Engagement Metrics */}
+        <UserEngagementMetrics />
+
+        {/* Analytics Charts */}
+        <AnalyticsCharts />
+
+        {/* Analytics Trends */}
+        <AnalyticsTrends />
+
+        {/* Analytics Export */}
+        <AnalyticsExport />
       </div>
     </div>
   );

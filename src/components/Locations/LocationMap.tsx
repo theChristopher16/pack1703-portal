@@ -7,16 +7,20 @@ interface LocationMapProps {
   locations: Location[];
   onLocationSelect: (location: Location) => void;
   selectedLocation: Location | null;
+  onLocationAdd?: (lat: number, lng: number) => void;
   height?: string;
   showControls?: boolean;
+  mapProvider?: 'leaflet' | 'apple';
 }
 
 const LocationMap: React.FC<LocationMapProps> = ({
   locations,
   onLocationSelect,
   selectedLocation,
+  onLocationAdd,
   height = '600px',
-  showControls = true
+  showControls = true,
+  mapProvider = 'leaflet'
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -104,6 +108,13 @@ const LocationMap: React.FC<LocationMapProps> = ({
         tileLayer.on('tileerror', (e) => {
           console.warn('Tile loading error:', e);
         });
+
+        // Add click listener for location creation if enabled
+        if (onLocationAdd) {
+          map.on('click', (e: any) => {
+            onLocationAdd(e.latlng.lat, e.latlng.lng);
+          });
+        }
 
         // Wait for map to be ready and tiles to load before adding markers
         map.whenReady(() => {
@@ -235,7 +246,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
         mapInstanceRef.current = null;
       }
     };
-  }, [locations, onLocationSelect, createPopupContent]);
+  }, [locations, onLocationSelect, createPopupContent, onLocationAdd]);
 
   // Update selected location marker
   useEffect(() => {

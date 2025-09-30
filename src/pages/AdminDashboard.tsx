@@ -2,7 +2,6 @@ import React from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { Link } from 'react-router-dom';
 import { Shield, ArrowLeft, Home } from 'lucide-react';
-import DatabaseMonitor from '../components/Admin/DatabaseMonitor';
 import SystemMonitor from '../components/Admin/SystemMonitor';
 import AccountLinking from '../components/Admin/AccountLinking';
 import ReminderWidget from '../components/Admin/ReminderWidget';
@@ -100,32 +99,7 @@ const AdminDashboard: React.FC = () => {
           <SystemMonitor />
         </div>
         
-                       {/* Database Monitor */}
-               <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft">
-                 <h2 className="text-2xl font-display font-semibold text-gray-800 mb-6 flex items-center">
-                   <span className="w-2 h-8 bg-gradient-to-b from-primary-500 to-secondary-500 rounded-full mr-4"></span>
-                   Database Monitor
-                 </h2>
-                 <DatabaseMonitor />
-               </div>
 
-               {/* AI Permissions Audit */}
-               <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft mt-8">
-                 <h2 className="text-2xl font-display font-semibold text-gray-800 mb-6 flex items-center">
-                   <span className="w-2 h-8 bg-gradient-to-b from-primary-500 to-secondary-500 rounded-full mr-4"></span>
-                   AI Permissions Audit
-                 </h2>
-                 <p className="text-gray-600 mb-4">
-                   Review Solyn's access permissions and security controls
-                 </p>
-                 <Link
-                   to="/admin/permissions-audit"
-                   className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-                 >
-                   <Shield className="w-4 h-4 mr-2" />
-                   View Permissions Audit
-                 </Link>
-               </div>
 
                {/* Account Linking */}
                <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft mt-8">

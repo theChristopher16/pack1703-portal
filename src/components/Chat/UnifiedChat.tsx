@@ -24,6 +24,7 @@ const UnifiedChat: React.FC = () => {
   const { showError, showSuccess } = useToast();
   const { state } = useAdmin();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   
   // Check if user can delete messages (admin and up)
@@ -82,7 +83,9 @@ const UnifiedChat: React.FC = () => {
         setMessages(newMessages);
         // Auto-scroll to bottom when new messages arrive
         setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+          }
         }, 100);
       });
 
@@ -572,7 +575,7 @@ const UnifiedChat: React.FC = () => {
 
         {/* Message Area */}
         <main className="flex-1 flex flex-col bg-white/80 backdrop-blur-sm">
-          <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4">
+          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4">
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 py-6 sm:py-8">
                 <div className="w-16 h-16 bg-gradient-solar rounded-full flex items-center justify-center mx-auto mb-4 shadow-glow-primary/30">

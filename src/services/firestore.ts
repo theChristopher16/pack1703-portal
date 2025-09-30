@@ -91,11 +91,14 @@ export const firestoreService = {
       const snapshot = await getDocs(q);
       const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
       
-      // Update cache
-      eventsCache = { data: events, timestamp: Date.now() };
-      console.log('💾 Cached events data');
+      // Enrich events with location coordinates
+      const enrichedEvents = await this.enrichEventsWithLocationData(events);
       
-      return events;
+      // Update cache
+      eventsCache = { data: enrichedEvents, timestamp: Date.now() };
+      console.log('💾 Cached events data with location coordinates');
+      
+      return enrichedEvents;
     });
   },
 
@@ -114,6 +117,62 @@ export const firestoreService = {
   clearEventsCache(): void {
     eventsCache = null;
     console.log('🗑️ Cleared events cache');
+  },
+
+  // Enrich events with location data including coordinates
+  async enrichEventsWithLocationData(events: any[]): Promise<any[]> {
+    try {
+      // Get all unique location IDs from events
+      const locationIds = [...new Set(events
+        .map(event => event.locationId)
+        .filter(id => id && id !== 'RwI4opwHcUx3GKKF7Ten') // Exclude default location
+      )];
+
+      if (locationIds.length === 0) {
+        console.log('📍 No location IDs to enrich');
+        return events;
+      }
+
+      // Fetch all locations in batch
+      const locationPromises = locationIds.map(async (locationId) => {
+        try {
+          const locationRef = doc(db, 'locations', locationId);
+          const locationDoc = await getDoc(locationRef);
+          if (locationDoc.exists()) {
+            return { id: locationDoc.id, ...locationDoc.data() };
+          }
+          return null;
+        } catch (error) {
+          console.warn(`Failed to fetch location ${locationId}:`, error);
+          return null;
+        }
+      });
+
+      const locations = (await Promise.all(locationPromises)).filter(Boolean);
+      console.log(`📍 Fetched ${locations.length} locations for events`);
+
+      // Create a map for quick lookup
+      const locationMap = new Map(locations.map(loc => [loc.id, loc]));
+
+      // Enrich events with location data
+      const enrichedEvents = events.map(event => {
+        if (event.locationId && locationMap.has(event.locationId)) {
+          const location = locationMap.get(event.locationId);
+          return {
+            ...event,
+            locationName: location.name,
+            address: location.address,
+            coordinates: location.geo ? { lat: location.geo.lat, lng: location.geo.lng } : undefined
+          };
+        }
+        return event;
+      });
+
+      return enrichedEvents;
+    } catch (error) {
+      console.error('Error enriching events with location data:', error);
+      return events; // Return original events if enrichment fails
+    }
   },
 
   // Locations

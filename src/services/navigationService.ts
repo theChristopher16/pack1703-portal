@@ -33,9 +33,10 @@ export interface NavigationItem {
   description?: string;
 }
 
-// Define all navigation items with role-based access
+// Define all navigation items organized by role hierarchy
+// Order: Parent → Volunteer → Admin → Super Admin
 export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
-  // PUBLIC ITEMS (visible to everyone)
+  // PARENT LEVEL (all users)
   {
     name: 'Home',
     href: '/',
@@ -84,8 +85,6 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     category: 'public',
     description: 'Environmental monitoring and education'
   },
-
-  // AUTHENTICATED ITEMS (require login)
   {
     name: 'Profile',
     href: '/profile',
@@ -118,6 +117,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     category: 'authenticated',
     description: 'Share feedback and suggestions'
   },
+
+  // VOLUNTEER LEVEL (den leaders and above)
   {
     name: 'Data Audit',
     href: '/data-audit',
@@ -127,7 +128,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     description: 'Privacy and data transparency'
   },
 
-  // ADMIN ITEMS (admin and above)
+  // ADMIN LEVEL (pack administrators and above)
   {
     name: 'Analytics',
     href: '/analytics',
@@ -176,8 +177,16 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     category: 'admin',
     description: 'Manage pack lists and inventories'
   },
+  {
+    name: 'Cost Management',
+    href: '/cost-management',
+    icon: DollarSign,
+    roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+    category: 'system',
+    description: 'System cost monitoring'
+  },
 
-  // SYSTEM ITEMS (root only)
+  // SUPER ADMIN LEVEL (system administrators only)
   {
     name: 'Solyn AI',
     href: '/ai',
@@ -201,14 +210,6 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
     description: 'Multi-pack management'
-  },
-  {
-    name: 'Cost Management',
-    href: '/cost-management',
-    icon: DollarSign,
-    roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
-    category: 'system',
-    description: 'System cost monitoring'
   },
   {
     name: 'System Settings',

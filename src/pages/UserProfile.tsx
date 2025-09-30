@@ -274,7 +274,7 @@ const UserProfile: React.FC = () => {
           </nav>
           
           {/* Edit Profile Button - only show for profile tab */}
-          {activeTab === 'profile' && !isEditMode && (
+          {activeTab === 'profile' && (
             <button
               onClick={() => setIsEditMode(true)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto justify-center"

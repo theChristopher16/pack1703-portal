@@ -55,6 +55,11 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
   const currentUser = null; // TODO: Implement AuthContext
   const [user, setUser] = useState<AppUser | null>(propUser || currentUser);
   const [isEditMode, setIsEditMode] = useState(isEditing);
+  
+  // Sync with parent component's edit mode
+  useEffect(() => {
+    setIsEditMode(isEditing);
+  }, [isEditing]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -254,9 +259,8 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
         onSave(updatedUser);
       }
 
-      // Exit edit mode after successful save
+      // Clear success message after 2 seconds
       setTimeout(() => {
-        setIsEditMode(false);
         setSuccess(null);
       }, 2000);
 
@@ -268,7 +272,6 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
   };
 
   const handleCancel = () => {
-    setIsEditMode(false);
     setError(null);
     setSuccess(null);
     if (onCancel) {

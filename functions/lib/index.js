@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendAnnouncementEmails = exports.createTestAnnouncement = exports.helloWorld = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
+exports.publicICSFeed = exports.icsFeed = exports.sendSMS = exports.sendAnnouncementSMS = exports.sendAnnouncementEmails = exports.createTestAnnouncement = exports.helloWorld = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 // Initialize Firebase Admin
@@ -2184,4 +2184,284 @@ exports.sendAnnouncementEmails = functions.https.onCall(async (data, context) =>
         throw new functions.https.HttpsError('internal', error.message || 'Failed to send announcement emails');
     }
 });
+// Send announcement SMS via server-side SMS service
+exports.sendAnnouncementSMS = functions.https.onCall(async (data, context) => {
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        const { announcement, testMode = false } = data;
+        if (!announcement) {
+            throw new functions.https.HttpsError('invalid-argument', 'Announcement data is required');
+        }
+        // Import SMS service
+        const { smsService } = await Promise.resolve().then(() => require('./smsService'));
+        // Get users based on announcement targeting
+        let targetUsers = [];
+        if (announcement.targetDens && announcement.targetDens.length > 0) {
+            // Get users for specific dens
+            for (const denId of announcement.targetDens) {
+                const denUsersSnapshot = await db.collection('users')
+                    .where('status', '==', 'approved')
+                    .where('dens', 'array-contains', denId)
+                    .get();
+                denUsersSnapshot.forEach(userDoc => {
+                    const userData = userDoc.data();
+                    // Avoid duplicates if user is in multiple targeted dens
+                    if (!targetUsers.find(u => u.id === userDoc.id)) {
+                        targetUsers.push(Object.assign({ id: userDoc.id }, userData));
+                    }
+                });
+            }
+        }
+        else {
+            // Get all approved users (no specific targeting)
+            const usersSnapshot = await db.collection('users')
+                .where('status', '==', 'approved')
+                .get();
+            usersSnapshot.forEach((userDoc) => {
+                targetUsers.push(Object.assign({ id: userDoc.id }, userDoc.data()));
+            });
+        }
+        const smsPromises = [];
+        const testPhones = ['+15551234567', '+15559876543']; // Test phone numbers
+        targetUsers.forEach((userData) => {
+            var _a;
+            // Skip if no phone number
+            if (!userData.phone)
+                return;
+            // In test mode, only send to test phones
+            if (testMode && !testPhones.includes(userData.phone)) {
+                functions.logger.info(`🧪 Test mode: Skipping ${userData.phone}`);
+                return;
+            }
+            // Check user SMS preferences
+            const smsEnabled = ((_a = userData.preferences) === null || _a === void 0 ? void 0 : _a.smsNotifications) === true;
+            if (!smsEnabled) {
+                functions.logger.info(`📱 SMS disabled for ${userData.phone}, skipping`);
+                return;
+            }
+            // Format phone number
+            const formattedPhone = smsService.formatPhoneNumber(userData.phone);
+            // Validate phone number
+            if (!smsService.isValidPhoneNumber(formattedPhone)) {
+                functions.logger.warn(`📱 Invalid phone number for user ${userData.id}: ${userData.phone}`);
+                return;
+            }
+            smsPromises.push(smsService.sendAnnouncementSMS(formattedPhone, announcement));
+        });
+        // Send all SMS messages in parallel
+        const results = await Promise.allSettled(smsPromises);
+        const successful = results.filter(result => result.status === 'fulfilled' && result.value.success === true).length;
+        const failed = results.length - successful;
+        const modeText = testMode ? ' (TEST MODE)' : '';
+        functions.logger.info(`📱 Announcement SMS sent${modeText}: ${successful} successful, ${failed} failed`);
+        return {
+            success: true,
+            successful,
+            failed,
+            total: results.length,
+            message: `Sent ${successful} SMS messages successfully, ${failed} failed`
+        };
+    }
+    catch (error) {
+        functions.logger.error('❌ Error sending announcement SMS:', error);
+        throw new functions.https.HttpsError('internal', error.message || 'Failed to send announcement SMS');
+    }
+});
+// Send SMS via Twilio (direct API endpoint)
+exports.sendSMS = functions.https.onCall(async (data, context) => {
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        const { to, message, from } = data;
+        if (!to || !message) {
+            throw new functions.https.HttpsError('invalid-argument', 'Phone number and message are required');
+        }
+        // Import SMS service
+        const { smsService } = await Promise.resolve().then(() => require('./smsService'));
+        // Format and validate phone number
+        const formattedPhone = smsService.formatPhoneNumber(to);
+        if (!smsService.isValidPhoneNumber(formattedPhone)) {
+            throw new functions.https.HttpsError('invalid-argument', 'Invalid phone number format');
+        }
+        const result = await smsService.sendSMS({
+            to: formattedPhone,
+            message,
+            from: from || undefined
+        });
+        if (result.success) {
+            functions.logger.info(`📱 SMS sent successfully to ${formattedPhone}`);
+            return {
+                success: true,
+                messageId: result.messageId
+            };
+        }
+        else {
+            functions.logger.error(`📱 SMS failed to ${formattedPhone}: ${result.error}`);
+            throw new functions.https.HttpsError('internal', result.error || 'Failed to send SMS');
+        }
+    }
+    catch (error) {
+        functions.logger.error('❌ Error sending SMS:', error);
+        throw new functions.https.HttpsError('internal', error.message || 'Failed to send SMS');
+    }
+});
+// ICS Feed Generator Function
+exports.icsFeed = functions.https.onCall(async (data, context) => {
+    try {
+        const { categories = [], denTags = [], startDate, endDate, includeDescription = true, includeLocation = true } = data;
+        // Check App Check (skip in emulator and development for testing)
+        if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
+            throw new functions.https.HttpsError('unauthenticated', 'App Check required');
+        }
+        // Build query for future events
+        let query = db.collection('events')
+            .where('visibility', 'in', ['public', null])
+            .where('startDate', '>=', getTimestamp())
+            .orderBy('startDate');
+        // Apply filters
+        if (categories.length > 0) {
+            query = query.where('category', 'in', categories);
+        }
+        const eventsSnapshot = await query.get();
+        const events = [];
+        eventsSnapshot.forEach((doc) => {
+            const event = doc.data();
+            // Filter by den tags if specified
+            if (denTags.length > 0) {
+                if (!event.denTags || !event.denTags.some((tag) => denTags.includes(tag))) {
+                    return;
+                }
+            }
+            // Filter by date range if specified
+            if (startDate && endDate) {
+                const eventStartDate = event.startDate.toDate();
+                const filterStartDate = new Date(startDate);
+                const filterEndDate = new Date(endDate);
+                if (eventStartDate < filterStartDate || eventStartDate > filterEndDate) {
+                    return;
+                }
+            }
+            events.push(Object.assign({ id: doc.id }, event));
+        });
+        // Generate ICS content
+        const icsContent = generateICSContent(events, {
+            includeDescription,
+            includeLocation
+        });
+        return {
+            success: true,
+            icsContent,
+            eventCount: events.length,
+            message: `ICS feed generated with ${events.length} events`
+        };
+    }
+    catch (error) {
+        console.error('ICS feed generation error:', error);
+        throw new functions.https.HttpsError('internal', 'Failed to generate ICS feed');
+    }
+});
+// Public ICS Feed Endpoint (no authentication required)
+exports.publicICSFeed = functions.https.onRequest(async (req, res) => {
+    try {
+        // Set CORS headers
+        res.set('Access-Control-Allow-Origin', '*');
+        res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.set('Access-Control-Allow-Headers', 'Content-Type');
+        // Handle preflight requests
+        if (req.method === 'OPTIONS') {
+            res.status(204).send('');
+            return;
+        }
+        // Only allow GET requests
+        if (req.method !== 'GET') {
+            res.status(405).send('Method Not Allowed');
+            return;
+        }
+        const { categories = '', dens = '', startDate, endDate } = req.query;
+        // Parse query parameters
+        const categoryList = categories ? categories.toString().split(',') : [];
+        const denList = dens ? dens.toString().split(',') : [];
+        // Build query for future events
+        let query = db.collection('events')
+            .where('visibility', 'in', ['public', null])
+            .where('startDate', '>=', getTimestamp())
+            .orderBy('startDate');
+        // Apply filters
+        if (categoryList.length > 0) {
+            query = query.where('category', 'in', categoryList);
+        }
+        const eventsSnapshot = await query.get();
+        const events = [];
+        eventsSnapshot.forEach((doc) => {
+            const event = doc.data();
+            // Filter by den tags if specified
+            if (denList.length > 0) {
+                if (!event.denTags || !event.denTags.some((tag) => denList.includes(tag))) {
+                    return;
+                }
+            }
+            // Filter by date range if specified
+            if (startDate && endDate) {
+                const eventStartDate = event.startDate.toDate();
+                const filterStartDate = new Date(startDate.toString());
+                const filterEndDate = new Date(endDate.toString());
+                if (eventStartDate < filterStartDate || eventStartDate > filterEndDate) {
+                    return;
+                }
+            }
+            events.push(Object.assign({ id: doc.id }, event));
+        });
+        // Generate ICS content
+        const icsContent = generateICSContent(events, {
+            includeDescription: true,
+            includeLocation: true
+        });
+        // Set response headers for ICS file
+        res.set({
+            'Content-Type': 'text/calendar; charset=utf-8',
+            'Content-Disposition': 'inline; filename="pack1703-events.ics"',
+            'Cache-Control': 'public, max-age=3600' // Cache for 1 hour
+        });
+        res.send(icsContent);
+    }
+    catch (error) {
+        console.error('Public ICS feed error:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+// Helper function to generate ICS content
+function generateICSContent(events, options) {
+    const { includeDescription, includeLocation } = options;
+    const icsContent = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Pack 1703//Event Calendar//EN',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
+        'X-WR-CALNAME:Pack 1703 Events',
+        'X-WR-CALDESC:Pack 1703 Family Events and Activities',
+        'X-WR-TIMEZONE:America/Chicago'
+    ];
+    // Add timezone information
+    icsContent.push('BEGIN:VTIMEZONE', 'TZID:America/Chicago', 'BEGIN:STANDARD', 'DTSTART:19671105T020000', 'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU', 'TZOFFSETFROM:-0500', 'TZOFFSETTO:-0600', 'TZNAME:CST', 'END:STANDARD', 'BEGIN:DAYLIGHT', 'DTSTART:19670312T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU', 'TZOFFSETFROM:-0600', 'TZOFFSETTO:-0500', 'TZNAME:CDT', 'END:DAYLIGHT', 'END:VTIMEZONE');
+    // Add events
+    events.forEach(event => {
+        const startDate = event.startDate.toDate();
+        const endDate = event.endDate.toDate();
+        const formatICSDate = (date) => {
+            return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        };
+        const formatICSDateWithTZ = (date) => {
+            return date.toISOString().replace(/[-:]/g, '').split('.')[0];
+        };
+        icsContent.push('BEGIN:VEVENT', `UID:${event.id}@pack1703.com`, `DTSTAMP:${formatICSDate(new Date())}`, `DTSTART;TZID=America/Chicago:${formatICSDateWithTZ(startDate)}`, `DTEND;TZID=America/Chicago:${formatICSDateWithTZ(endDate)}`, `SUMMARY:${event.title}`, includeDescription && event.description ? `DESCRIPTION:${event.description.replace(/\n/g, '\\n')}` : '', includeLocation && event.location ? `LOCATION:${event.location}` : '', event.category ? `CATEGORIES:${event.category}` : '', event.denTags && event.denTags.length > 0 ? `CATEGORIES:${event.denTags.join(',')}` : '', 'STATUS:CONFIRMED', 'SEQUENCE:0', 'END:VEVENT');
+    });
+    icsContent.push('END:VCALENDAR');
+    return icsContent.filter(line => line !== '').join('\r\n');
+}
 //# sourceMappingURL=index.js.map

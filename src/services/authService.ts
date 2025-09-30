@@ -1656,10 +1656,15 @@ class AuthService {
     }
   }
 
-  // Send password reset email
+  // Send password reset email using our custom Cloud Function
   async sendPasswordResetEmail(email: string): Promise<void> {
     try {
-      await sendPasswordResetEmail(this.auth, email);
+      const sendPasswordReset = httpsCallable(functions, 'sendPasswordReset');
+      const result = await sendPasswordReset({ email });
+      
+      if (!result.data.success) {
+        throw new Error(result.data.message || 'Failed to send password reset email');
+      }
     } catch (error) {
       console.error('Error sending password reset email:', error);
       throw error;

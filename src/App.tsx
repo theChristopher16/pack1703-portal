@@ -18,6 +18,7 @@ import LocationsPage from './pages/LocationsPage';
 import UnifiedAnnouncementsPage from './pages/UnifiedAnnouncementsPage';
 import ResourcesPage from './pages/ResourcesPage';
 import VolunteerPage from './pages/VolunteerPage';
+import PasswordResetPage from './pages/PasswordResetPage';
 import EcologyPage from './pages/EcologyPage';
 import FeedbackPage from './pages/FeedbackPage';
 import DataAuditPage from './pages/DataAuditPage';
@@ -130,6 +131,7 @@ function App() {
           <Route path="/" element={<Layout><HomePage /></Layout>} />
           <Route path="/events" element={<Layout><EventsPage /></Layout>} />
           <Route path="/events/:eventId" element={<Layout><EventDetailPage /></Layout>} />
+          <Route path="/reset-password" element={<PasswordResetPage />} />
           <Route path="/test-navigation" element={<TestNavigation />} />
           <Route path="/auth-debug" element={<AuthDebugPage />} />
           <Route path="/locations" element={<Layout><LocationsPage /></Layout>} />

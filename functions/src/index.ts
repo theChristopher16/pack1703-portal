@@ -3029,3 +3029,418 @@ function generateICSContent(events: any[], options: { includeDescription: boolea
 
   return icsContent.filter(line => line !== '').join('\r\n');
 }
+
+// Password Reset Function
+export const sendPasswordReset = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    const { email } = data;
+    
+    if (!email) {
+      throw new functions.https.HttpsError('invalid-argument', 'Email is required');
+    }
+
+    // Check if user exists in Firestore
+    const usersSnapshot = await db.collection('users')
+      .where('email', '==', email)
+      .where('status', '==', 'approved')
+      .limit(1)
+      .get();
+
+    if (usersSnapshot.empty) {
+      // Don't reveal if user exists or not for security
+      return {
+        success: true,
+        message: 'If an account with that email exists, a password reset link has been sent.'
+      };
+    }
+
+    const userDoc = usersSnapshot.docs[0];
+    const userData = userDoc.data();
+
+    // Generate password reset token
+    const resetToken = require('crypto').randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 3600000); // 1 hour
+
+    // Store reset token in Firestore
+    await db.collection('passwordResetTokens').doc(resetToken).set({
+      userId: userDoc.id,
+      email: email,
+      expires: resetExpires,
+      used: false,
+      createdAt: getTimestamp()
+    });
+
+    // Generate reset URL
+    const resetUrl = `https://pack1703-portal.web.app/reset-password?token=${resetToken}`;
+
+    // Import email service
+    const { emailService } = await import('./emailService');
+
+    // Send password reset email
+    const emailData = {
+      to: email,
+      from: 'cubmaster@sfpack1703.com',
+      subject: 'Pack 1703 Portal - Password Reset Request',
+      html: generatePasswordResetEmailHTML(userData.displayName || 'User', resetUrl),
+      text: generatePasswordResetEmailText(userData.displayName || 'User', resetUrl)
+    };
+
+    await emailService.sendEmail(emailData);
+
+    // Log the password reset request
+    await db.collection('adminActions').add({
+      userId: userDoc.id,
+      userEmail: email,
+      action: 'password_reset_requested',
+      entityType: 'user',
+      entityId: userDoc.id,
+      entityName: userData.displayName || email,
+      details: {
+        email: email,
+        resetToken: resetToken,
+        expires: resetExpires
+      },
+      timestamp: getTimestamp(),
+      ipAddress: context.rawRequest?.ip || 'unknown',
+      userAgent: context.rawRequest?.headers?.['user-agent'] || 'unknown',
+      success: true
+    });
+
+    return {
+      success: true,
+      message: 'Password reset email sent successfully'
+    };
+
+  } catch (error) {
+    console.error('Error sending password reset:', error);
+    throw new functions.https.HttpsError('internal', 'Failed to send password reset email');
+  }
+});
+
+// Verify Password Reset Token
+export const verifyPasswordResetToken = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    const { token } = data;
+    
+    if (!token) {
+      throw new functions.https.HttpsError('invalid-argument', 'Reset token is required');
+    }
+
+    // Get reset token from Firestore
+    const tokenDoc = await db.collection('passwordResetTokens').doc(token).get();
+    
+    if (!tokenDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Invalid or expired reset token');
+    }
+
+    const tokenData = tokenDoc.data();
+    
+    // Check if token is expired
+    if (new Date() > tokenData.expires.toDate()) {
+      // Clean up expired token
+      await db.collection('passwordResetTokens').doc(token).delete();
+      throw new functions.https.HttpsError('deadline-exceeded', 'Reset token has expired');
+    }
+
+    // Check if token has been used
+    if (tokenData.used) {
+      throw new functions.https.HttpsError('failed-precondition', 'Reset token has already been used');
+    }
+
+    // Get user data
+    const userDoc = await db.collection('users').doc(tokenData.userId).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'User not found');
+    }
+
+    const userData = userDoc.data();
+
+    return {
+      success: true,
+      email: tokenData.email,
+      displayName: userData.displayName,
+      message: 'Reset token is valid'
+    };
+
+  } catch (error) {
+    console.error('Error verifying password reset token:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to verify reset token');
+  }
+});
+
+// Reset Password with Token
+export const resetPasswordWithToken = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    const { token, newPassword } = data;
+    
+    if (!token || !newPassword) {
+      throw new functions.https.HttpsError('invalid-argument', 'Reset token and new password are required');
+    }
+
+    if (newPassword.length < 6) {
+      throw new functions.https.HttpsError('invalid-argument', 'Password must be at least 6 characters long');
+    }
+
+    // Get reset token from Firestore
+    const tokenDoc = await db.collection('passwordResetTokens').doc(token).get();
+    
+    if (!tokenDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Invalid or expired reset token');
+    }
+
+    const tokenData = tokenDoc.data();
+    
+    // Check if token is expired
+    if (new Date() > tokenData.expires.toDate()) {
+      // Clean up expired token
+      await db.collection('passwordResetTokens').doc(token).delete();
+      throw new functions.https.HttpsError('deadline-exceeded', 'Reset token has expired');
+    }
+
+    // Check if token has been used
+    if (tokenData.used) {
+      throw new functions.https.HttpsError('failed-precondition', 'Reset token has already been used');
+    }
+
+    // Get user data
+    const userDoc = await db.collection('users').doc(tokenData.userId).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'User not found');
+    }
+
+    const userData = userDoc.data();
+
+    // Update password in Firebase Auth
+    try {
+      await admin.auth().updateUser(tokenData.userId, {
+        password: newPassword
+      });
+    } catch (authError: any) {
+      console.error('Error updating password in Firebase Auth:', authError);
+      throw new functions.https.HttpsError('internal', 'Failed to update password');
+    }
+
+    // Mark token as used
+    await db.collection('passwordResetTokens').doc(token).update({
+      used: true,
+      usedAt: getTimestamp()
+    });
+
+    // Update user's last password change
+    await db.collection('users').doc(tokenData.userId).update({
+      lastPasswordChange: getTimestamp(),
+      updatedAt: getTimestamp()
+    });
+
+    // Log the password reset
+    await db.collection('adminActions').add({
+      userId: tokenData.userId,
+      userEmail: tokenData.email,
+      action: 'password_reset_completed',
+      entityType: 'user',
+      entityId: tokenData.userId,
+      entityName: userData.displayName || tokenData.email,
+      details: {
+        email: tokenData.email,
+        resetToken: token,
+        method: 'token_reset'
+      },
+      timestamp: getTimestamp(),
+      ipAddress: context.rawRequest?.ip || 'unknown',
+      userAgent: context.rawRequest?.headers?.['user-agent'] || 'unknown',
+      success: true
+    });
+
+    // Send confirmation email
+    try {
+      const { emailService } = await import('./emailService');
+      
+      const emailData = {
+        to: tokenData.email,
+        from: 'cubmaster@sfpack1703.com',
+        subject: 'Pack 1703 Portal - Password Successfully Reset',
+        html: generatePasswordResetConfirmationHTML(userData.displayName || 'User'),
+        text: generatePasswordResetConfirmationText(userData.displayName || 'User')
+      };
+
+      await emailService.sendEmail(emailData);
+    } catch (emailError) {
+      console.error('Failed to send password reset confirmation email:', emailError);
+      // Don't fail the password reset if email fails
+    }
+
+    return {
+      success: true,
+      message: 'Password has been reset successfully'
+    };
+
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to reset password');
+  }
+});
+
+// Helper function to generate password reset email HTML
+function generatePasswordResetEmailHTML(displayName: string, resetUrl: string): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Password Reset - Pack 1703 Portal</title>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; }
+        .button { display: inline-block; background: #3b82f6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+        .button:hover { background: #2563eb; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+        .warning { background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 8px; margin: 20px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>🔐 Password Reset Request</h1>
+        <p>Pack 1703 Portal</p>
+      </div>
+      
+      <div class="content">
+        <h2>Hello ${displayName}!</h2>
+        
+        <p>We received a request to reset your password for your Pack 1703 Portal account.</p>
+        
+        <p>If you made this request, click the button below to reset your password:</p>
+        
+        <div style="text-align: center;">
+          <a href="${resetUrl}" class="button">Reset My Password</a>
+        </div>
+        
+        <div class="warning">
+          <strong>⚠️ Important Security Information:</strong>
+          <ul>
+            <li>This link will expire in 1 hour</li>
+            <li>This link can only be used once</li>
+            <li>If you didn't request this reset, please ignore this email</li>
+          </ul>
+        </div>
+        
+        <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+        <p style="word-break: break-all; background: #e5e7eb; padding: 10px; border-radius: 5px; font-family: monospace;">${resetUrl}</p>
+        
+        <p>If you have any questions or need assistance, please contact the pack leadership.</p>
+        
+        <p>Best regards,<br>
+        Pack 1703 Leadership Team</p>
+      </div>
+      
+      <div class="footer">
+        <p>This email was sent because a password reset was requested for your Pack 1703 Portal account.</p>
+        <p>© 2025 Pack 1703. All rights reserved.</p>
+      </div>
+    </body>
+    </html>
+  `.trim();
+}
+
+// Helper function to generate password reset email text
+function generatePasswordResetEmailText(displayName: string, resetUrl: string): string {
+  return `
+🔐 Password Reset Request - Pack 1703 Portal
+
+Hello ${displayName}!
+
+We received a request to reset your password for your Pack 1703 Portal account.
+
+If you made this request, click the link below to reset your password:
+
+${resetUrl}
+
+⚠️ Important Security Information:
+- This link will expire in 1 hour
+- This link can only be used once
+- If you didn't request this reset, please ignore this email
+
+If you have any questions or need assistance, please contact the pack leadership.
+
+Best regards,
+Pack 1703 Leadership Team
+
+This email was sent because a password reset was requested for your Pack 1703 Portal account.
+© 2025 Pack 1703. All rights reserved.
+  `.trim();
+}
+
+// Helper function to generate password reset confirmation email HTML
+function generatePasswordResetConfirmationHTML(displayName: string): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Password Reset Confirmation - Pack 1703 Portal</title>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #059669, #10b981); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; }
+        .success { background: #d1fae5; border: 1px solid #10b981; padding: 15px; border-radius: 8px; margin: 20px 0; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>✅ Password Successfully Reset</h1>
+        <p>Pack 1703 Portal</p>
+      </div>
+      
+      <div class="content">
+        <h2>Hello ${displayName}!</h2>
+        
+        <div class="success">
+          <strong>✅ Success!</strong> Your password has been successfully reset.
+        </div>
+        
+        <p>Your Pack 1703 Portal account password has been updated. You can now log in with your new password.</p>
+        
+        <p>If you have any questions or need assistance, please contact the pack leadership.</p>
+        
+        <p>Best regards,<br>
+        Pack 1703 Leadership Team</p>
+      </div>
+      
+      <div class="footer">
+        <p>This email confirms that your password was successfully reset.</p>
+        <p>© 2025 Pack 1703. All rights reserved.</p>
+      </div>
+    </body>
+    </html>
+  `.trim();
+}
+
+// Helper function to generate password reset confirmation email text
+function generatePasswordResetConfirmationText(displayName: string): string {
+  return `
+✅ Password Successfully Reset - Pack 1703 Portal
+
+Hello ${displayName}!
+
+✅ Success! Your password has been successfully reset.
+
+Your Pack 1703 Portal account password has been updated. You can now log in with your new password.
+
+If you have any questions or need assistance, please contact the pack leadership.
+
+Best regards,
+Pack 1703 Leadership Team
+
+This email confirms that your password was successfully reset.
+© 2025 Pack 1703. All rights reserved.
+  `.trim();
+}

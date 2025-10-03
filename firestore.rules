@@ -692,7 +692,7 @@ service cloud.firestore {
       }
 
       // Integrations public record
-      match /integrations/{service} {
+      match /integrations/{integration} {
         allow read: if isSuper() || hasRole(tenantId, 'TENANT_ADMIN');
         allow write: if isSuper() || hasRole(tenantId, 'TENANT_ADMIN');
       }

@@ -69,7 +69,9 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     let mounted = true;
     // Derive slug from URL first segment to avoid route context mismatches
     const pathFirst = (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '') || '';
-    const fallbackSlug = pathFirst || tenantSlug || 'pack-1703';
+    // If on admin root route like "/multi-tenant", default to known slug for now
+    const normalizedFirst = pathFirst === 'multi-tenant' ? 'pack-1703' : pathFirst;
+    const fallbackSlug = normalizedFirst || tenantSlug || 'pack-1703';
     const slug = fallbackSlug.toLowerCase();
     fetchTenantIdForSlug(slug).then((resolved) => {
       if (!mounted) return;

@@ -54,6 +54,7 @@ import AdminUsers from './pages/AdminUsers';
 import SystemMonitor from './components/Admin/SystemMonitor';
 import { AdminProvider } from './contexts/AdminContext';
 import { MultiTenantProvider } from './contexts/MultiTenantContext';
+import TenantProvider from './contexts/TenantContext';
 
 function App() {
   useEffect(() => {
@@ -132,6 +133,63 @@ function App() {
                 <Route path="/password-setup" element={<PasswordSetupPage />} />
                 <Route path="/join/:inviteId" element={<JoinPage />} />
                 
+                {/* Protected Tenant-Scoped Routes (authentication required) */}
+                <Route path="/:tenantSlug/*" element={
+                  <AuthGuard>
+                    <TenantProvider>
+                      <Routes>
+                        {/* Public Routes */}
+                        <Route path="/" element={<Layout><HomePage /></Layout>} />
+                        <Route path="/events" element={<Layout><EventsPage /></Layout>} />
+                        <Route path="/events/:eventId" element={<Layout><EventDetailPage /></Layout>} />
+                        <Route path="/test-navigation" element={<TestNavigation />} />
+                        <Route path="/auth-debug" element={<AuthDebugPage />} />
+                        <Route path="/locations" element={<Layout><LocationsPage /></Layout>} />
+                        <Route path="/announcements" element={<Layout><UnifiedAnnouncementsPage /></Layout>} />
+                        <Route path="/resources" element={<Layout><ResourcesPage /></Layout>} />
+                        <Route path="/volunteer" element={<Layout><VolunteerPage /></Layout>} />
+                        <Route path="/ecology" element={<Layout><EcologyPage /></Layout>} />
+                        <Route path="/privacy" element={<Layout><PrivacyPolicyPage /></Layout>} />
+                        <Route path="/terms" element={<Layout><TermsOfServicePage /></Layout>} />
+                        
+                        {/* Authenticated Routes */}
+                        <Route path="/chat" element={<Layout><AuthenticatedOnly><UnifiedChat /></AuthenticatedOnly></Layout>} />
+                        <Route path="/feedback" element={<Layout><AuthenticatedOnly><FeedbackPage /></AuthenticatedOnly></Layout>} />
+                        <Route path="/data-audit" element={<Layout><AuthenticatedOnly><DataAuditPage /></AuthenticatedOnly></Layout>} />
+                        
+                        {/* Admin Routes */}
+                        <Route path="/analytics" element={<Layout><AdminOnly><AnalyticsDashboard /></AdminOnly></Layout>} />
+                        <Route path="/analytics/test" element={<Layout><AdminOnly><AnalyticsTest /></AdminOnly></Layout>} />
+                        <Route path="/locations" element={<Layout><AdminOnly><AdminLocations /></AdminOnly></Layout>} />
+                        <Route path="/lists" element={<Layout><AdminOnly><AdminLists /></AdminOnly></Layout>} />
+                        <Route path="/seasons" element={<Layout><AdminOnly><AdminSeasons /></AdminOnly></Layout>} />
+                        <Route path="/fundraising" element={<Layout><AdminOnly><AdminFundraising /></AdminOnly></Layout>} />
+                        <Route path="/finances" element={<Layout><AdminOnly><AdminFinances /></AdminOnly></Layout>} />
+                        <Route path="/users" element={<Layout><AdminOnly><AdminUsers /></AdminOnly></Layout>} />
+                        <Route path="/reminders" element={<Layout><AdminOnly><AdminReminders /></AdminOnly></Layout>} />
+                        
+                        {/* Root-only Routes */}
+                        <Route path="/ai" element={<Layout><RootOnly><AdminAI /></RootOnly></Layout>} />
+                        <Route path="/cost-management" element={<Layout><AdminOnly><AdminCostManagement /></AdminOnly></Layout>} />
+                        <Route path="/multi-tenant" element={<Layout><RootOnly><MultiTenantManagement /></RootOnly></Layout>} />
+                        <Route path="/settings" element={<Layout><RootOnly><AdminSettings /></RootOnly></Layout>} />
+                        
+                        {/* User Profile Route */}
+                        <Route path="/profile" element={<Layout><AuthenticatedOnly><UserProfile /></AuthenticatedOnly></Layout>} />
+                        <Route path="/soc" element={<Layout><RootOnly><HackerTab /></RootOnly></Layout>} />
+                        <Route path="/system" element={<Layout><RootOnly><SystemMonitor /></RootOnly></Layout>} />
+                        <Route path="/root-setup" element={<RootAccountSetup />} />
+                        
+                        {/* Development/Test Routes */}
+                        <Route path="/forms-demo" element={<Layout><FormsDemoPage /></Layout>} />
+                        <Route path="/cloud-functions-test" element={<Layout><CloudFunctionsTestPage /></Layout>} />
+                        
+                        <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
+                      </Routes>
+                    </TenantProvider>
+                  </AuthGuard>
+                } />
+
                 {/* Protected Routes (authentication required) */}
                 <Route path="/*" element={
                   <AuthGuard>

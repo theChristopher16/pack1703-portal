@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BME680 Test Data Upload</title>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD3Z9Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z",
+            authDomain: "pack1703-portal.firebaseapp.com",
+            projectId: "pack1703-portal",
+            storageBucket: "pack1703-portal.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abc123"
+        };
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        async function addTestBME680Data() {
+            const output = document.getElementById('output');
+            output.innerHTML += '📤 Adding test BME680 reading to Firestore...<br>';
+            
+            try {
+                const testReading = {
+                    timestamp: new Date(),
+                    temperature: 22.5,
+                    humidity: 45.2,
+                    pressure: 1013.2,
+                    gasResistance: 52000,
+                    airQualityIndex: 50,
+                    deviceId: "esp32_garden_01",
+                    location: "Pack 1703 Scout Garden"
+                };
+                
+                const docRef = await addDoc(collection(db, 'bme680_readings'), testReading);
+                output.innerHTML += `✅ Test data added successfully!<br>`;
+                output.innerHTML += `Document ID: ${docRef.id}<br><br>`;
+                
+                // Now fetch and display all readings
+                await checkBME680Data();
+            } catch (error) {
+                output.innerHTML += `❌ Error: ${error.message}<br>`;
+            }
+        }
+        
+        async function checkBME680Data() {
+            const output = document.getElementById('output');
+            output.innerHTML += '<br>🔍 Checking Firestore for BME680 data...<br><br>';
+            
+            try {
+                const q = query(
+                    collection(db, 'bme680_readings'),
+                    orderBy('timestamp', 'desc'),
+                    limit(10)
+                );
+                
+                const snapshot = await getDocs(q);
+                
+                if (snapshot.empty) {
+                    output.innerHTML += '❌ No BME680 readings found in Firestore<br>';
+                    return;
+                }
+                
+                output.innerHTML += `✅ Found ${snapshot.size} BME680 readings:<br><br>`;
+                
+                snapshot.forEach((doc, index) => {
+                    const data = doc.data();
+                    output.innerHTML += `<div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px;">`;
+                    output.innerHTML += `<strong>📊 Reading ${index + 1}</strong><br>`;
+                    output.innerHTML += `ID: ${doc.id}<br>`;
+                    output.innerHTML += `🌡️ Temperature: ${data.temperature}°C<br>`;
+                    output.innerHTML += `💧 Humidity: ${data.humidity}%<br>`;
+                    output.innerHTML += `🔽 Pressure: ${data.pressure} hPa<br>`;
+                    output.innerHTML += `💨 Gas Resistance: ${data.gasResistance} ohms<br>`;
+                    output.innerHTML += `🎯 Air Quality Index: ${data.airQualityIndex}<br>`;
+                    output.innerHTML += `📱 Device ID: ${data.deviceId || 'N/A'}<br>`;
+                    output.innerHTML += `📍 Location: ${data.location || 'N/A'}<br>`;
+                    output.innerHTML += `🕐 Timestamp: ${data.timestamp?.toDate?.() || data.timestamp}<br>`;
+                    output.innerHTML += `</div>`;
+                });
+                
+            } catch (error) {
+                output.innerHTML += `❌ Error: ${error.message}<br>`;
+            }
+        }
+        
+        // Make functions available globally
+        window.addTestBME680Data = addTestBME680Data;
+        window.checkBME680Data = checkBME680Data;
+        
+        // Auto-check on page load
+        window.addEventListener('load', checkBME680Data);
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌱 BME680 Firestore Test Tool</h1>
+    <p>Use this tool to test the BME680 Firestore integration</p>
+    
+    <button onclick="checkBME680Data()">🔍 Check Firestore Data</button>
+    <button onclick="addTestBME680Data()">➕ Add Test Reading</button>
+    
+    <div id="output">Loading...</div>
+</body>
+</html>
+
+
+
+
+
+
+

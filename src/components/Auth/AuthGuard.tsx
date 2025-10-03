@@ -215,7 +215,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   }
 
   // User is authenticated
-  const isSuper = state.currentUser?.role === 'super_admin' || state.currentUser?.role === 'root' || state.currentUser?.role === 'super-admin';
+  const role = state.currentUser?.role as any;
+  const isSuper = role === 'super_admin' || role === 'root' || role === 'super-admin';
   if (isSuper) {
     // If a default tenant is set and we're on home, go straight to that tenant
     const defaultTenantSlug = localStorage.getItem('defaultTenantSlug');

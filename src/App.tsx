@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import configService from './services/configService';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './contexts/ToastContext';
@@ -128,6 +128,8 @@ function App() {
             <Router>
               <ScrollToTop />
               <Routes>
+                {/* Redirect admin root to default tenant-scoped admin */}
+                <Route path="/multi-tenant" element={<Navigate to="/pack-1703/multi-tenant" replace />} />
                 {/* Public Routes (no authentication required) */}
                 <Route path="/reset-password" element={<PasswordResetPage />} />
                 <Route path="/password-setup" element={<PasswordSetupPage />} />

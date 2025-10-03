@@ -145,11 +145,6 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             console.log('Account request submitted:', requestId);
             setShowAccountRequestModal(false);
           }}
-          onCreateAccountSuccess={(user) => {
-            console.log('Account created successfully:', user);
-            setShowAccountRequestModal(false);
-            // The user will be automatically signed in by the authService
-          }}
         />
 
         {/* Password Reset Modal */}

@@ -10,8 +10,8 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && 
              (request.auth.token.get('role', '') == 'admin' ||
-              request.auth.token.get('role', '') == 'root' ||
-              request.auth.token.get('role', '') == 'super-admin' ||
+              request.auth.token.get('role', '') == 'super_admin' ||
+              request.auth.token.get('role', '') == 'den_leader' ||
               request.auth.token.get('isAdmin', false) == true);
     }
     
@@ -149,6 +149,37 @@ service cloud.firestore {
     // Admin user management - Admin only
     match /admin/users/{userId} {
       allow read, write: if isAdmin();
+    }
+
+    // Volunteer needs - Public read, admin write
+    match /volunteer-needs/{needId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Volunteer signups - Users can read/update their own, admins can read all
+    match /volunteer-signups/{signupId} {
+      allow read: if isAuthenticated() && 
+                     (resource.data.volunteerUserId == request.auth.uid || 
+                      resource.data.volunteerEmail == request.auth.token.email || 
+                      isAdmin());
+      allow create: if isAuthenticated() &&
+                       resource.data.volunteerUserId == request.auth.uid &&
+                       isValidString(resource.data.volunteerName, 100) &&
+                       isValidEmail(resource.data.volunteerEmail) &&
+                       isValidString(resource.data.needId, 50) &&
+                       isValidString(resource.data.eventId, 50) &&
+                       isValidString(resource.data.role, 100) &&
+                       resource.data.count is int &&
+                       resource.data.count > 0 &&
+                       resource.data.count <= 10 &&
+                       resource.data.status in ['pending', 'confirmed', 'cancelled'] &&
+                       isValidTimestamp(resource.data.createdAt);
+      allow update: if isAuthenticated() && 
+                       (resource.data.volunteerUserId == request.auth.uid || isAdmin()) &&
+                       resource.data.status in ['pending', 'confirmed', 'cancelled'];
+      allow delete: if isAuthenticated() && 
+                       (resource.data.volunteerUserId == request.auth.uid || isAdmin());
     }
 
     // System configuration - Admin only

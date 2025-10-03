@@ -34,12 +34,23 @@ interface AdminAnnouncement {
 const UnifiedAnnouncementsPage: React.FC = () => {
   const { state } = useAdmin();
   const currentUser = state.currentUser;
-  const isAdmin = currentUser?.role === 'super-admin' || currentUser?.role === 'root' || currentUser?.role === 'content-admin';
+  
+  // Check if user can manage announcements (admin/moderator only)
+  const canManageAnnouncements = currentUser?.role === 'super-admin' || 
+                                 currentUser?.role === 'content-admin' || 
+                                 currentUser?.role === 'moderator';
+  
+  // All authenticated users (including parents) can view announcements
+  const canViewAnnouncements = !!currentUser;
+  
+  // For backward compatibility
+  const isAdmin = canManageAnnouncements;
   
   // Debug logging
   console.log('UnifiedAnnouncementsPage - currentUser:', currentUser);
   console.log('UnifiedAnnouncementsPage - role:', currentUser?.role);
-  console.log('UnifiedAnnouncementsPage - isAdmin:', isAdmin);
+  console.log('UnifiedAnnouncementsPage - canManageAnnouncements:', canManageAnnouncements);
+  console.log('UnifiedAnnouncementsPage - canViewAnnouncements:', canViewAnnouncements);
 
   // User view state
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
@@ -79,15 +90,21 @@ const UnifiedAnnouncementsPage: React.FC = () => {
 
   // Fetch announcements based on user role
   useEffect(() => {
-    if (isAdmin) {
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
+    
+    if (canManageAnnouncements) {
       fetchAdminAnnouncements();
-    } else {
+    } else if (canViewAnnouncements) {
       fetchUserAnnouncements();
     }
-  }, [isAdmin]);
+  }, [currentUser, canManageAnnouncements, canViewAnnouncements]);
 
   const fetchUserAnnouncements = async () => {
     try {
+      setLoading(true);
       setError(null);
       const fetchedAnnouncements = await userAnnouncementService.getAnnouncementsWithPinStatus();
       setAnnouncements(fetchedAnnouncements);
@@ -95,6 +112,8 @@ const UnifiedAnnouncementsPage: React.FC = () => {
       console.error('Failed to fetch announcements from Firebase:', err);
       setAnnouncements([]);
       setError('Unable to load announcements. Please try again later.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -245,119 +264,9 @@ const UnifiedAnnouncementsPage: React.FC = () => {
     return matchesSearch && matchesCategory && matchesPriority && matchesPinned;
   });
 
-  // User View
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <Bell className="h-8 w-8 text-blue-600 mr-3" />
-              <h1 className="text-3xl font-bold text-gray-900">Scout Pack Announcements</h1>
-            </div>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Stay connected with the latest news, updates, and important information from pack leadership. 
-              Never miss an important announcement or exciting opportunity!
-            </p>
-          </div>
+  // Use the same component for all users, just hide admin controls for non-admins
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <Bell className="h-8 w-8 text-blue-600 mr-3" />
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{announcements.length}</p>
-                  <p className="text-sm text-gray-600">Total Announcements</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <Pin className="h-8 w-8 text-yellow-600 mr-3" />
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{announcements.filter(a => a.pinned).length}</p>
-                  <p className="text-sm text-gray-600">Pinned</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <TrendingUp className="h-8 w-8 text-green-600 mr-3" />
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {announcements.filter(a => {
-                      const weekAgo = new Date();
-                      weekAgo.setDate(weekAgo.getDate() - 7);
-                      const createdAt = a.createdAt.toDate ? a.createdAt.toDate() : (typeof a.createdAt === 'string' ? new Date(a.createdAt) : a.createdAt);
-                      return createdAt > weekAgo;
-                    }).length}
-                  </p>
-                  <p className="text-sm text-gray-600">This Week</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <Calendar className="h-8 w-8 text-purple-600 mr-3" />
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {announcements.filter(a => a.eventId).length}
-                  </p>
-                  <p className="text-sm text-gray-600">Event Related</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Announcements Feed */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            {error ? (
-              <div className="p-8 text-center">
-                <div className="text-red-600 mb-4">
-                  <Bell className="h-12 w-12 mx-auto mb-2" />
-                  <h3 className="text-lg font-medium">Unable to Load Announcements</h3>
-                </div>
-                <p className="text-gray-600">{error}</p>
-              </div>
-            ) : announcements.length === 0 ? (
-              <div className="p-8 text-center">
-                <div className="text-gray-400 mb-4">
-                  <Bell className="h-12 w-12 mx-auto mb-2" />
-                  <h3 className="text-lg font-medium">No announcements found</h3>
-                </div>
-                <p className="text-gray-600">Check back later for updates from pack leadership.</p>
-              </div>
-            ) : (
-              <AnnouncementFeed
-                announcements={announcements}
-                onAnnouncementClick={handleAnnouncementClick}
-                onPinToggle={handlePinToggle}
-              />
-            )}
-          </div>
-
-          {/* Quick Actions */}
-          <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
-            <div className="flex flex-wrap gap-4">
-              <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Subscribe to Updates
-              </button>
-              <button className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Contact Leadership
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Admin View
+  // Unified View - same component for all users
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -366,17 +275,23 @@ const UnifiedAnnouncementsPage: React.FC = () => {
           <div className="flex items-center">
             <Megaphone className="h-8 w-8 text-blue-600 mr-3" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Announcement Management</h1>
-              <p className="text-gray-600">Create and manage pack announcements and news</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {isAdmin ? 'Announcement Management' : 'Scout Pack Announcements'}
+              </h1>
+              <p className="text-gray-600">
+                {isAdmin ? 'Create and manage pack announcements and news' : 'Stay connected with the latest news, updates, and important information from pack leadership'}
+              </p>
             </div>
           </div>
-          <button
-            onClick={handleCreateAnnouncement}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Announcement
-          </button>
+          {isAdmin && (
+            <button
+              onClick={handleCreateAnnouncement}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Announcement
+            </button>
+          )}
         </div>
 
         {/* Filters */}
@@ -446,17 +361,19 @@ const UnifiedAnnouncementsPage: React.FC = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
               <p className="mt-2 text-gray-600">Loading announcements...</p>
             </div>
-          ) : filteredAnnouncements.length === 0 ? (
+          ) : (isAdmin ? filteredAnnouncements : announcements).length === 0 ? (
             <div className="p-8 text-center">
               <div className="text-gray-400 mb-4">
                 <Megaphone className="h-12 w-12 mx-auto mb-2" />
                 <h3 className="text-lg font-medium">No announcements found</h3>
               </div>
-              <p className="text-gray-600">Create your first announcement to get started.</p>
+              <p className="text-gray-600">
+                {isAdmin ? 'Create your first announcement to get started.' : 'Check back later for updates from pack leadership.'}
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-gray-200">
-              {filteredAnnouncements.map((announcement) => (
+              {(isAdmin ? filteredAnnouncements : announcements).map((announcement) => (
                 <div key={announcement.id} className="p-6 hover:bg-gray-50">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -478,24 +395,24 @@ const UnifiedAnnouncementsPage: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-gray-600 mb-2">
-                        {announcement.content || announcement.body}
+                        {(announcement as any).content || announcement.body}
                       </p>
                       <div className="flex items-center text-sm text-gray-500">
                         <Clock className="h-4 w-4 mr-1" />
-                        <span>Created {new Date(announcement.createdAt).toLocaleDateString()}</span>
-                        {announcement.sendEmail && (
+                        <span>Created {(announcement.createdAt as any).toDate ? (announcement.createdAt as any).toDate().toLocaleDateString() : new Date(announcement.createdAt as any).toLocaleDateString()}</span>
+                        {(announcement as any).sendEmail && (
                           <>
                             <span className="mx-2">•</span>
                             <span className="text-green-600">Email sent</span>
                           </>
                         )}
-                        {announcement.sendSMS && (
+                        {(announcement as any).sendSMS && (
                           <>
                             <span className="mx-2">•</span>
                             <span className="text-blue-600">SMS sent</span>
                           </>
                         )}
-                        {announcement.testMode && (
+                        {(announcement as any).testMode && (
                           <>
                             <span className="mx-2">•</span>
                             <span className="text-blue-600">Test mode</span>
@@ -503,20 +420,22 @@ const UnifiedAnnouncementsPage: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleEditAnnouncement(announcement)}
-                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteAnnouncement(announcement.id)}
-                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    {isAdmin && (
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleEditAnnouncement(announcement as AdminAnnouncement)}
+                          className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAnnouncement(announcement.id)}
+                          className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -524,8 +443,8 @@ const UnifiedAnnouncementsPage: React.FC = () => {
           )}
         </div>
 
-        {/* Create/Edit Modal */}
-        {isModalOpen && (
+        {/* Create/Edit Modal - Only show for admins */}
+        {isAdmin && isModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <h2 className="text-xl font-bold mb-4">

@@ -33,6 +33,8 @@ export interface Resource {
   createdAt: Date;
   lastUpdated: Date;
   downloadCount: number;
+  likeCount?: number;
+  isLikedByCurrentUser?: boolean; // Client-side only field
 }
 
 export type ResourceCategory = 
@@ -68,13 +70,42 @@ export type ResourceCategory =
 class ResourceService {
   private currentUser = authService.getCurrentUser();
 
-  // Check if user can manage resources (den leaders and up)
+  // Check if user can manage resources (den leaders and up, NOT parents)
   canManageResources(user?: any): boolean {
     const userToCheck = user || this.currentUser;
     if (!userToCheck) return false;
     
+    // Debug logging
+    console.log('🔍 ResourceService.canManageResources Debug:', {
+      userToCheck: userToCheck,
+      role: userToCheck.role,
+      isAdmin: userToCheck.isAdmin,
+      isDenLeader: userToCheck.isDenLeader
+    });
+    
+    // Explicitly exclude parents - only allow den leaders and up
+    if (userToCheck.role === 'parent') {
+      console.log('🚫 User is parent - denying resource management');
+      return false;
+    }
+    
+    // Allow volunteers (den leaders), admins, and super admins
     const allowedRoles = ['volunteer', 'admin', 'super-admin', 'super_admin', 'root', 'moderator', 'content-admin'];
-    return allowedRoles.includes(userToCheck.role) || userToCheck.isAdmin === true;
+    
+    // Check if user has an allowed role
+    const hasAllowedRole = allowedRoles.includes(userToCheck.role);
+    
+    // Check admin flags, but only if NOT a parent
+    const hasAdminFlags = (userToCheck.isAdmin === true || userToCheck.isDenLeader === true) && userToCheck.role !== 'parent';
+    
+    const result = hasAllowedRole || hasAdminFlags;
+    console.log('🔍 ResourceService result:', {
+      hasAllowedRole,
+      hasAdminFlags,
+      result
+    });
+    
+    return result;
   }
 
   // Get all resources
@@ -174,6 +205,7 @@ class ResourceService {
         createdAt: serverTimestamp(),
         lastUpdated: serverTimestamp(),
         downloadCount: 0,
+        likeCount: 0,
         isActive: true,
       };
 
@@ -322,6 +354,126 @@ class ResourceService {
     } catch (error) {
       console.error('Error incrementing download count:', error);
       // Don't throw error for download count issues
+    }
+  }
+
+  // Like a resource
+  async likeResource(resourceId: string): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) {
+      throw new Error('User must be authenticated to like resources');
+    }
+
+    try {
+      // Add to user-resource-likes collection
+      const likeRef = doc(db, 'user-resource-likes', `${user.uid}_${resourceId}`);
+      await updateDoc(likeRef, {
+        userId: user.uid,
+        resourceId: resourceId,
+        likedAt: serverTimestamp()
+      }).catch(async () => {
+        // Document doesn't exist, create it
+        await addDoc(collection(db, 'user-resource-likes'), {
+          userId: user.uid,
+          resourceId: resourceId,
+          likedAt: serverTimestamp()
+        });
+      });
+
+      // Increment like count on resource
+      const resourceRef = doc(db, 'resources', resourceId);
+      const resourceDoc = await getDoc(resourceRef);
+      
+      if (resourceDoc.exists()) {
+        const currentCount = resourceDoc.data().likeCount || 0;
+        await updateDoc(resourceRef, {
+          likeCount: currentCount + 1,
+          lastUpdated: serverTimestamp(),
+        });
+      }
+    } catch (error) {
+      console.error('Error liking resource:', error);
+      throw error;
+    }
+  }
+
+  // Unlike a resource
+  async unlikeResource(resourceId: string): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) {
+      throw new Error('User must be authenticated to unlike resources');
+    }
+
+    try {
+      // Remove from user-resource-likes collection
+      const likeRef = doc(db, 'user-resource-likes', `${user.uid}_${resourceId}`);
+      await deleteDoc(likeRef);
+
+      // Decrement like count on resource
+      const resourceRef = doc(db, 'resources', resourceId);
+      const resourceDoc = await getDoc(resourceRef);
+      
+      if (resourceDoc.exists()) {
+        const currentCount = resourceDoc.data().likeCount || 0;
+        await updateDoc(resourceRef, {
+          likeCount: Math.max(0, currentCount - 1),
+          lastUpdated: serverTimestamp(),
+        });
+      }
+    } catch (error) {
+      console.error('Error unliking resource:', error);
+      throw error;
+    }
+  }
+
+  // Check if current user has liked a resource
+  async isResourceLiked(resourceId: string): Promise<boolean> {
+    const user = authService.getCurrentUser();
+    if (!user) return false;
+
+    try {
+      const likeRef = doc(db, 'user-resource-likes', `${user.uid}_${resourceId}`);
+      const likeDoc = await getDoc(likeRef);
+      return likeDoc.exists();
+    } catch (error) {
+      console.error('Error checking if resource is liked:', error);
+      return false;
+    }
+  }
+
+  // Get resources with like status for current user
+  async getResourcesWithLikeStatus(filters?: {
+    category?: ResourceCategory;
+    isActive?: boolean;
+    isPublic?: boolean;
+    createdBy?: string;
+  }): Promise<Resource[]> {
+    try {
+      const resources = await this.getResources(filters);
+      const user = authService.getCurrentUser();
+      
+      if (!user) {
+        return resources;
+      }
+
+      // Get all liked resource IDs for current user
+      const likesQuery = query(
+        collection(db, 'user-resource-likes'),
+        where('userId', '==', user.uid)
+      );
+      const likesSnapshot = await getDocs(likesQuery);
+      const likedResourceIds = new Set(
+        likesSnapshot.docs.map(doc => doc.data().resourceId)
+      );
+
+      // Add isLikedByCurrentUser flag to each resource
+      return resources.map(resource => ({
+        ...resource,
+        isLikedByCurrentUser: likedResourceIds.has(resource.id)
+      }));
+    } catch (error) {
+      console.error('Error getting resources with like status:', error);
+      throw error;
     }
   }
 

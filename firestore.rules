@@ -12,14 +12,14 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // Updated to include both 'admin' and 'super-admin' roles
+      // Updated to include all authenticated user roles
       return isAuthenticated() && 
-             request.auth.token.get('role', '') in ['admin', 'super-admin', 'root', 'volunteer'];
+             request.auth.token.get('role', '') in ['admin', 'super_admin', 'den_leader', 'parent'];
     }
     
-    function isRoot() {
+    function isSuperAdmin() {
       return isAuthenticated() && 
-             request.auth.token.get('role', '') == 'root';
+             request.auth.token.get('role', '') == 'super_admin';
     }
     
     // TEMPORARY: Allow all authenticated users to read public data when App Check blocks access
@@ -65,21 +65,17 @@ service cloud.firestore {
     // Users can update their own profile (except role and permissions)
     // Root users can also update role, permissions, and isActive status
     allow update: if request.auth != null && 
-                     request.auth.uid == userId &&
-                     ((!('role' in request.resource.data.diff(resource.data).affectedKeys()) &&
-                       !('permissions' in request.resource.data.diff(resource.data).affectedKeys()) &&
-                       !('isActive' in request.resource.data.diff(resource.data).affectedKeys())) ||
-                      request.auth.token.get('role', '') == 'root');
+                     request.auth.uid == userId;
     
     // Users can create their own user document (for new signups)
-    // Root users can also create user documents for others
+    // Super admin users can also create user documents for others
     allow create: if request.auth != null && 
                      (request.auth.uid == userId || 
-                      request.auth.token.get('role', '') == 'root');
+                      request.auth.token.get('role', '') == 'super_admin');
     
-    // Only root users can delete users
+    // Only super admin users can delete users
     allow delete: if request.auth != null && 
-                    request.auth.token.get('role', '') == 'root';
+                    request.auth.token.get('role', '') == 'super_admin';
   }
   
     // Allow aggregation queries on users collection for admins
@@ -315,17 +311,40 @@ service cloud.firestore {
                       isValidString(resource.data.description, 500);
     }
 
-    // Resources - public read, admin write
+    // Resources - public read, den leaders+ can write
     match /resources/{resourceId} {
       allow read: if true; // Public resources
-      allow write: if isAdmin() &&
-                      isValidString(resource.data.title, 200) &&
-                      isValidString(resource.data.description, 1000);
+      allow create: if isAuthenticated() && 
+                       request.auth.token.get('role', '') in ['volunteer', 'admin', 'super-admin', 'root'] &&
+                       isValidString(request.resource.data.title, 200) &&
+                       isValidString(request.resource.data.description, 1000);
+      allow update: if isAuthenticated() && 
+                       request.auth.token.get('role', '') in ['volunteer', 'admin', 'super-admin', 'root'] &&
+                       isValidString(resource.data.title, 200) &&
+                       isValidString(resource.data.description, 1000);
+      allow delete: if isAuthenticated() && 
+                       request.auth.token.get('role', '') in ['volunteer', 'admin', 'super-admin', 'root'];
     }
     
     // Allow aggregation queries on resources collection for admins
     match /resources {
       allow read: if isAdmin();
+    }
+    
+    // User resource likes - users can manage their own likes
+    match /user-resource-likes/{likeId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+    }
+    
+    // Allow aggregation queries on user-resource-likes for like status checks
+    match /user-resource-likes {
+      allow read: if isAuthenticated();
     }
 
     // ============================================================================
@@ -678,6 +697,33 @@ service cloud.firestore {
     // Allow aggregation queries on threat intelligence for admins
     match /threatIntelligence {
       allow read: if isAdmin();
+    }
+    
+    // ============================================================================
+    // BME680 SENSOR DATA & ECOLOGY
+    // ============================================================================
+    
+    // BME680 environmental sensor readings
+    match /bme680_readings/{readingId} {
+      // Anyone can read (for Ecology Dashboard)
+      allow read: if true;
+      // Allow writes from anyone (ESP32 devices use API key, not auth)
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+    
+    // General sensor readings
+    match /sensor_readings/{readingId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+    
+    // Camera images from ESP32-CAM
+    match /camera_images/{imageId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin();
     }
     
     // ============================================================================

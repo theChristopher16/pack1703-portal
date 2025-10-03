@@ -244,6 +244,26 @@ const VolunteerPage: React.FC = () => {
     return userSignups.find(signup => signup.needId === needId && signup.status !== 'cancelled');
   };
 
+  const handleCancelVolunteerSignup = async (signupId: string) => {
+    if (window.confirm('Are you sure you want to cancel your volunteer signup? This action cannot be undone.')) {
+      try {
+        await volunteerService.cancelVolunteerSignup(signupId);
+        
+        // Refresh the data
+        const needs = await volunteerService.getVolunteerNeeds();
+        setVolunteerNeeds(needs);
+        
+        const signups = await volunteerService.getUserVolunteerSignups();
+        setUserSignups(signups);
+        
+        addNotification('success', 'Success', 'Volunteer signup cancelled successfully');
+      } catch (error) {
+        console.error('Error cancelling volunteer signup:', error);
+        addNotification('error', 'Error', 'Failed to cancel volunteer signup');
+      }
+    }
+  };
+
   // Admin management functions
   const handleCreateNeed = () => {
     setModalMode('create');
@@ -331,7 +351,7 @@ const VolunteerPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 pt-20 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-8">
@@ -690,16 +710,29 @@ const VolunteerPage: React.FC = () => {
 
                     {/* User Signup Status */}
                     {isUserSignedUp && (
-                      <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl">
-                        <div className="flex items-center">
-                          <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
-                          <span className="text-sm font-medium text-green-800">
-                            You're signed up for this role!
-                          </span>
+                      <div className="mb-4 flex items-center justify-between gap-4">
+                        {/* Status Box */}
+                        <div className="flex-1 p-3 bg-green-50 border border-green-200 rounded-xl">
+                          <div className="flex items-center">
+                            <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                            <span className="text-sm font-medium text-green-800">
+                              You're signed up for this role!
+                            </span>
+                          </div>
+                          <p className="text-xs text-green-600 mt-1">
+                            Status: {userSignup.status} • Count: {userSignup.count}
+                          </p>
                         </div>
-                        <p className="text-xs text-green-600 mt-1">
-                          Status: {userSignup.status} • Count: {userSignup.count}
-                        </p>
+                        
+                        {/* Cancel Button */}
+                        <button
+                          onClick={() => handleCancelVolunteerSignup(userSignup.id)}
+                          className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                          title="Cancel volunteer signup"
+                        >
+                          <XCircle className="h-4 w-4" />
+                          Cancel
+                        </button>
                       </div>
                     )}
 

@@ -41,7 +41,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Home',
     href: '/',
     icon: Home,
-    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
     description: 'Main dashboard and overview'
   },
@@ -49,7 +49,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Events',
     href: '/events',
     icon: Calendar,
-    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
     description: 'Upcoming pack events and activities'
   },
@@ -57,7 +57,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Announcements',
     href: '/announcements',
     icon: MessageSquare,
-    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
     description: 'Pack news and updates'
   },
@@ -65,7 +65,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Locations',
     href: '/locations',
     icon: MapPin,
-    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
     description: 'Meeting places and venues'
   },
@@ -73,7 +73,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Volunteer',
     href: '/volunteer',
     icon: Users,
-    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
     description: 'Volunteer opportunities'
   },
@@ -81,7 +81,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Ecology',
     href: '/ecology',
     icon: Leaf,
-    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
     description: 'Environmental monitoring and education'
   },
@@ -89,7 +89,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Profile',
     href: '/profile',
     icon: User,
-    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'authenticated',
     description: 'Manage your profile and account settings'
   },
@@ -97,7 +97,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Chat',
     href: '/chat',
     icon: MessageCircle,
-    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'authenticated',
     description: 'Pack communication hub'
   },
@@ -105,7 +105,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Resources',
     href: '/resources',
     icon: FileText,
-    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'authenticated',
     description: 'Pack resources and documents'
   },
@@ -113,7 +113,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Feedback',
     href: '/feedback',
     icon: MessageSquare,
-    roles: [UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'authenticated',
     description: 'Share feedback and suggestions'
   },
@@ -123,7 +123,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     name: 'Data Audit',
     href: '/data-audit',
     icon: Shield,
-    roles: [UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    roles: [UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'authenticated',
     description: 'Privacy and data transparency'
   },
@@ -252,7 +252,7 @@ export const hasAccessToRoute = (role: UserRole, route: string): boolean => {
 export const getRoleLevel = (role: UserRole): number => {
   const hierarchy: Record<UserRole, number> = {
     [UserRole.PARENT]: 1,
-    [UserRole.VOLUNTEER]: 2,
+    [UserRole.DEN_LEADER]: 2,
     [UserRole.AI_ASSISTANT]: 2.5,
     [UserRole.ADMIN]: 3,
     [UserRole.SUPER_ADMIN]: 5

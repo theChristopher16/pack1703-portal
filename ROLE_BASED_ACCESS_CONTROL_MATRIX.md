@@ -11,7 +11,7 @@ This document provides a comprehensive overview of role-based access control (RB
 - **Access Level**: Basic user access
 - **Permissions**: Family management, RSVP, chat, basic content access
 
-### 2. **Volunteer** (`volunteer`) 
+### 2. **Den Leader** (`den_leader`) 
 - **Description**: Den leaders and active volunteers
 - **Access Level**: Den-level management
 - **Permissions**: All parent permissions + den-specific management
@@ -19,7 +19,7 @@ This document provides a comprehensive overview of role-based access control (RB
 ### 3. **Admin** (`admin`)
 - **Description**: Pack administrators
 - **Access Level**: Pack-level management
-- **Permissions**: All volunteer permissions + pack management, event management, user management
+- **Permissions**: All den leader permissions + pack management, event management, user management
 
 ### 4. **Super Admin** (`super_admin`)
 - **Description**: Highest level administrators
@@ -33,7 +33,7 @@ This document provides a comprehensive overview of role-based access control (RB
 
 ## Cloud Functions Access Matrix
 
-| Function | Parent | Volunteer | Admin | Super Admin | Root | Access Level |
+| Function | Parent | Den Leader | Admin | Super Admin | Root | Access Level |
 |----------|--------|-----------|-------|-------------|------|--------------|
 | `disableAppCheckEnforcement` | ❌ | ❌ | ❌ | ✅ | ✅ | Root Only |
 | `updateUserRole` | ❌ | ❌ | ✅ | ✅ | ✅ | Admin+ |
@@ -69,7 +69,7 @@ This document provides a comprehensive overview of role-based access control (RB
 
 ### User Data Collections
 
-| Collection | Parent | Volunteer | Admin | Super Admin | Root | Access Level |
+| Collection | Parent | Den Leader | Admin | Super Admin | Root | Access Level |
 |------------|--------|-----------|-------|-------------|------|--------------|
 | `users/{userId}` (own) | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write | Owner |
 | `users/{userId}` (others) | ❌ | ❌ | ✅ Read | ✅ Read/Write | ✅ Read/Write | Admin+ |
@@ -77,14 +77,14 @@ This document provides a comprehensive overview of role-based access control (RB
 
 ### Event Management
 
-| Collection | Parent | Volunteer | Admin | Super Admin | Root | Access Level |
+| Collection | Parent | Den Leader | Admin | Super Admin | Root | Access Level |
 |------------|--------|-----------|-------|-------------|------|--------------|
 | `events/{eventId}` | ✅ Read | ✅ Read | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write | Public Read, Admin Write |
 | `events` (aggregation) | ✅ Read | ✅ Read | ✅ Read | ✅ Read | ✅ Read | Authenticated |
 
 ### RSVP System
 
-| Collection | Parent | Volunteer | Admin | Super Admin | Root | Access Level |
+| Collection | Parent | Den Leader | Admin | Super Admin | Root | Access Level |
 |------------|--------|-----------|-------|-------------|------|--------------|
 | `rsvps/{rsvpId}` (own) | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write | Owner |
 | `rsvps/{rsvpId}` (others) | ❌ | ❌ | ✅ Read | ✅ Read | ✅ Read | Admin+ |
@@ -92,7 +92,7 @@ This document provides a comprehensive overview of role-based access control (RB
 
 ### Chat System
 
-| Collection | Parent | Volunteer | Admin | Super Admin | Root | Access Level |
+| Collection | Parent | Den Leader | Admin | Super Admin | Root | Access Level |
 |------------|--------|-----------|-------|-------------|------|--------------|
 | `chat-channels/{channelId}` | ✅ Read | ✅ Read | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write | Authenticated Read, Admin Write |
 | `chat-messages/{messageId}` | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write | Authenticated |
@@ -101,7 +101,7 @@ This document provides a comprehensive overview of role-based access control (RB
 
 ### Announcements
 
-| Collection | Parent | Volunteer | Admin | Super Admin | Root | Access Level |
+| Collection | Parent | Den Leader | Admin | Super Admin | Root | Access Level |
 |------------|--------|-----------|-------|-------------|------|--------------|
 | `announcements/{announcementId}` | ✅ Read* | ✅ Read* | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write | Den-based Read, Admin Write |
 | `announcements` (aggregation) | ❌ | ❌ | ✅ Read | ✅ Read | ✅ Read | Admin+ |
@@ -110,7 +110,7 @@ This document provides a comprehensive overview of role-based access control (RB
 
 ### Admin-Only Collections
 
-| Collection | Parent | Volunteer | Admin | Super Admin | Root | Access Level |
+| Collection | Parent | Den Leader | Admin | Super Admin | Root | Access Level |
 |------------|--------|-----------|-------|-------------|------|--------------|
 | `adminActions` | ❌ | ❌ | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write | Admin+ |
 | `auditLogs` | ❌ | ❌ | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write | Admin+ |
@@ -121,7 +121,7 @@ This document provides a comprehensive overview of role-based access control (RB
 
 ### Financial Management (Admin Only)
 
-| Collection | Parent | Volunteer | Admin | Super Admin | Root | Access Level |
+| Collection | Parent | Den Leader | Admin | Super Admin | Root | Access Level |
 |------------|--------|-----------|-------|-------------|------|--------------|
 | `financial-transactions` | ❌ | ❌ | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write | Admin+ |
 | `financial-accounts` | ❌ | ❌ | ✅ Read/Write | ✅ Read/Write | ✅ Read/Write | Admin+ |

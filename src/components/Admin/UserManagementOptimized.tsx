@@ -3,7 +3,7 @@ import {
   Users, UserPlus, Search, Edit, Trash2, 
   Mail, Check, X, AlertCircle
 } from 'lucide-react';
-import { UserRole, ROLE_PERMISSIONS, AppUser } from '../../services/authService';
+import { UserRole, ROLE_PERMISSIONS, AppUser, SELECTABLE_ROLES } from '../../services/authService';
 import { useUserManagementState } from '../../hooks/useOptimizedState';
 import ProfilePicture from '../ui/ProfilePicture';
 
@@ -250,7 +250,7 @@ const UserManagement: React.FC = () => {
     expiredInvites: state.invites.filter(invite => invite.status === 'expired').length
   }), [state.users, state.invites]);
 
-  const roleOptions = Object.values(UserRole);
+  const roleOptions = SELECTABLE_ROLES;
   const denOptions = [
     'Lion', 'Tiger', 'Wolf', 'Bear', 'Webelos', 'Arrow of Light',
     'Pack Leadership', 'Committee', 'Volunteer'
@@ -355,7 +355,7 @@ const UserManagement: React.FC = () => {
           >
             <option value="all">All Roles</option>
             {roleOptions.map(role => (
-              <option key={role} value={role}>{role}</option>
+              <option key={role} value={role}>{role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>
             ))}
           </select>
           
@@ -430,10 +430,10 @@ const UserManagement: React.FC = () => {
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                       user.role === UserRole.SUPER_ADMIN ? 'bg-purple-100 text-purple-800' :
                       user.role === UserRole.ADMIN ? 'bg-red-100 text-red-800' :
-                      user.role === UserRole.VOLUNTEER ? 'bg-blue-100 text-blue-800' :
+                      user.role === UserRole.DEN_LEADER ? 'bg-blue-100 text-blue-800' :
                       'bg-green-100 text-green-800'
                     }`}>
-                      {user.role}
+                      {user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -568,7 +568,7 @@ const UserManagement: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   {roleOptions.map(role => (
-                    <option key={role} value={role}>{role}</option>
+                    <option key={role} value={role}>{role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>
                   ))}
                 </select>
               </div>
@@ -661,7 +661,7 @@ const UserManagement: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   {roleOptions.map(role => (
-                    <option key={role} value={role}>{role}</option>
+                    <option key={role} value={role}>{role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>
                   ))}
                 </select>
               </div>
@@ -819,7 +819,7 @@ const UserManagement: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   {roleOptions.map(role => (
-                    <option key={role} value={role}>{role}</option>
+                    <option key={role} value={role}>{role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>
                   ))}
                 </select>
               </div>

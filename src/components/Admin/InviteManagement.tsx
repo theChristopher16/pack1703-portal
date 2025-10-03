@@ -131,7 +131,7 @@ const InviteManagement: React.FC<InviteManagementProps> = ({ className = '' }) =
         return <Crown className="w-4 h-4 text-yellow-500" />;
       case UserRole.ADMIN:
         return <Shield className="w-4 h-4 text-blue-500" />;
-      case UserRole.VOLUNTEER:
+      case UserRole.DEN_LEADER:
         return <User className="w-4 h-4 text-green-500" />;
       case UserRole.PARENT:
         return <User className="w-4 h-4 text-purple-500" />;
@@ -148,7 +148,7 @@ const InviteManagement: React.FC<InviteManagementProps> = ({ className = '' }) =
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case UserRole.ADMIN:
         return 'bg-blue-100 text-blue-800 border-blue-200';
-      case UserRole.VOLUNTEER:
+      case UserRole.DEN_LEADER:
         return 'bg-green-100 text-green-800 border-green-200';
       case UserRole.PARENT:
         return 'bg-purple-100 text-purple-800 border-purple-200';

@@ -19,7 +19,7 @@ export interface AdminUser {
   };
 }
 
-export type AdminRole = 'root' | 'super-admin' | 'content-admin' | 'moderator' | 'viewer';
+export type AdminRole = 'root' | 'super-admin' | 'content-admin' | 'moderator' | 'parent' | 'viewer';
 
 export type AdminPermission = 
   // Season permissions

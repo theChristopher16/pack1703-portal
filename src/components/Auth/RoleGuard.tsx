@@ -28,7 +28,7 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
     'root': UserRole.SUPER_ADMIN,
     'super-admin': UserRole.SUPER_ADMIN,  // Fixed: super-admin should map to SUPER_ADMIN, not ADMIN
     'content-admin': UserRole.ADMIN,      // Added: content-admin maps to ADMIN
-    'moderator': UserRole.VOLUNTEER,
+    'moderator': UserRole.DEN_LEADER,
     'viewer': UserRole.PARENT,
     'ai_assistant': UserRole.AI_ASSISTANT
   };
@@ -113,7 +113,7 @@ export const AuthenticatedOnly: React.FC<{ children: React.ReactNode; fallbackPa
   fallbackPath = '/' 
 }) => (
   <RoleGuard 
-    requiredRoles={[UserRole.PARENT, UserRole.VOLUNTEER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT]} 
+    requiredRoles={[UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT]} 
     fallbackPath={fallbackPath}
   >
     {children}

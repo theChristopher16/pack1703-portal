@@ -34,10 +34,10 @@ import {
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase/config';
 
-// User roles and permissions - Simplified and intuitive
+// User roles and permissions - Cub Scout pack structure
 export enum UserRole {
   PARENT = 'parent',          // Family account (default after signup)
-  VOLUNTEER = 'volunteer',    // Active volunteers (den leaders)
+  DEN_LEADER = 'den_leader',  // Den leaders and active volunteers
   ADMIN = 'admin',            // Pack administrators
   SUPER_ADMIN = 'super_admin', // Super administrators (highest level)
   AI_ASSISTANT = 'ai_assistant' // AI assistant role
@@ -46,7 +46,7 @@ export enum UserRole {
 // Role hierarchy - each role inherits permissions from roles below it
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
   [UserRole.PARENT]: 1,           // Lowest level
-  [UserRole.VOLUNTEER]: 2,        // Den leaders
+  [UserRole.DEN_LEADER]: 2,       // Den leaders
   [UserRole.AI_ASSISTANT]: 3,     // AI assistant
   [UserRole.ADMIN]: 4,            // Pack administrators
   [UserRole.SUPER_ADMIN]: 5       // Highest level
@@ -127,9 +127,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.SCOUT_EVENTS,
     Permission.SCOUT_CHAT,
     Permission.CHAT_READ,
-    Permission.CHAT_WRITE
+    Permission.CHAT_WRITE,
+    Permission.DEN_MEMBERS  // Can see other families in their den
   ],
-  [UserRole.VOLUNTEER]: [
+  [UserRole.DEN_LEADER]: [
     Permission.READ_CONTENT,
     Permission.CREATE_CONTENT,
     Permission.UPDATE_CONTENT,
@@ -147,7 +148,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.SCOUT_CHAT,
     Permission.CHAT_READ,
     Permission.CHAT_WRITE,
-    Permission.CHAT_MANAGEMENT
+    Permission.CHAT_MANAGEMENT,
+    Permission.EVENT_MANAGEMENT,  // Can create pack-wide events
+    Permission.ANNOUNCEMENT_MANAGEMENT  // Can create pack-wide announcements
   ],
   [UserRole.AI_ASSISTANT]: [
     // Content Management (Full Access)
@@ -281,7 +284,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 // Role color configuration (object format for UI components)
 export const ROLE_COLORS: Record<UserRole, { bg: string; text: string; border: string }> = {
   [UserRole.PARENT]: { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' },
-  [UserRole.VOLUNTEER]: { bg: '#dcfce7', text: '#166534', border: '#86efac' },
+  [UserRole.DEN_LEADER]: { bg: '#dcfce7', text: '#166534', border: '#86efac' },
   [UserRole.AI_ASSISTANT]: { bg: '#e0f2fe', text: '#0c4a6e', border: '#7dd3fc' },
   [UserRole.ADMIN]: { bg: '#f3e8ff', text: '#7c3aed', border: '#c4b5fd' },
   [UserRole.SUPER_ADMIN]: { bg: '#fef3c7', text: '#92400e', border: '#fcd34d' },
@@ -290,7 +293,7 @@ export const ROLE_COLORS: Record<UserRole, { bg: string; text: string; border: s
 // Role display names
 export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   [UserRole.PARENT]: 'Parent',
-  [UserRole.VOLUNTEER]: 'Volunteer',
+  [UserRole.DEN_LEADER]: 'Den Leader',
   [UserRole.AI_ASSISTANT]: 'AI Assistant',
   [UserRole.ADMIN]: 'Admin',
   [UserRole.SUPER_ADMIN]: 'Super Admin',
@@ -299,7 +302,7 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
 // Role descriptions
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   [UserRole.PARENT]: 'Family account - manage family events and RSVPs',
-  [UserRole.VOLUNTEER]: 'Active volunteer - den-specific management',
+  [UserRole.DEN_LEADER]: 'Den leader - den-specific management and leadership',
   [UserRole.AI_ASSISTANT]: 'AI assistant - event management and content creation',
   [UserRole.ADMIN]: 'Pack administrator - full pack management',
   [UserRole.SUPER_ADMIN]: 'Super administrator - complete system access (highest level)'
@@ -308,7 +311,7 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
 // Selectable roles for UI components (excludes system-only roles)
 export const SELECTABLE_ROLES: UserRole[] = [
   UserRole.PARENT,
-  UserRole.VOLUNTEER,
+  UserRole.DEN_LEADER,
   UserRole.ADMIN,
   UserRole.SUPER_ADMIN
 ];
@@ -1282,7 +1285,7 @@ class AuthService {
 
   // Check if user is den leader or higher
   isDenLeader(): boolean {
-    return this.isAdmin() || this.currentUser?.role === UserRole.VOLUNTEER;
+    return this.isAdmin() || this.currentUser?.role === UserRole.DEN_LEADER;
   }
 
   // Check if user has specific permission (with role hierarchy)
@@ -1309,19 +1312,21 @@ class AuthService {
       
       // Admin permissions - admin and root
       [Permission.PACK_MANAGEMENT]: UserRole.ADMIN,
-      [Permission.EVENT_MANAGEMENT]: UserRole.ADMIN,
       [Permission.LOCATION_MANAGEMENT]: UserRole.ADMIN,
-      [Permission.ANNOUNCEMENT_MANAGEMENT]: UserRole.ADMIN,
       [Permission.FINANCIAL_MANAGEMENT]: UserRole.ADMIN,
       [Permission.FUNDRAISING_MANAGEMENT]: UserRole.ADMIN,
       [Permission.ALL_DEN_ACCESS]: UserRole.ADMIN,
       
-      // Den leader permissions - volunteer and above
-      [Permission.DEN_CONTENT]: UserRole.VOLUNTEER,
-      [Permission.DEN_EVENTS]: UserRole.VOLUNTEER,
-      [Permission.DEN_MEMBERS]: UserRole.VOLUNTEER,
-      [Permission.DEN_CHAT_MANAGEMENT]: UserRole.VOLUNTEER,
-      [Permission.DEN_ANNOUNCEMENTS]: UserRole.VOLUNTEER,
+      // Pack-level permissions - den leader and above
+      [Permission.EVENT_MANAGEMENT]: UserRole.DEN_LEADER,
+      [Permission.ANNOUNCEMENT_MANAGEMENT]: UserRole.DEN_LEADER,
+      
+      // Den leader permissions - den leader and above
+      [Permission.DEN_CONTENT]: UserRole.DEN_LEADER,
+      [Permission.DEN_EVENTS]: UserRole.DEN_LEADER,
+      [Permission.DEN_MEMBERS]: UserRole.DEN_LEADER,
+      [Permission.DEN_CHAT_MANAGEMENT]: UserRole.DEN_LEADER,
+      [Permission.DEN_ANNOUNCEMENTS]: UserRole.DEN_LEADER,
       
       // Parent permissions - parent and above
       [Permission.FAMILY_MANAGEMENT]: UserRole.PARENT,
@@ -1337,12 +1342,12 @@ class AuthService {
       // Chat permissions
       [Permission.CHAT_READ]: UserRole.PARENT,
       [Permission.CHAT_WRITE]: UserRole.PARENT,
-      [Permission.CHAT_MANAGEMENT]: UserRole.VOLUNTEER,
+      [Permission.CHAT_MANAGEMENT]: UserRole.DEN_LEADER,
       
       // General permissions
       [Permission.READ_CONTENT]: UserRole.PARENT,
       [Permission.CREATE_CONTENT]: UserRole.PARENT,
-      [Permission.UPDATE_CONTENT]: UserRole.VOLUNTEER,
+      [Permission.UPDATE_CONTENT]: UserRole.PARENT,
       [Permission.DELETE_CONTENT]: UserRole.ADMIN,
       
       // Cost management permissions
@@ -1416,7 +1421,7 @@ class AuthService {
       return allUsers.filter(user => 
         user.profile?.den === currentUser.profile?.den ||
         user.role === UserRole.PARENT ||
-        user.role === UserRole.VOLUNTEER
+        user.role === UserRole.DEN_LEADER
       );
     }
     
@@ -1662,8 +1667,9 @@ class AuthService {
       const sendPasswordReset = httpsCallable(functions, 'sendPasswordReset');
       const result = await sendPasswordReset({ email });
       
-      if (!result.data.success) {
-        throw new Error(result.data.message || 'Failed to send password reset email');
+      const data = result.data as any;
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to send password reset email');
       }
     } catch (error) {
       console.error('Error sending password reset email:', error);
@@ -1696,6 +1702,8 @@ class AuthService {
 
   // Update other user's profile (admin only)
   async updateUserProfile(userId: string, updates: Partial<AppUser>): Promise<void> {
+    let updateData: any = null;
+    
     try {
       const currentUser = this.getCurrentUser();
       if (!currentUser) {
@@ -1710,7 +1718,7 @@ class AuthService {
         throw new Error('Insufficient permissions');
       }
 
-      const updateData: any = {
+      updateData = {
         updatedAt: serverTimestamp()
       };
 
@@ -1735,9 +1743,17 @@ class AuthService {
         updateData.role = updates.role;
       }
 
+      console.log('📝 Updating user document in Firestore:', userId, updateData);
       await updateDoc(doc(db, 'users', userId), updateData);
-    } catch (error) {
-      console.error('Error updating user profile:', error);
+      console.log('✅ User document updated successfully in Firestore');
+    } catch (error: any) {
+      console.error('❌ Error updating user profile:', error);
+      console.error('Error details:', {
+        code: error?.code,
+        message: error?.message,
+        userId: userId,
+        updateData: updateData
+      });
       throw error;
     }
   }

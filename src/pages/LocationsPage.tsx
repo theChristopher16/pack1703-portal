@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { MapPin, Grid, Map, Plus, Wifi, WifiOff } from 'lucide-react';
+import { MapPin, Grid, Map, Plus } from 'lucide-react';
 import { LocationCard, LocationFilters } from '../components/Locations';
 import { Location } from '../types/firestore';
 import { FilterState } from '../components/Locations/LocationFilters';
@@ -33,10 +33,10 @@ const LocationsPage: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [cacheStatus, setCacheStatus] = useState<string>('');
 
-  // Check if user is admin
-  const isAdmin = hasRole('super-admin') || 
-                  hasRole('content-admin') ||
-                  adminState.currentUser?.isAdmin;
+  // Check if user can manage locations (den leaders and above, NOT parents)
+  const canManageLocations = hasRole('moderator') || 
+                             hasRole('content-admin') || 
+                             hasRole('super-admin');
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -279,14 +279,14 @@ const LocationsPage: React.FC = () => {
               </h1>
               
               <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
-                {isAdmin 
+                {canManageLocations 
                   ? "Add the first location to get started! Create meeting spots, adventure destinations, and community venues."
                   : "We're working on adding locations to our map. Check back soon for meeting spots, adventure destinations, and community venues."
                 }
               </p>
               
-              {/* Add Location Button for Admins */}
-              {isAdmin && (
+              {/* Add Location Button for Den Leaders and Above */}
+              {canManageLocations && (
                 <div className="mb-8">
                   <button
                     onClick={() => {
@@ -306,10 +306,10 @@ const LocationsPage: React.FC = () => {
               <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft max-w-md mx-auto">
                 <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                  {isAdmin ? "Ready to Add Locations" : "Coming Soon"}
+                  {canManageLocations ? "Ready to Add Locations" : "Coming Soon"}
                 </h3>
                 <p className="text-gray-500">
-                  {isAdmin 
+                  {canManageLocations 
                     ? "Click the button above to add your first location"
                     : "Location data will be available shortly"
                   }
@@ -352,7 +352,7 @@ const LocationsPage: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 pt-20 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -372,25 +372,8 @@ const LocationsPage: React.FC = () => {
 
           {/* Controls */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-            {/* Offline Status Indicator */}
-            <div className="flex items-center space-x-2 px-3 py-2 bg-white/80 backdrop-blur-sm rounded-lg border border-gray-200">
-              {isOnline ? (
-                <Wifi className="w-4 h-4 text-green-600" />
-              ) : (
-                <WifiOff className="w-4 h-4 text-orange-600" />
-              )}
-              <span className={`text-sm font-medium ${isOnline ? 'text-green-600' : 'text-orange-600'}`}>
-                {isOnline ? 'Online' : 'Offline'}
-              </span>
-              {cacheStatus && (
-                <span className="text-xs text-gray-500 ml-2">
-                  {cacheStatus}
-                </span>
-              )}
-            </div>
-
-            {/* Add Location Button - Admin Only */}
-            {isAdmin && (
+            {/* Add Location Button - Den Leaders and Above Only */}
+            {canManageLocations && (
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors"
@@ -445,9 +428,9 @@ const LocationsPage: React.FC = () => {
                 <LocationCard
                   location={location}
                   onLocationClick={handleLocationSelect}
-                  onEdit={isAdmin ? handleEditLocation : undefined}
-                  onDelete={isAdmin ? handleDeleteLocation : undefined}
-                  showEditControls={isAdmin}
+                  onEdit={canManageLocations ? handleEditLocation : undefined}
+                  onDelete={canManageLocations ? handleDeleteLocation : undefined}
+                  showEditControls={canManageLocations}
                 />
               </div>
             ))}
@@ -457,9 +440,9 @@ const LocationsPage: React.FC = () => {
           locations={filteredLocations}
           onLocationSelect={handleLocationSelect}
           selectedLocation={selectedLocation}
-          onLocationAdd={isAdmin ? handleLocationAdd : undefined}
-          onLocationEdit={isAdmin ? handleEditLocation : undefined}
-          onLocationDelete={isAdmin ? handleDeleteLocation : undefined}
+          onLocationAdd={canManageLocations ? handleLocationAdd : undefined}
+          onLocationEdit={canManageLocations ? handleEditLocation : undefined}
+          onLocationDelete={canManageLocations ? handleDeleteLocation : undefined}
           height="600px"
         />
         )}

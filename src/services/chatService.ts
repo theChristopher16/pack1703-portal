@@ -91,7 +91,7 @@ const mapUserRoleToChatRole = (userRole: UserRole): ChatUser['role'] => {
       return 'super-admin';
     case UserRole.ADMIN:
       return 'admin';
-    case UserRole.VOLUNTEER:
+    case UserRole.DEN_LEADER:
       return 'volunteer';
     case UserRole.PARENT:
       return 'parent';
@@ -1260,7 +1260,7 @@ class ChatService {
     const isAdmin = currentAuthUser && (
       currentAuthUser.role === UserRole.SUPER_ADMIN || 
       currentAuthUser.role === UserRole.ADMIN || 
-      currentAuthUser.role === UserRole.VOLUNTEER
+      currentAuthUser.role === UserRole.DEN_LEADER
     );
     
     // Initialize with fresh user data

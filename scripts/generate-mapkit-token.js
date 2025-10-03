@@ -65,7 +65,7 @@ function generateMapKitToken() {
     const payload = {
       iss: APPLE_TEAM_ID,           // Issuer: Your Team ID
       iat: Math.floor(Date.now() / 1000),                    // Issued at
-      exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24),   // Expires in 24 hours
+      exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 30),   // Expires in 30 days
       origin: APPLE_ORIGIN          // Your website domain
     };
 
@@ -87,7 +87,8 @@ function generateMapKitToken() {
     console.log('✅ Apple MapKit JS Token Generated Successfully!');
     console.log('🔑 Your Token:', token);
     console.log('🌐 Origin:', APPLE_ORIGIN);
-    console.log('⏰ Expires:', new Date(Date.now() + (60 * 60 * 24 * 1000)).toISOString());
+    console.log('⏰ Expires:', new Date(Date.now() + (60 * 60 * 24 * 30 * 1000)).toISOString());
+    console.log('📅 Valid for: 30 days');
     console.log('\n📝 Copy this token to your AppleLocationMap component');
     
     return token;

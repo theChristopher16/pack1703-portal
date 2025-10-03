@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.publicICSFeed = exports.icsFeed = exports.sendSMS = exports.sendAnnouncementSMS = exports.sendAnnouncementEmails = exports.createTestAnnouncement = exports.helloWorld = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
+exports.uploadSensorData = exports.uploadCameraImage = exports.completePasswordSetup = exports.verifyPasswordSetupToken = exports.resetPasswordWithToken = exports.verifyPasswordResetToken = exports.sendPasswordReset = exports.publicICSFeed = exports.icsFeed = exports.sendSMS = exports.sendAnnouncementSMS = exports.sendAnnouncementEmails = exports.createTestAnnouncement = exports.helloWorld = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.getUserRSVPs = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 // Initialize Firebase Admin
@@ -59,16 +59,14 @@ async function createThreatIntelligence(type, value, threatLevel, source, descri
 // Helper function to get role permissions
 function getRolePermissions(role) {
     switch (role) {
-        case 'root':
-            return ['system_admin', 'user_management', 'event_management', 'pack_management', 'location_management', 'announcement_management', 'audit_logs'];
+        case 'super_admin':
+            return ['system_admin', 'user_management', 'role_management', 'system_config', 'event_management', 'pack_management', 'location_management', 'announcement_management', 'audit_logs', 'cost_management'];
         case 'admin':
-            return ['user_management', 'event_management', 'pack_management', 'location_management', 'announcement_management'];
-        case 'leader':
+            return ['user_management', 'role_management', 'system_config', 'event_management', 'pack_management', 'location_management', 'announcement_management', 'cost_management'];
         case 'den_leader':
-            return ['event_management', 'pack_management', 'announcement_management'];
-        case 'volunteer':
-            return ['event_management'];
+            return ['event_management', 'announcement_management', 'den_content', 'den_events', 'den_members', 'den_chat_management', 'den_announcements'];
         case 'parent':
+            return ['family_management', 'family_events', 'family_rsvp', 'den_members'];
         default:
             return [];
     }
@@ -134,14 +132,14 @@ exports.updateUserRole = functions.https.onCall(async (data, context) => {
                 throw new functions.https.HttpsError('permission-denied', 'Current user not found');
             }
             const currentUserData = currentUserDoc.data();
-            const hasAdminRole = (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.role) === 'root' || (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.role) === 'admin' || (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.role) === 'super-admin' || (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.role) === 'super_admin';
+            const hasAdminRole = (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.role) === 'super_admin' || (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.role) === 'admin';
             const hasLegacyPermissions = (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.isAdmin) || (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.isDenLeader) || (currentUserData === null || currentUserData === void 0 ? void 0 : currentUserData.isCubmaster);
             if (!hasAdminRole && !hasLegacyPermissions) {
                 throw new functions.https.HttpsError('permission-denied', 'Only admins can update other users');
             }
         }
         // Validate role
-        const validRoles = ['parent', 'volunteer', 'admin', 'root'];
+        const validRoles = ['parent', 'den_leader', 'admin', 'super_admin'];
         if (!validRoles.includes(newRole)) {
             throw new functions.https.HttpsError('invalid-argument', 'Invalid role');
         }
@@ -151,21 +149,23 @@ exports.updateUserRole = functions.https.onCall(async (data, context) => {
             updatedAt: getTimestamp()
         };
         // Set appropriate boolean flags based on role
-        if (newRole === 'admin' || newRole === 'root') {
+        if (newRole === 'admin' || newRole === 'super_admin') {
             updateData.isAdmin = true;
             updateData.isDenLeader = true;
             updateData.isCubmaster = true;
-            updateData.permissions = ['event_management', 'pack_management', 'user_management', 'location_management', 'announcement_management'];
+            updateData.permissions = getRolePermissions(newRole);
         }
-        else if (newRole === 'volunteer') {
+        else if (newRole === 'den_leader') {
             updateData.isDenLeader = true;
-            updateData.permissions = ['den_content', 'den_events', 'den_members'];
+            updateData.isAdmin = false;
+            updateData.isCubmaster = false;
+            updateData.permissions = getRolePermissions(newRole);
         }
         else {
             updateData.isAdmin = false;
             updateData.isDenLeader = false;
             updateData.isCubmaster = false;
-            updateData.permissions = ['family_management', 'family_events', 'family_rsvp'];
+            updateData.permissions = getRolePermissions(newRole);
         }
         await db.collection('users').doc(userId).update(updateData);
         return {
@@ -195,7 +195,7 @@ exports.adminUpdateEvent = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'den_leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasEventManagementPermission = (_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('event_management');
         if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
@@ -231,7 +231,7 @@ exports.adminDeleteEvent = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'den_leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasEventManagementPermission = (_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('event_management');
         if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
@@ -281,7 +281,7 @@ exports.adminCreateEvent = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'den_leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasEventManagementPermission = (_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('event_management');
         if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
@@ -432,7 +432,7 @@ async function getActualRSVPCount(eventId) {
         return 0;
     }
 }
-// Delete RSVP - Admin only
+// Delete RSVP - Users can delete their own, admins can delete any
 exports.deleteRSVP = functions.https.onCall(async (data, context) => {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s;
     try {
@@ -440,16 +440,13 @@ exports.deleteRSVP = functions.https.onCall(async (data, context) => {
         if (!context.auth) {
             throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated to delete RSVPs');
         }
-        // Check admin permissions
+        // Check user permissions
         const userDoc = await db.collection('users').doc(context.auth.uid).get();
         if (!userDoc.exists) {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const isAdmin = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'root';
-        if (!isAdmin) {
-            throw new functions.https.HttpsError('permission-denied', 'Only admins can delete RSVPs');
-        }
+        const isAdmin = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin';
         // Validate required fields
         if (!data.rsvpId) {
             throw new functions.https.HttpsError('invalid-argument', 'RSVP ID is required');
@@ -462,8 +459,13 @@ exports.deleteRSVP = functions.https.onCall(async (data, context) => {
         }
         const rsvpData = rsvpDoc.data();
         const eventId = rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.eventId;
+        const rsvpUserId = rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.userId;
         if (!eventId) {
             throw new functions.https.HttpsError('invalid-argument', 'RSVP missing event ID');
+        }
+        // Check if user owns this RSVP or is an admin
+        if (!isAdmin && rsvpUserId !== context.auth.uid) {
+            throw new functions.https.HttpsError('permission-denied', 'You can only delete your own RSVPs');
         }
         // Use batch write for atomicity
         const batch = db.batch();
@@ -547,6 +549,45 @@ exports.deleteRSVP = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('internal', 'Failed to delete RSVP');
     }
 });
+// Get user's RSVPs
+exports.getUserRSVPs = functions.https.onCall(async (data, context) => {
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated to view RSVPs');
+        }
+        // Get user's RSVPs
+        const rsvpsQuery = await db.collection('rsvps')
+            .where('userId', '==', context.auth.uid)
+            .orderBy('createdAt', 'desc')
+            .get();
+        const rsvps = [];
+        for (const doc of rsvpsQuery.docs) {
+            const rsvpData = doc.data();
+            // Get event details
+            const eventDoc = await db.collection('events').doc(rsvpData.eventId).get();
+            const eventData = eventDoc.exists ? eventDoc.data() : null;
+            rsvps.push(Object.assign(Object.assign({ id: doc.id }, rsvpData), { event: eventData ? {
+                    id: eventData.id,
+                    title: eventData.title,
+                    date: eventData.date,
+                    location: eventData.location
+                } : null }));
+        }
+        return {
+            success: true,
+            rsvps: rsvps,
+            count: rsvps.length
+        };
+    }
+    catch (error) {
+        console.error('Error getting user RSVPs:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to get user RSVPs');
+    }
+});
 // CRITICAL: Get RSVP count for an event
 exports.getRSVPCount = functions.https.onCall(async (data, context) => {
     try {
@@ -621,8 +662,8 @@ exports.getRSVPData = functions.https.onCall(async (data, context) => {
         // Check if user is admin
         const userDoc = await db.collection('users').doc(context.auth.uid).get();
         const userData = userDoc.data();
-        const isAdmin = (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' ||
-            (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.isAdmin);
+        const isAdmin = (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' ||
+            (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.isAdmin);
         if (!isAdmin) {
             throw new functions.https.HttpsError('permission-denied', 'Only admin users can access RSVP data');
         }
@@ -687,7 +728,7 @@ exports.adminUpdateUser = functions.https.onCall(async (data, context) => {
         }
         const userData = userDoc.data();
         // Check role-based permissions (new system) or legacy boolean fields
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'den_leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -809,7 +850,7 @@ exports.updateUserClaims = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'den_leader';
         if (!hasAdminRole) {
             throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update user claims');
         }
@@ -911,7 +952,7 @@ exports.sendChatMessage = functions.https.onCall(async (data, context) => {
         // Get user data to determine if admin
         const userDoc = await db.collection('users').doc(context.auth.uid).get();
         const userData = userDoc.exists ? userDoc.data() : null;
-        const isAdmin = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const isAdmin = (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'den_leader';
         const messageRef = db.collection('chat-messages');
         const newMessage = {
             channelId,
@@ -951,7 +992,7 @@ exports.testEmailConnection = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'den_leader';
         if (!hasAdminRole) {
             throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to test email connection');
         }
@@ -1090,7 +1131,7 @@ exports.getPendingAccountRequests = functions.https.onCall(async (data, context)
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'den_leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -1174,7 +1215,7 @@ exports.approveAccountRequest = functions.https.onCall(async (data, context) => 
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'den_leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -1237,9 +1278,64 @@ exports.approveAccountRequest = functions.https.onCall(async (data, context) => 
             approvedBy: context.auth.uid,
             approvedAt: getTimestamp()
         };
-        // Create user document in Firestore
-        const userRef = db.collection('users').doc();
-        await userRef.set(newUserData);
+        // Create Firebase Auth account first
+        let firebaseAuthUser;
+        try {
+            // Generate a temporary password (will be set via email)
+            const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
+            firebaseAuthUser = await admin.auth().createUser({
+                email: requestData.email,
+                displayName: requestData.displayName,
+                password: tempPassword,
+                emailVerified: false
+            });
+            console.log('Firebase Auth user created:', firebaseAuthUser.uid);
+        }
+        catch (authError) {
+            console.error('Error creating Firebase Auth user:', authError);
+            if (authError.code === 'auth/email-already-exists') {
+                // User already exists in Firebase Auth, get their UID
+                try {
+                    firebaseAuthUser = await admin.auth().getUserByEmail(requestData.email);
+                    console.log('Found existing Firebase Auth user:', firebaseAuthUser.uid);
+                }
+                catch (getUserError) {
+                    throw new functions.https.HttpsError('internal', 'Failed to create or retrieve user account');
+                }
+            }
+            else {
+                throw new functions.https.HttpsError('internal', 'Failed to create user account');
+            }
+        }
+        // Create password setup token
+        const setupToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        const setupTokenExpiry = new Date();
+        setupTokenExpiry.setHours(setupTokenExpiry.getHours() + 24); // 24 hours
+        // Store password setup token
+        await db.collection('passwordSetupTokens').doc(setupToken).set({
+            userId: firebaseAuthUser.uid,
+            email: requestData.email,
+            displayName: requestData.displayName,
+            expires: admin.firestore.Timestamp.fromDate(setupTokenExpiry),
+            used: false,
+            createdAt: getTimestamp()
+        });
+        // Create user document in Firestore using Firebase Auth UID
+        const userRef = db.collection('users').doc(firebaseAuthUser.uid);
+        await userRef.set(Object.assign(Object.assign({}, newUserData), { uid: firebaseAuthUser.uid // Ensure UID is set
+         }));
+        // Set custom claims for the user
+        try {
+            await admin.auth().setCustomUserClaims(firebaseAuthUser.uid, {
+                approved: true,
+                role: role
+            });
+            console.log('Custom claims set for user:', firebaseAuthUser.uid);
+        }
+        catch (claimsError) {
+            console.error('Error setting custom claims:', claimsError);
+            // Don't fail the approval if claims fail
+        }
         // Update request status
         await requestRef.update({
             status: 'approved',
@@ -1247,7 +1343,7 @@ exports.approveAccountRequest = functions.https.onCall(async (data, context) => 
             approvedAt: getTimestamp(),
             approvedRole: role,
             updatedAt: getTimestamp(),
-            userId: userRef.id // Link to the created user
+            userId: firebaseAuthUser.uid // Link to the Firebase Auth user
         });
         // Log the approval
         await db.collection('adminActions').add({
@@ -1260,7 +1356,7 @@ exports.approveAccountRequest = functions.https.onCall(async (data, context) => 
             details: {
                 email: requestData.email,
                 approvedRole: role,
-                createdUserId: userRef.id
+                createdUserId: firebaseAuthUser.uid
             },
             timestamp: getTimestamp(),
             ipAddress: ((_c = context.rawRequest) === null || _c === void 0 ? void 0 : _c.ip) || 'unknown',
@@ -1271,14 +1367,15 @@ exports.approveAccountRequest = functions.https.onCall(async (data, context) => 
         try {
             const { emailService } = await Promise.resolve().then(() => require('./emailService'));
             const userData = {
-                uid: userRef.id,
+                uid: firebaseAuthUser.uid,
                 email: requestData.email,
                 displayName: requestData.displayName,
                 phone: requestData.phone || '',
                 address: requestData.address || '',
                 emergencyContact: requestData.emergencyContact || '',
                 medicalInfo: requestData.medicalInfo || '',
-                role: role
+                role: role,
+                setupToken: setupToken
             };
             await emailService.sendWelcomeEmail(userData);
             console.log('Welcome email sent successfully');
@@ -1290,7 +1387,7 @@ exports.approveAccountRequest = functions.https.onCall(async (data, context) => 
         return {
             success: true,
             message: 'Account request approved and user account created successfully',
-            userId: userRef.id
+            userId: firebaseAuthUser.uid
         };
     }
     catch (error) {
@@ -1315,7 +1412,7 @@ exports.createUserManually = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'den_leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -1428,7 +1525,7 @@ exports.rejectAccountRequest = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'den_leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -1500,7 +1597,7 @@ exports.testAIConnection = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        if (!(userData === null || userData === void 0 ? void 0 : userData.role) || !['admin', 'root', 'cubmaster', 'super-admin'].includes(userData.role)) {
+        if (!(userData === null || userData === void 0 ? void 0 : userData.role) || !['admin', 'super_admin', 'den_leader'].includes(userData.role)) {
             throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to test AI connection');
         }
         // Create security alert for AI connection test
@@ -1538,7 +1635,7 @@ exports.getSystemMetrics = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'den_leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasSystemAdminPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('system_admin')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('user_management'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasSystemAdminPermission) {
@@ -1781,7 +1878,7 @@ exports.generateThreatIntelligence = functions.https.onCall(async (data, context
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        if (!(userData === null || userData === void 0 ? void 0 : userData.role) || !['admin', 'root', 'cubmaster', 'super-admin'].includes(userData.role)) {
+        if (!(userData === null || userData === void 0 ? void 0 : userData.role) || !['admin', 'super_admin', 'den_leader'].includes(userData.role)) {
             throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to generate threat intelligence');
         }
         // Generate sample threat intelligence data
@@ -1847,7 +1944,7 @@ exports.getBatchDashboardData = functions.https.onCall(async (data, context) => 
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'leader';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'den_leader';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasSystemAdminPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('system_admin')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('user_management'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasSystemAdminPermission) {
@@ -1928,7 +2025,7 @@ exports.adminDeleteUser = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'User not found');
         }
         const userData = userDoc.data();
-        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'root' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super-admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin';
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin';
         const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
         const hasUserManagementPermission = ((_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management')) || ((_b = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _b === void 0 ? void 0 : _b.includes('system_admin'));
         if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
@@ -1944,9 +2041,9 @@ exports.adminDeleteUser = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('not-found', 'User not found');
         }
         const targetUserData = targetUserDoc.data();
-        // Prevent deleting root users (unless you're also root)
-        if ((targetUserData === null || targetUserData === void 0 ? void 0 : targetUserData.role) === 'root' && (userData === null || userData === void 0 ? void 0 : userData.role) !== 'root') {
-            throw new functions.https.HttpsError('permission-denied', 'Cannot delete root users');
+        // Prevent deleting super admin users (unless you're also super admin)
+        if ((targetUserData === null || targetUserData === void 0 ? void 0 : targetUserData.role) === 'super_admin' && (userData === null || userData === void 0 ? void 0 : userData.role) !== 'super_admin') {
+            throw new functions.https.HttpsError('permission-denied', 'Cannot delete super admin users');
         }
         functions.logger.info(`Starting comprehensive user deletion for user: ${userId}`);
         // COMPREHENSIVE DATA CLEANUP - Remove user data from ALL collections
@@ -2313,26 +2410,35 @@ exports.sendSMS = functions.https.onCall(async (data, context) => {
 // ICS Feed Generator Function
 exports.icsFeed = functions.https.onCall(async (data, context) => {
     try {
-        const { categories = [], denTags = [], startDate, endDate, includeDescription = true, includeLocation = true } = data;
-        // Check App Check (skip in emulator and development for testing)
-        if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
-            throw new functions.https.HttpsError('unauthenticated', 'App Check required');
-        }
-        // Build query for future events
-        let query = db.collection('events')
-            .where('visibility', 'in', ['public', null])
-            .where('startDate', '>=', getTimestamp())
-            .orderBy('startDate');
+        // Handle null/undefined data
+        const safeData = data || {};
+        const { categories = [], denTags = [], startDate, endDate, includeDescription = true, includeLocation = true } = safeData;
+        // App Check not required for public ICS feed generation
+        // This function is meant to be accessible for calendar subscriptions
+        // First, let's see all events regardless of visibility and date
+        const allEventsSnapshot = await db.collection('events').get();
+        console.log(`Total events in database: ${allEventsSnapshot.size}`);
+        allEventsSnapshot.forEach(doc => {
+            var _a, _b;
+            const event = doc.data();
+            console.log(`Event: ${event.title}, visibility: ${event.visibility}, startDate: ${((_b = (_a = event.startDate) === null || _a === void 0 ? void 0 : _a.toDate) === null || _b === void 0 ? void 0 : _b.call(_a)) || event.startDate}`);
+        });
+        // Build query for future events - temporarily more permissive for debugging
+        let query = db.collection('events').orderBy('startDate');
+        // For debugging, let's not filter by visibility or date initially
+        // query = query.where('visibility', 'in', ['public', null]);
+        // query = query.where('startDate', '>=', getTimestamp());
         // Apply filters
-        if (categories.length > 0) {
+        if (categories && categories.length > 0) {
             query = query.where('category', 'in', categories);
         }
         const eventsSnapshot = await query.get();
         const events = [];
+        console.log(`Found ${eventsSnapshot.size} events for ICS generation`);
         eventsSnapshot.forEach((doc) => {
             const event = doc.data();
             // Filter by den tags if specified
-            if (denTags.length > 0) {
+            if (denTags && denTags.length > 0) {
                 if (!event.denTags || !event.denTags.some((tag) => denTags.includes(tag))) {
                     return;
                 }
@@ -2451,17 +2557,685 @@ function generateICSContent(events, options) {
     icsContent.push('BEGIN:VTIMEZONE', 'TZID:America/Chicago', 'BEGIN:STANDARD', 'DTSTART:19671105T020000', 'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU', 'TZOFFSETFROM:-0500', 'TZOFFSETTO:-0600', 'TZNAME:CST', 'END:STANDARD', 'BEGIN:DAYLIGHT', 'DTSTART:19670312T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU', 'TZOFFSETFROM:-0600', 'TZOFFSETTO:-0500', 'TZNAME:CDT', 'END:DAYLIGHT', 'END:VTIMEZONE');
     // Add events
     events.forEach(event => {
-        const startDate = event.startDate.toDate();
-        const endDate = event.endDate.toDate();
-        const formatICSDate = (date) => {
-            return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-        };
-        const formatICSDateWithTZ = (date) => {
-            return date.toISOString().replace(/[-:]/g, '').split('.')[0];
-        };
-        icsContent.push('BEGIN:VEVENT', `UID:${event.id}@pack1703.com`, `DTSTAMP:${formatICSDate(new Date())}`, `DTSTART;TZID=America/Chicago:${formatICSDateWithTZ(startDate)}`, `DTEND;TZID=America/Chicago:${formatICSDateWithTZ(endDate)}`, `SUMMARY:${event.title}`, includeDescription && event.description ? `DESCRIPTION:${event.description.replace(/\n/g, '\\n')}` : '', includeLocation && event.location ? `LOCATION:${event.location}` : '', event.category ? `CATEGORIES:${event.category}` : '', event.denTags && event.denTags.length > 0 ? `CATEGORIES:${event.denTags.join(',')}` : '', 'STATUS:CONFIRMED', 'SEQUENCE:0', 'END:VEVENT');
+        var _a, _b;
+        try {
+            // Handle different date formats (Firestore Timestamp, Date object, or string)
+            const startDate = ((_a = event.startDate) === null || _a === void 0 ? void 0 : _a.toDate) ? event.startDate.toDate() : new Date(event.startDate);
+            const endDate = ((_b = event.endDate) === null || _b === void 0 ? void 0 : _b.toDate) ? event.endDate.toDate() : new Date(event.endDate);
+            // Validate dates
+            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                console.error('Invalid date format for event:', event.id, {
+                    startDate: event.startDate,
+                    endDate: event.endDate
+                });
+                return; // Skip this event
+            }
+            const formatICSDate = (date) => {
+                return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+            };
+            const formatICSDateWithTZ = (date) => {
+                return date.toISOString().replace(/[-:]/g, '').split('.')[0];
+            };
+            icsContent.push('BEGIN:VEVENT', `UID:${event.id}@pack1703.com`, `DTSTAMP:${formatICSDate(new Date())}`, `DTSTART;TZID=America/Chicago:${formatICSDateWithTZ(startDate)}`, `DTEND;TZID=America/Chicago:${formatICSDateWithTZ(endDate)}`, `SUMMARY:${event.title}`, includeDescription && event.description ? `DESCRIPTION:${event.description.replace(/\n/g, '\\n')}` : '', includeLocation && event.location ? `LOCATION:${event.location}` : '', event.category ? `CATEGORIES:${event.category}` : '', event.denTags && event.denTags.length > 0 ? `CATEGORIES:${event.denTags.join(',')}` : '', 'STATUS:CONFIRMED', 'SEQUENCE:0', 'END:VEVENT');
+        }
+        catch (eventError) {
+            console.error('Error processing event for ICS:', event.id, eventError);
+            // Continue with other events even if one fails
+        }
     });
     icsContent.push('END:VCALENDAR');
     return icsContent.filter(line => line !== '').join('\r\n');
 }
+// Password Reset Function
+exports.sendPasswordReset = functions.https.onCall(async (data, context) => {
+    var _a, _b, _c;
+    try {
+        const { email } = data;
+        if (!email) {
+            throw new functions.https.HttpsError('invalid-argument', 'Email is required');
+        }
+        // Check if user exists in Firestore
+        const usersSnapshot = await db.collection('users')
+            .where('email', '==', email)
+            .where('status', '==', 'approved')
+            .limit(1)
+            .get();
+        if (usersSnapshot.empty) {
+            // Don't reveal if user exists or not for security
+            return {
+                success: true,
+                message: 'If an account with that email exists, a password reset link has been sent.'
+            };
+        }
+        const userDoc = usersSnapshot.docs[0];
+        const userData = userDoc.data();
+        // Generate password reset token
+        const resetToken = require('crypto').randomBytes(32).toString('hex');
+        const resetExpires = new Date(Date.now() + 3600000); // 1 hour
+        // Store reset token in Firestore
+        await db.collection('passwordResetTokens').doc(resetToken).set({
+            userId: userDoc.id,
+            email: email,
+            expires: resetExpires,
+            used: false,
+            createdAt: getTimestamp()
+        });
+        // Generate reset URL
+        const resetUrl = `https://sfpack1703.web.app/reset-password?token=${resetToken}`;
+        // Import email service
+        const { emailService } = await Promise.resolve().then(() => require('./emailService'));
+        // Send password reset email
+        const emailData = {
+            to: email,
+            from: 'cubmaster@sfpack1703.com',
+            subject: 'Pack 1703 Portal - Password Reset Request',
+            html: generatePasswordResetEmailHTML(userData.displayName || 'User', resetUrl),
+            text: generatePasswordResetEmailText(userData.displayName || 'User', resetUrl)
+        };
+        await emailService.sendEmail(emailData);
+        // Log the password reset request
+        await db.collection('adminActions').add({
+            userId: userDoc.id,
+            userEmail: email,
+            action: 'password_reset_requested',
+            entityType: 'user',
+            entityId: userDoc.id,
+            entityName: userData.displayName || email,
+            details: {
+                email: email,
+                resetToken: resetToken,
+                expires: resetExpires
+            },
+            timestamp: getTimestamp(),
+            ipAddress: ((_a = context.rawRequest) === null || _a === void 0 ? void 0 : _a.ip) || 'unknown',
+            userAgent: ((_c = (_b = context.rawRequest) === null || _b === void 0 ? void 0 : _b.headers) === null || _c === void 0 ? void 0 : _c['user-agent']) || 'unknown',
+            success: true
+        });
+        return {
+            success: true,
+            message: 'Password reset email sent successfully'
+        };
+    }
+    catch (error) {
+        console.error('Error sending password reset:', error);
+        throw new functions.https.HttpsError('internal', 'Failed to send password reset email');
+    }
+});
+// Verify Password Reset Token
+exports.verifyPasswordResetToken = functions.https.onCall(async (data, context) => {
+    try {
+        const { token } = data;
+        if (!token) {
+            throw new functions.https.HttpsError('invalid-argument', 'Reset token is required');
+        }
+        // Get reset token from Firestore
+        const tokenDoc = await db.collection('passwordResetTokens').doc(token).get();
+        if (!tokenDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'Invalid or expired reset token');
+        }
+        const tokenData = tokenDoc.data();
+        if (!tokenData) {
+            throw new functions.https.HttpsError('not-found', 'Invalid or expired reset token');
+        }
+        // Check if token is expired
+        if (new Date() > tokenData.expires.toDate()) {
+            // Clean up expired token
+            await db.collection('passwordResetTokens').doc(token).delete();
+            throw new functions.https.HttpsError('deadline-exceeded', 'Reset token has expired');
+        }
+        // Check if token has been used
+        if (tokenData.used) {
+            throw new functions.https.HttpsError('failed-precondition', 'Reset token has already been used');
+        }
+        // Get user data
+        const userDoc = await db.collection('users').doc(tokenData.userId).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'User not found');
+        }
+        const userData = userDoc.data();
+        if (!userData) {
+            throw new functions.https.HttpsError('not-found', 'User data not found');
+        }
+        return {
+            success: true,
+            email: tokenData.email,
+            displayName: userData.displayName,
+            message: 'Reset token is valid'
+        };
+    }
+    catch (error) {
+        console.error('Error verifying password reset token:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to verify reset token');
+    }
+});
+// Reset Password with Token
+exports.resetPasswordWithToken = functions.https.onCall(async (data, context) => {
+    var _a, _b, _c;
+    try {
+        const { token, newPassword } = data;
+        if (!token || !newPassword) {
+            throw new functions.https.HttpsError('invalid-argument', 'Reset token and new password are required');
+        }
+        if (newPassword.length < 6) {
+            throw new functions.https.HttpsError('invalid-argument', 'Password must be at least 6 characters long');
+        }
+        // Get reset token from Firestore
+        const tokenDoc = await db.collection('passwordResetTokens').doc(token).get();
+        if (!tokenDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'Invalid or expired reset token');
+        }
+        const tokenData = tokenDoc.data();
+        if (!tokenData) {
+            throw new functions.https.HttpsError('not-found', 'Invalid or expired reset token');
+        }
+        // Check if token is expired
+        if (new Date() > tokenData.expires.toDate()) {
+            // Clean up expired token
+            await db.collection('passwordResetTokens').doc(token).delete();
+            throw new functions.https.HttpsError('deadline-exceeded', 'Reset token has expired');
+        }
+        // Check if token has been used
+        if (tokenData.used) {
+            throw new functions.https.HttpsError('failed-precondition', 'Reset token has already been used');
+        }
+        // Get user data
+        const userDoc = await db.collection('users').doc(tokenData.userId).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'User not found');
+        }
+        const userData = userDoc.data();
+        if (!userData) {
+            throw new functions.https.HttpsError('not-found', 'User data not found');
+        }
+        // Update password in Firebase Auth
+        try {
+            await admin.auth().updateUser(tokenData.userId, {
+                password: newPassword
+            });
+        }
+        catch (authError) {
+            console.error('Error updating password in Firebase Auth:', authError);
+            throw new functions.https.HttpsError('internal', 'Failed to update password');
+        }
+        // Mark token as used
+        await db.collection('passwordResetTokens').doc(token).update({
+            used: true,
+            usedAt: getTimestamp()
+        });
+        // Update user's last password change
+        await db.collection('users').doc(tokenData.userId).update({
+            lastPasswordChange: getTimestamp(),
+            updatedAt: getTimestamp()
+        });
+        // Log the password reset
+        await db.collection('adminActions').add({
+            userId: tokenData.userId,
+            userEmail: tokenData.email,
+            action: 'password_reset_completed',
+            entityType: 'user',
+            entityId: tokenData.userId,
+            entityName: userData.displayName || tokenData.email,
+            details: {
+                email: tokenData.email,
+                resetToken: token,
+                method: 'token_reset'
+            },
+            timestamp: getTimestamp(),
+            ipAddress: ((_a = context.rawRequest) === null || _a === void 0 ? void 0 : _a.ip) || 'unknown',
+            userAgent: ((_c = (_b = context.rawRequest) === null || _b === void 0 ? void 0 : _b.headers) === null || _c === void 0 ? void 0 : _c['user-agent']) || 'unknown',
+            success: true
+        });
+        // Send confirmation email
+        try {
+            const { emailService } = await Promise.resolve().then(() => require('./emailService'));
+            const emailData = {
+                to: tokenData.email,
+                from: 'cubmaster@sfpack1703.com',
+                subject: 'Pack 1703 Portal - Password Successfully Reset',
+                html: generatePasswordResetConfirmationHTML(userData.displayName || 'User'),
+                text: generatePasswordResetConfirmationText(userData.displayName || 'User')
+            };
+            await emailService.sendEmail(emailData);
+        }
+        catch (emailError) {
+            console.error('Failed to send password reset confirmation email:', emailError);
+            // Don't fail the password reset if email fails
+        }
+        return {
+            success: true,
+            message: 'Password has been reset successfully'
+        };
+    }
+    catch (error) {
+        console.error('Error resetting password:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to reset password');
+    }
+});
+// Verify Password Setup Token
+exports.verifyPasswordSetupToken = functions.https.onCall(async (data, context) => {
+    try {
+        const { token } = data;
+        if (!token) {
+            throw new functions.https.HttpsError('invalid-argument', 'Setup token is required');
+        }
+        // Get setup token from Firestore
+        const tokenDoc = await db.collection('passwordSetupTokens').doc(token).get();
+        if (!tokenDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'Invalid or expired setup token');
+        }
+        const tokenData = tokenDoc.data();
+        if (!tokenData) {
+            throw new functions.https.HttpsError('not-found', 'Invalid or expired setup token');
+        }
+        // Check if token is expired
+        if (new Date() > tokenData.expires.toDate()) {
+            // Clean up expired token
+            await db.collection('passwordSetupTokens').doc(token).delete();
+            throw new functions.https.HttpsError('deadline-exceeded', 'Setup token has expired');
+        }
+        // Check if token has been used
+        if (tokenData.used) {
+            throw new functions.https.HttpsError('failed-precondition', 'Setup token has already been used');
+        }
+        return {
+            success: true,
+            email: tokenData.email,
+            displayName: tokenData.displayName,
+            message: 'Setup token is valid'
+        };
+    }
+    catch (error) {
+        console.error('Error verifying password setup token:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to verify setup token');
+    }
+});
+// Complete Password Setup
+exports.completePasswordSetup = functions.https.onCall(async (data, context) => {
+    var _a, _b, _c;
+    try {
+        const { token, newPassword } = data;
+        if (!token || !newPassword) {
+            throw new functions.https.HttpsError('invalid-argument', 'Setup token and new password are required');
+        }
+        if (newPassword.length < 6) {
+            throw new functions.https.HttpsError('invalid-argument', 'Password must be at least 6 characters long');
+        }
+        // Get setup token from Firestore
+        const tokenDoc = await db.collection('passwordSetupTokens').doc(token).get();
+        if (!tokenDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'Invalid or expired setup token');
+        }
+        const tokenData = tokenDoc.data();
+        if (!tokenData) {
+            throw new functions.https.HttpsError('not-found', 'Invalid or expired setup token');
+        }
+        // Check if token is expired
+        if (new Date() > tokenData.expires.toDate()) {
+            // Clean up expired token
+            await db.collection('passwordSetupTokens').doc(token).delete();
+            throw new functions.https.HttpsError('deadline-exceeded', 'Setup token has expired');
+        }
+        // Check if token has been used
+        if (tokenData.used) {
+            throw new functions.https.HttpsError('failed-precondition', 'Setup token has already been used');
+        }
+        // Update password in Firebase Auth
+        try {
+            await admin.auth().updateUser(tokenData.userId, {
+                password: newPassword,
+                emailVerified: true
+            });
+        }
+        catch (authError) {
+            console.error('Error updating password in Firebase Auth:', authError);
+            throw new functions.https.HttpsError('internal', 'Failed to update password');
+        }
+        // Mark token as used
+        await db.collection('passwordSetupTokens').doc(token).update({
+            used: true,
+            usedAt: getTimestamp()
+        });
+        // Update user's last password change
+        await db.collection('users').doc(tokenData.userId).update({
+            lastPasswordChange: getTimestamp(),
+            updatedAt: getTimestamp(),
+            emailVerified: true
+        });
+        // Log the password setup
+        await db.collection('adminActions').add({
+            userId: tokenData.userId,
+            userEmail: tokenData.email,
+            action: 'password_setup_completed',
+            entityType: 'user',
+            entityId: tokenData.userId,
+            entityName: tokenData.displayName || tokenData.email,
+            details: {
+                email: tokenData.email,
+                setupToken: token,
+                method: 'setup_token'
+            },
+            timestamp: getTimestamp(),
+            ipAddress: ((_a = context.rawRequest) === null || _a === void 0 ? void 0 : _a.ip) || 'unknown',
+            userAgent: ((_c = (_b = context.rawRequest) === null || _b === void 0 ? void 0 : _b.headers) === null || _c === void 0 ? void 0 : _c['user-agent']) || 'unknown',
+            success: true
+        });
+        return {
+            success: true,
+            message: 'Password has been set successfully'
+        };
+    }
+    catch (error) {
+        console.error('Error completing password setup:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to complete password setup');
+    }
+});
+// Helper function to generate password reset email HTML
+function generatePasswordResetEmailHTML(displayName, resetUrl) {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Password Reset - Pack 1703 Portal</title>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; }
+        .button { display: inline-block; background: #3b82f6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+        .button:hover { background: #2563eb; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+        .warning { background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 8px; margin: 20px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>🔐 Password Reset Request</h1>
+        <p>Pack 1703 Portal</p>
+      </div>
+      
+      <div class="content">
+        <h2>Hello ${displayName}!</h2>
+        
+        <p>We received a request to reset your password for your Pack 1703 Portal account.</p>
+        
+        <p>If you made this request, click the button below to reset your password:</p>
+        
+        <div style="text-align: center;">
+          <a href="${resetUrl}" class="button">Reset My Password</a>
+        </div>
+        
+        <div class="warning">
+          <strong>⚠️ Important Security Information:</strong>
+          <ul>
+            <li>This link will expire in 1 hour</li>
+            <li>This link can only be used once</li>
+            <li>If you didn't request this reset, please ignore this email</li>
+          </ul>
+        </div>
+        
+        <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+        <p style="word-break: break-all; background: #e5e7eb; padding: 10px; border-radius: 5px; font-family: monospace;">${resetUrl}</p>
+        
+        <p>If you have any questions or need assistance, please contact the pack leadership.</p>
+        
+        <p>Best regards,<br>
+        Pack 1703 Leadership Team</p>
+      </div>
+      
+      <div class="footer">
+        <p>This email was sent because a password reset was requested for your Pack 1703 Portal account.</p>
+        <p>© 2025 Pack 1703. All rights reserved.</p>
+      </div>
+    </body>
+    </html>
+  `.trim();
+}
+// Helper function to generate password reset email text
+function generatePasswordResetEmailText(displayName, resetUrl) {
+    return `
+🔐 Password Reset Request - Pack 1703 Portal
+
+Hello ${displayName}!
+
+We received a request to reset your password for your Pack 1703 Portal account.
+
+If you made this request, click the link below to reset your password:
+
+${resetUrl}
+
+⚠️ Important Security Information:
+- This link will expire in 1 hour
+- This link can only be used once
+- If you didn't request this reset, please ignore this email
+
+If you have any questions or need assistance, please contact the pack leadership.
+
+Best regards,
+Pack 1703 Leadership Team
+
+This email was sent because a password reset was requested for your Pack 1703 Portal account.
+© 2025 Pack 1703. All rights reserved.
+  `.trim();
+}
+// Helper function to generate password reset confirmation email HTML
+function generatePasswordResetConfirmationHTML(displayName) {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Password Reset Confirmation - Pack 1703 Portal</title>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #059669, #10b981); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; }
+        .success { background: #d1fae5; border: 1px solid #10b981; padding: 15px; border-radius: 8px; margin: 20px 0; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>✅ Password Successfully Reset</h1>
+        <p>Pack 1703 Portal</p>
+      </div>
+      
+      <div class="content">
+        <h2>Hello ${displayName}!</h2>
+        
+        <div class="success">
+          <strong>✅ Success!</strong> Your password has been successfully reset.
+        </div>
+        
+        <p>Your Pack 1703 Portal account password has been updated. You can now log in with your new password.</p>
+        
+        <p>If you have any questions or need assistance, please contact the pack leadership.</p>
+        
+        <p>Best regards,<br>
+        Pack 1703 Leadership Team</p>
+      </div>
+      
+      <div class="footer">
+        <p>This email confirms that your password was successfully reset.</p>
+        <p>© 2025 Pack 1703. All rights reserved.</p>
+      </div>
+    </body>
+    </html>
+  `.trim();
+}
+// Helper function to generate password reset confirmation email text
+function generatePasswordResetConfirmationText(displayName) {
+    return `
+✅ Password Successfully Reset - Pack 1703 Portal
+
+Hello ${displayName}!
+
+✅ Success! Your password has been successfully reset.
+
+Your Pack 1703 Portal account password has been updated. You can now log in with your new password.
+
+If you have any questions or need assistance, please contact the pack leadership.
+
+Best regards,
+Pack 1703 Leadership Team
+
+This email confirms that your password was successfully reset.
+© 2025 Pack 1703. All rights reserved.
+  `.trim();
+}
+// ============================================================================
+// ESP32-CAM IMAGE UPLOAD ENDPOINT
+// ============================================================================
+/**
+ * Upload image from ESP32-CAM to Firebase Storage
+ * Accepts raw JPEG data and uploads to Storage with proper authentication
+ */
+exports.uploadCameraImage = functions.https.onRequest(async (req, res) => {
+    // Set CORS headers
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Device-ID, X-Location');
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+    // Only accept POST
+    if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+    }
+    try {
+        // Get device info from headers
+        const deviceId = req.get('X-Device-ID') || 'esp32cam_unknown';
+        const location = req.get('X-Location') || 'Unknown Location';
+        // Get image data from request body
+        const imageBuffer = req.rawBody;
+        if (!imageBuffer || imageBuffer.length === 0) {
+            res.status(400).json({ error: 'No image data provided' });
+            return;
+        }
+        console.log(`📸 Received image from ${deviceId}: ${imageBuffer.length} bytes`);
+        // Generate filename
+        const timestamp = Date.now();
+        const filename = `garden/${deviceId}_${timestamp}.jpg`;
+        // Upload to Firebase Storage
+        const bucket = admin.storage().bucket();
+        const file = bucket.file(filename);
+        await file.save(imageBuffer, {
+            metadata: {
+                contentType: 'image/jpeg',
+                metadata: {
+                    deviceId,
+                    location,
+                    uploadedAt: new Date().toISOString()
+                }
+            }
+        });
+        // Make file publicly readable
+        await file.makePublic();
+        // Get public URL
+        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
+        console.log(`✅ Image uploaded: ${publicUrl}`);
+        // Store metadata in Firestore
+        await db.collection('camera_images').add({
+            filename,
+            url: publicUrl,
+            deviceId,
+            location,
+            size: imageBuffer.length,
+            timestamp: admin.firestore.Timestamp.now(),
+            width: 800, // ESP32-CAM default
+            height: 600
+        });
+        console.log(`✅ Metadata stored in Firestore`);
+        // Return success
+        res.status(200).json({
+            success: true,
+            url: publicUrl,
+            filename,
+            size: imageBuffer.length
+        });
+    }
+    catch (error) {
+        console.error('❌ Error uploading image:', error);
+        res.status(500).json({
+            error: 'Upload failed',
+            message: error.message
+        });
+    }
+});
+/**
+ * Cloud Function to receive sensor data from ESP32-CAM
+ * Accepts BME680 sensor readings and stores with proper server timestamp
+ */
+exports.uploadSensorData = functions.https.onRequest(async (req, res) => {
+    // Set CORS headers
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Device-ID, X-Location');
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+    // Only accept POST
+    if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+    }
+    try {
+        // Get device info from headers
+        const deviceId = req.get('X-Device-ID') || 'esp32cam_unknown';
+        const location = req.get('X-Location') || 'Unknown Location';
+        // Get sensor data from JSON body
+        const sensorData = req.body;
+        console.log(`🌡️ Received sensor data from ${deviceId}:`, sensorData);
+        // Validate required fields
+        if (sensorData.temperature === undefined || sensorData.humidity === undefined || sensorData.pressure === undefined) {
+            res.status(400).json({ error: 'Missing required sensor fields (temperature, humidity, pressure)' });
+            return;
+        }
+        // Store in Firestore with server timestamp
+        const docRef = await db.collection('bme680_readings').add({
+            deviceId,
+            location,
+            temperature: parseFloat(sensorData.temperature),
+            temperatureFahrenheit: parseFloat(sensorData.temperatureFahrenheit || ((sensorData.temperature * 9 / 5) + 32)),
+            humidity: parseFloat(sensorData.humidity),
+            pressure: parseFloat(sensorData.pressure),
+            pressureInHg: parseFloat(sensorData.pressureInHg || (sensorData.pressure * 0.02953)),
+            gasResistance: parseFloat(sensorData.gasResistance || 0),
+            airQualityIndex: parseInt(sensorData.airQualityIndex || 0),
+            timestamp: admin.firestore.Timestamp.now() // Server-side timestamp in UTC
+        });
+        console.log(`✅ Sensor data stored: ${docRef.id}`);
+        // Return success
+        res.status(200).json({
+            success: true,
+            documentId: docRef.id,
+            timestamp: new Date().toISOString()
+        });
+    }
+    catch (error) {
+        console.error('❌ Error storing sensor data:', error);
+        res.status(500).json({
+            error: 'Upload failed',
+            message: error.message
+        });
+    }
+});
 //# sourceMappingURL=index.js.map

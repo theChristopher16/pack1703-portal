@@ -66,7 +66,7 @@ const JoinPage: React.FC = () => {
       // Redirect based on user role
       if (user.role === UserRole.SUPER_ADMIN) {
         navigate('/admin');
-      } else if (user.role === UserRole.ADMIN || user.role === UserRole.VOLUNTEER) {
+      } else if (user.role === UserRole.ADMIN || user.role === UserRole.DEN_LEADER) {
         navigate('/admin');
       } else {
         navigate('/');

@@ -140,7 +140,7 @@ const AdminUsers: React.FC = () => {
         const denUsers = denGroups.get(user.profile?.den || '') || [];
         const potentialParent = denUsers.find(u => 
           u.uid !== user.uid && 
-          (u.role === UserRole.VOLUNTEER || u.role === UserRole.ADMIN)
+          (u.role === UserRole.DEN_LEADER || u.role === UserRole.ADMIN)
         );
         
         if (potentialParent) {
@@ -299,7 +299,7 @@ const AdminUsers: React.FC = () => {
     switch (role) {
       case UserRole.SUPER_ADMIN: return <Crown className="w-4 h-4 text-yellow-600" />;
       case UserRole.ADMIN: return <Shield className="w-4 h-4 text-red-600" />;
-      case UserRole.VOLUNTEER: return <Users className="w-4 h-4 text-green-600" />;
+      case UserRole.DEN_LEADER: return <Users className="w-4 h-4 text-green-600" />;
       case UserRole.PARENT: return <Star className="w-4 h-4 text-purple-600" />;
       default: return <User className="w-4 h-4 text-gray-600" />;
     }
@@ -309,7 +309,7 @@ const AdminUsers: React.FC = () => {
     switch (role) {
       case UserRole.SUPER_ADMIN: return 'bg-yellow-100 text-yellow-800';
       case UserRole.ADMIN: return 'bg-red-100 text-red-800';
-      case UserRole.VOLUNTEER: return 'bg-green-100 text-green-800';
+      case UserRole.DEN_LEADER: return 'bg-green-100 text-green-800';
       case UserRole.PARENT: return 'bg-purple-100 text-purple-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -516,7 +516,7 @@ const AdminUsers: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-purple-100 text-sm font-medium">Den Leaders</p>
-                <p className="text-3xl font-bold">{users.filter(u => u.role === UserRole.VOLUNTEER).length}</p>
+                <p className="text-3xl font-bold">{users.filter(u => u.role === UserRole.DEN_LEADER).length}</p>
               </div>
               <div className="text-purple-200 text-4xl">🏆</div>
             </div>
@@ -555,7 +555,7 @@ const AdminUsers: React.FC = () => {
               <option value="all">All Roles</option>
               <option value={UserRole.SUPER_ADMIN}>Super Admin</option>
               <option value={UserRole.ADMIN}>Admin</option>
-              <option value={UserRole.VOLUNTEER}>Volunteer</option>
+              <option value={UserRole.DEN_LEADER}>Den Leader</option>
               <option value={UserRole.PARENT}>Parent</option>
             </select>
             
@@ -765,7 +765,7 @@ const AdminUsers: React.FC = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
                   <option value={UserRole.PARENT}>Parent</option>
-                  <option value={UserRole.VOLUNTEER}>Volunteer</option>
+                  <option value={UserRole.DEN_LEADER}>Den Leader</option>
                   <option value={UserRole.ADMIN}>Admin</option>
                   <option value={UserRole.SUPER_ADMIN}>Super Admin</option>
                 </select>

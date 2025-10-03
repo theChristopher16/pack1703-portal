@@ -150,10 +150,10 @@ const LocationCreateModal: React.FC<LocationCreateModalProps> = ({
                 // Check if we're on localhost or production and use appropriate token
                 const isLocalhost = window.location.hostname === 'localhost';
                 const token = isLocalhost 
-                  ? 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjY4RzJBNzIyVFQifQ.eyJpc3MiOiI5OTJZNUhMOVVRIiwiaWF0IjoxNzU5MTE1MDY3LCJleHAiOjE3NTkyMDE0NjcsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwMCJ9.0LrCO_JWCkVvuO16jpVTA1bvCeVCW2QvCPvtxgLXTlr3Kb8whyW7d8qLRXjUPv74yDIA1U7IVG1CNSPXtBOCxQ'
-                  : 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjY4RzJBNzIyVFQifQ.eyJpc3MiOiI5OTJZNUhMOVVRIiwiaWF0IjoxNzU5MTEzODE5LCJleHAiOjE3NTkyMDAyMTksIm9yaWdpbiI6Imh0dHBzOi8vcGFjazE3MDMtcG9ydGFsLndlYi5hcHAifQ.KpThZyUDfQOawxuRPwxeZry3FR-Lmviobewhq-kAzkVzQX-i4y_HNlX1OWi2ehIii-bh-8WHfWD0r_WuFnpcOQ';
+                  ? 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjY4RzJBNzIyVFQifQ.eyJpc3MiOiI5OTJZNUhMOVVRIiwiaWF0IjoxNzU5Mjc5NTA2LCJleHAiOjE3NjE4NzE1MDYsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwMCJ9.bHzhgxOaZbsXPMpbY5BT05rU_1LuKovYoLgej9iwBFoe6g5KBb6Ezsw2F2RbOucv7pjwu8DjKL9n_poT9eralA'
+                  : 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjY4RzJBNzIyVFQifQ.eyJpc3MiOiI5OTJZNUhMOVVRIiwiaWF0IjoxNzU5Mjc5NTAyLCJleHAiOjE3NjE4NzE1MDIsIm9yaWdpbiI6Imh0dHBzOi8vcGFjazE3MDMtcG9ydGFsLndlYi5hcHAifQ.cPhhW6zhRXdGpQwrGg99om4xpdrlkVYO50MQSSvnNQvAWpISZpC3NGrjm0TcXa-dqoQG5FWdOP9CWU1IxvmXqA';
                 
-                console.log(`🍎 Using Apple MapKit token for geocoding on ${isLocalhost ? 'localhost' : 'production'}`);
+                console.log(`🍎 Using Apple MapKit token for geocoding on ${isLocalhost ? 'localhost' : 'production'} (expires: 2025-10-31, valid for 30 days)`);
                 try {
                   done(token);
                   resolve();
@@ -206,7 +206,12 @@ const LocationCreateModal: React.FC<LocationCreateModalProps> = ({
       return;
     }
 
-    onSubmit(formData);
+    // Filter out undefined values to prevent Firestore errors
+    const cleanFormData = Object.fromEntries(
+      Object.entries(formData).filter(([_, value]) => value !== undefined)
+    ) as Omit<Location, 'id' | 'createdAt' | 'updatedAt'>;
+
+    onSubmit(cleanFormData);
     onClose();
   };
 

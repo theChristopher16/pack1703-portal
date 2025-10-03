@@ -247,8 +247,8 @@ export function AdminProvider({ children }: AdminProviderProps) {
         const roleMap: { [key: string]: AdminRole } = {
           [UserRole.SUPER_ADMIN]: 'super-admin',
           [UserRole.ADMIN]: 'content-admin', 
-          [UserRole.VOLUNTEER]: 'moderator',
-          [UserRole.PARENT]: 'viewer',
+          [UserRole.DEN_LEADER]: 'moderator',
+          [UserRole.PARENT]: 'parent',
           [UserRole.AI_ASSISTANT]: 'moderator' // Map AI assistant to moderator level
         };
 
@@ -263,7 +263,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
           email: user.email,
           displayName: user.displayName || null,
           photoURL: user.photoURL || null,
-          isAdmin: user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN || user.role === UserRole.VOLUNTEER || (user.role as any) === 'root',
+          isAdmin: user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN || user.role === UserRole.DEN_LEADER || user.role === UserRole.PARENT || (user.role as any) === 'root',
           role: mappedRole,
           permissions: user.permissions as unknown as AdminPermission[],
           lastLogin: user.lastLoginAt || new Date(),

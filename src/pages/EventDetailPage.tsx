@@ -15,15 +15,25 @@ import {
 import { Event, Location } from '../types';
 import { LoadingSpinner } from '../components/Loading';
 import RSVPForm from '../components/Forms/RSVPForm';
+import WeatherForecast from '../components/Weather/WeatherForecast';
+import { firestoreService } from '../services/firestore';
+import { useAdmin } from '../contexts/AdminContext';
+import { weatherService, WeatherForecast as WeatherForecastType } from '../services/weatherService';
 
 const EventDetailPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const [event, setEvent] = useState<Event | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [rsvpCountLoading, setRsvpCountLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'details' | 'rsvp' | 'map'>('details');
   const [searchParams] = useSearchParams();
   const [rsvpCount, setRsvpCount] = useState(0);
+  const { state, addNotification } = useAdmin();
+  const isLeaderOrAbove = (state.role === 'moderator' || state.role === 'content-admin' || state.role === 'super-admin' || state.role === 'root');
+  const [exporting, setExporting] = useState(false);
+  const [fiveDayForecast, setFiveDayForecast] = useState<WeatherForecastType[] | null>(null);
+  const [fiveDayLoading, setFiveDayLoading] = useState(false);
 
   useEffect(() => {
     const initialTab = searchParams.get('tab');
@@ -59,8 +69,9 @@ const EventDetailPage: React.FC = () => {
           const eventData = { id: eventSnap.id, ...eventSnap.data() } as Event;
           console.log('EventDetailPage: Event data loaded:', eventData);
           setEvent(eventData);
+          setIsLoading(false); // Show event immediately
           
-          // Load location data if event has locationId
+          // Load location data if event has locationId (async)
           if (eventData.locationId) {
             console.log('EventDetailPage: Loading location data for ID:', eventData.locationId);
             const locationRef = doc(db, 'locations', eventData.locationId);
@@ -75,25 +86,66 @@ const EventDetailPage: React.FC = () => {
             }
           }
 
-          // Load RSVP count
+          // Load RSVP count via Cloud Function (bypasses client read permissions)
           console.log('EventDetailPage: Loading RSVP count...');
-          const rsvpsQuery = query(collection(db, 'rsvps'), where('eventId', '==', eventId));
-          const rsvpsSnapshot = await getDocs(rsvpsQuery);
-          const rsvpCount = rsvpsSnapshot.size;
-          console.log('EventDetailPage: RSVP count loaded:', rsvpCount);
-          setRsvpCount(rsvpCount);
+          try {
+            const count = await firestoreService.getRSVPCount(eventId);
+            console.log('EventDetailPage: RSVP count loaded:', count);
+            setRsvpCount(count);
+          } catch (countError) {
+            console.warn('EventDetailPage: Failed to load RSVP count via Cloud Function:', countError);
+            setRsvpCount(0);
+          } finally {
+            setRsvpCountLoading(false);
+          }
         } else {
           console.log('EventDetailPage: Event not found in Firestore for ID:', eventId);
+          setIsLoading(false);
         }
       } catch (error) {
         console.error('EventDetailPage: Error loading event:', error);
-      } finally {
         setIsLoading(false);
+        setRsvpCountLoading(false);
       }
     };
 
     loadEventData();
   }, [eventId]);
+
+  // Load 5-day forecast if event is within range and coordinates are available
+  useEffect(() => {
+    const fetchFiveDay = async () => {
+      try {
+        if (!event || !location?.geo?.lat || !location?.geo?.lng) return;
+
+        const eventStart = (event.startDate && (event.startDate as any).toDate)
+          ? (event.startDate as any).toDate()
+          : new Date((event.startDate as unknown as string) || Date.now());
+
+        const today = new Date();
+        const msPerDay = 1000 * 60 * 60 * 24;
+        const daysDiff = Math.ceil((eventStart.getTime() - today.getTime()) / msPerDay);
+
+        if (daysDiff < 0 || daysDiff > 5) {
+          setFiveDayForecast(null);
+          return;
+        }
+
+        setFiveDayLoading(true);
+        const forecast = await weatherService.getFiveDayForecast({
+          name: location.name,
+          coordinates: { lat: location.geo.lat, lng: location.geo.lng }
+        });
+        setFiveDayForecast(forecast);
+      } catch (e) {
+        setFiveDayForecast(null);
+      } finally {
+        setFiveDayLoading(false);
+      }
+    };
+
+    fetchFiveDay();
+  }, [event, location]);
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'TBD';
@@ -155,25 +207,21 @@ const EventDetailPage: React.FC = () => {
   const downloadICS = () => {
     if (!event) return;
     
-    let startDate: Date;
-    let endDate: Date;
-    
-    // Handle Firestore Timestamp or Date objects - use startDate/endDate fields
-    if (event.startDate && typeof event.startDate === 'object' && 'toDate' in event.startDate) {
-      startDate = event.startDate.toDate();
-    } else if (event.startDate) {
-      startDate = new Date(event.startDate as any);
-    } else {
-      startDate = new Date();
-    }
-    
-    if (event.endDate && typeof event.endDate === 'object' && 'toDate' in event.endDate) {
-      endDate = event.endDate.toDate();
-    } else if (event.endDate) {
-      endDate = new Date(event.endDate as any);
-    } else {
-      endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Default to 1 hour later
-    }
+    // Helper to parse date-only from startDate and combine with HH:MM string locally
+    const getLocalDateParts = (d: any): { y: number; m: number; day: number } => {
+      const base = d && typeof d === 'object' && 'toDate' in d ? d.toDate() : new Date(d);
+      const valid = base && !isNaN(base.getTime()) ? base : new Date();
+      return { y: valid.getFullYear(), m: valid.getMonth(), day: valid.getDate() };
+    };
+
+    const { y, m, day } = getLocalDateParts(event.startDate);
+    const { y: yEnd, m: mEnd, day: dayEnd } = getLocalDateParts(event.endDate || event.startDate);
+
+    const [sh, sm] = (event.startTime || '09:00').split(':').map((v: string) => parseInt(v, 10));
+    const [eh, em] = (event.endTime || '10:00').split(':').map((v: string) => parseInt(v, 10));
+
+    const startDate = new Date(y, m, day, isNaN(sh) ? 9 : sh, isNaN(sm) ? 0 : sm, 0);
+    const endDate = new Date(yEnd, mEnd, dayEnd, isNaN(eh) ? 10 : eh, isNaN(em) ? 0 : em, 0);
     
     const icsContent = [
       'BEGIN:VCALENDAR',
@@ -217,6 +265,100 @@ const EventDetailPage: React.FC = () => {
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(window.location.href);
       alert('Event link copied to clipboard!');
+    }
+  };
+
+  const downloadRosterCSV = async () => {
+    if (!eventId || !event) return;
+    try {
+      setExporting(true);
+      const result = await firestoreService.getRSVPData(eventId);
+      if (!result?.success) {
+        throw new Error(result?.message || 'Failed to fetch RSVP data');
+      }
+
+      const rsvps = (result.rsvps || []) as Array<any>;
+      // Flatten per attendee rows with key info
+      const rows: Array<string[]> = [];
+      const header = [
+        'Family Name',
+        'Guardian Email',
+        'Guardian Phone',
+        'Attendee Name',
+        'Is Adult',
+        'Age',
+        'Den',
+        'Dietary Restrictions',
+        'Special Needs',
+        'Notes',
+        'Submitted At'
+      ];
+      rows.push(header);
+
+      rsvps.forEach((r) => {
+        const submittedAt = (() => {
+          const v = r.submittedAt;
+          try {
+            if (typeof v === 'string') return new Date(v).toLocaleString();
+            if (v?.toDate) return v.toDate().toLocaleString();
+            if (typeof v === 'number') return new Date(v).toLocaleString();
+            if (v?._seconds) return new Date(v._seconds * 1000).toLocaleString();
+          } catch (_) {}
+          return '';
+        })();
+
+        const attendees = Array.isArray(r.attendees) ? r.attendees : [];
+        if (attendees.length === 0) {
+          rows.push([
+            r.familyName || '',
+            r.email || r.userEmail || '',
+            r.phone || '',
+            '',
+            '',
+            '',
+            '',
+            r.dietaryRestrictions || '',
+            r.specialNeeds || '',
+            r.notes || '',
+            submittedAt
+          ]);
+        } else {
+          attendees.forEach((a: any) => {
+            rows.push([
+              r.familyName || '',
+              r.email || r.userEmail || '',
+              r.phone || '',
+              a?.name || '',
+              a?.isAdult ? 'Yes' : 'No',
+              a?.age != null ? String(a.age) : '',
+              a?.den || '',
+              r.dietaryRestrictions || '',
+              r.specialNeeds || '',
+              r.notes || '',
+              submittedAt
+            ]);
+          });
+        }
+      });
+
+      const csvContent = rows
+        .map((row) => row.map((cell) => `"${(cell ?? '').toString().replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_roster.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      addNotification('success', 'Roster exported', 'CSV downloaded successfully.');
+    } catch (err: any) {
+      console.error('Failed to export roster:', err);
+      addNotification('error', 'Export failed', err?.message || 'Could not export roster');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -299,6 +441,16 @@ const EventDetailPage: React.FC = () => {
                 <Download className="w-4 h-4 mr-2" />
                 Add to Calendar
               </button>
+              {isLeaderOrAbove && (
+                <button
+                  onClick={downloadRosterCSV}
+                  disabled={exporting}
+                  className="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 disabled:opacity-60"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {exporting ? 'Exporting…' : 'Download Roster'}
+                </button>
+              )}
               <button
                 onClick={shareEvent}
                 className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200"
@@ -333,6 +485,56 @@ const EventDetailPage: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Per-Event Weather Forecast */}
+          {location?.geo?.lat != null && location?.geo?.lng != null && (
+            <div className="mb-6">
+              <WeatherForecast
+                location={{
+                  name: location.name,
+                  coordinates: { lat: location.geo.lat, lng: location.geo.lng }
+                }}
+                eventDate={(event.startDate && (event.startDate as any).toDate)
+                  ? (event.startDate as any).toDate()
+                  : new Date((event.startDate as unknown as string) || Date.now())}
+                className="text-gray-700"
+              />
+            </div>
+          )}
+
+          {/* 5-Day Forecast Preview (if within range) */}
+          {location?.geo?.lat != null && location?.geo?.lng != null && fiveDayForecast && fiveDayForecast.length > 0 && (
+            <div className="mb-8">
+              <h3 className="text-lg font-display font-semibold text-text mb-3">5-Day Forecast</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                {fiveDayForecast.map((day) => {
+                  const dateObj = new Date(day.date);
+                  const month = dateObj.toLocaleDateString('en-US', { month: 'short' });
+                  const dayNum = dateObj.getDate();
+                  const isEventDay = (() => {
+                    const ev = (event.startDate && (event.startDate as any).toDate)
+                      ? (event.startDate as any).toDate()
+                      : new Date((event.startDate as unknown as string) || Date.now());
+                    return day.date === ev.toISOString().split('T')[0];
+                  })();
+
+                  return (
+                    <div key={day.date} className={`rounded-lg border p-3 bg-white ${isEventDay ? 'border-primary ring-1 ring-primary/20' : 'border-gray-200'}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm text-gray-600">{month} {dayNum}</div>
+                        <div className="text-lg">{weatherService.getWeatherEmoji(day.icon)}</div>
+                      </div>
+                      <div className="text-sm text-gray-700 capitalize truncate">{day.description}</div>
+                      <div className="text-sm font-medium text-gray-900 mt-1">{day.temperature.max}° / {day.temperature.min}°</div>
+                    </div>
+                  );
+                })}
+              </div>
+              {fiveDayLoading && (
+                <div className="text-sm text-gray-500 mt-2">Loading forecast…</div>
+              )}
+            </div>
+          )}
 
           {event.denTags && event.denTags.length > 0 && (
             <div className="flex items-center space-x-2">
@@ -451,6 +653,7 @@ const EventDetailPage: React.FC = () => {
                 eventDate={event?.startDate ? formatDate(event.startDate) : ''}
                 maxCapacity={event?.capacity || undefined}
                 currentRSVPs={rsvpCount}
+                rsvpCountLoading={rsvpCountLoading}
               />
             )}
 

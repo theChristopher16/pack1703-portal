@@ -36,7 +36,7 @@ import { db } from '../firebase/config';
 export enum UserRole {
   ANONYMOUS = 'anonymous',    // Default - no account
   PARENT = 'parent',          // Family account (default after signup)
-  LEADER = 'leader',          // Den leaders, cubmaster, etc.
+  DEN_LEADER = 'den_leader',  // Den leaders, cubmaster, etc.
   ADMIN = 'admin',            // Pack administrators
   SUPER_ADMIN = 'super_admin', // Super administrators (highest level)
   AI_ASSISTANT = 'ai_assistant' // AI assistant role
@@ -53,7 +53,7 @@ export enum UserStatus {
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
   [UserRole.ANONYMOUS]: 0,
   [UserRole.PARENT]: 1,
-  [UserRole.LEADER]: 2,
+  [UserRole.DEN_LEADER]: 2,
   [UserRole.ADMIN]: 3,
   [UserRole.SUPER_ADMIN]: 5,
   [UserRole.AI_ASSISTANT]: 5
@@ -271,7 +271,7 @@ export class AuthService {
    * Check if current user is leader or above
    */
   isLeaderOrAbove(): boolean {
-    return this.userDoc?.role === UserRole.LEADER || 
+    return this.userDoc?.role === UserRole.DEN_LEADER || 
            this.userDoc?.role === UserRole.ADMIN || 
            this.userDoc?.role === UserRole.SUPER_ADMIN;
   }

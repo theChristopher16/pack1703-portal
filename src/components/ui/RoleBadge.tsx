@@ -29,7 +29,7 @@ const RoleBadge: React.FC<RoleBadgeProps> = ({
         return '👑';
       case UserRole.ADMIN:
         return '⚡';
-      case UserRole.VOLUNTEER:
+      case UserRole.DEN_LEADER:
         return '🤝';
       case UserRole.PARENT:
         return '👨‍👩‍👧‍👦';

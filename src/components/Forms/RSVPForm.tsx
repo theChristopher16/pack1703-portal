@@ -5,6 +5,7 @@ import { useAnalytics } from '../../hooks/useAnalytics';
 import { formValidator, SecurityMetadata } from '../../services/security';
 import { rsvpFormSchema } from '../../types/validation';
 import { useAdmin } from '../../contexts/AdminContext';
+import { authService, AppUser } from '../../services/authService';
 import LoginModal from '../Auth/LoginModal';
 
 interface RSVPFormProps {
@@ -13,6 +14,7 @@ interface RSVPFormProps {
   eventDate: string;
   maxCapacity?: number;
   currentRSVPs?: number;
+  rsvpCountLoading?: boolean;
   onSuccess?: (data: RSVPData) => void;
   onError?: (error: string) => void;
   className?: string;
@@ -47,6 +49,7 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
   eventDate,
   maxCapacity,
   currentRSVPs = 0,
+  rsvpCountLoading = false,
   onSuccess,
   onError,
   className = ''
@@ -57,6 +60,7 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [currentUserProfile, setCurrentUserProfile] = useState<AppUser | null>(null);
   
   // Check if user is authenticated
   const isAuthenticated = !!state.currentUser;
@@ -72,6 +76,96 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
     specialNeeds: '',
     notes: ''
   });
+
+  // Effect to get current user profile data
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      const user = authService.getCurrentUser();
+      if (user) {
+        setCurrentUserProfile(user);
+      }
+    } else {
+      setCurrentUserProfile(null);
+    }
+  }, [isAuthenticated]);
+
+
+  // Effect to populate form with user profile data when profile is loaded
+  React.useEffect(() => {
+    if (currentUserProfile) {
+      // Auto-populate basic info from user profile
+      setFormData(prev => ({
+        ...prev,
+        familyName: buildFamilyName(currentUserProfile),
+        email: currentUserProfile.email || '',
+        phone: currentUserProfile.profile?.phone || ''
+      }));
+
+      // Auto-populate attendees with user info
+      const autoAttendees = buildAutoAttendees(currentUserProfile);
+      if (autoAttendees.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          attendees: autoAttendees
+        }));
+      }
+    }
+  }, [currentUserProfile]);
+
+  // Helper function to build family name from user data
+  const buildFamilyName = (user: AppUser): string => {
+    if (user.profile?.firstName && user.profile?.lastName) {
+      return `${user.profile.firstName} ${user.profile.lastName}`;
+    }
+    if (user.displayName) {
+      return user.displayName;
+    }
+    if (user.profile?.nickname) {
+      return user.profile.nickname;
+    }
+    return '';
+  };
+
+  // Helper function to build auto-attendees from user profile
+  const buildAutoAttendees = (user: AppUser): Attendee[] => {
+    const attendees: Attendee[] = [];
+
+    // Add the main user
+    attendees.push({
+      name: user.profile?.firstName ? `${user.profile.firstName} ${user.profile.lastName || ''}`.trim() : (user.displayName || 'Primary User'),
+      age: user.profile?.scoutAge || (user.profile?.scoutGrade ? parseInt(user.profile.scoutGrade) + 5 : 25),
+      den: user.profile?.den || '',
+      isAdult: !user.profile?.scoutAge || user.profile.scoutAge >= 18
+    });
+
+    // Add other family members from profile data
+    if (user.profile?.scouts && user.profile.scouts.length > 0) {
+      user.profile.scouts.forEach((scout: any) => {
+        attendees.push({
+          name: scout.name || scout.scoutName || 'Family Member',
+          age: scout.age || (scout.grade ? parseInt(scout.grade) + 5 : 8),
+          den: scout.den || '',
+          isAdult: scout.isAdult || false
+        });
+      });
+    }
+
+    // Add parent names if available and not included already
+    if (user.profile?.parentNames) {
+      user.profile.parentNames.forEach((parentName: string) => {
+        if (!attendees.some(att => att.name.toLowerCase().includes(parentName.toLowerCase()))) {
+          attendees.push({
+            name: parentName,
+            age: 35, // Estimated adult age
+            den: 'Adult',
+            isAdult: true
+          });
+        }
+      });
+    }
+
+    return attendees.length > 0 ? attendees : [{ name: '', age: 0, den: '', isAdult: false }];
+  };
 
   // Validation state
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -207,18 +301,33 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
         throw new Error((result.data as any)?.message || 'RSVP submission failed');
       }
 
-      // Reset form after success
+      // Reset form after success, but preserve profile data
       setTimeout(() => {
-        setFormData({
-          eventId,
-          familyName: '',
-          email: '',
-          phone: '',
-          attendees: [{ name: '', age: 0, den: '', isAdult: false }],
-          dietaryRestrictions: '',
-          specialNeeds: '',
-          notes: ''
-        });
+        if (currentUserProfile) {
+          const autoAttendees = buildAutoAttendees(currentUserProfile);
+          
+          setFormData({
+            eventId,
+            familyName: buildFamilyName(currentUserProfile),
+            email: currentUserProfile.email || '',
+            phone: currentUserProfile.profile?.phone || '',
+            attendees: autoAttendees.length > 0 ? autoAttendees : [{ name: '', age: 0, den: '', isAdult: false }],
+            dietaryRestrictions: '',
+            specialNeeds: '',
+            notes: ''
+          });
+        } else {
+          setFormData({
+            eventId,
+            familyName: '',
+            email: '',
+            phone: '',
+            attendees: [{ name: '', age: 0, den: '', isAdult: false }],
+            dietaryRestrictions: '',
+            specialNeeds: '',
+            notes: ''
+          });
+        }
         setSubmitStatus('idle');
       }, 3000);
 
@@ -352,7 +461,12 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
           </div>
         </div>
         
-        {remainingSpots && (
+        {rsvpCountLoading ? (
+          <div className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-sm font-medium">
+            <Users className="w-4 h-4 mr-2 animate-pulse" />
+            <div className="w-20 h-4 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        ) : remainingSpots && (
           <div className="inline-flex items-center px-3 py-1 bg-secondary-100 text-secondary-700 rounded-full text-sm font-medium">
             <Users className="w-4 h-4 mr-2" />
             {remainingSpots} spots remaining
@@ -362,6 +476,19 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Auto-Population Notice */}
+        {isAuthenticated && currentUserProfile && (
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <div className="flex items-center">
+              <CheckCircle className="w-5 h-5 text-blue-600 mr-2" />
+              <p className="text-sm text-blue-700">
+                Your RSVP form has been automatically populated with information from your profile. 
+                You can edit any fields as needed.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Family Information */}
         <div className="space-y-4">
           <h4 className="text-lg font-semibold text-gray-900">Family Information</h4>

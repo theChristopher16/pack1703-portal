@@ -13,7 +13,7 @@ interface Event {
   denTags?: string[];
 }
 
-interface ICSFeedOptions {
+export interface ICSFeedOptions {
   categories?: string[];
   dens?: string[];
   startDate?: string;

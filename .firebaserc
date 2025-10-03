@@ -19,6 +19,13 @@
           "sfpack1703"
         ]
       }
+    },
+    "pack-1703-portal": {
+      "hosting": {
+        "pack1703-portal": [
+          "pack1703-portal"
+        ]
+      }
     }
   },
   "etags": {}

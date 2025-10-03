@@ -10,9 +10,9 @@ const emailService_1 = require("./emailService");
 var UserRole;
 (function (UserRole) {
     UserRole["PARENT"] = "parent";
-    UserRole["VOLUNTEER"] = "volunteer";
+    UserRole["DEN_LEADER"] = "den_leader";
     UserRole["ADMIN"] = "admin";
-    UserRole["ROOT"] = "root";
+    UserRole["SUPER_ADMIN"] = "super_admin";
     UserRole["AI_ASSISTANT"] = "ai_assistant";
 })(UserRole || (exports.UserRole = UserRole = {}));
 // User status enum
@@ -36,9 +36,10 @@ const ROLE_PERMISSIONS = {
         'scout_events',
         'scout_chat',
         'chat_read',
-        'chat_write'
+        'chat_write',
+        'den_members'
     ],
-    [UserRole.VOLUNTEER]: [
+    [UserRole.DEN_LEADER]: [
         'read_content',
         'create_content',
         'update_content',
@@ -55,7 +56,9 @@ const ROLE_PERMISSIONS = {
         'scout_events',
         'scout_chat',
         'chat_read',
-        'chat_write'
+        'chat_write',
+        'event_management',
+        'announcement_management'
     ],
     [UserRole.ADMIN]: [
         'read_content',
@@ -91,7 +94,7 @@ const ROLE_PERMISSIONS = {
         'cost_analytics',
         'cost_alerts'
     ],
-    [UserRole.ROOT]: [
+    [UserRole.SUPER_ADMIN]: [
         'read_content',
         'create_content',
         'update_content',

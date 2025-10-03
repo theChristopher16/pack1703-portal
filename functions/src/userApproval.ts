@@ -7,9 +7,9 @@ import { emailService } from './emailService';
 // User roles enum - Updated to match AuthService
 export enum UserRole {
   PARENT = 'parent',
-  VOLUNTEER = 'volunteer',
+  DEN_LEADER = 'den_leader',
   ADMIN = 'admin',
-  ROOT = 'root',
+  SUPER_ADMIN = 'super_admin',
   AI_ASSISTANT = 'ai_assistant'
 }
 
@@ -63,9 +63,10 @@ const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'scout_events',
     'scout_chat',
     'chat_read',
-    'chat_write'
+    'chat_write',
+    'den_members'
   ],
-  [UserRole.VOLUNTEER]: [
+  [UserRole.DEN_LEADER]: [
     'read_content',
     'create_content',
     'update_content',
@@ -82,7 +83,9 @@ const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'scout_events',
     'scout_chat',
     'chat_read',
-    'chat_write'
+    'chat_write',
+    'event_management',
+    'announcement_management'
   ],
   [UserRole.ADMIN]: [
     'read_content',
@@ -118,7 +121,7 @@ const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'cost_analytics',
     'cost_alerts'
   ],
-  [UserRole.ROOT]: [
+  [UserRole.SUPER_ADMIN]: [
     'read_content',
     'create_content',
     'update_content',

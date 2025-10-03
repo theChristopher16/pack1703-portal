@@ -14,10 +14,54 @@ const initializeKeys = async () => {
   if (keysInitialized) return;
   
   try {
-    // Try to get keys from secure key manager
+    // Try to get keys from secure key manager (returns flat env var map)
     const secureKeys = await secureKeyManager.getAllKeys();
     if (secureKeys && Object.keys(secureKeys).length > 0) {
-      API_KEYS = secureKeys;
+      // Map flat env vars into structured shape used across the app
+      API_KEYS = {
+        ADMIN: {
+          GOOGLE_MAPS:
+            secureKeys.REACT_APP_ADMIN_GOOGLE_MAPS_API_KEY ||
+            process.env.REACT_APP_ADMIN_GOOGLE_MAPS_API_KEY ||
+            '',
+          OPENWEATHER:
+            secureKeys.REACT_APP_ADMIN_OPENWEATHER_API_KEY ||
+            process.env.REACT_APP_ADMIN_OPENWEATHER_API_KEY ||
+            '',
+          GOOGLE_PLACES:
+            secureKeys.REACT_APP_ADMIN_GOOGLE_PLACES_API_KEY ||
+            process.env.REACT_APP_ADMIN_GOOGLE_PLACES_API_KEY ||
+            '',
+        },
+        USER: {
+          GOOGLE_MAPS:
+            secureKeys.REACT_APP_USER_GOOGLE_MAPS_API_KEY ||
+            process.env.REACT_APP_USER_GOOGLE_MAPS_API_KEY ||
+            '',
+          OPENWEATHER:
+            secureKeys.REACT_APP_USER_OPENWEATHER_API_KEY ||
+            process.env.REACT_APP_USER_OPENWEATHER_API_KEY ||
+            '',
+          GOOGLE_PLACES:
+            secureKeys.REACT_APP_USER_GOOGLE_PLACES_API_KEY ||
+            process.env.REACT_APP_USER_GOOGLE_PLACES_API_KEY ||
+            '',
+        },
+        PHONE_VALIDATION:
+          secureKeys.REACT_APP_PHONE_VALIDATION_API_KEY ||
+          process.env.REACT_APP_PHONE_VALIDATION_API_KEY ||
+          '',
+        TENOR:
+          secureKeys.REACT_APP_TENOR_API_KEY ||
+          process.env.REACT_APP_TENOR_API_KEY ||
+          '',
+        RECAPTCHA: {
+          SITE_KEY:
+            secureKeys.REACT_APP_RECAPTCHA_V3_SITE_KEY ||
+            process.env.REACT_APP_RECAPTCHA_V3_SITE_KEY ||
+            ''
+        },
+      };
       console.log('🔐 API keys loaded from secure key manager');
     } else {
       throw new Error('No keys returned from secure key manager');

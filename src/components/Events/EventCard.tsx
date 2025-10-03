@@ -40,6 +40,7 @@ interface EventCardProps {
   isAuthenticated?: boolean;
   isAdmin?: boolean;
   isDeleting?: boolean;
+  rsvpCountLoading?: boolean;
 }
 
 const EventCard: React.FC<EventCardProps> = ({ 
@@ -47,11 +48,12 @@ const EventCard: React.FC<EventCardProps> = ({
   onRSVP, 
   onViewDetails, 
   onAddToCalendar, 
-  onShare, 
+  onShare,
   onViewRSVPs, 
   isAuthenticated = true, 
   isAdmin = false,
-  isDeleting = false
+  isDeleting = false,
+  rsvpCountLoading = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -136,13 +138,27 @@ const EventCard: React.FC<EventCardProps> = ({
           
           {/* RSVP Status */}
           <div className="text-right">
-            <div className="flex items-center space-x-2 mb-1">
-              <div className={`w-3 h-3 rounded-full ${rsvpStatus.color}`}></div>
-              <span className="text-xs text-gray-600">{rsvpStatus.text}</span>
-            </div>
-            <div className="text-sm text-gray-700">
-              {event.currentRSVPs} / {event.maxCapacity} spots
-            </div>
+            {rsvpCountLoading ? (
+              <>
+                <div className="flex items-center space-x-2 mb-1">
+                  <div className="w-3 h-3 rounded-full bg-gray-200 animate-pulse"></div>
+                  <span className="text-xs text-gray-400">Loading...</span>
+                </div>
+                <div className="text-sm text-gray-400 animate-pulse">
+                  <div className="w-16 h-4 bg-gray-200 rounded animate-pulse mx-auto"></div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center space-x-2 mb-1">
+                  <div className={`w-3 h-3 rounded-full ${rsvpStatus.color}`}></div>
+                  <span className="text-xs text-gray-600">{rsvpStatus.text}</span>
+                </div>
+                <div className="text-sm text-gray-700">
+                  {event.currentRSVPs} / {event.maxCapacity} spots
+                </div>
+              </>
+            )}
           </div>
         </div>
 

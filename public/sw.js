@@ -24,9 +24,7 @@ self.addEventListener('install', (event) => {
       // Cache static assets (JS, CSS with hashed names)
       caches.open(STATIC_CACHE_NAME).then((cache) => {
         return cache.addAll([
-          '/',
-          '/static/js/bundle.js',
-          '/static/css/main.css',
+          // Do not cache index.html or "/" to ensure fresh HTML on each load
           '/manifest.json'
         ]).catch((error) => {
           log('Failed to cache static assets:', error);
@@ -83,6 +81,18 @@ self.addEventListener('fetch', (event) => {
   
   // Skip chrome-extension and other non-http requests
   if (!url.protocol.startsWith('http')) {
+    return;
+  }
+
+  // Ensure navigations (HTML) are always fetched fresh from the network
+  if (request.mode === 'navigate' || request.destination === 'document') {
+    event.respondWith(
+      fetch(request).catch(() => {
+        // Optional: fallback if offline and you intentionally cached an offline page
+        // Returning Response.error() avoids serving stale HTML
+        return Response.error();
+      })
+    );
     return;
   }
   

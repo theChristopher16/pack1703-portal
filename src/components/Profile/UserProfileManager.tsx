@@ -154,7 +154,7 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
     switch (role) {
       case UserRole.SUPER_ADMIN: return <Crown className="w-4 h-4 text-yellow-600" />;
       case UserRole.ADMIN: return <Shield className="w-4 h-4 text-red-600" />;
-      case UserRole.VOLUNTEER: return <Star className="w-4 h-4 text-green-600" />;
+      case UserRole.DEN_LEADER: return <Star className="w-4 h-4 text-green-600" />;
       case UserRole.PARENT: return <Users className="w-4 h-4 text-blue-600" />;
       case UserRole.AI_ASSISTANT: return <UserCheck className="w-4 h-4 text-blue-500" />;
       default: return <User className="w-4 h-4" />;
@@ -165,7 +165,7 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
     switch (role) {
       case UserRole.SUPER_ADMIN: return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case UserRole.ADMIN: return 'bg-red-100 text-red-800 border-red-200';
-      case UserRole.VOLUNTEER: return 'bg-green-100 text-green-800 border-green-200';
+      case UserRole.DEN_LEADER: return 'bg-green-100 text-green-800 border-green-200';
       case UserRole.PARENT: return 'bg-blue-100 text-blue-800 border-blue-200';
       case UserRole.AI_ASSISTANT: return 'bg-purple-100 text-purple-800 border-purple-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -207,28 +207,33 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
       //   }
       // }
 
-      // Prepare updates
+      // Prepare updates - filter out undefined values
+      const profileUpdates: any = {
+        ...user.profile,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        nickname: formData.nickname,
+        phone: formData.phone,
+        address: formData.address,
+        emergencyContact: formData.emergencyContact,
+        scoutRank: formData.scoutRank,
+        packNumber: formData.packNumber,
+        scoutGrade: formData.scoutGrade,
+        familyId: formData.familyId,
+        parentNames: formData.parentNames,
+        siblings: formData.siblings,
+        scouts: formData.scouts,
+        preferences: formData.preferences
+      };
+
+      // Only add scoutAge if it has a value
+      if (formData.scoutAge) {
+        profileUpdates.scoutAge = parseInt(formData.scoutAge);
+      }
+
       const updates: Partial<AppUser> = {
         displayName: formData.displayName,
-        profile: {
-          ...user.profile,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          nickname: formData.nickname,
-          phone: formData.phone,
-          address: formData.address,
-          emergencyContact: formData.emergencyContact,
-          scoutRank: formData.scoutRank,
-          packNumber: formData.packNumber,
-          scoutAge: formData.scoutAge ? parseInt(formData.scoutAge) : undefined,
-          scoutGrade: formData.scoutGrade,
-          familyId: formData.familyId,
-          parentNames: formData.parentNames,
-          siblings: formData.siblings,
-          scouts: formData.scouts,
-          // username: formData.username,
-          preferences: formData.preferences
-        }
+        profile: profileUpdates
       };
 
       // Only update role if user has permission
@@ -237,7 +242,17 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
       }
 
       // Update user profile
-      await authService.updateUserProfile(user.uid, updates);
+      console.log('Saving profile updates:', updates);
+      console.log('User ID:', user.uid);
+      console.log('Update data being sent to Firestore:', updates);
+      
+      try {
+        await authService.updateUserProfile(user.uid, updates);
+        console.log('✅ Profile saved successfully to Firestore');
+      } catch (profileError) {
+        console.error('❌ Profile save failed:', profileError);
+        throw profileError;
+      }
 
       // Update chat user name if display name changed
       if (formData.displayName && formData.displayName !== user.displayName) {
@@ -249,8 +264,12 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
         }
       }
 
-      // Update local state
-      const updatedUser = { ...user, ...updates };
+      // Update local state optimistically
+      const updatedUser = {
+        ...user,
+        ...updates,
+        profile: { ...user.profile, ...updates.profile }
+      };
       setUser(updatedUser);
 
       setSuccess('Profile updated successfully!');
@@ -258,11 +277,8 @@ const UserProfileManager: React.FC<UserProfileManagerProps> = ({
       if (onSave) {
         onSave(updatedUser);
       }
-
-      // Clear success message after 2 seconds
-      setTimeout(() => {
-        setSuccess(null);
-      }, 2000);
+      
+      console.log('✅ Profile update completed successfully');
 
     } catch (error: any) {
       setError(error.message);

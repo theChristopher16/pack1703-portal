@@ -26,6 +26,8 @@ import {
 } from 'lucide-react';
 import AccountLinking from '../components/Admin/AccountLinking';
 import UserProfileManager from '../components/Profile/UserProfileManager';
+import UserRSVPManager from '../components/Profile/UserRSVPManager';
+import UserVolunteerManager from '../components/Profile/UserVolunteerManager';
 
 const UserProfile: React.FC = () => {
   const { state } = useAdmin();
@@ -214,6 +216,8 @@ const UserProfile: React.FC = () => {
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
+    { id: 'rsvps', label: 'My RSVPs', icon: Calendar },
+    { id: 'volunteers', label: 'My Volunteers', icon: Users },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'accounts', label: 'Linked Accounts', icon: Link },
@@ -321,6 +325,20 @@ const UserProfile: React.FC = () => {
             canEditRole={false}
             canEditPermissions={false}
           />
+        )}
+
+        {/* RSVPs Tab */}
+        {activeTab === 'rsvps' && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <UserRSVPManager />
+          </div>
+        )}
+
+        {/* Volunteers Tab */}
+        {activeTab === 'volunteers' && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <UserVolunteerManager />
+          </div>
         )}
 
         {/* Notifications Tab */}

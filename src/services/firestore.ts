@@ -15,6 +15,7 @@ import {
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase/config';
 import { emailService } from './emailService';
+import { Location } from '../types/firestore';
 // import configService from './configService';
 
 // Cloud Function calls
@@ -152,18 +153,20 @@ export const firestoreService = {
       console.log(`📍 Fetched ${locations.length} locations for events`);
 
       // Create a map for quick lookup
-      const locationMap = new Map(locations.map(loc => [loc.id, loc]));
+      const locationMap = new Map(locations.map(loc => [loc!.id, loc!]));
 
       // Enrich events with location data
       const enrichedEvents = events.map(event => {
         if (event.locationId && locationMap.has(event.locationId)) {
-          const location = locationMap.get(event.locationId);
-          return {
-            ...event,
-            locationName: location.name,
-            address: location.address,
-            coordinates: location.geo ? { lat: location.geo.lat, lng: location.geo.lng } : undefined
-          };
+          const location = locationMap.get(event.locationId) as Location | undefined;
+          if (location) {
+            return {
+              ...event,
+              locationName: location.name,
+              address: location.address,
+              coordinates: location.geo ? { lat: location.geo.lat, lng: location.geo.lng } : undefined
+            };
+          }
         }
         return event;
       });
@@ -255,6 +258,18 @@ export const firestoreService = {
       return result.data;
     } catch (error) {
       console.error('Failed to delete RSVP via Cloud Function:', error);
+      throw error;
+    }
+  },
+
+  // Get user's RSVPs
+  async getUserRSVPs(): Promise<any> {
+    try {
+      const getUserRSVPsFunction = httpsCallable(functions, 'getUserRSVPs');
+      const result = await getUserRSVPsFunction({});
+      return result.data;
+    } catch (error) {
+      console.error('Failed to get user RSVPs via Cloud Function:', error);
       throw error;
     }
   },
@@ -424,13 +439,19 @@ export const firestoreService = {
   async createLocation(locationData: any): Promise<any> {
     try {
       const locationsRef = collection(db, 'locations');
+      
+      // Filter out undefined values to prevent Firestore errors
+      const cleanLocationData = Object.fromEntries(
+        Object.entries(locationData).filter(([_, value]) => value !== undefined)
+      );
+      
       const docRef = await addDoc(locationsRef, {
-        ...locationData,
+        ...cleanLocationData,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
         createdBy: 'ai_solyn'
       });
-      return { id: docRef.id, ...locationData };
+      return { id: docRef.id, ...cleanLocationData };
     } catch (error) {
       console.error('Failed to create location in Firestore:', error);
       throw error;

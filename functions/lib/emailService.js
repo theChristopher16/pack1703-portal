@@ -278,7 +278,7 @@ class EmailService {
             <p>This user has requested access to the Pack 1703 Portal. Please review their information and approve or deny their request.</p>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="https://sfpack1703.web.app/admin/users" class="action-button">Review User Request</a>
+              <a href="https://sfpack1703.web.app/users" class="action-button">Review User Request</a>
             </div>
             
             <p><strong>Next Steps:</strong></p>
@@ -327,7 +327,7 @@ ${userData.medicalInfo ? `- Medical Info: ${userData.medicalInfo}` : ''}
 
 This user has requested access to the Pack 1703 Portal. Please review their information and approve or deny their request.
 
-To review this request, go to: https://sfpack1703.web.app/admin/users
+To review this request, go to: https://sfpack1703.web.app/users
 
 Next Steps:
 1. Review the user's information above
@@ -381,16 +381,26 @@ User ID: ${userData.uid || 'Unknown'}
             <p>You can now access the portal and enjoy all the features available to members of Pack 1703.</p>
             
             <div style="text-align: center;">
-                <a href="https://sfpack1703.com" class="button">Access Portal</a>
+                <a href="https://pack1703-portal.web.app" class="button">Access Portal</a>
+            </div>
+            
+            <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #92400e; margin-top: 0;">🔐 First Time Setup Required</h3>
+                <p style="margin-bottom: 10px;">To complete your account setup, you need to create a secure password for your account.</p>
+                <div style="text-align: center;">
+                    <a href="https://sfpack1703.web.app/password-setup?token=${userData.setupToken}" class="button">Set Your Password</a>
+                </div>
+                <p style="margin: 10px 0 0 0; font-size: 14px; color: #92400e;"><strong>Important:</strong> This link will expire in 24 hours for security reasons.</p>
             </div>
             
             <p><strong>What's Next?</strong></p>
-            <ul>
-                <li>Sign in to your account using your email address</li>
+            <ol>
+                <li><strong>Set your password</strong> using the link above</li>
+                <li>Sign in to your account using your email address and new password</li>
                 <li>Complete your profile information</li>
                 <li>Explore the portal features and upcoming events</li>
                 <li>Connect with other pack members</li>
-            </ul>
+            </ol>
             
             <p>If you have any questions or need assistance, please don't hesitate to contact the pack leadership.</p>
             
@@ -421,13 +431,21 @@ Your Account Details:
 
 You can now access the portal and enjoy all the features available to members of Pack 1703.
 
-Access Portal: https://sfpack1703.com
+Access Portal: https://pack1703-portal.web.app
+
+🔐 First Time Setup Required
+To complete your account setup, you need to create a secure password for your account.
+
+Set Your Password: https://sfpack1703.web.app/password-setup?token=${userData.setupToken}
+
+Important: This link will expire in 24 hours for security reasons.
 
 What's Next?
-1. Sign in to your account using your email address
-2. Complete your profile information
-3. Explore the portal features and upcoming events
-4. Connect with other pack members
+1. Set your password using the link above
+2. Sign in to your account using your email address and new password
+3. Complete your profile information
+4. Explore the portal features and upcoming events
+5. Connect with other pack members
 
 If you have any questions or need assistance, please don't hesitate to contact the pack leadership.
 

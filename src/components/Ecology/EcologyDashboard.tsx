@@ -121,10 +121,48 @@ const EcologyDashboard: React.FC = () => {
   const [isLiveMode, setIsLiveMode] = useState(true);
   const [showRawData, setShowRawData] = useState(false);
   const [showFullImage, setShowFullImage] = useState(false);
+  const [useRealData, setUseRealData] = useState(true);
 
-  // Simulate real-time data updates
+  // Function to fetch real data from Firebase
+  const fetchRealData = async () => {
+    if (!useRealData) return;
+    
+    try {
+      const { ecologyService } = await import('../../services/ecologyService');
+      const realData = await ecologyService.getEcologyData();
+      
+      console.log('🔍 Ecology data fetched:', realData);
+      console.log('📸 Camera data:', realData?.camera);
+      console.log('🌡️ Temperature readings:', realData?.sensors?.temperature?.length);
+      
+      if (realData) {
+        setEcologyData(realData);
+        console.log('✅ Loaded real ecology data from Firebase');
+        if (realData.camera?.latestImage) {
+          console.log('📸 Latest image URL:', realData.camera.latestImage.imageUrl);
+        } else {
+          console.log('⚠️ No camera image available yet');
+        }
+      } else {
+        console.log('⚠️ No real data available, using mock data');
+      }
+    } catch (error) {
+      console.error('Error fetching real ecology data:', error);
+    }
+  };
+
+  // Fetch real data from Firebase on mount and every 30 seconds
   useEffect(() => {
-    if (!isLiveMode) return;
+    fetchRealData();
+    
+    // Refresh real data every 30 seconds
+    const interval = setInterval(fetchRealData, 30000);
+    return () => clearInterval(interval);
+  }, [useRealData]);
+
+  // Simulate real-time data updates (only for mock data)
+  useEffect(() => {
+    if (!isLiveMode || useRealData) return;
 
     const interval = setInterval(() => {
       setEcologyData(prevData => {
@@ -146,7 +184,7 @@ const EcologyDashboard: React.FC = () => {
     }, 5000); // Update every 5 seconds
 
     return () => clearInterval(interval);
-  }, [isLiveMode]);
+  }, [isLiveMode, useRealData]);
 
   const formatTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -156,7 +194,23 @@ const EcologyDashboard: React.FC = () => {
     return `${value.toFixed(1)}${unit}`;
   };
 
-  const getCurrentReading = (readings: SensorReading[]) => {
+  // Convert metric to imperial units
+  const celsiusToFahrenheit = (celsius: number) => (celsius * 9/5) + 32;
+  const hPaToInHg = (hPa: number) => hPa * 0.02953;
+
+  const formatValueWithBothUnits = (value: number, unit: string) => {
+    if (unit === '°C') {
+      const fahrenheit = celsiusToFahrenheit(value);
+      return `${value.toFixed(1)}°C (${fahrenheit.toFixed(1)}°F)`;
+    } else if (unit === 'hPa') {
+      const inHg = hPaToInHg(value);
+      return `${value.toFixed(1)} hPa (${inHg.toFixed(2)} inHg)`;
+    }
+    return `${value.toFixed(1)}${unit}`;
+  };
+
+  const getCurrentReading = (readings: SensorReading[]): SensorReading | null => {
+    if (!readings || readings.length === 0) return null;
     return readings[readings.length - 1];
   };
 
@@ -195,6 +249,35 @@ const EcologyDashboard: React.FC = () => {
         return <Leaf className="w-5 h-5" />;
       default:
         return <Activity className="w-5 h-5" />;
+    }
+  };
+
+  // Function to determine image freshness for children
+  const getImageFreshness = (imageTimestamp: number) => {
+    const now = Date.now();
+    const ageInMinutes = (now - imageTimestamp) / (1000 * 60);
+    
+    if (ageInMinutes <= 5) {
+      return {
+        status: 'Fresh',
+        color: 'bg-green-100 text-green-800 border-green-200',
+        icon: '🟢',
+        description: 'Very fresh! Just taken!'
+      };
+    } else if (ageInMinutes <= 30) {
+      return {
+        status: 'Recent',
+        color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        icon: '🟡',
+        description: 'Pretty fresh! Taken recently!'
+      };
+    } else {
+      return {
+        status: 'Old',
+        color: 'bg-red-100 text-red-800 border-red-200',
+        icon: '🔴',
+        description: 'Getting old! Need a new picture!'
+      };
     }
   };
 
@@ -239,7 +322,7 @@ const EcologyDashboard: React.FC = () => {
                   {isLiveMode ? 'Live' : 'Paused'}
                 </button>
                 <button
-                  onClick={() => setEcologyData(generateMockData())}
+                  onClick={() => fetchRealData()}
                   className="flex items-center justify-center px-6 py-3 rounded-2xl font-bold text-lg bg-gradient-to-r from-blue-400 to-blue-600 text-white border border-blue-300 hover:from-blue-500 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl w-full sm:w-auto"
                 >
                   <RefreshCw className="w-5 h-5 mr-2" />
@@ -271,18 +354,21 @@ const EcologyDashboard: React.FC = () => {
                 📸 Garden Camera Feed
               </h3>
               <div className="flex items-center space-x-3">
-                <div className={`flex items-center px-3 py-2 rounded-full text-sm font-medium ${
-                  ecologyData.camera.isOnline 
-                    ? 'bg-green-100 text-green-800 border border-green-200' 
-                    : 'bg-red-100 text-red-800 border border-red-200'
-                }`}>
-                  {ecologyData.camera.isOnline ? (
-                    <Wifi className="w-4 h-4 mr-2" />
-                  ) : (
+                {ecologyData.camera.latestImage ? (
+                  <div className={`flex items-center px-3 py-2 rounded-full text-sm font-medium border ${
+                    getImageFreshness(ecologyData.camera.latestImage.timestamp).color
+                  }`}>
+                    <span className="mr-2 text-lg">
+                      {getImageFreshness(ecologyData.camera.latestImage.timestamp).icon}
+                    </span>
+                    {getImageFreshness(ecologyData.camera.latestImage.timestamp).status}
+                  </div>
+                ) : (
+                  <div className="flex items-center px-3 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-800 border border-gray-200">
                     <WifiOff className="w-4 h-4 mr-2" />
-                  )}
-                  {ecologyData.camera.isOnline ? 'Online' : 'Offline'}
-                </div>
+                    No Image
+                  </div>
+                )}
                 {ecologyData.camera.latestImage && (
                   <button
                     onClick={() => setShowFullImage(true)}
@@ -310,11 +396,7 @@ const EcologyDashboard: React.FC = () => {
                       }}
                     />
                     <div className="absolute top-4 left-4 bg-black/70 text-white px-3 py-1 rounded-lg text-sm font-medium">
-                      📸 Live Feed
-                    </div>
-                    <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-lg text-sm font-medium flex items-center">
-                      <div className="w-2 h-2 bg-white rounded-full animate-pulse mr-2"></div>
-                      Recording
+                      📸 Garden Camera
                     </div>
                   </div>
                 </div>
@@ -330,6 +412,20 @@ const EcologyDashboard: React.FC = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600 font-medium">📅 Captured:</span>
                         <span className="text-gray-900 font-bold">{formatTime(ecologyData.camera.latestImage.timestamp)}</span>
+                      </div>
+                      <div className="bg-gradient-to-r from-green-50 to-yellow-50 rounded-lg p-3 border border-green-200">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-700">🕒 Image Age:</span>
+                          <span className={`text-sm font-bold ${
+                            getImageFreshness(ecologyData.camera.latestImage.timestamp).status === 'Fresh' ? 'text-green-800' :
+                            getImageFreshness(ecologyData.camera.latestImage.timestamp).status === 'Recent' ? 'text-yellow-800' : 'text-red-800'
+                          }`}>
+                            {getImageFreshness(ecologyData.camera.latestImage.timestamp).icon} {getImageFreshness(ecologyData.camera.latestImage.timestamp).status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">
+                          {getImageFreshness(ecologyData.camera.latestImage.timestamp).description}
+                        </p>
                       </div>
                       {ecologyData.camera.latestImage.metadata && (
                         <>
@@ -356,10 +452,47 @@ const EcologyDashboard: React.FC = () => {
                       Garden Status
                     </h4>
                     <div className="space-y-2 text-green-700">
-                      <p className="text-sm">🌱 <strong>Plants:</strong> Growing well in current conditions</p>
-                      <p className="text-sm">☀️ <strong>Light:</strong> Optimal for photosynthesis</p>
-                      <p className="text-sm">💧 <strong>Moisture:</strong> Soil conditions are healthy</p>
-                      <p className="text-sm">🌡️ <strong>Temperature:</strong> Within ideal range for growth</p>
+                      {(() => {
+                        const temp = getCurrentReading(ecologyData.sensors.temperature);
+                        const humidity = getCurrentReading(ecologyData.sensors.humidity);
+                        const airQuality = getCurrentReading(ecologyData.sensors.airQuality);
+                        const pressure = getCurrentReading(ecologyData.sensors.pressure);
+                        
+                        // Temperature status
+                        const tempStatus = !temp ? 'No data' :
+                          temp.value < 15 ? '❄️ Too cold for most plants' :
+                          temp.value > 30 ? '🔥 Too hot - plants may be stressed' :
+                          temp.value >= 18 && temp.value <= 24 ? '✅ Perfect growing temperature!' :
+                          '🌡️ Acceptable temperature range';
+                        
+                        // Humidity status
+                        const humidityStatus = !humidity ? 'No data' :
+                          humidity.value < 30 ? '🏜️ Very dry - increase watering' :
+                          humidity.value > 70 ? '🌧️ Very humid - watch for mold' :
+                          humidity.value >= 40 && humidity.value <= 60 ? '✅ Ideal humidity for plants!' :
+                          '💧 Humidity within acceptable range';
+                        
+                        // Air quality status
+                        const airStatus = !airQuality ? 'No data' :
+                          airQuality.value <= 50 ? '🟢 Excellent air quality' :
+                          airQuality.value <= 100 ? '🟡 Moderate - acceptable for plants' :
+                          '🔴 Poor air quality - may affect growth';
+                        
+                        // Pressure status (affects weather)
+                        const pressureStatus = !pressure ? 'No data' :
+                          pressure.value < 1000 ? '⛈️ Low pressure - rain likely coming' :
+                          pressure.value > 1030 ? '☀️ High pressure - sunny weather ahead' :
+                          '🌤️ Stable atmospheric conditions';
+                        
+                        return (
+                          <>
+                            <p className="text-sm">🌡️ <strong>Temperature:</strong> {tempStatus}</p>
+                            <p className="text-sm">💧 <strong>Humidity:</strong> {humidityStatus}</p>
+                            <p className="text-sm">🌬️ <strong>Air Quality:</strong> {airStatus}</p>
+                            <p className="text-sm">🌍 <strong>Pressure:</strong> {pressureStatus}</p>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -402,6 +535,12 @@ const EcologyDashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {sensorCards.map(({ key, label, icon: Icon, color, iconBg, iconColor }) => {
             const currentReading = getCurrentReading(ecologyData.sensors[key as keyof SensorData]);
+            
+            // Skip rendering if no data available
+            if (!currentReading) {
+              return null;
+            }
+            
             const statusColor = getStatusColor(key, currentReading.value);
             const StatusIcon = getStatusIcon(key, currentReading.value);
 
@@ -421,6 +560,11 @@ const EcologyDashboard: React.FC = () => {
                 <div className="text-4xl font-bold text-gray-900 mb-2 group-hover:scale-105 transition-transform duration-300">
                   {formatValue(currentReading.value, currentReading.unit)}
                 </div>
+                {(currentReading.unit === '°C' || currentReading.unit === 'hPa') && (
+                  <div className="text-sm text-gray-500 font-medium">
+                    {formatValueWithBothUnits(currentReading.value, currentReading.unit)}
+                  </div>
+                )}
                 <div className="text-sm text-gray-600 font-medium">
                   📅 {formatTime(currentReading.timestamp)}
                 </div>

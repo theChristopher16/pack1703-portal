@@ -4,7 +4,7 @@ import { getFirestore, collection, getCountFromServer, getDoc, doc, query, getDo
 import { getAuth } from 'firebase/auth';
 import analyticsService from '../../services/analyticsService';
 import { useAnalytics } from '../../hooks/useAnalytics';
-import PerformanceMonitor from '../Performance/PerformanceMonitor';
+import PerformanceMonitor from './PerformanceMonitor';
 import RealTimeAnalytics from './RealTimeAnalytics';
 import UserEngagementMetrics from './UserEngagementMetrics';
 import AnalyticsCharts from './AnalyticsCharts';
@@ -346,7 +346,11 @@ const AnalyticsDashboard: React.FC = () => {
             <Activity className="h-5 w-5 text-primary-600 mr-2" />
             Performance Metrics
           </h3>
-          <PerformanceMonitor />
+          <PerformanceMonitor pageName="Analytics Dashboard">
+            <div className="text-sm text-gray-600">
+              Performance monitoring is active for this dashboard.
+            </div>
+          </PerformanceMonitor>
         </div>
 
         {/* Real-Time Analytics */}

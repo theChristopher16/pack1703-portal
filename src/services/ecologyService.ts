@@ -196,9 +196,13 @@ class EcologyService {
       return {
         id: doc.id,
         timestamp: data.timestamp?.toMillis() || Date.now(),
-        imageUrl: data.imageUrl || '',
+        imageUrl: data.url || data.imageUrl || '', // Check both field names
         thumbnailUrl: data.thumbnailUrl,
-        metadata: data.metadata
+        metadata: data.metadata || {
+          resolution: `${data.width || 800}x${data.height || 600}`,
+          format: 'JPEG',
+          fileSize: data.size || 0
+        }
       };
     } catch (error) {
       console.error('Error fetching latest camera image:', error);
@@ -230,26 +234,40 @@ class EcologyService {
    */
   async getEcologyData(): Promise<EcologyData> {
     try {
-      // Fetch all sensor types and camera data in parallel
-      const [
-        temperature,
-        humidity,
-        pressure,
-        airQuality,
-        light,
-        soilMoisture,
-        bme680,
-        latestImage
-      ] = await Promise.all([
-        this.getSensorReadings('temperature'),
-        this.getSensorReadings('humidity'),
-        this.getSensorReadings('pressure'),
-        this.getSensorReadings('airQuality'),
-        this.getSensorReadings('light'),
-        this.getSensorReadings('soilMoisture'),
-        this.getBME680Readings(),
+      // Fetch BME680 readings and camera data
+      const [bme680, latestImage] = await Promise.all([
+        this.getBME680Readings(24),
         this.getLatestCameraImage()
       ]);
+
+      // Convert BME680 readings to individual sensor arrays
+      const temperature: SensorReading[] = bme680.map(r => ({
+        timestamp: r.timestamp,
+        value: r.temperature,
+        unit: '°C'
+      }));
+
+      const humidity: SensorReading[] = bme680.map(r => ({
+        timestamp: r.timestamp,
+        value: r.humidity,
+        unit: '%'
+      }));
+
+      const pressure: SensorReading[] = bme680.map(r => ({
+        timestamp: r.timestamp,
+        value: r.pressure,
+        unit: 'hPa'
+      }));
+
+      const airQuality: SensorReading[] = bme680.map(r => ({
+        timestamp: r.timestamp,
+        value: r.airQualityIndex,
+        unit: 'AQI'
+      }));
+
+      // Mock data for sensors we don't have yet
+      const light: SensorReading[] = [];
+      const soilMoisture: SensorReading[] = [];
 
       return {
         sensors: {
@@ -263,7 +281,7 @@ class EcologyService {
         },
         camera: {
           latestImage: latestImage || undefined,
-          isOnline: latestImage ? (Date.now() - latestImage.timestamp) < 300000 : false, // Online if image is less than 5 minutes old
+          isOnline: latestImage ? (Date.now() - latestImage.timestamp) < 300000 : false,
           lastCapture: latestImage?.timestamp || 0
         },
         lastUpdated: Date.now(),

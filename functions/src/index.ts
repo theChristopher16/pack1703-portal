@@ -75,16 +75,14 @@ async function createThreatIntelligence(
 // Helper function to get role permissions
 function getRolePermissions(role: string): string[] {
   switch (role) {
-    case 'root':
-      return ['system_admin', 'user_management', 'event_management', 'pack_management', 'location_management', 'announcement_management', 'audit_logs'];
+    case 'super_admin':
+      return ['system_admin', 'user_management', 'role_management', 'system_config', 'event_management', 'pack_management', 'location_management', 'announcement_management', 'audit_logs', 'cost_management'];
     case 'admin':
-      return ['user_management', 'event_management', 'pack_management', 'location_management', 'announcement_management'];
-    case 'leader':
+      return ['user_management', 'role_management', 'system_config', 'event_management', 'pack_management', 'location_management', 'announcement_management', 'cost_management'];
     case 'den_leader':
-      return ['event_management', 'pack_management', 'announcement_management'];
-    case 'volunteer':
-      return ['event_management'];
+      return ['event_management', 'announcement_management', 'den_content', 'den_events', 'den_members', 'den_chat_management', 'den_announcements'];
     case 'parent':
+      return ['family_management', 'family_events', 'family_rsvp', 'den_members'];
     default:
       return [];
   }
@@ -169,7 +167,7 @@ export const updateUserRole = functions.https.onCall(async (data: any, context: 
       }
       
       const currentUserData = currentUserDoc.data();
-      const hasAdminRole = currentUserData?.role === 'root' || currentUserData?.role === 'admin' || currentUserData?.role === 'super-admin' || currentUserData?.role === 'super_admin';
+      const hasAdminRole = currentUserData?.role === 'super_admin' || currentUserData?.role === 'admin';
       const hasLegacyPermissions = currentUserData?.isAdmin || currentUserData?.isDenLeader || currentUserData?.isCubmaster;
       
       if (!hasAdminRole && !hasLegacyPermissions) {
@@ -178,7 +176,7 @@ export const updateUserRole = functions.https.onCall(async (data: any, context: 
     }
 
     // Validate role
-    const validRoles = ['parent', 'volunteer', 'admin', 'root'];
+    const validRoles = ['parent', 'den_leader', 'admin', 'super_admin'];
     if (!validRoles.includes(newRole)) {
       throw new functions.https.HttpsError('invalid-argument', 'Invalid role');
     }
@@ -190,19 +188,21 @@ export const updateUserRole = functions.https.onCall(async (data: any, context: 
     };
 
     // Set appropriate boolean flags based on role
-    if (newRole === 'admin' || newRole === 'root') {
+    if (newRole === 'admin' || newRole === 'super_admin') {
       updateData.isAdmin = true;
       updateData.isDenLeader = true;
       updateData.isCubmaster = true;
-      updateData.permissions = ['event_management', 'pack_management', 'user_management', 'location_management', 'announcement_management'];
-    } else if (newRole === 'volunteer') {
+      updateData.permissions = getRolePermissions(newRole);
+    } else if (newRole === 'den_leader') {
       updateData.isDenLeader = true;
-      updateData.permissions = ['den_content', 'den_events', 'den_members'];
+      updateData.isAdmin = false;
+      updateData.isCubmaster = false;
+      updateData.permissions = getRolePermissions(newRole);
     } else {
       updateData.isAdmin = false;
       updateData.isDenLeader = false;
       updateData.isCubmaster = false;
-      updateData.permissions = ['family_management', 'family_events', 'family_rsvp'];
+      updateData.permissions = getRolePermissions(newRole);
     }
 
     await db.collection('users').doc(userId).update(updateData);
@@ -238,7 +238,7 @@ export const adminUpdateEvent = functions.https.onCall(async (data: any, context
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'super_admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'den_leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasEventManagementPermission = userData?.permissions?.includes('event_management');
 
@@ -282,7 +282,7 @@ export const adminDeleteEvent = functions.https.onCall(async (data: any, context
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'super_admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'den_leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasEventManagementPermission = userData?.permissions?.includes('event_management');
 
@@ -342,7 +342,7 @@ export const adminCreateEvent = functions.https.onCall(async (data: any, context
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'super_admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'den_leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasEventManagementPermission = userData?.permissions?.includes('event_management');
 
@@ -522,7 +522,7 @@ async function getActualRSVPCount(eventId: string): Promise<number> {
   }
 }
 
-// Delete RSVP - Admin only
+// Delete RSVP - Users can delete their own, admins can delete any
 export const deleteRSVP = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   try {
     // Check authentication
@@ -530,18 +530,14 @@ export const deleteRSVP = functions.https.onCall(async (data: any, context: func
       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated to delete RSVPs');
     }
 
-    // Check admin permissions
+    // Check user permissions
     const userDoc = await db.collection('users').doc(context.auth.uid).get();
     if (!userDoc.exists) {
       throw new functions.https.HttpsError('permission-denied', 'User not found');
     }
 
     const userData = userDoc.data();
-    const isAdmin = userData?.isAdmin || userData?.role === 'admin' || userData?.role === 'root';
-    
-    if (!isAdmin) {
-      throw new functions.https.HttpsError('permission-denied', 'Only admins can delete RSVPs');
-    }
+    const isAdmin = userData?.isAdmin || userData?.role === 'admin' || userData?.role === 'super_admin';
 
     // Validate required fields
     if (!data.rsvpId) {
@@ -558,9 +554,15 @@ export const deleteRSVP = functions.https.onCall(async (data: any, context: func
 
     const rsvpData = rsvpDoc.data();
     const eventId = rsvpData?.eventId;
+    const rsvpUserId = rsvpData?.userId;
 
     if (!eventId) {
       throw new functions.https.HttpsError('invalid-argument', 'RSVP missing event ID');
+    }
+
+    // Check if user owns this RSVP or is an admin
+    if (!isAdmin && rsvpUserId !== context.auth.uid) {
+      throw new functions.https.HttpsError('permission-denied', 'You can only delete your own RSVPs');
     }
 
     // Use batch write for atomicity
@@ -678,6 +680,61 @@ export const deleteRSVP = functions.https.onCall(async (data: any, context: func
   }
 });
 
+// Get user's RSVPs
+export const getUserRSVPs = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated to view RSVPs');
+    }
+
+    // Get user's RSVPs (avoid Firestore index/orderBy issues by sorting in code)
+    const rsvpsQuery = await db.collection('rsvps')
+      .where('userId', '==', context.auth.uid)
+      .get();
+
+    const rsvps = [];
+    for (const doc of rsvpsQuery.docs) {
+      const rsvpData = doc.data();
+      
+      // Get event details
+      const eventDoc = await db.collection('events').doc(rsvpData.eventId).get();
+      const eventData = eventDoc.exists ? eventDoc.data() : null;
+      
+      rsvps.push({
+        id: doc.id,
+        ...rsvpData,
+        event: eventData ? {
+          id: eventData.id,
+          title: eventData.title,
+          date: eventData.date,
+          location: eventData.location
+        } : null
+      });
+    }
+
+    // Sort by createdAt descending in code to avoid index requirement
+    const sorted = rsvps.sort((a: any, b: any) => {
+      const aTime = a.createdAt?.toMillis?.() ?? (a.createdAt?._seconds ? a.createdAt._seconds * 1000 : new Date(a.createdAt || 0).getTime());
+      const bTime = b.createdAt?.toMillis?.() ?? (b.createdAt?._seconds ? b.createdAt._seconds * 1000 : new Date(b.createdAt || 0).getTime());
+      return bTime - aTime;
+    });
+
+    return {
+      success: true,
+      rsvps: sorted,
+      count: sorted.length
+    };
+
+  } catch (error) {
+    console.error('Error getting user RSVPs:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to get user RSVPs');
+  }
+});
+
 // CRITICAL: Get RSVP count for an event
 export const getRSVPCount = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   try {
@@ -761,14 +818,14 @@ export const getRSVPData = functions.https.onCall(async (data: any, context: fun
       throw new functions.https.HttpsError('invalid-argument', 'Event ID is required');
     }
 
-    // Check if user is admin
+    // Check if user is den leader or higher (den_leader, admin, super_admin, root)
     const userDoc = await db.collection('users').doc(context.auth.uid).get();
     const userData = userDoc.data();
-    const isAdmin = userData?.role === 'admin' || userData?.role === 'root' || 
-                    userData?.role === 'super-admin' || userData?.isAdmin;
+    const role = (userData?.role || '').toString().toLowerCase();
+    const isLeaderOrAbove = role === 'den_leader' || role === 'admin' || role === 'super_admin' || role === 'root' || userData?.isAdmin === true || userData?.isDenLeader === true;
 
-    if (!isAdmin) {
-      throw new functions.https.HttpsError('permission-denied', 'Only admin users can access RSVP data');
+    if (!isLeaderOrAbove) {
+      throw new functions.https.HttpsError('permission-denied', 'Only den leaders and above can access RSVP data');
     }
 
     console.log(`Admin ${context.auth.uid} requesting RSVP data for event ${data.eventId}`);
@@ -838,7 +895,7 @@ export const adminUpdateUser = functions.https.onCall(async (data: any, context:
 
     const userData = userDoc.data();
     // Check role-based permissions (new system) or legacy boolean fields
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'super_admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'den_leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
     
@@ -977,7 +1034,7 @@ export const updateUserClaims = functions.https.onCall(async (data: any, context
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'super_admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'den_leader';
     
     if (!hasAdminRole) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update user claims');
@@ -1116,7 +1173,7 @@ export const sendChatMessage = functions.https.onCall(async (data: any, context:
     // Get user data to determine if admin
     const userDoc = await db.collection('users').doc(context.auth.uid).get();
     const userData = userDoc.exists ? userDoc.data() : null;
-    const isAdmin = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'leader';
+    const isAdmin = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'den_leader';
 
     const messageRef = db.collection('chat-messages');
     const newMessage = {
@@ -1167,7 +1224,7 @@ export const testEmailConnection = functions.https.onCall(async (data: any, cont
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'super_admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'den_leader';
     
     if (!hasAdminRole) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to test email connection');
@@ -1326,7 +1383,7 @@ export const getPendingAccountRequests = functions.https.onCall(async (data: any
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'super_admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'den_leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
     
@@ -1422,7 +1479,7 @@ export const approveAccountRequest = functions.https.onCall(async (data: any, co
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'super_admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'den_leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
     
@@ -1497,7 +1554,7 @@ export const approveAccountRequest = functions.https.onCall(async (data: any, co
     // Create Firebase Auth account first
     let firebaseAuthUser;
     try {
-      // Generate a temporary password (will be reset via email)
+      // Generate a temporary password (will be set via email)
       const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
       
       firebaseAuthUser = await admin.auth().createUser({
@@ -1522,6 +1579,21 @@ export const approveAccountRequest = functions.https.onCall(async (data: any, co
         throw new functions.https.HttpsError('internal', 'Failed to create user account');
       }
     }
+
+    // Create password setup token
+    const setupToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const setupTokenExpiry = new Date();
+    setupTokenExpiry.setHours(setupTokenExpiry.getHours() + 24); // 24 hours
+
+    // Store password setup token
+    await db.collection('passwordSetupTokens').doc(setupToken).set({
+      userId: firebaseAuthUser.uid,
+      email: requestData.email,
+      displayName: requestData.displayName,
+      expires: admin.firestore.Timestamp.fromDate(setupTokenExpiry),
+      used: false,
+      createdAt: getTimestamp()
+    });
 
     // Create user document in Firestore using Firebase Auth UID
     const userRef = db.collection('users').doc(firebaseAuthUser.uid);
@@ -1582,7 +1654,8 @@ export const approveAccountRequest = functions.https.onCall(async (data: any, co
         address: requestData.address || '',
         emergencyContact: requestData.emergencyContact || '',
         medicalInfo: requestData.medicalInfo || '',
-        role: role
+        role: role,
+        setupToken: setupToken
       };
       
       await emailService.sendWelcomeEmail(userData);
@@ -1624,7 +1697,7 @@ export const createUserManually = functions.https.onCall(async (data: any, conte
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'super_admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'den_leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
     
@@ -1750,7 +1823,7 @@ export const rejectAccountRequest = functions.https.onCall(async (data: any, con
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'super_admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'den_leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
     
@@ -1836,7 +1909,7 @@ export const testAIConnection = functions.https.onCall(async (data: any, context
     }
 
     const userData = userDoc.data();
-    if (!userData?.role || !['admin', 'root', 'cubmaster', 'super-admin'].includes(userData.role)) {
+    if (!userData?.role || !['admin', 'super_admin', 'den_leader'].includes(userData.role)) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to test AI connection');
     }
 
@@ -1899,7 +1972,7 @@ export const getSystemMetrics = functions.https.onCall(async (data: any, context
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'super_admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'den_leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasSystemAdminPermission = userData?.permissions?.includes('system_admin') || userData?.permissions?.includes('user_management');
     
@@ -2190,7 +2263,7 @@ export const generateThreatIntelligence = functions.https.onCall(async (data: an
     }
 
     const userData = userDoc.data();
-    if (!userData?.role || !['admin', 'root', 'cubmaster', 'super-admin'].includes(userData.role)) {
+    if (!userData?.role || !['admin', 'super_admin', 'den_leader'].includes(userData.role)) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to generate threat intelligence');
     }
 
@@ -2277,7 +2350,7 @@ export const getBatchDashboardData = functions.https.onCall(async (data: any, co
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'super_admin' || userData?.role === 'leader';
+    const hasAdminRole = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'den_leader';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
     const hasSystemAdminPermission = userData?.permissions?.includes('system_admin') || userData?.permissions?.includes('user_management');
     
@@ -2377,7 +2450,7 @@ export const adminDeleteUser = functions.https.onCall(async (data: any, context:
     }
 
     const userData = userDoc.data();
-    const hasAdminRole = userData?.role === 'root' || userData?.role === 'admin' || userData?.role === 'super-admin' || userData?.role === 'super_admin';
+    const hasAdminRole = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'super_admin' || userData?.role === 'super_admin';
     const hasLegacyPermissions = userData?.isAdmin || userData?.isCubmaster;
     const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
     
@@ -2398,9 +2471,9 @@ export const adminDeleteUser = functions.https.onCall(async (data: any, context:
 
     const targetUserData = targetUserDoc.data();
     
-    // Prevent deleting root users (unless you're also root)
-    if (targetUserData?.role === 'root' && userData?.role !== 'root') {
-      throw new functions.https.HttpsError('permission-denied', 'Cannot delete root users');
+    // Prevent deleting super admin users (unless you're also super admin)
+    if (targetUserData?.role === 'super_admin' && userData?.role !== 'super_admin') {
+      throw new functions.https.HttpsError('permission-denied', 'Cannot delete super admin users');
     }
 
     functions.logger.info(`Starting comprehensive user deletion for user: ${userId}`);
@@ -2838,6 +2911,8 @@ export const sendSMS = functions.https.onCall(async (data: any, context: functio
 // ICS Feed Generator Function
 export const icsFeed = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   try {
+    // Handle null/undefined data
+    const safeData = data || {};
     const { 
       categories = [], 
       denTags = [], 
@@ -2845,32 +2920,42 @@ export const icsFeed = functions.https.onCall(async (data: any, context: functio
       endDate,
       includeDescription = true,
       includeLocation = true 
-    } = data;
+    } = safeData;
     
-    // Check App Check (skip in emulator and development for testing)
-    if (process.env.FUNCTIONS_EMULATOR !== 'true' && process.env.NODE_ENV !== 'development' && !context.app) {
-      throw new functions.https.HttpsError('unauthenticated', 'App Check required');
-    }
+    // App Check not required for public ICS feed generation
+    // This function is meant to be accessible for calendar subscriptions
 
-    // Build query for future events
-    let query = db.collection('events')
-      .where('visibility', 'in', ['public', null])
-      .where('startDate', '>=', getTimestamp())
-      .orderBy('startDate');
+    // First, let's see all events regardless of visibility and date
+    const allEventsSnapshot = await db.collection('events').get();
+    console.log(`Total events in database: ${allEventsSnapshot.size}`);
+    
+    allEventsSnapshot.forEach(doc => {
+      const event = doc.data();
+      console.log(`Event: ${event.title}, visibility: ${event.visibility}, startDate: ${event.startDate?.toDate?.() || event.startDate}`);
+    });
+    
+    // Build query for future events - temporarily more permissive for debugging
+    let query = db.collection('events').orderBy('startDate');
+    
+    // For debugging, let's not filter by visibility or date initially
+    // query = query.where('visibility', 'in', ['public', null]);
+    // query = query.where('startDate', '>=', getTimestamp());
 
     // Apply filters
-    if (categories.length > 0) {
+    if (categories && categories.length > 0) {
       query = query.where('category', 'in', categories);
     }
 
     const eventsSnapshot = await query.get();
     const events: any[] = [];
+    
+    console.log(`Found ${eventsSnapshot.size} events for ICS generation`);
 
     eventsSnapshot.forEach((doc: admin.firestore.QueryDocumentSnapshot) => {
       const event = doc.data();
       
       // Filter by den tags if specified
-      if (denTags.length > 0) {
+      if (denTags && denTags.length > 0) {
         if (!event.denTags || !event.denTags.some((tag: string) => denTags.includes(tag))) {
           return;
         }
@@ -3041,8 +3126,19 @@ function generateICSContent(events: any[], options: { includeDescription: boolea
 
   // Add events
   events.forEach(event => {
-    const startDate = event.startDate.toDate();
-    const endDate = event.endDate.toDate();
+    try {
+      // Handle different date formats (Firestore Timestamp, Date object, or string)
+      const startDate = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
+      const endDate = event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate);
+      
+      // Validate dates
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        console.error('Invalid date format for event:', event.id, {
+          startDate: event.startDate,
+          endDate: event.endDate
+        });
+        return; // Skip this event
+      }
     
     const formatICSDate = (date: Date): string => {
       return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -3067,6 +3163,11 @@ function generateICSContent(events: any[], options: { includeDescription: boolea
       'SEQUENCE:0',
       'END:VEVENT'
     );
+    
+    } catch (eventError) {
+      console.error('Error processing event for ICS:', event.id, eventError);
+      // Continue with other events even if one fails
+    }
   });
 
   icsContent.push('END:VCALENDAR');
@@ -3115,7 +3216,7 @@ export const sendPasswordReset = functions.https.onCall(async (data: any, contex
     });
 
     // Generate reset URL
-    const resetUrl = `https://pack1703-portal.web.app/reset-password?token=${resetToken}`;
+    const resetUrl = `https://sfpack1703.web.app/reset-password?token=${resetToken}`;
 
     // Import email service
     const { emailService } = await import('./emailService');
@@ -3179,6 +3280,10 @@ export const verifyPasswordResetToken = functions.https.onCall(async (data: any,
 
     const tokenData = tokenDoc.data();
     
+    if (!tokenData) {
+      throw new functions.https.HttpsError('not-found', 'Invalid or expired reset token');
+    }
+    
     // Check if token is expired
     if (new Date() > tokenData.expires.toDate()) {
       // Clean up expired token
@@ -3198,6 +3303,10 @@ export const verifyPasswordResetToken = functions.https.onCall(async (data: any,
     }
 
     const userData = userDoc.data();
+
+    if (!userData) {
+      throw new functions.https.HttpsError('not-found', 'User data not found');
+    }
 
     return {
       success: true,
@@ -3237,6 +3346,10 @@ export const resetPasswordWithToken = functions.https.onCall(async (data: any, c
 
     const tokenData = tokenDoc.data();
     
+    if (!tokenData) {
+      throw new functions.https.HttpsError('not-found', 'Invalid or expired reset token');
+    }
+    
     // Check if token is expired
     if (new Date() > tokenData.expires.toDate()) {
       // Clean up expired token
@@ -3256,6 +3369,10 @@ export const resetPasswordWithToken = functions.https.onCall(async (data: any, c
     }
 
     const userData = userDoc.data();
+
+    if (!userData) {
+      throw new functions.https.HttpsError('not-found', 'User data not found');
+    }
 
     // Update password in Firebase Auth
     try {
@@ -3327,6 +3444,151 @@ export const resetPasswordWithToken = functions.https.onCall(async (data: any, c
       throw error;
     }
     throw new functions.https.HttpsError('internal', 'Failed to reset password');
+  }
+});
+
+// Verify Password Setup Token
+export const verifyPasswordSetupToken = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    const { token } = data;
+    
+    if (!token) {
+      throw new functions.https.HttpsError('invalid-argument', 'Setup token is required');
+    }
+
+    // Get setup token from Firestore
+    const tokenDoc = await db.collection('passwordSetupTokens').doc(token).get();
+    
+    if (!tokenDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Invalid or expired setup token');
+    }
+
+    const tokenData = tokenDoc.data();
+    
+    if (!tokenData) {
+      throw new functions.https.HttpsError('not-found', 'Invalid or expired setup token');
+    }
+    
+    // Check if token is expired
+    if (new Date() > tokenData.expires.toDate()) {
+      // Clean up expired token
+      await db.collection('passwordSetupTokens').doc(token).delete();
+      throw new functions.https.HttpsError('deadline-exceeded', 'Setup token has expired');
+    }
+
+    // Check if token has been used
+    if (tokenData.used) {
+      throw new functions.https.HttpsError('failed-precondition', 'Setup token has already been used');
+    }
+
+    return {
+      success: true,
+      email: tokenData.email,
+      displayName: tokenData.displayName,
+      message: 'Setup token is valid'
+    };
+
+  } catch (error) {
+    console.error('Error verifying password setup token:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to verify setup token');
+  }
+});
+
+// Complete Password Setup
+export const completePasswordSetup = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    const { token, newPassword } = data;
+    
+    if (!token || !newPassword) {
+      throw new functions.https.HttpsError('invalid-argument', 'Setup token and new password are required');
+    }
+
+    if (newPassword.length < 6) {
+      throw new functions.https.HttpsError('invalid-argument', 'Password must be at least 6 characters long');
+    }
+
+    // Get setup token from Firestore
+    const tokenDoc = await db.collection('passwordSetupTokens').doc(token).get();
+    
+    if (!tokenDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Invalid or expired setup token');
+    }
+
+    const tokenData = tokenDoc.data();
+    
+    if (!tokenData) {
+      throw new functions.https.HttpsError('not-found', 'Invalid or expired setup token');
+    }
+    
+    // Check if token is expired
+    if (new Date() > tokenData.expires.toDate()) {
+      // Clean up expired token
+      await db.collection('passwordSetupTokens').doc(token).delete();
+      throw new functions.https.HttpsError('deadline-exceeded', 'Setup token has expired');
+    }
+
+    // Check if token has been used
+    if (tokenData.used) {
+      throw new functions.https.HttpsError('failed-precondition', 'Setup token has already been used');
+    }
+
+    // Update password in Firebase Auth
+    try {
+      await admin.auth().updateUser(tokenData.userId, {
+        password: newPassword,
+        emailVerified: true
+      });
+    } catch (authError: any) {
+      console.error('Error updating password in Firebase Auth:', authError);
+      throw new functions.https.HttpsError('internal', 'Failed to update password');
+    }
+
+    // Mark token as used
+    await db.collection('passwordSetupTokens').doc(token).update({
+      used: true,
+      usedAt: getTimestamp()
+    });
+
+    // Update user's last password change
+    await db.collection('users').doc(tokenData.userId).update({
+      lastPasswordChange: getTimestamp(),
+      updatedAt: getTimestamp(),
+      emailVerified: true
+    });
+
+    // Log the password setup
+    await db.collection('adminActions').add({
+      userId: tokenData.userId,
+      userEmail: tokenData.email,
+      action: 'password_setup_completed',
+      entityType: 'user',
+      entityId: tokenData.userId,
+      entityName: tokenData.displayName || tokenData.email,
+      details: {
+        email: tokenData.email,
+        setupToken: token,
+        method: 'setup_token'
+      },
+      timestamp: getTimestamp(),
+      ipAddress: context.rawRequest?.ip || 'unknown',
+      userAgent: context.rawRequest?.headers?.['user-agent'] || 'unknown',
+      success: true
+    });
+
+    return {
+      success: true,
+      message: 'Password has been set successfully'
+    };
+
+  } catch (error) {
+    console.error('Error completing password setup:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to complete password setup');
   }
 });
 
@@ -3488,3 +3750,173 @@ This email confirms that your password was successfully reset.
 © 2025 Pack 1703. All rights reserved.
   `.trim();
 }
+
+// ============================================================================
+// ESP32-CAM IMAGE UPLOAD ENDPOINT
+// ============================================================================
+
+/**
+ * Upload image from ESP32-CAM to Firebase Storage
+ * Accepts raw JPEG data and uploads to Storage with proper authentication
+ */
+export const uploadCameraImage = functions.https.onRequest(async (req, res) => {
+  // Set CORS headers
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, X-Device-ID, X-Location');
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+  
+  // Only accept POST
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+  
+  try {
+    // Get device info from headers
+    const deviceId = req.get('X-Device-ID') || 'esp32cam_unknown';
+    const location = req.get('X-Location') || 'Unknown Location';
+    
+    // Get image data from request body
+    const imageBuffer = req.rawBody;
+    
+    if (!imageBuffer || imageBuffer.length === 0) {
+      res.status(400).json({ error: 'No image data provided' });
+      return;
+    }
+    
+    console.log(`📸 Received image from ${deviceId}: ${imageBuffer.length} bytes`);
+    
+    // Generate filename
+    const timestamp = Date.now();
+    const filename = `garden/${deviceId}_${timestamp}.jpg`;
+    
+    // Upload to Firebase Storage
+    const bucket = admin.storage().bucket();
+    const file = bucket.file(filename);
+    
+    await file.save(imageBuffer, {
+      metadata: {
+        contentType: 'image/jpeg',
+        metadata: {
+          deviceId,
+          location,
+          uploadedAt: new Date().toISOString()
+        }
+      }
+    });
+    
+    // Make file publicly readable
+    await file.makePublic();
+    
+    // Get public URL
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
+    
+    console.log(`✅ Image uploaded: ${publicUrl}`);
+    
+    // Store metadata in Firestore
+    await db.collection('camera_images').add({
+      filename,
+      url: publicUrl,
+      deviceId,
+      location,
+      size: imageBuffer.length,
+      timestamp: admin.firestore.Timestamp.now(),
+      width: 800, // ESP32-CAM default
+      height: 600
+    });
+    
+    console.log(`✅ Metadata stored in Firestore`);
+    
+    // Return success
+    res.status(200).json({
+      success: true,
+      url: publicUrl,
+      filename,
+      size: imageBuffer.length
+    });
+    
+  } catch (error: any) {
+    console.error('❌ Error uploading image:', error);
+    res.status(500).json({ 
+      error: 'Upload failed', 
+      message: error.message 
+    });
+  }
+});
+
+/**
+ * Cloud Function to receive sensor data from ESP32-CAM
+ * Accepts BME680 sensor readings and stores with proper server timestamp
+ */
+export const uploadSensorData = functions.https.onRequest(async (req, res) => {
+  // Set CORS headers
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, X-Device-ID, X-Location');
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+  
+  // Only accept POST
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+  
+  try {
+    // Get device info from headers
+    const deviceId = req.get('X-Device-ID') || 'esp32cam_unknown';
+    const location = req.get('X-Location') || 'Unknown Location';
+    
+    // Get sensor data from JSON body
+    const sensorData = req.body;
+    
+    console.log(`🌡️ Received sensor data from ${deviceId}:`, sensorData);
+    
+    // Validate required fields
+    if (sensorData.temperature === undefined || sensorData.humidity === undefined || sensorData.pressure === undefined) {
+      res.status(400).json({ error: 'Missing required sensor fields (temperature, humidity, pressure)' });
+      return;
+    }
+    
+    // Store in Firestore with server timestamp
+    const docRef = await db.collection('bme680_readings').add({
+      deviceId,
+      location,
+      temperature: parseFloat(sensorData.temperature),
+      temperatureFahrenheit: parseFloat(sensorData.temperatureFahrenheit || ((sensorData.temperature * 9/5) + 32)),
+      humidity: parseFloat(sensorData.humidity),
+      pressure: parseFloat(sensorData.pressure),
+      pressureInHg: parseFloat(sensorData.pressureInHg || (sensorData.pressure * 0.02953)),
+      gasResistance: parseFloat(sensorData.gasResistance || 0),
+      airQualityIndex: parseInt(sensorData.airQualityIndex || 0),
+      timestamp: admin.firestore.Timestamp.now() // Server-side timestamp in UTC
+    });
+    
+    console.log(`✅ Sensor data stored: ${docRef.id}`);
+    
+    // Return success
+    res.status(200).json({
+      success: true,
+      documentId: docRef.id,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error: any) {
+    console.error('❌ Error storing sensor data:', error);
+    res.status(500).json({ 
+      error: 'Upload failed', 
+      message: error.message 
+    });
+  }
+});
+

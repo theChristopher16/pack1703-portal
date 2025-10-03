@@ -41,7 +41,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         'root': UserRole.SUPER_ADMIN,
         'super-admin': UserRole.SUPER_ADMIN,
         'content-admin': UserRole.ADMIN,
-        'moderator': UserRole.VOLUNTEER,
+        'moderator': UserRole.DEN_LEADER,
         'viewer': UserRole.PARENT,
         'ai_assistant': UserRole.AI_ASSISTANT
       };
@@ -116,10 +116,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       return [
         ...mainContentItems,
         ...(chatItem ? [chatItem] : []),
-        ...(profileItem ? [profileItem] : []),
-        ...otherItems,
-        ...superAdminItems
-      ].slice(0, 8); // Increased to 8 to include super-admin items
+        ...(profileItem ? [profileItem] : [])
+      ].slice(0, 7); // Limit to 7 items for better desktop layout (Events, Announcements, Locations, Volunteer, Ecology, Chat, Profile)
     } else {
       // For anonymous users, show public items
       return publicNav.slice(0, 4);
@@ -299,7 +297,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </button>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-1">
+            <nav className="hidden lg:flex items-center space-x-0.5">
               {mainToolbarItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -309,15 +307,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       // console.log('Main toolbar navigation clicked:', item.href);
                       window.location.href = item.href;
                     }}
-                    className={`px-3 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
+                    className={`px-2 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
                       isActive(item.href)
                         ? 'nav-text-active bg-primary-50 shadow-soft'
                         : 'nav-text-inactive hover:nav-text-active hover:bg-primary-50/50'
                     }`}
                   >
-                    <div className="flex items-center justify-center space-x-2">
+                    <div className="flex items-center justify-center space-x-1.5">
                       <Icon className="w-4 h-4" />
-                      <span className="text-sm">{item.name}</span>
+                      <span className="text-xs font-semibold">{item.name}</span>
                     </div>
                     
                     {/* Hover Effect */}

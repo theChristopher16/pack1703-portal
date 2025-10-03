@@ -68,6 +68,7 @@ const EventsPage: React.FC = () => {
   
   // Cache for RSVP counts to avoid repeated API calls
   const [rsvpCountCache, setRsvpCountCache] = useState<{ [eventId: string]: { count: number; timestamp: number } }>({});
+  const [rsvpCountsLoading, setRsvpCountsLoading] = useState<{ [eventId: string]: boolean }>({});
   
   // Admin RSVP viewer state
   const [showRSVPViewer, setShowRSVPViewer] = useState(false);
@@ -96,9 +97,13 @@ const EventsPage: React.FC = () => {
     requiresPermission: null
   });
   
-  // Check if user has admin permissions
+  // Check if user has admin permissions (only for actual admins, not parents)
   const isAdmin = hasRole('super-admin') || 
-                  adminState.currentUser?.isAdmin;
+                  hasRole('content-admin') || 
+                  hasRole('moderator') ||
+                  adminState.currentUser?.role === 'super-admin' ||
+                  adminState.currentUser?.role === 'content-admin' ||
+                  adminState.currentUser?.role === 'moderator';
 
   // Helper function to check if cache is valid
   const isCacheValid = useCallback((eventId: string): boolean => {
@@ -128,6 +133,17 @@ const EventsPage: React.FC = () => {
       }
     });
 
+    // Set loading state for events that need fetching
+    if (eventIdsToFetch.length > 0) {
+      setRsvpCountsLoading(prev => {
+        const newLoading = { ...prev };
+        eventIdsToFetch.forEach(eventId => {
+          newLoading[eventId] = true;
+        });
+        return newLoading;
+      });
+    }
+
     // Fetch remaining counts in batch
     if (eventIdsToFetch.length > 0) {
       try {
@@ -154,6 +170,15 @@ const EventsPage: React.FC = () => {
         for (const eventId of eventIdsToFetch) {
           rsvpCounts[eventId] = 0; // Default fallback
         }
+      } finally {
+        // Clear loading state for fetched events
+        setRsvpCountsLoading(prev => {
+          const newLoading = { ...prev };
+          eventIdsToFetch.forEach(eventId => {
+            newLoading[eventId] = false;
+          });
+          return newLoading;
+        });
       }
     }
 
@@ -272,12 +297,30 @@ const EventsPage: React.FC = () => {
         
         // Transform events first (without RSVP counts)
         const transformedEvents: Event[] = firebaseEvents.map((firebaseEvent: any) => {
+          // Normalize start date to local date string for consistent display and filtering
+          let localDate = '';
+          try {
+            const jsDate = firebaseEvent.startDate?.toDate?.()
+              ? firebaseEvent.startDate.toDate()
+              : new Date(firebaseEvent.startDate);
+            if (jsDate && !isNaN(jsDate.getTime())) {
+              // Use local date (YYYY-MM-DD) without timezone shifting to UTC
+              const year = jsDate.getFullYear();
+              const month = String(jsDate.getMonth() + 1).padStart(2, '0');
+              const day = String(jsDate.getDate()).padStart(2, '0');
+              localDate = `${year}-${month}-${day}`;
+            }
+          } catch (_) {
+            // Fallback to original value if parsing fails
+            if (typeof firebaseEvent.startDate === 'string') {
+              localDate = (firebaseEvent.startDate.split ? firebaseEvent.startDate.split('T')[0] : firebaseEvent.startDate) || '';
+            }
+          }
+
           const transformedEvent = {
             id: firebaseEvent.id,
             title: firebaseEvent.title,
-            date: firebaseEvent.startDate?.toDate?.()?.toISOString()?.split('T')[0] || 
-                  (firebaseEvent.startDate && firebaseEvent.startDate.split) ? firebaseEvent.startDate.split('T')[0] : 
-                  firebaseEvent.startDate,
+            date: localDate || '',
             startTime: firebaseEvent.startTime || '00:00',
             endTime: firebaseEvent.endTime || '00:00',
             location: {
@@ -301,8 +344,9 @@ const EventsPage: React.FC = () => {
           return transformedEvent;
         });
         
-        // Set events immediately (without RSVP counts)
+        // Set events immediately for fast rendering
         setEvents(transformedEvents);
+        setIsLoading(false);
         
         // Get event IDs for RSVP count fetching
         const eventIds = firebaseEvents.map((event: any) => event.id);
@@ -330,11 +374,10 @@ const EventsPage: React.FC = () => {
         // No fallback data - show empty state
         setEvents([]);
         setError('Unable to load events. Please try again later.');
+        setIsLoading(false);
         
         // Track error
         console.log('Failed to load events from database');
-      } finally {
-        setIsLoading(false);
       }
     };
     
@@ -551,12 +594,27 @@ const EventsPage: React.FC = () => {
           const rsvpCounts = await fetchRSVPCounts(eventIds);
 
           const transformedEvents: Event[] = firebaseEvents.map((firebaseEvent: any) => {
+            let localDate = '';
+            try {
+              const jsDate = firebaseEvent.startDate?.toDate?.()
+                ? firebaseEvent.startDate.toDate()
+                : new Date(firebaseEvent.startDate);
+              if (jsDate && !isNaN(jsDate.getTime())) {
+                const year = jsDate.getFullYear();
+                const month = String(jsDate.getMonth() + 1).padStart(2, '0');
+                const day = String(jsDate.getDate()).padStart(2, '0');
+                localDate = `${year}-${month}-${day}`;
+              }
+            } catch (_) {
+              if (typeof firebaseEvent.startDate === 'string') {
+                localDate = (firebaseEvent.startDate.split ? firebaseEvent.startDate.split('T')[0] : firebaseEvent.startDate) || '';
+              }
+            }
+
             return {
               id: firebaseEvent.id,
               title: firebaseEvent.title,
-              date: firebaseEvent.startDate?.toDate?.()?.toISOString()?.split('T')[0] || 
-                    (firebaseEvent.startDate && firebaseEvent.startDate.split) ? firebaseEvent.startDate.split('T')[0] : 
-                    firebaseEvent.startDate,
+              date: localDate || '',
               startTime: firebaseEvent.startTime || '00:00',
               endTime: firebaseEvent.endTime || '00:00',
               location: {
@@ -626,12 +684,27 @@ const EventsPage: React.FC = () => {
           const rsvpCounts = await fetchRSVPCounts(eventIds);
 
           const transformedEvents: Event[] = firebaseEvents.map((firebaseEvent: any) => {
+            let localDate = '';
+            try {
+              const jsDate = firebaseEvent.startDate?.toDate?.()
+                ? firebaseEvent.startDate.toDate()
+                : new Date(firebaseEvent.startDate);
+              if (jsDate && !isNaN(jsDate.getTime())) {
+                const year = jsDate.getFullYear();
+                const month = String(jsDate.getMonth() + 1).padStart(2, '0');
+                const day = String(jsDate.getDate()).padStart(2, '0');
+                localDate = `${year}-${month}-${day}`;
+              }
+            } catch (_) {
+              if (typeof firebaseEvent.startDate === 'string') {
+                localDate = (firebaseEvent.startDate.split ? firebaseEvent.startDate.split('T')[0] : firebaseEvent.startDate) || '';
+              }
+            }
+
             return {
               id: firebaseEvent.id,
               title: firebaseEvent.title,
-              date: firebaseEvent.startDate?.toDate?.()?.toISOString()?.split('T')[0] || 
-                    (firebaseEvent.startDate && firebaseEvent.startDate.split) ? firebaseEvent.startDate.split('T')[0] : 
-                    firebaseEvent.startDate,
+              date: localDate || '',
               startTime: firebaseEvent.startTime || '00:00',
               endTime: firebaseEvent.endTime || '00:00',
               location: {
@@ -734,7 +807,7 @@ const EventsPage: React.FC = () => {
   // Removed loading animation for faster page transitions
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 pt-20 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Page Header */}
         <div className="text-center mb-12">
@@ -941,6 +1014,7 @@ const EventsPage: React.FC = () => {
                           onViewRSVPs={isAdmin ? handleViewRSVPs : undefined}
                           isAdmin={isAdmin}
                           isDeleting={deletingEventId === event.id}
+                          rsvpCountLoading={rsvpCountsLoading[event.id] || false}
                         />
                       </div>
                     );

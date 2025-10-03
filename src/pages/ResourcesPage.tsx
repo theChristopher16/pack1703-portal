@@ -14,7 +14,8 @@ import {
   Trash2,
   MoreVertical,
   Eye,
-  EyeOff
+  EyeOff,
+  Heart
 } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import { Resource, ResourceCategory, resourceService } from '../services/resourceService';
@@ -43,7 +44,7 @@ const ResourcesPage: React.FC = () => {
   const loadResources = async () => {
     try {
       setLoading(true);
-      const resourcesData = await resourceService.getResources({ isActive: true });
+      const resourcesData = await resourceService.getResourcesWithLikeStatus({ isActive: true });
       setResources(resourcesData);
     } catch (error) {
       console.error('Error loading resources:', error);
@@ -87,18 +88,31 @@ const ResourcesPage: React.FC = () => {
 
   const allTags = Array.from(new Set(resources.flatMap(r => r.tags))).sort();
 
-  const filteredResources = resources.filter(resource => {
-    const matchesSearch = resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         resource.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         resource.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesCategory = selectedCategory === 'all' || resource.category === selectedCategory;
-    
-    const matchesTags = selectedTags.length === 0 || 
-                       selectedTags.some(tag => resource.tags.includes(tag));
-    
-    return matchesSearch && matchesCategory && matchesTags;
-  });
+  const filteredResources = resources
+    .filter(resource => {
+      const matchesSearch = resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           resource.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           resource.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      const matchesCategory = selectedCategory === 'all' || resource.category === selectedCategory;
+      
+      const matchesTags = selectedTags.length === 0 || 
+                         selectedTags.some(tag => resource.tags.includes(tag));
+      
+      return matchesSearch && matchesCategory && matchesTags;
+    })
+    .sort((a, b) => {
+      // Sort by like count (most liked first)
+      const aLikes = a.likeCount || 0;
+      const bLikes = b.likeCount || 0;
+      
+      if (bLikes !== aLikes) {
+        return bLikes - aLikes;
+      }
+      
+      // Then by last updated (newest first)
+      return b.lastUpdated.getTime() - a.lastUpdated.getTime();
+    });
 
   const handleTagToggle = (tag: string) => {
     setSelectedTags(prev => 
@@ -110,6 +124,14 @@ const ResourcesPage: React.FC = () => {
 
   // Check if user can manage resources
   const canManageResources = state.currentUser && resourceService.canManageResources(state.currentUser);
+  
+  // Debug logging
+  console.log('🔍 ResourcesPage Debug:', {
+    currentUser: state.currentUser,
+    userRole: state.currentUser?.role,
+    isAdmin: state.currentUser?.isAdmin,
+    canManageResources: canManageResources
+  });
 
   const handleDownload = async (resource: Resource) => {
     if (resource.url) {
@@ -124,6 +146,21 @@ const ResourcesPage: React.FC = () => {
         // Still try to open the URL even if count increment fails
         window.open(resource.url, '_blank');
       }
+    }
+  };
+
+  const handleLikeToggle = async (resource: Resource) => {
+    try {
+      if (resource.isLikedByCurrentUser) {
+        await resourceService.unlikeResource(resource.id);
+      } else {
+        await resourceService.likeResource(resource.id);
+      }
+      
+      // Reload resources to update like status
+      await loadResources();
+    } catch (error) {
+      console.error('Error toggling like:', error);
     }
   };
 
@@ -182,7 +219,7 @@ const ResourcesPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 pt-20 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -306,6 +343,17 @@ const ResourcesPage: React.FC = () => {
                             </div>
                           )}
                           {getFileTypeIcon(resource.fileType)}
+                          <button
+                            onClick={() => handleLikeToggle(resource)}
+                            className={`p-2 transition-colors duration-200 ${
+                              resource.isLikedByCurrentUser 
+                                ? 'text-red-600 hover:text-red-700' 
+                                : 'text-gray-400 hover:text-red-600'
+                            }`}
+                            title={resource.isLikedByCurrentUser ? 'Unlike' : 'Like'}
+                          >
+                            <Heart className={`h-4 w-4 ${resource.isLikedByCurrentUser ? 'fill-current' : ''}`} />
+                          </button>
                           {resource.url && (
                             <button
                               onClick={() => handleDownload(resource)}
@@ -366,10 +414,17 @@ const ResourcesPage: React.FC = () => {
                       </div>
 
                       <div className="flex items-center justify-between text-xs text-gray-500">
+                        <div className="flex items-center space-x-3">
+                          <span className="flex items-center space-x-1">
+                            <Heart className={`h-3 w-3 ${resource.likeCount && resource.likeCount > 0 ? 'text-red-600' : ''}`} />
+                            <span>{resource.likeCount || 0}</span>
+                          </span>
+                          <span className="flex items-center space-x-1">
+                            <Download className="h-3 w-3" />
+                            <span>{resource.downloadCount || 0}</span>
+                          </span>
+                        </div>
                         <span>Updated {new Date(resource.lastUpdated).toLocaleDateString()}</span>
-                        {resource.url && (
-                          <ExternalLink className="h-3 w-3" />
-                        )}
                       </div>
                     </div>
                   );

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTenant } from '../contexts/TenantContext';
+import { useAdmin } from '../contexts/AdminContext';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useMultiTenant } from '../contexts/MultiTenantContext';
@@ -41,6 +42,7 @@ const MultiTenantManagement: React.FC = () => {
   const [selectedTenant, setSelectedTenant] = useState<any | null>(null);
   const { tenantId } = useTenant();
   const [defaultSlug, setDefaultSlug] = useState<string | null>(null);
+  const { state: adminState } = useAdmin();
   const [showCreateCategory, setShowCreateCategory] = useState(false);
   const [showCreateOrganization, setShowCreateOrganization] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -430,6 +432,35 @@ const MultiTenantManagement: React.FC = () => {
                           Clear
                         </button>
                       </div>
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">Membership</div>
+                        <div className="text-sm text-gray-600">Grant yourself tenant admin access for this tenant.</div>
+                      </div>
+                      <button
+                        className="px-3 py-2 rounded-lg bg-purple-600 text-white"
+                        onClick={async () => {
+                          try {
+                            const uid = adminState?.currentUser?.uid;
+                            const id = selectedTenant.slug || selectedTenant.id || tenantId;
+                            if (!uid || !id) return;
+                            await setDoc(doc(db, 'tenants', id, 'memberships', uid), {
+                              roles: ['TENANT_ADMIN'],
+                              invitedBy: uid,
+                              createdAt: new Date()
+                            }, { merge: true });
+                            alert('You now have TENANT_ADMIN membership for this tenant.');
+                          } catch (e) {
+                            console.warn('Grant membership failed', e);
+                            alert('Failed to grant membership');
+                          }
+                        }}
+                      >
+                        Grant myself TENANT_ADMIN
+                      </button>
                     </div>
                   </div>
                 </div>

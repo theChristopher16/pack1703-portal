@@ -40,6 +40,7 @@ const MultiTenantManagement: React.FC = () => {
   const [tenants, setTenants] = useState<any[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<any | null>(null);
   const { tenantId } = useTenant();
+  const [defaultSlug, setDefaultSlug] = useState<string | null>(null);
   const [showCreateCategory, setShowCreateCategory] = useState(false);
   const [showCreateOrganization, setShowCreateOrganization] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -80,6 +81,13 @@ const MultiTenantManagement: React.FC = () => {
         // ignore
       }
     })();
+    // Read default slug and listen for changes (e.g., from other tab)
+    setDefaultSlug(localStorage.getItem('defaultTenantSlug'));
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'defaultTenantSlug') setDefaultSlug(e.newValue);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, [loadCategories, loadUserOrganizations, tenantId]);
 
   const handleCreateCategory = async (e: React.FormEvent) => {
@@ -333,7 +341,14 @@ const MultiTenantManagement: React.FC = () => {
                 )}
                 {tenants.map(t => (
                   <tr key={t.id} className="border-t border-gray-100">
-                    <td className="px-4 py-3">{t.name}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span>{t.name}</span>
+                        {defaultSlug && t.slug === defaultSlug && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">Default</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-3">{t.packNumber}</td>
                     <td className="px-4 py-3">{t.slug}</td>
                     <td className="px-4 py-3">{t.status || 'active'}</td>
@@ -361,6 +376,9 @@ const MultiTenantManagement: React.FC = () => {
                   <button className="text-gray-500" onClick={() => setSelectedTenant(null)}>✕</button>
                 </div>
                 <div className="space-y-4">
+                  <div className="p-3 rounded-xl bg-gray-50 border text-sm text-gray-700">
+                    Current default tenant: {defaultSlug || '—'}
+                  </div>
                   <div className="p-4 border rounded-xl">
                     <div className="flex items-center justify-between">
                       <div>
@@ -387,15 +405,17 @@ const MultiTenantManagement: React.FC = () => {
                       </div>
                       <div className="flex gap-2">
                         <button
-                          className="px-3 py-2 rounded-lg bg-blue-600 text-white"
+                          className={`px-3 py-2 rounded-lg ${defaultSlug && (selectedTenant.slug || selectedTenant.id) === defaultSlug ? 'bg-gray-200 text-gray-700 cursor-not-allowed' : 'bg-blue-600 text-white'}`}
+                          disabled={!!defaultSlug && (selectedTenant.slug || selectedTenant.id) === defaultSlug}
                           onClick={() => {
                             try {
                               localStorage.setItem('defaultTenantSlug', selectedTenant.slug || selectedTenant.id);
                               alert(`Default tenant set to ${selectedTenant.slug || selectedTenant.id}`);
+                              setDefaultSlug(selectedTenant.slug || selectedTenant.id);
                             } catch {}
                           }}
                         >
-                          Set as default
+                          {defaultSlug && (selectedTenant.slug || selectedTenant.id) === defaultSlug ? 'Default' : 'Set as default'}
                         </button>
                         <button
                           className="px-3 py-2 rounded-lg bg-gray-200 text-gray-800"
@@ -403,6 +423,7 @@ const MultiTenantManagement: React.FC = () => {
                             try {
                               localStorage.removeItem('defaultTenantSlug');
                               alert('Default tenant cleared');
+                              setDefaultSlug(null);
                             } catch {}
                           }}
                         >

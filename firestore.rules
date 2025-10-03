@@ -58,7 +58,11 @@ service cloud.firestore {
     function isRootRole() {
       return request.auth != null && request.auth.token.get('role', '') in ['root', 'super_admin', 'super-admin'];
     }
-    function isSuper() { return isPlatformSuper() || isRootRole(); }
+    function isSuperViaUserDoc() {
+      return request.auth != null &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['root', 'super_admin', 'super-admin'];
+    }
+    function isSuper() { return isPlatformSuper() || isRootRole() || isSuperViaUserDoc(); }
     function memberOf(tenantId) {
       return request.auth != null && exists(/databases/$(database)/documents/tenants/$(tenantId)/memberships/$(request.auth.uid));
     }

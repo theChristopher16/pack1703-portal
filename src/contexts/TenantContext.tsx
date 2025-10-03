@@ -67,10 +67,16 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Resolve slug -> tenantId
   useEffect(() => {
     let mounted = true;
-    const slug = (tenantSlug || 'pack-1703').toLowerCase();
+    // Derive slug from URL first segment to avoid route context mismatches
+    const pathFirst = (typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '') || '';
+    const fallbackSlug = pathFirst || tenantSlug || 'pack-1703';
+    const slug = fallbackSlug.toLowerCase();
     fetchTenantIdForSlug(slug).then((resolved) => {
       if (!mounted) return;
       setTenantId(resolved || slug);
+    }).catch(() => {
+      if (!mounted) return;
+      setTenantId(slug);
     });
     return () => {
       mounted = false;
@@ -79,7 +85,9 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Subscribe to tenant config
   useEffect(() => {
-    if (!tenantId) return;
+    // Defer until authenticated to satisfy Firestore rules
+    const uid = adminState?.currentUser?.uid || auth.currentUser?.uid;
+    if (!tenantId || !uid) return;
     const ref = doc(db, 'tenants', tenantId);
     const unsub = onSnapshot(ref, (snap) => {
       if (snap.exists()) {
@@ -93,7 +101,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setCfg(null);
     });
     return () => unsub();
-  }, [tenantId]);
+  }, [tenantId, adminState?.currentUser?.uid]);
 
   // Subscribe to membership roles for current user
   useEffect(() => {

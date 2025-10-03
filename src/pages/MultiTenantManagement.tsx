@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useTenant } from '../contexts/TenantContext';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase/config';
 import { useMultiTenant } from '../contexts/MultiTenantContext';
 import { authService } from '../services/authService';
 import { 
@@ -33,7 +36,10 @@ const MultiTenantManagement: React.FC = () => {
     clearError 
   } = useMultiTenant();
   
-  const [activeTab, setActiveTab] = useState<'categories' | 'organizations' | 'collaborations' | 'ai'>('categories');
+  const [activeTab, setActiveTab] = useState<'tenants' | 'categories' | 'organizations' | 'collaborations' | 'ai'>('categories');
+  const [tenants, setTenants] = useState<any[]>([]);
+  const [selectedTenant, setSelectedTenant] = useState<any | null>(null);
+  const { tenantId } = useTenant();
   const [showCreateCategory, setShowCreateCategory] = useState(false);
   const [showCreateOrganization, setShowCreateOrganization] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -61,6 +67,19 @@ const MultiTenantManagement: React.FC = () => {
   useEffect(() => {
     loadCategories();
     loadUserOrganizations();
+    // Super-admin tenant directory (client-side minimal: requires server to page in real usage)
+    (async () => {
+      try {
+        // Minimal read: load just current tenant for preview to avoid cross-tenant queries on client
+        const ref = doc(db, 'tenants', tenantId);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          setTenants([{ id: snap.id, ...snap.data() }]);
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
   }, [loadCategories, loadUserOrganizations]);
 
   const handleCreateCategory = async (e: React.FormEvent) => {
@@ -203,6 +222,17 @@ const MultiTenantManagement: React.FC = () => {
       {/* Tabs */}
       <div className="flex space-x-1 bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft p-2 mb-8">
         <button
+          onClick={() => setActiveTab('tenants')}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all ${
+            activeTab === 'tenants'
+              ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-soft'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+          }`}
+        >
+          <Building2 className="w-4 h-4" />
+          <span>Tenants</span>
+        </button>
+        <button
           onClick={() => setActiveTab('categories')}
           className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all ${
             activeTab === 'categories'
@@ -247,6 +277,81 @@ const MultiTenantManagement: React.FC = () => {
           <span>AI Sessions</span>
         </button>
       </div>
+      {/* Tenants Tab (Super Admin Lens) */}
+      {activeTab === 'tenants' && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-gray-900">Tenants</h2>
+          </div>
+
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft overflow-hidden">
+            <table className="min-w-full">
+              <thead>
+                <tr className="text-left text-gray-600">
+                  <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">Pack</th>
+                  <th className="px-4 py-3">Slug</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Square</th>
+                  <th className="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {tenants.map(t => (
+                  <tr key={t.id} className="border-t border-gray-100">
+                    <td className="px-4 py-3">{t.name}</td>
+                    <td className="px-4 py-3">{t.packNumber}</td>
+                    <td className="px-4 py-3">{t.slug}</td>
+                    <td className="px-4 py-3">{t.status || 'active'}</td>
+                    <td className="px-4 py-3">{t.features?.squarePayments ? 'Connected' : '—'}</td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        className="px-3 py-1 text-sm rounded-lg bg-blue-600 text-white"
+                        onClick={() => setSelectedTenant(t)}
+                      >
+                        Manage
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Tenant Manage Drawer */}
+          {selectedTenant && (
+            <div className="fixed inset-0 bg-black/40 flex items-end md:items-center md:justify-center z-50">
+              <div className="bg-white rounded-2xl w-full md:max-w-xl p-6" role="dialog" aria-modal="true">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-semibold text-gray-900">Manage {selectedTenant.name}</h3>
+                  <button className="text-gray-500" onClick={() => setSelectedTenant(null)}>✕</button>
+                </div>
+                <div className="space-y-4">
+                  <div className="p-4 border rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">Square</div>
+                        <div className="text-sm text-gray-600">Connect or manage Square for this tenant.</div>
+                      </div>
+                      <button
+                        className="px-3 py-2 rounded-lg bg-green-600 text-white"
+                        onClick={() => {
+                          // POST to squareConnectStart with x-tenant header
+                          // Frontend wiring later; placeholder button
+                          alert('Square connect flow will start here');
+                        }}
+                      >
+                        {selectedTenant.features?.squarePayments ? 'Reconnect' : 'Connect Square'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
 
       {/* Error Display */}
       {state.error && (

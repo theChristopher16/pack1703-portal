@@ -3920,3 +3920,128 @@ export const uploadSensorData = functions.https.onRequest(async (req, res) => {
   }
 });
 
+// ============================================================================
+// Square Multi-Merchant (Scaffold) - No Traefik required
+// ============================================================================
+
+async function verifyIdTokenFromRequest(req: functions.https.Request): Promise<admin.auth.DecodedIdToken> {
+  const authHeader = req.get('Authorization') || req.get('authorization') || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.substring('Bearer '.length) : '';
+  if (!token) {
+    throw new functions.https.HttpsError('unauthenticated', 'Missing Authorization bearer token');
+  }
+  return await admin.auth().verifyIdToken(token);
+}
+
+function extractTenantId(req: functions.https.Request): string | null {
+  const fromHeader = (req.header('x-tenant') || '').trim();
+  const fromQuery = (req.query.tenantId as string) || '';
+  const fromBody = (req.body && (req.body.tenantId as string)) || '';
+  // Note: onRequest does not support path params; map via Hosting rewrites if needed
+  return fromHeader || fromQuery || fromBody || null;
+}
+
+async function assertTenantAccess(uid: string, decoded: admin.auth.DecodedIdToken, tenantId: string) {
+  const platform = (decoded.platform as string[] | undefined) || [];
+  const isSuper = Array.isArray(platform) && platform.includes('SUPER_ADMIN');
+  if (isSuper) return;
+  const memRef = db.doc(`tenants/${tenantId}/memberships/${uid}`);
+  const memSnap = await memRef.get();
+  if (!memSnap.exists) {
+    throw new functions.https.HttpsError('permission-denied', 'Not a member of tenant');
+  }
+}
+
+function applyCors(req: functions.https.Request, res: functions.Response) {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-tenant');
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return true;
+  }
+  return false;
+}
+
+export const squareConnectStart = functions.https.onRequest(async (req, res) => {
+  if (applyCors(req, res)) return;
+  if (req.method !== 'POST') {
+    res.status(405).json({ success: false, error: 'Method Not Allowed' });
+    return;
+  }
+  try {
+    const decoded = await verifyIdTokenFromRequest(req);
+    const tenantId = extractTenantId(req);
+    if (!tenantId) throw new functions.https.HttpsError('invalid-argument', 'tenantId required');
+    await assertTenantAccess(decoded.uid, decoded, tenantId);
+
+    // TODO: construct actual Square OAuth URL with client_id, scopes, state
+    const redirectUrl = 'https://connect.squareup.com/oauth2/authorize';
+    res.json({ success: true, redirectUrl });
+  } catch (e: any) {
+    const code = e instanceof functions.https.HttpsError ? 401 : 500;
+    res.status(code).json({ success: false, error: e.message || 'Unauthorized' });
+  }
+});
+
+export const squareOAuthCallback = functions.https.onRequest(async (req, res) => {
+  // Note: this endpoint is called by Square after user approval
+  try {
+    // TODO: validate state, exchange code for tokens, fetch merchant/location
+    // TODO: write tenants/{tenantId}/integrations/square and integrations_secure/{tenantId}_square
+    res.status(200).send('OK');
+  } catch (e: any) {
+    res.status(500).send('Internal Error');
+  }
+});
+
+export const createTenantPayment = functions.https.onRequest(async (req, res) => {
+  if (applyCors(req, res)) return;
+  if (req.method !== 'POST') {
+    res.status(405).json({ success: false, error: 'Method Not Allowed' });
+    return;
+  }
+  try {
+    const decoded = await verifyIdTokenFromRequest(req);
+    const tenantId = extractTenantId(req);
+    if (!tenantId) throw new functions.https.HttpsError('invalid-argument', 'tenantId required');
+    await assertTenantAccess(decoded.uid, decoded, tenantId);
+
+    // TODO: load creds from integrations_secure, call Square Payments with idempotency key
+    res.json({ success: true });
+  } catch (e: any) {
+    const code = e instanceof functions.https.HttpsError ? 401 : 500;
+    res.status(code).json({ success: false, error: e.message || 'Unauthorized' });
+  }
+});
+
+export const refundTenantPayment = functions.https.onRequest(async (req, res) => {
+  if (applyCors(req, res)) return;
+  if (req.method !== 'POST') {
+    res.status(405).json({ success: false, error: 'Method Not Allowed' });
+    return;
+  }
+  try {
+    const decoded = await verifyIdTokenFromRequest(req);
+    const tenantId = extractTenantId(req);
+    if (!tenantId) throw new functions.https.HttpsError('invalid-argument', 'tenantId required');
+    await assertTenantAccess(decoded.uid, decoded, tenantId);
+
+    // TODO: call Square Refunds and update payment doc
+    res.json({ success: true });
+  } catch (e: any) {
+    const code = e instanceof functions.https.HttpsError ? 401 : 500;
+    res.status(code).json({ success: false, error: e.message || 'Unauthorized' });
+  }
+});
+
+export const squareWebhook = functions.https.onRequest(async (req, res) => {
+  // Public endpoint; verify signature before mutating
+  try {
+    // TODO: verify signature; map merchant_id -> tenantId; upsert payments with idempotency
+    res.status(200).send('OK');
+  } catch (e: any) {
+    res.status(400).send('Bad Request');
+  }
+});
+

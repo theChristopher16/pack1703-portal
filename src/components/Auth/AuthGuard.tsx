@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAdmin } from '../../contexts/AdminContext';
 import SocialLogin from './SocialLogin';
 import AccountRequestModal from './AccountRequestModal';
@@ -12,6 +12,7 @@ interface AuthGuardProps {
 
 const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const { state } = useAdmin();
+  const location = useLocation();
   const { currentUser, isLoading } = state;
   const [showAccountRequestModal, setShowAccountRequestModal] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
@@ -213,7 +214,19 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     );
   }
 
-  // User is authenticated, render the app
+  // User is authenticated
+  const isSuper = state.currentUser?.role === 'super_admin' || state.currentUser?.role === 'root' || state.currentUser?.role === 'super-admin';
+  if (isSuper) {
+    // If a default tenant is set and we're on home, go straight to that tenant
+    const defaultTenantSlug = localStorage.getItem('defaultTenantSlug');
+    if (location.pathname === '/' && defaultTenantSlug) {
+      return <Navigate to={`/${defaultTenantSlug}/`} replace />;
+    }
+    // If no default and we're on home, send to tenant management (admin entry)
+    if (location.pathname === '/') {
+      return <Navigate to="/multi-tenant" replace />;
+    }
+  }
   return <>{children}</>;
 };
 

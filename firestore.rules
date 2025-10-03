@@ -56,7 +56,7 @@ service cloud.firestore {
              request.auth.token.platform.hasAny(['SUPER_ADMIN']);
     }
     function isRootRole() {
-      return request.auth != null && request.auth.token.get('role', '') in ['root', 'super_admin'];
+      return request.auth != null && request.auth.token.get('role', '') in ['root', 'super_admin', 'super-admin'];
     }
     function isSuper() { return isPlatformSuper() || isRootRole(); }
     function memberOf(tenantId) {

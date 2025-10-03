@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTenant } from '../contexts/TenantContext';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useMultiTenant } from '../contexts/MultiTenantContext';
 import { authService } from '../services/authService';
@@ -36,7 +36,7 @@ const MultiTenantManagement: React.FC = () => {
     clearError 
   } = useMultiTenant();
   
-  const [activeTab, setActiveTab] = useState<'tenants' | 'categories' | 'organizations' | 'collaborations' | 'ai'>('categories');
+  const [activeTab, setActiveTab] = useState<'tenants' | 'categories' | 'organizations' | 'collaborations' | 'ai'>('tenants');
   const [tenants, setTenants] = useState<any[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<any | null>(null);
   const { tenantId } = useTenant();
@@ -282,6 +282,35 @@ const MultiTenantManagement: React.FC = () => {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-gray-900">Tenants</h2>
+            <div className="flex gap-2">
+              <button
+                className="px-3 py-2 rounded-xl bg-blue-600 text-white"
+                onClick={async () => {
+                  try {
+                    const slug = selectedTenant?.slug || 'pack-1703';
+                    const id = tenantId || slug;
+                    // Create basic tenant doc if missing
+                    await setDoc(doc(db, 'tenants', id), {
+                      name: 'Cub Scout Pack 1703',
+                      packNumber: '1703',
+                      slug,
+                      status: 'active',
+                      createdAt: new Date()
+                    }, { merge: true });
+                    // Map slug to tenant
+                    await setDoc(doc(db, 'tenant_slugs', slug), { tenantId: id }, { merge: true });
+                    const snap = await getDoc(doc(db, 'tenants', id));
+                    if (snap.exists()) setTenants([{ id: snap.id, ...snap.data() }]);
+                    alert('Tenant created/updated');
+                  } catch (e) {
+                    console.warn('Create tenant failed', e);
+                    alert('Failed to create tenant');
+                  }
+                }}
+              >
+                Create Tenant
+              </button>
+            </div>
           </div>
 
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/50 shadow-soft overflow-hidden">
@@ -297,6 +326,11 @@ const MultiTenantManagement: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
+                {tenants.length === 0 && (
+                  <tr className="border-t border-gray-100">
+                    <td className="px-4 py-6 text-gray-500" colSpan={6}>No tenants found for this environment. Use "Create Tenant" to add one.</td>
+                  </tr>
+                )}
                 {tenants.map(t => (
                   <tr key={t.id} className="border-t border-gray-100">
                     <td className="px-4 py-3">{t.name}</td>

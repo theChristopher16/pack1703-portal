@@ -217,16 +217,10 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   // User is authenticated
   const role = state.currentUser?.role as any;
   const isSuper = role === 'super_admin' || role === 'root' || role === 'super-admin';
-  if (isSuper) {
-    // If a default tenant is set and we're on home, go straight to that tenant
+  // Only redirect after login when landing on root
+  if (isSuper && location.pathname === '/') {
     const defaultTenantSlug = localStorage.getItem('defaultTenantSlug');
-    if (location.pathname === '/' && defaultTenantSlug) {
-      return <Navigate to={`/${defaultTenantSlug}/`} replace />;
-    }
-    // If no default and we're on home, send to tenant management (admin entry)
-    if (location.pathname === '/') {
-      return <Navigate to="/multi-tenant" replace />;
-    }
+    return <Navigate to={defaultTenantSlug ? `/${defaultTenantSlug}/` : '/multi-tenant'} replace />;
   }
   return <>{children}</>;
 };

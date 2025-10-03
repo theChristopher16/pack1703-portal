@@ -345,6 +345,38 @@ const MultiTenantManagement: React.FC = () => {
                       </button>
                     </div>
                   </div>
+                  <div className="p-4 border rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">Default Tenant</div>
+                        <div className="text-sm text-gray-600">Set this tenant as your default landing after login.</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          className="px-3 py-2 rounded-lg bg-blue-600 text-white"
+                          onClick={() => {
+                            try {
+                              localStorage.setItem('defaultTenantSlug', selectedTenant.slug || selectedTenant.id);
+                              alert(`Default tenant set to ${selectedTenant.slug || selectedTenant.id}`);
+                            } catch {}
+                          }}
+                        >
+                          Set as default
+                        </button>
+                        <button
+                          className="px-3 py-2 rounded-lg bg-gray-200 text-gray-800"
+                          onClick={() => {
+                            try {
+                              localStorage.removeItem('defaultTenantSlug');
+                              alert('Default tenant cleared');
+                            } catch {}
+                          }}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

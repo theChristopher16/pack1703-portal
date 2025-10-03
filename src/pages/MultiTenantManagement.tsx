@@ -80,7 +80,7 @@ const MultiTenantManagement: React.FC = () => {
         // ignore
       }
     })();
-  }, [loadCategories, loadUserOrganizations]);
+  }, [loadCategories, loadUserOrganizations, tenantId]);
 
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();

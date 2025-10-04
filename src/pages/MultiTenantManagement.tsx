@@ -297,13 +297,17 @@ const MultiTenantManagement: React.FC = () => {
                 className="px-3 py-2 rounded-xl bg-blue-600 text-white"
                 onClick={async () => {
                   try {
-                    const slug = selectedTenant?.slug || 'pack-1703';
-                    const id = tenantId || slug;
+                    const suggestedSlug = (tenantId || selectedTenant?.slug || 'pack-1703');
+                    const slug = (window.prompt('Tenant slug (e.g., pack-1703):', suggestedSlug) || '').trim();
+                    if (!slug) return;
+                    const id = slug;
+                    const packNumber = (window.prompt('Pack number (e.g., 1703):', '1703') || '').trim();
+                    const name = (window.prompt('Tenant name:', `Cub Scout Pack ${packNumber || '1703'}`) || '').trim();
                     // Create basic tenant doc if missing
                     await setDoc(doc(db, 'tenants', id), {
-                      name: 'Cub Scout Pack 1703',
-                      packNumber: '1703',
-                      slug,
+                      name: name || `Cub Scout Pack ${packNumber || '1703'}`,
+                      packNumber: packNumber || '1703',
+                      slug: slug,
                       status: 'active',
                       createdAt: new Date()
                     }, { merge: true });
@@ -361,6 +365,30 @@ const MultiTenantManagement: React.FC = () => {
                         onClick={() => setSelectedTenant(t)}
                       >
                         Manage
+                      </button>
+                      <button
+                        className="ml-2 px-3 py-1 text-sm rounded-lg bg-gray-200 text-gray-800"
+                        onClick={async () => {
+                          try {
+                            const newPack = window.prompt('Pack number:', t.packNumber || '') || '';
+                            const newName = window.prompt('Tenant name:', t.name || '') || '';
+                            if (!newPack && !newName) return;
+                            await setDoc(doc(db, 'tenants', t.id), {
+                              ...(newPack ? { packNumber: newPack } : {}),
+                              ...(newName ? { name: newName } : {})
+                            }, { merge: true });
+                            const snap = await getDoc(doc(db, 'tenants', t.id));
+                            if (snap.exists()) {
+                              const updated = { id: snap.id, ...snap.data() } as any;
+                              setTenants(prev => prev.map(row => row.id === t.id ? updated : row));
+                            }
+                          } catch (e) {
+                            console.warn('Update tenant failed', e);
+                            alert('Failed to update tenant');
+                          }
+                        }}
+                      >
+                        Edit
                       </button>
                     </td>
                   </tr>

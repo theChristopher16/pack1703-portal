@@ -125,14 +125,17 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [tenantId, adminState?.currentUser?.uid]);
 
   const can = useMemo(() => {
-    const isSuper = roles.includes('root') || roles.includes('super-admin') || roles.includes('TENANT_ADMIN');
+    // Platform super-admins should get full access regardless of membership
+    const role = adminState?.currentUser?.role as any;
+    const isPlatformSuper = role === 'super_admin' || role === 'super-admin';
+    const isSuper = isPlatformSuper || roles.includes('super-admin') || roles.includes('TENANT_ADMIN');
     return (perm: string) => {
       if (isSuper) return true;
       // Simple permissive fallback: allow if role name matches perm or a generic admin role exists
       if (roles.includes('admin')) return true;
       return roles.includes(perm);
     };
-  }, [roles]);
+  }, [roles, adminState?.currentUser?.role]);
 
   useApplyTheme(cfg?.theme);
 

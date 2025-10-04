@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronDown, Settings, LogOut } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
+import { useTenant } from '../../contexts/TenantContext';
 import { useAdmin } from '../../contexts/AdminContext';
 import { UserRole } from '../../services/authService';
 import { getNavigationByCategory, isAdminOrAbove, isRoot, ALL_NAVIGATION_ITEMS } from '../../services/navigationService';
@@ -29,8 +30,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Get admin context for role-based navigation
   const { state } = useAdmin();
   
-  // Use hardcoded pack name for now to avoid permission issues
-  const packName = 'Cub Scout Pack 1703';
+  // Tenant-aware branding
+  const { cfg } = useTenant();
+  const packName = cfg?.name || 'Cub Scout Pack 1703';
   
   // Track authentication changes from AdminContext
   useEffect(() => {

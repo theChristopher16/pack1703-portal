@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTenant } from '../contexts/TenantContext';
 import { useAdmin } from '../contexts/AdminContext';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useMultiTenant } from '../contexts/MultiTenantContext';
 import { authService } from '../services/authService';
@@ -43,6 +44,7 @@ const MultiTenantManagement: React.FC = () => {
   const { tenantId } = useTenant();
   const [defaultSlug, setDefaultSlug] = useState<string | null>(null);
   const { state: adminState } = useAdmin();
+  const navigate = useNavigate();
   const [showCreateCategory, setShowCreateCategory] = useState(false);
   const [showCreateOrganization, setShowCreateOrganization] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -73,11 +75,20 @@ const MultiTenantManagement: React.FC = () => {
     // Super-admin tenant directory (client-side minimal: requires server to page in real usage)
     (async () => {
       try {
-        // Minimal read: load just current tenant for preview to avoid cross-tenant queries on client
-        const ref = doc(db, 'tenants', tenantId);
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-          setTenants([{ id: snap.id, ...snap.data() }]);
+        // If super-admin, list all tenants; otherwise just current
+        const role = adminState?.currentUser?.role as any;
+        const isSuper = role === 'super_admin' || role === 'super-admin' || role === 'root';
+        if (isSuper) {
+          const col = collection(db, 'tenants');
+          const snapAll = await getDocs(col);
+          const rows = snapAll.docs.map(d => ({ id: d.id, ...d.data() }));
+          setTenants(rows);
+        } else {
+          const ref = doc(db, 'tenants', tenantId);
+          const snap = await getDoc(ref);
+          if (snap.exists()) {
+            setTenants([{ id: snap.id, ...snap.data() }]);
+          }
         }
       } catch (e) {
         // ignore
@@ -365,6 +376,12 @@ const MultiTenantManagement: React.FC = () => {
                         onClick={() => setSelectedTenant(t)}
                       >
                         Manage
+                      </button>
+                      <button
+                        className="ml-2 px-3 py-1 text-sm rounded-lg bg-indigo-600 text-white"
+                        onClick={() => navigate(`/${t.slug || t.id}/multi-tenant`)}
+                      >
+                        Open
                       </button>
                       <button
                         className="ml-2 px-3 py-1 text-sm rounded-lg bg-gray-200 text-gray-800"

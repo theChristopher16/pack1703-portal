@@ -379,7 +379,12 @@ const MultiTenantManagement: React.FC = () => {
                       </button>
                       <button
                         className="ml-2 px-3 py-1 text-sm rounded-lg bg-indigo-600 text-white"
-                        onClick={() => navigate(`/${t.slug || t.id}/multi-tenant`)}
+                        onClick={() => {
+                          const slug = t.slug || t.id;
+                          try { localStorage.setItem('defaultTenantSlug', slug); } catch {}
+                          // Force navigation to ensure context resets
+                          window.location.assign(`/${slug}/multi-tenant`);
+                        }}
                       >
                         Open
                       </button>

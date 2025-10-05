@@ -64,6 +64,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     // The AdminContext will automatically update the currentUser state
   };
 
+  // Prefix paths with current tenant slug when needed
+  const prefixPath = (path: string) => {
+    try {
+      if (!path || !path.startsWith('/')) return path;
+      // Global (non-tenant) routes
+      const globalPrefixes = ['/reset-password', '/password-setup', '/join', '/root-setup'];
+      if (globalPrefixes.some(p => path.startsWith(p))) return path;
+      const currentSlug = cfg?.slug || (typeof window !== 'undefined' ? (window.location.pathname.split('/')[1] || '') : '');
+      if (!currentSlug) return path; // fallback to original
+      if (path.startsWith(`/${currentSlug}/`) || path === `/${currentSlug}`) return path;
+      return `/${currentSlug}${path}`;
+    } catch {
+      return path;
+    }
+  };
+
   // Handle navigation with error recovery
   const handleNavigation = (href: string) => {
     // console.log('Attempting navigation to:', href);
@@ -76,11 +92,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       // Force navigation even if there are issues
       try {
         // console.log('Executing navigation to:', href);
-        navigate(href);
+        navigate(prefixPath(href));
       } catch (error) {
         console.error('Navigation error, forcing redirect:', error);
         // Fallback to window.location if React Router fails
-        window.location.href = href;
+        window.location.href = prefixPath(href);
       }
     }, 100);
   };

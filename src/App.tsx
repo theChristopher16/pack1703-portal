@@ -10,6 +10,7 @@ import { versionCheckService } from './services/versionCheckService';
 import Layout from './components/Layout/Layout';
 import { AdminOnly, RootOnly, AuthenticatedOnly } from './components/Auth/RoleGuard';
 import AuthGuard from './components/Auth/AuthGuard';
+import TenantAccessGuard from './components/Auth/TenantAccessGuard';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -139,6 +140,7 @@ function App() {
                 <Route path="/:tenantSlug/*" element={
                   <AuthGuard>
                     <TenantProvider>
+                      <TenantAccessGuard>
                       <Routes>
                         {/* Public Routes */}
                         <Route path="/" element={<Layout><HomePage /></Layout>} />
@@ -188,6 +190,7 @@ function App() {
                         
                         <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
                       </Routes>
+                      </TenantAccessGuard>
                     </TenantProvider>
                   </AuthGuard>
                 } />

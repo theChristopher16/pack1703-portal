@@ -513,6 +513,37 @@ const MultiTenantManagement: React.FC = () => {
                       </button>
                     </div>
                   </div>
+                  <div className="p-4 border rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">Invite Member by Email</div>
+                        <div className="text-sm text-gray-600">Create or attach a user and grant them a role in this tenant.</div>
+                      </div>
+                      <button
+                        className="px-3 py-2 rounded-lg bg-teal-600 text-white"
+                        onClick={async () => {
+                          try {
+                            const email = (window.prompt('User email to invite:') || '').trim();
+                            if (!email) return;
+                            const role = (window.prompt('Role (TENANT_ADMIN|LEADER|PARENT|YOUTH):', 'PARENT') || 'PARENT').trim();
+                            const id = selectedTenant.slug || selectedTenant.id || tenantId;
+                            // Write membership doc (idempotent); creating auth user is handled elsewhere in your flows
+                            await setDoc(doc(db, 'tenants', id, 'memberships', email), {
+                              roles: [role],
+                              invitedBy: adminState?.currentUser?.uid || 'super-admin',
+                              createdAt: new Date()
+                            }, { merge: true });
+                            alert(`Invited ${email} with role ${role}`);
+                          } catch (e) {
+                            console.warn('Invite failed', e);
+                            alert('Failed to invite member');
+                          }
+                        }}
+                      >
+                        Invite
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

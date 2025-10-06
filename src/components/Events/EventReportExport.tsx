@@ -241,7 +241,7 @@ const EventReportExport: React.FC<EventReportExportProps> = ({ event, rsvps, onC
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
-              <FileText className="h-6 w-6 text-primary-600 mr-3" />
+              <FileText className="h-6 w-6 text-gray-600 mr-3" />
               <h2 className="text-2xl font-bold text-gray-900">Export Event Report</h2>
             </div>
             <button
@@ -255,15 +255,15 @@ const EventReportExport: React.FC<EventReportExportProps> = ({ event, rsvps, onC
           </div>
 
           {/* Event Info */}
-          <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-xl p-4 mb-6 border border-primary-200">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 mb-6 border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">{event.title}</h3>
             <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
               <div className="flex items-center">
-                <Calendar className="h-4 w-4 mr-2 text-primary-600" />
+                <Calendar className="h-4 w-4 mr-2 text-gray-600" />
                 {formatDate(event.startDate)}
               </div>
               <div className="flex items-center">
-                <MapPin className="h-4 w-4 mr-2 text-primary-600" />
+                <MapPin className="h-4 w-4 mr-2 text-gray-600" />
                 {event.location}
               </div>
             </div>
@@ -271,25 +271,25 @@ const EventReportExport: React.FC<EventReportExportProps> = ({ event, rsvps, onC
 
           {/* Summary Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-primary-50 rounded-lg p-3 text-center border border-primary-200">
-              <Users className="h-6 w-6 text-primary-600 mx-auto mb-1" />
-              <div className="text-lg font-semibold text-primary-700">{rsvps.length}</div>
-              <div className="text-xs text-primary-600">Families</div>
+            <div className="bg-gray-50 rounded-lg p-3 text-center border border-gray-200">
+              <Users className="h-6 w-6 text-gray-600 mx-auto mb-1" />
+              <div className="text-lg font-semibold text-gray-700">{rsvps.length}</div>
+              <div className="text-xs text-gray-600">Families</div>
             </div>
-            <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
-              <Users className="h-6 w-6 text-blue-600 mx-auto mb-1" />
-              <div className="text-lg font-semibold text-blue-700">{totalAttendees}</div>
-              <div className="text-xs text-blue-600">Total People</div>
+            <div className="bg-slate-50 rounded-lg p-3 text-center border border-slate-200">
+              <Users className="h-6 w-6 text-slate-600 mx-auto mb-1" />
+              <div className="text-lg font-semibold text-slate-700">{totalAttendees}</div>
+              <div className="text-xs text-slate-600">Total People</div>
             </div>
-            <div className="bg-purple-50 rounded-lg p-3 text-center border border-purple-200">
-              <CheckCircle className="h-6 w-6 text-purple-600 mx-auto mb-1" />
-              <div className="text-lg font-semibold text-purple-700">{adultsCount}</div>
-              <div className="text-xs text-purple-600">Adults</div>
+            <div className="bg-zinc-50 rounded-lg p-3 text-center border border-zinc-200">
+              <CheckCircle className="h-6 w-6 text-zinc-600 mx-auto mb-1" />
+              <div className="text-lg font-semibold text-zinc-700">{adultsCount}</div>
+              <div className="text-xs text-zinc-600">Adults</div>
             </div>
-            <div className="bg-orange-50 rounded-lg p-3 text-center border border-orange-200">
-              <AlertCircle className="h-6 w-6 text-orange-600 mx-auto mb-1" />
-              <div className="text-lg font-semibold text-orange-700">{needsCount}</div>
-              <div className="text-xs text-orange-600">Special Needs</div>
+            <div className="bg-stone-50 rounded-lg p-3 text-center border border-stone-200">
+              <AlertCircle className="h-6 w-6 text-stone-600 mx-auto mb-1" />
+              <div className="text-lg font-semibold text-stone-700">{needsCount}</div>
+              <div className="text-xs text-stone-600">Special Needs</div>
             </div>
           </div>
 
@@ -333,7 +333,7 @@ const EventReportExport: React.FC<EventReportExportProps> = ({ event, rsvps, onC
             <button
               onClick={handleExport}
               disabled={isExporting}
-              className="flex items-center px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center px-6 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isExporting ? (
                 <>

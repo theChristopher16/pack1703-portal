@@ -1,6 +1,6 @@
 // Service Worker for Pack 1703 Families Portal
 // Implements proper cache invalidation and update handling
-// Updated: 2025-09-19T20:39:25Z
+// Updated: 2025-10-06T14:51:11Z
 
 const CACHE_NAME = 'pack1703-portal-v1';
 const STATIC_CACHE_NAME = 'pack1703-static-v1';

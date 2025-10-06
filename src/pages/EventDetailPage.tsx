@@ -654,6 +654,8 @@ const EventDetailPage: React.FC = () => {
                 maxCapacity={event?.capacity || undefined}
                 currentRSVPs={rsvpCount}
                 rsvpCountLoading={rsvpCountLoading}
+                isElective={event?.isElective || false}
+                electiveOptions={event?.electiveOptions}
               />
             )}
 

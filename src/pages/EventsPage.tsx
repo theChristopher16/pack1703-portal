@@ -24,7 +24,7 @@ interface Event {
     address: string;
     coordinates?: { lat: number; lng: number };
   } | string; // Can be object or string for form data
-  category: 'pack-wide' | 'den' | 'camping' | 'overnight' | 'service';
+  category: 'pack-wide' | 'den' | 'camping' | 'overnight' | 'service' | 'elective';
   denTags: string[];
   maxCapacity: number;
   currentRSVPs: number;
@@ -45,6 +45,26 @@ interface Event {
   locationId?: string;
   startDate?: string;
   endDate?: string;
+  
+  // Elective Event specific fields
+  isElective?: boolean;
+  electiveOptions?: {
+    flexibleDates: boolean;
+    dateOptions?: Array<{
+      id: string;
+      date: string;
+      startTime: string;
+      endTime: string;
+      locationId?: string;
+      notes?: string;
+      maxCapacity?: number;
+    }>;
+    noBeltLoop: boolean;
+    casualAttendance: boolean;
+    familyFriendly: boolean;
+    communicationNotes?: string;
+    leadershipNotes?: string;
+  };
 }
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -1101,6 +1121,12 @@ const EventsPage: React.FC = () => {
             </div>
             <div className="text-gray-600">Service Projects</div>
           </div>
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-soft border border-white/50 p-6 text-center">
+            <div className="text-3xl font-bold text-indigo-600 mb-2">
+              {filteredEvents.filter(e => e.category === 'elective' || e.isElective).length}
+            </div>
+            <div className="text-gray-600">Elective Events</div>
+          </div>
         </div>
 
         {/* Admin RSVP Viewer Modal */}
@@ -1175,12 +1201,20 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
     category: event?.category || 'Meeting',
     visibility: event?.visibility || 'public',
     maxCapacity: event?.maxCapacity ? event.maxCapacity.toString() : '',
-    isActive: event?.isActive ?? true
+    isActive: event?.isActive ?? true,
+    // Elective event fields
+    isElective: event?.isElective || false,
+    flexibleDates: event?.electiveOptions?.flexibleDates || false,
+    noBeltLoop: event?.electiveOptions?.noBeltLoop || false,
+    casualAttendance: event?.electiveOptions?.casualAttendance || false,
+    familyFriendly: event?.electiveOptions?.familyFriendly || false,
+    communicationNotes: event?.electiveOptions?.communicationNotes || '',
+    leadershipNotes: event?.electiveOptions?.leadershipNotes || ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const categories = ['Meeting', 'Competition', 'Outdoor', 'Service', 'Social', 'Training'];
+  const categories = ['Meeting', 'Competition', 'Outdoor', 'Service', 'Social', 'Training', 'Elective'];
   const visibilityOptions = [
     { value: 'public', label: 'Public', description: 'Visible to everyone' },
     { value: 'link-only', label: 'Link Only', description: 'Only accessible via direct link' },
@@ -1226,12 +1260,12 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
     e.preventDefault();
     
     if (validateForm()) {
-      const { maxCapacity, locationId, ...formDataWithoutMaxParticipants } = formData;
+      const { maxCapacity, locationId, isElective, flexibleDates, noBeltLoop, casualAttendance, familyFriendly, communicationNotes, leadershipNotes, ...formDataWithoutElectiveFields } = formData;
       const eventData: Partial<Event> = {
         title: formData.title,
         description: formData.description,
         location: formData.location,
-        category: formData.category as 'pack-wide' | 'den' | 'camping' | 'overnight' | 'service',
+        category: formData.category as 'pack-wide' | 'den' | 'camping' | 'overnight' | 'service' | 'elective',
         visibility: formData.visibility,
         isActive: formData.isActive,
         locationId: locationId || formData.location,
@@ -1242,6 +1276,19 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
       
       if (maxCapacity && maxCapacity.trim() !== '' && !isNaN(parseInt(maxCapacity))) {
         eventData.maxCapacity = parseInt(maxCapacity);
+      }
+
+      // Add elective event data if this is an elective event
+      if (formData.category === 'Elective' && isElective) {
+        eventData.isElective = true;
+        eventData.electiveOptions = {
+          flexibleDates,
+          noBeltLoop,
+          casualAttendance,
+          familyFriendly,
+          communicationNotes: communicationNotes || undefined,
+          leadershipNotes: leadershipNotes || undefined
+        };
       }
       
       onSave(eventData);
@@ -1461,6 +1508,115 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
           </label>
         </div>
       </div>
+
+      {/* Elective Event Options */}
+      {formData.category === 'Elective' && (
+        <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <span className="text-indigo-600 mr-2">⭐</span>
+            Elective Event Options
+          </h3>
+          
+          <div className="space-y-4">
+            {/* Elective Event Toggle */}
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.isElective}
+                onChange={(e) => handleInputChange('isElective', e.target.checked)}
+                className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+              />
+              <span className="ml-2 text-sm font-medium text-gray-700">
+                This is an elective event (optional attendance)
+              </span>
+            </div>
+
+            {formData.isElective && (
+              <div className="space-y-4 pl-6 border-l-2 border-indigo-200">
+                {/* Flexible Dates */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.flexibleDates}
+                    onChange={(e) => handleInputChange('flexibleDates', e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">
+                    Offer flexible date options
+                  </span>
+                </div>
+
+                {/* No Belt Loop */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.noBeltLoop}
+                    onChange={(e) => handleInputChange('noBeltLoop', e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">
+                    This event does not count toward belt loops
+                  </span>
+                </div>
+
+                {/* Casual Attendance */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.casualAttendance}
+                    onChange={(e) => handleInputChange('casualAttendance', e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">
+                    Casual attendance - come if you can!
+                  </span>
+                </div>
+
+                {/* Family Friendly */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.familyFriendly}
+                    onChange={(e) => handleInputChange('familyFriendly', e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">
+                    Family-friendly event
+                  </span>
+                </div>
+
+                {/* Communication Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Special Notes for Families
+                  </label>
+                  <textarea
+                    value={formData.communicationNotes}
+                    onChange={(e) => handleInputChange('communicationNotes', e.target.value)}
+                    placeholder="Add any special information families should know about this elective event..."
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/80 backdrop-blur-sm resize-none"
+                    rows={3}
+                  />
+                </div>
+
+                {/* Leadership Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Internal Notes for Leadership
+                  </label>
+                  <textarea
+                    value={formData.leadershipNotes}
+                    onChange={(e) => handleInputChange('leadershipNotes', e.target.value)}
+                    placeholder="Internal notes for leadership about this elective event..."
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/80 backdrop-blur-sm resize-none"
+                    rows={2}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Form Actions */}
       <div className="flex gap-4 justify-end pt-6 border-t border-gray-200">

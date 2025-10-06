@@ -56,6 +56,15 @@ export const createEventSchema = z.object({
   })).default([]),
   visibility: z.string().min(1, 'Visibility is required').default('draft'),
   seasonId: z.string().min(1, 'Season is required'),
+  isElective: z.boolean().optional(),
+  electiveOptions: z.object({
+    flexibleDates: z.boolean().optional(),
+    noBeltLoop: z.boolean().optional(),
+    casualAttendance: z.boolean().optional(),
+    familyFriendly: z.boolean().optional(),
+    communicationNotes: z.string().optional(),
+    leadershipNotes: z.string().optional(),
+  }).optional(),
 }).merge(baseEntitySchema);
 
 export const updateEventSchema = createEventSchema.partial().extend({

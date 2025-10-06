@@ -21,7 +21,7 @@ export interface Season {
 // EVENTS
 // ============================================================================
 
-export type EventCategory = 'pack' | 'den' | 'campout' | 'overnight' | 'service' | 'meeting';
+export type EventCategory = 'pack' | 'den' | 'campout' | 'overnight' | 'service' | 'meeting' | 'elective';
 export type EventVisibility = 'public' | 'link-only';
 
 export interface Event {
@@ -46,6 +46,30 @@ export interface Event {
   status: string; // Added from Cloud Function
   updatedAt: Timestamp;
   createdAt: Timestamp;
+  
+  // Elective Event specific fields
+  isElective?: boolean; // Flag to mark as elective event
+  electiveOptions?: ElectiveEventOptions; // Optional configuration for elective events
+}
+
+export interface ElectiveEventOptions {
+  flexibleDates: boolean; // Whether multiple date options are available
+  dateOptions?: ElectiveDateOption[]; // Array of optional dates
+  noBeltLoop: boolean; // Whether this event doesn't count toward belt loops
+  casualAttendance: boolean; // Whether attendance is more casual/optional
+  familyFriendly: boolean; // Whether families are encouraged to attend
+  communicationNotes?: string; // Special communication notes for families
+  leadershipNotes?: string; // Internal notes for leadership
+}
+
+export interface ElectiveDateOption {
+  id: string;
+  date: Timestamp;
+  startTime: string;
+  endTime: string;
+  locationId?: string; // Optional different location for this date
+  notes?: string; // Special notes for this date option
+  maxCapacity?: number; // Optional capacity limit for this specific date
 }
 
 export interface EventAttachment {

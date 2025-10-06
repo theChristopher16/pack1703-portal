@@ -18,6 +18,13 @@ interface RSVPFormProps {
   onSuccess?: (data: RSVPData) => void;
   onError?: (error: string) => void;
   className?: string;
+  // Elective event specific props
+  isElective?: boolean;
+  electiveOptions?: {
+    casualAttendance?: boolean;
+    familyFriendly?: boolean;
+    noBeltLoop?: boolean;
+  };
 }
 
 interface RSVPData {
@@ -52,7 +59,9 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
   rsvpCountLoading = false,
   onSuccess,
   onError,
-  className = ''
+  className = '',
+  isElective = false,
+  electiveOptions
 }) => {
   const { state } = useAdmin();
   const analytics = useAnalytics();
@@ -455,9 +464,19 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
           </div>
           <div>
             <h3 className="text-xl font-display font-semibold">
-              <span className="text-rainbow-animated">RSVP for Event</span>
+              <span className="text-rainbow-animated">
+                {isElective && electiveOptions?.casualAttendance 
+                  ? 'Let Us Know You\'re Coming!' 
+                  : 'RSVP for Event'
+                }
+              </span>
             </h3>
             <p className="text-gray-600">{eventTitle}</p>
+            {isElective && electiveOptions?.casualAttendance && (
+              <p className="text-sm text-indigo-600 mt-1">
+                ⭐ This is an elective event - come if you can!
+              </p>
+            )}
           </div>
         </div>
         
@@ -723,12 +742,12 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
             {isSubmitting ? (
               <>
                 <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-                Submitting RSVP...
+                {isElective && electiveOptions?.casualAttendance ? 'Letting us know...' : 'Submitting RSVP...'}
               </>
             ) : (
               <>
                 <CheckCircle className="w-5 h-5 mr-3" />
-                Submit RSVP
+                {isElective && electiveOptions?.casualAttendance ? 'Let Us Know You\'re Coming!' : 'Submit RSVP'}
               </>
             )}
           </button>

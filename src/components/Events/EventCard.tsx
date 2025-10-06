@@ -13,7 +13,7 @@ interface Event {
     address: string;
     coordinates?: { lat: number; lng: number };
   };
-  category: 'pack-wide' | 'den' | 'camping' | 'overnight' | 'service';
+  category: 'pack-wide' | 'den' | 'camping' | 'overnight' | 'service' | 'elective';
   denTags: string[];
   maxCapacity: number;
   currentRSVPs: number;
@@ -28,6 +28,25 @@ interface Event {
     url: string;
     type: 'pdf' | 'image';
   }>;
+  // Elective Event specific fields
+  isElective?: boolean;
+  electiveOptions?: {
+    flexibleDates: boolean;
+    dateOptions?: Array<{
+      id: string;
+      date: string;
+      startTime: string;
+      endTime: string;
+      locationId?: string;
+      notes?: string;
+      maxCapacity?: number;
+    }>;
+    noBeltLoop: boolean;
+    casualAttendance: boolean;
+    familyFriendly: boolean;
+    communicationNotes?: string;
+    leadershipNotes?: string;
+  };
 }
 
 interface EventCardProps {
@@ -62,6 +81,7 @@ const EventCard: React.FC<EventCardProps> = ({
       case 'camping': return <Tent className="w-4 h-4" />;
       case 'overnight': return <MountainSnow className="w-4 h-4" />;
       case 'service': return <Heart className="w-4 h-4" />;
+      case 'elective': return <Calendar className="w-4 h-4" />;
       default: return <Users className="w-4 h-4" />;
     }
   };
@@ -72,6 +92,7 @@ const EventCard: React.FC<EventCardProps> = ({
       case 'overnight': return 'bg-purple-100 text-purple-700 border-purple-200';
       case 'service': return 'bg-green-100 text-green-700 border-green-200';
       case 'den': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'elective': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
       default: return 'bg-primary-100 text-primary-700 border-primary-200';
     }
   };
@@ -83,6 +104,7 @@ const EventCard: React.FC<EventCardProps> = ({
       case 'camping': return 'Camping';
       case 'overnight': return 'Overnight';
       case 'service': return 'Service';
+      case 'elective': return 'Elective Event';
       default: return category;
     }
   };
@@ -132,6 +154,26 @@ const EventCard: React.FC<EventCardProps> = ({
             {event.requiresPermission && (
               <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full border border-yellow-200">
                 Permission Required
+              </span>
+            )}
+            {event.isElective && (
+              <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full border border-indigo-200 font-medium">
+                ⭐ Elective Event
+              </span>
+            )}
+            {event.electiveOptions?.noBeltLoop && (
+              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full border border-gray-200">
+                No Belt Loop
+              </span>
+            )}
+            {event.electiveOptions?.familyFriendly && (
+              <span className="px-2 py-1 bg-pink-100 text-pink-700 text-xs rounded-full border border-pink-200">
+                👨‍👩‍👧‍👦 Family Friendly
+              </span>
+            )}
+            {event.electiveOptions?.flexibleDates && (
+              <span className="px-2 py-1 bg-teal-100 text-teal-700 text-xs rounded-full border border-teal-200">
+                📅 Flexible Dates
               </span>
             )}
           </div>
@@ -225,6 +267,79 @@ const EventCard: React.FC<EventCardProps> = ({
       {/* Expanded Content */}
       {isExpanded && (
         <div className="px-6 pb-4 border-t border-gray-100">
+          {/* Elective Event Special Information */}
+          {event.isElective && event.electiveOptions && (
+            <div className="mb-6 p-4 bg-indigo-50 rounded-xl border border-indigo-200">
+              <h4 className="font-semibold text-indigo-900 mb-3 flex items-center">
+                <span className="text-lg mr-2">⭐</span>
+                Elective Event Information
+              </h4>
+              
+              {event.electiveOptions.communicationNotes && (
+                <div className="mb-3">
+                  <p className="text-sm text-indigo-800 bg-white/70 p-3 rounded-lg border border-indigo-100">
+                    <strong>For Families:</strong> {event.electiveOptions.communicationNotes}
+                  </p>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                {event.electiveOptions.noBeltLoop && (
+                  <div className="flex items-center text-indigo-700">
+                    <span className="mr-2">ℹ️</span>
+                    <span>This event does not count toward belt loops</span>
+                  </div>
+                )}
+                {event.electiveOptions.casualAttendance && (
+                  <div className="flex items-center text-indigo-700">
+                    <span className="mr-2">😊</span>
+                    <span>Casual attendance - come if you can!</span>
+                  </div>
+                )}
+                {event.electiveOptions.familyFriendly && (
+                  <div className="flex items-center text-indigo-700">
+                    <span className="mr-2">👨‍👩‍👧‍👦</span>
+                    <span>Families are welcome and encouraged</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Flexible Date Options */}
+          {event.electiveOptions?.flexibleDates && event.electiveOptions.dateOptions && event.electiveOptions.dateOptions.length > 0 && (
+            <div className="mb-6 p-4 bg-teal-50 rounded-xl border border-teal-200">
+              <h4 className="font-semibold text-teal-900 mb-3 flex items-center">
+                <span className="text-lg mr-2">📅</span>
+                Available Date Options
+              </h4>
+              <div className="space-y-3">
+                {event.electiveOptions.dateOptions.map((option, index) => (
+                  <div key={option.id || index} className="bg-white/70 p-3 rounded-lg border border-teal-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-medium text-teal-800">
+                        {formatDate(option.date)}
+                      </div>
+                      {option.maxCapacity && (
+                        <span className="text-xs text-teal-600 bg-teal-100 px-2 py-1 rounded-full">
+                          Max {option.maxCapacity} people
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-teal-700">
+                      {formatTime(option.startTime)} - {formatTime(option.endTime)}
+                    </div>
+                    {option.notes && (
+                      <div className="text-sm text-teal-600 mt-1 italic">
+                        {option.notes}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Packing List */}
           {event.packingList && event.packingList.length > 0 && (
             <div className="mb-4">
@@ -304,11 +419,16 @@ const EventCard: React.FC<EventCardProps> = ({
             onClick={() => onRSVP(event.id)}
             className={`flex-1 px-4 py-2 font-medium rounded-xl transition-all duration-200 transform hover:scale-105 ${
               isAuthenticated 
-                ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 shadow-glow-primary/50'
+                ? event.isElective && event.electiveOptions?.casualAttendance
+                  ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white hover:from-indigo-600 hover:to-indigo-700 shadow-glow-indigo/50'
+                  : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 shadow-glow-primary/50'
                 : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-gray-500 hover:to-gray-600 shadow-glow-gray/50'
             }`}
           >
-            {isAuthenticated ? 'RSVP Now' : 'Login to RSVP'}
+            {isAuthenticated 
+              ? (event.isElective && event.electiveOptions?.casualAttendance ? 'Let Us Know You\'re Coming!' : 'RSVP Now')
+              : 'Login to RSVP'
+            }
           </button>
           
           <button

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, Eye, EyeOff, Shield, UserPlus, Key } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { authService } from '../../services/authService';
 import SocialLogin from './SocialLogin';
 import { useRecaptcha } from '../../hooks/useRecaptcha';
@@ -11,6 +12,7 @@ interface LoginModalProps {
 }
 
 const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -343,11 +345,11 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
             <div className="mt-6 text-center">
               <p className="text-xs text-gray-500 mb-4">
                 By signing in, you agree to our{' '}
-                <a href="#" onClick={(e)=>{e.preventDefault(); window.location.href = `${window.location.pathname.split('/')[1] ? '/' + window.location.pathname.split('/')[1] : ''}/privacy`;}} className="text-primary-600 hover:text-primary-700 font-medium">
+                <a href="#" onClick={(e)=>{e.preventDefault(); navigate('/privacy');}} className="text-primary-600 hover:text-primary-700 font-medium">
                   Privacy Policy
                 </a>{' '}
                 and{' '}
-                <a href="#" onClick={(e)=>{e.preventDefault(); window.location.href = `${window.location.pathname.split('/')[1] ? '/' + window.location.pathname.split('/')[1] : ''}/terms`;}} className="text-primary-600 hover:text-primary-700 font-medium">
+                <a href="#" onClick={(e)=>{e.preventDefault(); navigate('/terms');}} className="text-primary-600 hover:text-primary-700 font-medium">
                   Terms of Service
                 </a>
               </p>

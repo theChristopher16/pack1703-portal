@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { authService, SocialProvider } from '../../services/authService';
 import { 
   Mail,
@@ -23,6 +24,7 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
   className = '',
   inviteEmail = ''
 }) => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState<SocialProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -233,11 +235,11 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
         <div className="text-center">
           <p className="text-xs text-gray-500">
             By continuing, you agree to our{' '}
-            <a href="/terms" className="text-blue-600 hover:text-blue-500 underline">
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/terms'); }} className="text-blue-600 hover:text-blue-500 underline">
               Terms of Service
             </a>{' '}
             and{' '}
-            <a href="/privacy" className="text-blue-600 hover:text-blue-500 underline">
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/privacy'); }} className="text-blue-600 hover:text-blue-500 underline">
               Privacy Policy
             </a>
           </p>

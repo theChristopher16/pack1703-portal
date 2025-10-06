@@ -290,7 +290,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   ];
 
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    const prefixedPath = prefixPath(path);
+    return location.pathname === prefixedPath || location.pathname === path;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 flex flex-col">
@@ -323,7 +326,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     key={item.name}
                     onClick={() => {
                       // console.log('Main toolbar navigation clicked:', item.href);
-                      window.location.href = item.href;
+                      handleNavigation(item.href);
                     }}
                     className={`px-2 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
                       isActive(item.href)
@@ -352,7 +355,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     key={item.name}
                     onClick={() => {
                       // console.log('Medium toolbar navigation clicked:', item.href);
-                      window.location.href = item.href;
+                      handleNavigation(item.href);
                     }}
                     className={`px-3 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
                       isActive(item.href)
@@ -419,7 +422,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    navigate(item.href);
+                                    handleNavigation(item.href);
                                     setIsDropdownOpen(false);
                                   }}
                                   className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg cursor-pointer ${

@@ -71,7 +71,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       // Global (non-tenant) routes
       const globalPrefixes = ['/reset-password', '/password-setup', '/join', '/root-setup'];
       if (globalPrefixes.some(p => path.startsWith(p))) return path;
-      const currentSlug = cfg?.slug || (typeof window !== 'undefined' ? (window.location.pathname.split('/')[1] || '') : '');
+      
+      // Get tenant slug from config or default to pack-1703
+      let currentSlug = cfg?.slug || 'pack-1703';
+      
+      // If we're on a legacy URL, use the default tenant slug
+      if (typeof window !== 'undefined') {
+        const pathSegments = window.location.pathname.split('/');
+        const firstSegment = pathSegments[1];
+        
+        // If the first segment is a known legacy route, use default tenant
+        const legacyRoutes = ['events', 'home', 'announcements', 'locations', 'volunteer', 'resources', 'profile', 'admin'];
+        if (legacyRoutes.includes(firstSegment)) {
+          currentSlug = 'pack-1703';
+        } else if (firstSegment && firstSegment !== 'multi-tenant') {
+          // If it's a valid tenant slug, use it
+          currentSlug = firstSegment;
+        }
+      }
+      
       if (!currentSlug) return path; // fallback to original
       if (path.startsWith(`/${currentSlug}/`) || path === `/${currentSlug}`) return path;
       return `/${currentSlug}${path}`;

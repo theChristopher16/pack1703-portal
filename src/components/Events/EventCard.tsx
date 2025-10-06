@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, Clock, Users, Tent, MountainSnow, Heart, Share2, Download, ExternalLink, Edit, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Tent, MountainSnow, Heart, Share2, Download, ExternalLink, Edit, Trash2, FileText } from 'lucide-react';
 import WeatherForecastComponent from '../Weather/WeatherForecast';
+import EventReportExport from './EventReportExport';
+import { useAdmin } from '../../contexts/AdminContext';
 
 interface Event {
   id: string;
@@ -75,6 +77,35 @@ const EventCard: React.FC<EventCardProps> = ({
   rsvpCountLoading = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [rsvpData, setRsvpData] = useState<any[]>([]);
+  const [loadingRSVPs, setLoadingRSVPs] = useState(false);
+  const { state } = useAdmin();
+
+  // Check if user can export (den leaders and up)
+  const canExport = state.currentUser?.role && ['moderator', 'content-admin', 'super-admin'].includes(state.currentUser.role);
+
+  const loadRSVPData = async () => {
+    if (!canExport) return;
+    
+    setLoadingRSVPs(true);
+    try {
+      const { getFunctions, httpsCallable } = await import('firebase/functions');
+      const functions = getFunctions();
+      const getRSVPData = httpsCallable(functions, 'getRSVPData');
+      
+      const result = await getRSVPData({ eventId: event.id });
+      const data = result.data as any;
+      if (data.success) {
+        setRsvpData(data.rsvps);
+        setShowExportModal(true);
+      }
+    } catch (error) {
+      console.error('Error loading RSVP data:', error);
+    } finally {
+      setLoadingRSVPs(false);
+    }
+  };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -474,6 +505,26 @@ const EventCard: React.FC<EventCardProps> = ({
               </button>
             )}
 
+            {/* Export Report Button - Den Leaders and up */}
+            {canExport && (
+              <button
+                onClick={loadRSVPData}
+                disabled={loadingRSVPs}
+                className="flex items-center space-x-2 text-sm text-green-600 hover:text-green-700 transition-colors duration-200 disabled:opacity-50"
+                title="Export Event Report (Den Leaders and up)"
+              >
+                {loadingRSVPs ? (
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <FileText className="w-4 h-4" />
+                )}
+                <span>{loadingRSVPs ? 'Loading...' : 'Export Report'}</span>
+              </button>
+            )}
+
             {/* Admin Edit/Delete Buttons */}
             {isAdmin && (
               <>
@@ -520,6 +571,25 @@ const EventCard: React.FC<EventCardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <EventReportExport
+          event={{
+            id: event.id,
+            title: event.title,
+            startDate: event.date,
+            endDate: event.date,
+            location: typeof event.location === 'object' ? event.location.name : event.location,
+            description: event.description,
+            category: event.category,
+            capacity: event.maxCapacity,
+            currentRSVPs: event.currentRSVPs
+          }}
+          rsvps={rsvpData}
+          onClose={() => setShowExportModal(false)}
+        />
+      )}
     </div>
   );
 };

@@ -136,6 +136,36 @@ function App() {
                 <Route path="/password-setup" element={<PasswordSetupPage />} />
                 <Route path="/join/:inviteId" element={<JoinPage />} />
                 
+                {/* Legacy Routes (redirect to tenant-scoped) */}
+                <Route path="/events" element={<Navigate to="/pack-1703/events" replace />} />
+                <Route path="/home" element={<Navigate to="/pack-1703/home" replace />} />
+                <Route path="/announcements" element={<Navigate to="/pack-1703/announcements" replace />} />
+                <Route path="/locations" element={<Navigate to="/pack-1703/locations" replace />} />
+                <Route path="/volunteer" element={<Navigate to="/pack-1703/volunteer" replace />} />
+                <Route path="/resources" element={<Navigate to="/pack-1703/resources" replace />} />
+                <Route path="/profile" element={<Navigate to="/pack-1703/profile" replace />} />
+                <Route path="/admin" element={<Navigate to="/pack-1703/admin" replace />} />
+                <Route path="/admin/users" element={<Navigate to="/pack-1703/admin/users" replace />} />
+                <Route path="/admin/events" element={<Navigate to="/pack-1703/admin/events" replace />} />
+                <Route path="/admin/locations" element={<Navigate to="/pack-1703/admin/locations" replace />} />
+                <Route path="/admin/volunteer" element={<Navigate to="/pack-1703/admin/volunteer" replace />} />
+                <Route path="/admin/analytics" element={<Navigate to="/pack-1703/admin/analytics" replace />} />
+                <Route path="/admin/finances" element={<Navigate to="/pack-1703/admin/finances" replace />} />
+                <Route path="/admin/fundraising" element={<Navigate to="/pack-1703/admin/fundraising" replace />} />
+                <Route path="/admin/reminders" element={<Navigate to="/pack-1703/admin/reminders" replace />} />
+                <Route path="/admin/seasons" element={<Navigate to="/pack-1703/admin/seasons" replace />} />
+                <Route path="/admin/settings" element={<Navigate to="/pack-1703/admin/settings" replace />} />
+                <Route path="/admin/ai" element={<Navigate to="/pack-1703/admin/ai" replace />} />
+                <Route path="/admin/cost-management" element={<Navigate to="/pack-1703/admin/cost-management" replace />} />
+                <Route path="/admin/system" element={<Navigate to="/pack-1703/admin/system" replace />} />
+                <Route path="/admin/soc" element={<Navigate to="/pack-1703/admin/soc" replace />} />
+                <Route path="/admin/root-setup" element={<Navigate to="/pack-1703/admin/root-setup" replace />} />
+                <Route path="/forms-demo" element={<Navigate to="/pack-1703/forms-demo" replace />} />
+                <Route path="/cloud-functions-test" element={<Navigate to="/pack-1703/cloud-functions-test" replace />} />
+                
+                {/* Root redirect to tenant-scoped home */}
+                <Route path="/" element={<Navigate to="/pack-1703/home" replace />} />
+                
                 {/* Protected Tenant-Scoped Routes (authentication required) */}
                 <Route path="/:tenantSlug/*" element={
                   <AuthGuard>

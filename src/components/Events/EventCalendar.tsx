@@ -24,7 +24,7 @@ interface Event {
     address: string;
     coordinates?: { lat: number; lng: number };
   };
-  category: 'pack-wide' | 'den' | 'camping' | 'overnight' | 'service';
+  category: 'pack-wide' | 'den' | 'camping' | 'overnight' | 'service' | 'elective';
   denTags: string[];
   maxCapacity: number;
   currentRSVPs: number;
@@ -39,6 +39,25 @@ interface Event {
     url: string;
     type: 'pdf' | 'image';
   }>;
+  // Elective Event specific fields
+  isElective?: boolean;
+  electiveOptions?: {
+    flexibleDates: boolean;
+    dateOptions?: Array<{
+      id: string;
+      date: string;
+      startTime: string;
+      endTime: string;
+      locationId?: string;
+      notes?: string;
+      maxCapacity?: number;
+    }>;
+    noBeltLoop: boolean;
+    casualAttendance: boolean;
+    familyFriendly: boolean;
+    communicationNotes?: string;
+    leadershipNotes?: string;
+  };
 }
 
 interface EventCalendarProps {

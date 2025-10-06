@@ -24,6 +24,9 @@
       "hosting": {
         "pack1703-portal": [
           "pack1703-portal"
+        ],
+        "sfpack1703": [
+          "sfpack1703"
         ]
       }
     }

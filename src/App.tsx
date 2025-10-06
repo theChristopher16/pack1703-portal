@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import configService from './services/configService';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './contexts/ToastContext';
@@ -56,6 +56,12 @@ import SystemMonitor from './components/Admin/SystemMonitor';
 import { AdminProvider } from './contexts/AdminContext';
 import { MultiTenantProvider } from './contexts/MultiTenantContext';
 import TenantProvider from './contexts/TenantContext';
+
+// Legacy redirect component for event details
+const LegacyEventRedirect: React.FC = () => {
+  const { eventId } = useParams<{ eventId: string }>();
+  return <Navigate to={`/pack-1703/events/${eventId}`} replace />;
+};
 
 function App() {
   useEffect(() => {
@@ -138,6 +144,7 @@ function App() {
                 
                 {/* Legacy Routes (redirect to tenant-scoped) */}
                 <Route path="/events" element={<Navigate to="/pack-1703/events" replace />} />
+                <Route path="/events/:eventId" element={<LegacyEventRedirect />} />
                 <Route path="/home" element={<Navigate to="/pack-1703/home" replace />} />
                 <Route path="/announcements" element={<Navigate to="/pack-1703/announcements" replace />} />
                 <Route path="/locations" element={<Navigate to="/pack-1703/locations" replace />} />

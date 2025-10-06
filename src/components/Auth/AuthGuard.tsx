@@ -217,11 +217,26 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   // User is authenticated
   const role = state.currentUser?.role as any;
   const isSuper = role === 'super_admin' || role === 'root' || role === 'super-admin';
-  // Only redirect after login when landing on root
-  if (isSuper && location.pathname === '/') {
-    const defaultTenantSlug = localStorage.getItem('defaultTenantSlug');
-    return <Navigate to={defaultTenantSlug ? `/${defaultTenantSlug}/` : '/multi-tenant'} replace />;
+  
+  // Handle super admin redirects
+  if (isSuper) {
+    // If landing on root, redirect to default tenant or multi-tenant
+    if (location.pathname === '/') {
+      const defaultTenantSlug = localStorage.getItem('defaultTenantSlug');
+      return <Navigate to={defaultTenantSlug ? `/${defaultTenantSlug}/` : '/multi-tenant'} replace />;
+    }
+    
+    // If accessing a tenant-scoped route but not in the right context, redirect to multi-tenant
+    const pathSegments = location.pathname.split('/');
+    if (pathSegments.length > 1 && pathSegments[1] && pathSegments[1] !== 'multi-tenant') {
+      // Check if this is a valid tenant slug or if we should redirect to multi-tenant
+      const tenantSlug = pathSegments[1];
+      if (tenantSlug !== 'pack-1703' && tenantSlug !== 'reset-password' && tenantSlug !== 'password-setup' && tenantSlug !== 'join') {
+        return <Navigate to="/multi-tenant" replace />;
+      }
+    }
   }
+  
   return <>{children}</>;
 };
 

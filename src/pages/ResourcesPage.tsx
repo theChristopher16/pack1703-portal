@@ -45,6 +45,14 @@ const ResourcesPage: React.FC = () => {
     try {
       setLoading(true);
       const resourcesData = await resourceService.getResourcesWithLikeStatus({ isActive: true });
+      console.log('🔍 Loaded resources:', resourcesData);
+      resourcesData.forEach((resource, index) => {
+        console.log(`🔍 Resource ${index}:`, {
+          title: resource.title,
+          url: resource.url,
+          hasUrl: !!resource.url
+        });
+      });
       setResources(resourcesData);
     } catch (error) {
       console.error('Error loading resources:', error);
@@ -134,18 +142,28 @@ const ResourcesPage: React.FC = () => {
   });
 
   const handleDownload = async (resource: Resource) => {
+    console.log('🔍 Download clicked for resource:', resource);
+    console.log('🔍 Resource URL:', resource.url);
+    
     if (resource.url) {
       try {
+        console.log('🔍 Incrementing download count...');
         // Increment download count
         await resourceService.incrementDownloadCount(resource.id);
+        console.log('🔍 Download count incremented successfully');
         
         // Open in new tab
+        console.log('🔍 Opening URL:', resource.url);
         window.open(resource.url, '_blank');
       } catch (error) {
         console.error('Error downloading resource:', error);
         // Still try to open the URL even if count increment fails
+        console.log('🔍 Opening URL despite error:', resource.url);
         window.open(resource.url, '_blank');
       }
+    } else {
+      console.warn('🔍 No URL found for resource:', resource.title);
+      alert('No download URL available for this resource.');
     }
   };
 
@@ -354,14 +372,19 @@ const ResourcesPage: React.FC = () => {
                           >
                             <Heart className={`h-4 w-4 ${resource.isLikedByCurrentUser ? 'fill-current' : ''}`} />
                           </button>
-                          {resource.url && (
+                          {resource.url ? (
                             <button
                               onClick={() => handleDownload(resource)}
-                              className="p-2 text-gray-400 hover:text-primary-600 transition-colors duration-200"
+                              className="p-2 text-gray-400 hover:text-primary-600 transition-colors duration-200 cursor-pointer"
                               title="Download"
+                              style={{ pointerEvents: 'auto', zIndex: 10 }}
                             >
                               <Download className="h-4 w-4" />
                             </button>
+                          ) : (
+                            <div className="p-2 text-gray-300" title="No download available">
+                              <Download className="h-4 w-4" />
+                            </div>
                           )}
                           {canManageResources && (
                             <div className="flex items-center space-x-1">

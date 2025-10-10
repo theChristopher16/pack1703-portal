@@ -157,6 +157,10 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && 
         request.resource.data.userId == request.auth.uid;
+      // Allow admins to update paperwork status
+      allow update: if isAuthenticated() && 
+        request.auth.token.get('role', '') in ['volunteer', 'admin', 'super-admin', 'root'] &&
+        request.resource.data.userId == resource.data.userId; // Can't change the user
     }
     
     // Feedback - users can access their own feedback, den leaders+ can read all and respond

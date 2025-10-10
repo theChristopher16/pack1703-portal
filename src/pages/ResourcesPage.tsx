@@ -12,11 +12,12 @@ import {
   Trash2,
   EyeOff,
   Heart,
-  Upload
+  Upload,
+  Eye
 } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import { Resource, ResourceSubmission, resourceService } from '../services/resourceService';
-import { ResourceManagementModal } from '../components/Resources';
+import { ResourceManagementModal, SubmissionReviewModal } from '../components/Resources';
 
 // Resource interface is now imported from resourceService
 
@@ -34,6 +35,8 @@ const ResourcesPage: React.FC = () => {
   const [submittingTo, setSubmittingTo] = useState<Resource | null>(null);
   const [uploadingSubmission, setUploadingSubmission] = useState(false);
   const [userSubmissions, setUserSubmissions] = useState<ResourceSubmission[]>([]);
+  const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
+  const [reviewingResourceId, setReviewingResourceId] = useState<string | undefined>(undefined);
   
   const { state } = useAdmin();
 
@@ -317,7 +320,17 @@ const ResourcesPage: React.FC = () => {
           
           {/* Add Resource Button */}
           {canManageResources && (
-            <div className="flex justify-center">
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => {
+                  setReviewingResourceId(undefined);
+                  setShowSubmissionsModal(true);
+                }}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                <Eye className="h-5 w-5" />
+                Review Submissions
+              </button>
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all duration-200 shadow-lg hover:shadow-xl"
@@ -476,6 +489,20 @@ const ResourcesPage: React.FC = () => {
                           {/* Admin-only buttons - only show for users who can manage resources */}
                           {canManageResources && (
                             <div className="flex items-center space-x-1">
+                              {resource.allowSubmissions && (
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setReviewingResourceId(resource.id);
+                                    setShowSubmissionsModal(true);
+                                  }}
+                                  className="p-2 text-gray-400 hover:text-purple-600 transition-colors duration-200"
+                                  title="Review submissions"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </button>
+                              )}
                               <button
                                 onClick={() => handleEditResource(resource)}
                                 className="p-2 text-gray-400 hover:text-blue-600 transition-colors duration-200"
@@ -614,6 +641,20 @@ const ResourcesPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Submission Review Modal */}
+        <SubmissionReviewModal
+          isOpen={showSubmissionsModal}
+          onClose={() => {
+            setShowSubmissionsModal(false);
+            setReviewingResourceId(undefined);
+          }}
+          resourceId={reviewingResourceId}
+          onReviewComplete={() => {
+            // Optionally reload resources or show notification
+            console.log('Submission reviewed');
+          }}
+        />
       </div>
     </div>
   );

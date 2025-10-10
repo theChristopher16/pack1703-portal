@@ -54,6 +54,8 @@ export interface ResourceSubmission {
   reviewedByName?: string;
   reviewedAt?: Date;
   reviewNotes?: string;
+  eventId?: string; // Optional: Link to specific event if this is event-related paperwork
+  rsvpId?: string; // Optional: Link to RSVP if this validates event attendance
 }
 
 export type ResourceCategory = 
@@ -623,14 +625,19 @@ class ResourceService {
   }
 
   // Submit a completed form (parents and up)
-  async submitForm(resourceId: string, file: File): Promise<string> {
+  async submitForm(
+    resourceId: string, 
+    file: File, 
+    eventId?: string,
+    rsvpId?: string
+  ): Promise<string> {
     try {
       const user = this.currentUser;
       if (!user) {
         throw new Error('User must be authenticated');
       }
 
-      console.log('📤 Submitting form for resource:', resourceId);
+      console.log('📤 Submitting form for resource:', resourceId, { eventId, rsvpId });
 
       // Get resource to verify it allows submissions
       const resource = await this.getResourceById(resourceId);
@@ -664,6 +671,8 @@ class ResourceService {
         fileName: file.name,
         fileSize: file.size,
         status: 'pending',
+        eventId,
+        rsvpId,
       };
 
       const docRef = await addDoc(collection(db, 'resource-submissions'), submissionData);
@@ -786,7 +795,17 @@ class ResourceService {
         throw new Error('User must be authenticated');
       }
 
+      // Get submission to check if it's linked to an RSVP
       const submissionRef = doc(db, 'resource-submissions', submissionId);
+      const submissionDoc = await getDoc(submissionRef);
+      
+      if (!submissionDoc.exists()) {
+        throw new Error('Submission not found');
+      }
+
+      const submission = submissionDoc.data() as ResourceSubmission;
+
+      // Update submission status
       await updateDoc(submissionRef, {
         status,
         reviewedBy: user.uid,
@@ -796,6 +815,22 @@ class ResourceService {
       });
 
       console.log(`✅ Submission ${submissionId} ${status}`);
+
+      // If approved and linked to an RSVP, update the RSVP with paperwork completion
+      if (status === 'approved' && submission.rsvpId) {
+        try {
+          const rsvpRef = doc(db, 'rsvps', submission.rsvpId);
+          await updateDoc(rsvpRef, {
+            paperworkComplete: true,
+            paperworkCompletedAt: serverTimestamp(),
+            paperworkApprovedBy: user.uid,
+            paperworkApprovedByName: user.displayName || user.email || 'Unknown',
+          });
+          console.log(`✅ Updated RSVP ${submission.rsvpId} with paperwork completion`);
+        } catch (error) {
+          console.warn('Could not update RSVP paperwork status:', error);
+        }
+      }
     } catch (error) {
       console.error('Error reviewing submission:', error);
       throw error;

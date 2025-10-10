@@ -74,6 +74,7 @@ const ResourceManagementModal: React.FC<ResourceManagementModalProps> = ({
     category: (resource?.category || 'guide') as ResourceCategory,
     tags: resource?.tags || [],
     isPublic: resource?.isPublic ?? true,
+    allowSubmissions: resource?.allowSubmissions ?? false,
     url: resource?.url || '',
   });
   
@@ -397,6 +398,26 @@ const ResourceManagementModal: React.FC<ResourceManagementModalProps> = ({
                 Make this resource publicly visible to all users
               </span>
             </label>
+          </div>
+
+          {/* Allow Submissions */}
+          <div>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={formData.allowSubmissions}
+                onChange={(e) => handleInputChange('allowSubmissions', e.target.checked)}
+                className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Allow parents to submit completed forms
+              </span>
+            </label>
+            {formData.allowSubmissions && (
+              <p className="text-xs text-gray-500 mt-1 ml-6">
+                Parents will see an Upload button to submit their completed forms for review
+              </p>
+            )}
           </div>
 
           {/* Submit Buttons */}

@@ -22,6 +22,10 @@ interface RSVPData {
   notes?: string;
   submittedAt: any;
   createdAt: any;
+  paperworkComplete?: boolean;
+  paperworkCompletedAt?: any;
+  paperworkApprovedBy?: string;
+  paperworkApprovedByName?: string;
 }
 
 interface RSVPListViewerProps {
@@ -317,7 +321,18 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
                 <div key={rsvp.id} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{rsvp.familyName}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-gray-900">{rsvp.familyName}</h3>
+                        {rsvp.paperworkComplete && (
+                          <div 
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium"
+                            title={`Paperwork approved by ${rsvp.paperworkApprovedByName || 'Admin'} on ${rsvp.paperworkCompletedAt ? new Date(rsvp.paperworkCompletedAt).toLocaleDateString() : 'N/A'}`}
+                          >
+                            <CheckCircle className="h-3 w-3" />
+                            <span>Paperwork Complete</span>
+                          </div>
+                        )}
+                      </div>
                       <p className="text-gray-600">{rsvp.email}</p>
                       {rsvp.phone && (
                         <p className="text-sm text-gray-500">{rsvp.phone}</p>

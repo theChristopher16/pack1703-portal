@@ -152,27 +152,23 @@ function App() {
                     <Route path="/feedback" element={<Layout><AuthenticatedOnly><FeedbackPage /></AuthenticatedOnly></Layout>} />
                     <Route path="/data-audit" element={<Layout><AuthenticatedOnly><DataAuditPage /></AuthenticatedOnly></Layout>} />
                     
-                    {/* Admin Routes */}
-                    <Route path="/admin" element={<Layout><AdminOnly><AnalyticsDashboard /></AdminOnly></Layout>} />
-                    <Route path="/admin/analytics" element={<Layout><AdminOnly><AnalyticsDashboard /></AdminOnly></Layout>} />
-                    <Route path="/admin/analytics/test" element={<Layout><AdminOnly><AnalyticsTest /></AdminOnly></Layout>} />
-                    <Route path="/admin/locations" element={<Layout><AdminOnly><AdminLocations /></AdminOnly></Layout>} />
-                    <Route path="/admin/lists" element={<Layout><AdminOnly><AdminLists /></AdminOnly></Layout>} />
-                    <Route path="/admin/seasons" element={<Layout><AdminOnly><AdminSeasons /></AdminOnly></Layout>} />
-                    <Route path="/admin/fundraising" element={<Layout><AdminOnly><AdminFundraising /></AdminOnly></Layout>} />
-                    <Route path="/admin/finances" element={<Layout><AdminOnly><AdminFinances /></AdminOnly></Layout>} />
-                    <Route path="/admin/users" element={<Layout><AdminOnly><AdminUsers /></AdminOnly></Layout>} />
-                    <Route path="/admin/reminders" element={<Layout><AdminOnly><AdminReminders /></AdminOnly></Layout>} />
-                    <Route path="/admin/volunteer" element={<Layout><AdminOnly><VolunteerPage /></AdminOnly></Layout>} />
-                    <Route path="/admin/events" element={<Layout><AdminOnly><EventsPage /></AdminOnly></Layout>} />
+                    {/* Admin Routes - Protected by role guards, no /admin prefix needed */}
+                    <Route path="/analytics" element={<Layout><AdminOnly><AnalyticsDashboard /></AdminOnly></Layout>} />
+                    <Route path="/analytics/test" element={<Layout><AdminOnly><AnalyticsTest /></AdminOnly></Layout>} />
+                    <Route path="/users" element={<Layout><AdminOnly><AdminUsers /></AdminOnly></Layout>} />
+                    <Route path="/fundraising" element={<Layout><AdminOnly><AdminFundraising /></AdminOnly></Layout>} />
+                    <Route path="/finances" element={<Layout><AdminOnly><AdminFinances /></AdminOnly></Layout>} />
+                    <Route path="/seasons" element={<Layout><AdminOnly><AdminSeasons /></AdminOnly></Layout>} />
+                    <Route path="/lists" element={<Layout><AdminOnly><AdminLists /></AdminOnly></Layout>} />
+                    <Route path="/reminders" element={<Layout><AdminOnly><AdminReminders /></AdminOnly></Layout>} />
+                    <Route path="/cost-management" element={<Layout><AdminOnly><AdminCostManagement /></AdminOnly></Layout>} />
                     
                     {/* Root-only Routes */}
-                    <Route path="/admin/ai" element={<Layout><RootOnly><AdminAI /></RootOnly></Layout>} />
-                    <Route path="/admin/cost-management" element={<Layout><AdminOnly><AdminCostManagement /></AdminOnly></Layout>} />
-                    <Route path="/admin/settings" element={<Layout><RootOnly><AdminSettings /></RootOnly></Layout>} />
-                    <Route path="/admin/soc" element={<Layout><RootOnly><HackerTab /></RootOnly></Layout>} />
-                    <Route path="/admin/system" element={<Layout><RootOnly><SystemMonitor /></RootOnly></Layout>} />
-                    <Route path="/admin/root-setup" element={<RootAccountSetup />} />
+                    <Route path="/ai" element={<Layout><RootOnly><AdminAI /></RootOnly></Layout>} />
+                    <Route path="/settings" element={<Layout><RootOnly><AdminSettings /></RootOnly></Layout>} />
+                    <Route path="/soc" element={<Layout><RootOnly><HackerTab /></RootOnly></Layout>} />
+                    <Route path="/system" element={<Layout><RootOnly><SystemMonitor /></RootOnly></Layout>} />
+                    <Route path="/root-setup" element={<RootAccountSetup />} />
                     
                     {/* User Profile Route */}
                     <Route path="/profile" element={<Layout><AuthenticatedOnly><UserProfile /></AuthenticatedOnly></Layout>} />

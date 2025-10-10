@@ -336,6 +336,12 @@ service cloud.firestore {
                        request.auth.token.get('role', '') in ['volunteer', 'admin', 'super-admin', 'root'] &&
                        isValidString(resource.data.title, 200) &&
                        isValidString(resource.data.description, 1000);
+      // Allow authenticated users to update download count and like count
+      allow update: if isAuthenticated() && 
+                       request.resource.data.downloadCount is number &&
+                       request.resource.data.likeCount is number &&
+                       request.resource.data.title == resource.data.title &&
+                       request.resource.data.description == resource.data.description;
       allow delete: if isAuthenticated() && 
                        request.auth.token.get('role', '') in ['volunteer', 'admin', 'super-admin', 'root'];
     }

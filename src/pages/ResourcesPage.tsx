@@ -29,6 +29,7 @@ const ResourcesPage: React.FC = () => {
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
   const [showManagementModal, setShowManagementModal] = useState(false);
   const [deletingResource, setDeletingResource] = useState<string | null>(null);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   
   const { state } = useAdmin();
 
@@ -126,6 +127,18 @@ const ResourcesPage: React.FC = () => {
     );
   };
 
+  const toggleDescription = (resourceId: string) => {
+    setExpandedDescriptions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(resourceId)) {
+        newSet.delete(resourceId);
+      } else {
+        newSet.add(resourceId);
+      }
+      return newSet;
+    });
+  };
+
   // Check if user can manage resources
   const canManageResources = state.currentUser && resourceService.canManageResources(state.currentUser);
   
@@ -135,6 +148,18 @@ const ResourcesPage: React.FC = () => {
     userRole: state.currentUser?.role,
     isAdmin: state.currentUser?.isAdmin,
     canManageResources: canManageResources
+  });
+  
+  // Debug current user role for permission testing
+  const isParent = state.currentUser?.role === 'parent';
+  const isAdmin = state.currentUser?.role === 'super-admin' || state.currentUser?.role === 'root';
+  
+  console.log('🔍 User Permission Debug:', {
+    isParent,
+    isAdmin,
+    userRole: state.currentUser?.role,
+    shouldShowAdminButtons: canManageResources,
+    shouldShowDownloadOnly: isParent
   });
 
   const handleDownload = async (resource: Resource) => {
@@ -370,6 +395,7 @@ const ResourcesPage: React.FC = () => {
                           >
                             <Heart className={`h-4 w-4 ${resource.isLikedByCurrentUser ? 'fill-current' : ''}`} />
                           </button>
+                          {/* Download button - visible to all users if file exists */}
                           {resource.url ? (
                             <button
                               onClick={(e) => {
@@ -388,6 +414,8 @@ const ResourcesPage: React.FC = () => {
                               <Download className="h-4 w-4" />
                             </div>
                           )}
+                          
+                          {/* Admin-only buttons - only show for users who can manage resources */}
                           {canManageResources && (
                             <div className="flex items-center space-x-1">
                               <button
@@ -418,9 +446,19 @@ const ResourcesPage: React.FC = () => {
                         {resource.title}
                       </h3>
 
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                        {resource.description}
-                      </p>
+                      <div className="mb-4">
+                        <p className={`text-gray-600 text-sm ${expandedDescriptions.has(resource.id) ? '' : 'line-clamp-3'}`}>
+                          {resource.description}
+                        </p>
+                        {resource.description.length > 150 && (
+                          <button
+                            onClick={() => toggleDescription(resource.id)}
+                            className="text-primary-600 hover:text-primary-700 text-sm font-medium mt-1 transition-colors duration-200"
+                          >
+                            {expandedDescriptions.has(resource.id) ? 'Show less' : 'Read more'}
+                          </button>
+                        )}
+                      </div>
 
                       <div className="flex flex-wrap gap-1 mb-4">
                         {resource.tags.slice(0, 3).map(tag => (

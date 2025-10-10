@@ -68,19 +68,28 @@ export type ResourceCategory =
   | 'national';
 
 class ResourceService {
-  private currentUser = authService.getCurrentUser();
+  private get currentUser() {
+    return authService.getCurrentUser();
+  }
 
   // Check if user can manage resources (den leaders and up, NOT parents)
   canManageResources(user?: any): boolean {
     const userToCheck = user || this.currentUser;
-    if (!userToCheck) return false;
+    if (!userToCheck) {
+      console.log('🚫 No user provided to canManageResources');
+      return false;
+    }
     
-    // Debug logging
+    // Debug logging - show the full user object structure
     console.log('🔍 ResourceService.canManageResources Debug:', {
       userToCheck: userToCheck,
       role: userToCheck.role,
       isAdmin: userToCheck.isAdmin,
-      isDenLeader: userToCheck.isDenLeader
+      isDenLeader: userToCheck.isDenLeader,
+      uid: userToCheck.uid,
+      email: userToCheck.email,
+      displayName: userToCheck.displayName,
+      fullUserObject: userToCheck
     });
     
     // Explicitly exclude parents - only allow den leaders and up
@@ -172,13 +181,17 @@ class ResourceService {
 
   // Create new resource
   async createResource(resourceData: Omit<Resource, 'id' | 'createdAt' | 'lastUpdated' | 'downloadCount'>, file?: File, currentUser?: any): Promise<string> {
+    console.log('🔍 createResource called:', { resourceData, hasFile: !!file, fileName: file?.name });
+    
     const user = currentUser || this.currentUser;
     if (!this.canManageResources(user)) {
+      console.log('🚫 User cannot manage resources');
       throw new Error('Only den leaders and up can create resources');
     }
 
     try {
       if (!user) {
+        console.log('🚫 No authenticated user');
         throw new Error('User must be authenticated');
       }
 
@@ -188,12 +201,24 @@ class ResourceService {
 
       // Upload file if provided
       if (file) {
+        console.log('📁 Uploading file:', {
+          name: file.name,
+          size: file.size,
+          type: file.type
+        });
+        
         const fileExtension = file.name.split('.').pop();
         const storageFileName = `resources/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExtension}`;
+        console.log('📁 Storage path:', storageFileName);
+        
         const fileRef = ref(storage, storageFileName);
         
         await uploadBytes(fileRef, file);
+        console.log('✅ File uploaded to storage');
+        
         fileUrl = await getDownloadURL(fileRef);
+        console.log('🔗 Download URL:', fileUrl);
+        
         fileName = file.name;
         fileSize = file.size;
       }
@@ -212,7 +237,7 @@ class ResourceService {
       // Only add file-related fields if a file was uploaded
       if (file) {
         newResource.fileName = fileName;
-        newResource.fileUrl = fileUrl;
+        newResource.url = fileUrl;  // Changed from fileUrl to url
         newResource.fileSize = fileSize;
       }
 
@@ -226,24 +251,48 @@ class ResourceService {
 
   // Update resource
   async updateResource(id: string, updates: Partial<Resource>, file?: File): Promise<void> {
+    console.log('🔍 updateResource called:', { id, updates, hasFile: !!file, fileName: file?.name });
+    
     if (!this.canManageResources()) {
+      console.log('🚫 User cannot manage resources');
       throw new Error('Only den leaders and up can update resources');
     }
 
     try {
       const user = this.currentUser;
       if (!user) {
+        console.log('🚫 No authenticated user');
         throw new Error('User must be authenticated');
       }
 
       // Get current resource to check if user can modify it
       const currentResource = await this.getResourceById(id);
       if (!currentResource) {
+        console.log('🚫 Resource not found');
         throw new Error('Resource not found');
       }
 
+      console.log('🔍 Current resource:', {
+        id: currentResource.id,
+        title: currentResource.title,
+        createdBy: currentResource.createdBy,
+        url: currentResource.url
+      });
+
       // Only allow creator or admin+ to modify
-      if (currentResource.createdBy !== user.uid && !['admin', 'super-admin', 'super_admin', 'root'].includes(user.role || '')) {
+      const isCreator = currentResource.createdBy === user.uid;
+      const isAdmin = ['admin', 'super-admin', 'super_admin', 'root'].includes(user.role || '');
+      
+      console.log('🔍 Update permission check:', {
+        isCreator,
+        isAdmin,
+        userRole: user.role,
+        creatorId: currentResource.createdBy,
+        userId: user.uid
+      });
+
+      if (!isCreator && !isAdmin) {
+        console.log('🚫 User lacks permission to update');
         throw new Error('Only the creator or admin can modify this resource');
       }
 
@@ -253,11 +302,19 @@ class ResourceService {
 
       // Upload new file if provided
       if (file) {
+        console.log('📁 Uploading new file:', {
+          name: file.name,
+          size: file.size,
+          type: file.type
+        });
+        
         // Delete old file if exists
         if (currentResource.url) {
+          console.log('🗑️ Deleting old file:', currentResource.url);
           try {
             const oldFileRef = ref(storage, currentResource.url);
             await deleteObject(oldFileRef);
+            console.log('✅ Old file deleted');
           } catch (error) {
             console.warn('Could not delete old file:', error);
           }
@@ -265,10 +322,16 @@ class ResourceService {
 
         const fileExtension = file.name.split('.').pop();
         const newFileName = `resources/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExtension}`;
+        console.log('📁 New storage path:', newFileName);
+        
         const fileRef = ref(storage, newFileName);
         
         await uploadBytes(fileRef, file);
+        console.log('✅ New file uploaded to storage');
+        
         fileUrl = await getDownloadURL(fileRef);
+        console.log('🔗 New download URL:', fileUrl);
+        
         fileName = file.name;
         fileSize = file.size;
       }
@@ -297,25 +360,55 @@ class ResourceService {
   }
 
   // Delete resource
-  async deleteResource(id: string): Promise<void> {
-    if (!this.canManageResources()) {
+  async deleteResource(id: string, currentUser?: any): Promise<void> {
+    console.log('🔍 deleteResource called with id:', id);
+    
+    if (!this.canManageResources(currentUser)) {
+      console.log('🚫 User cannot manage resources');
       throw new Error('Only den leaders and up can delete resources');
     }
 
     try {
-      const user = this.currentUser;
+      const user = currentUser || this.currentUser;
       if (!user) {
+        console.log('🚫 No authenticated user');
         throw new Error('User must be authenticated');
       }
+
+      console.log('🔍 Current user:', {
+        uid: user.uid,
+        role: user.role,
+        email: user.email
+      });
 
       // Get current resource to check if user can delete it
       const currentResource = await this.getResourceById(id);
       if (!currentResource) {
+        console.log('🚫 Resource not found');
         throw new Error('Resource not found');
       }
 
+      console.log('🔍 Resource to delete:', {
+        id: currentResource.id,
+        title: currentResource.title,
+        createdBy: currentResource.createdBy,
+        url: currentResource.url
+      });
+
       // Only allow creator or admin+ to delete
-      if (currentResource.createdBy !== user.uid && !['admin', 'super-admin', 'super_admin', 'root'].includes(user.role || '')) {
+      const isCreator = currentResource.createdBy === user.uid;
+      const isAdmin = ['admin', 'super-admin', 'super_admin', 'root'].includes(user.role || '');
+      
+      console.log('🔍 Delete permission check:', {
+        isCreator,
+        isAdmin,
+        userRole: user.role,
+        creatorId: currentResource.createdBy,
+        userId: user.uid
+      });
+
+      if (!isCreator && !isAdmin) {
+        console.log('🚫 User lacks permission to delete');
         throw new Error('Only the creator or admin can delete this resource');
       }
 

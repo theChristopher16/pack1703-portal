@@ -212,7 +212,8 @@ const ResourcesPage: React.FC = () => {
     if (window.confirm(`Are you sure you want to delete "${resource.title}"? This action cannot be undone.`)) {
       try {
         setDeletingResource(resource.id);
-        await resourceService.deleteResource(resource.id);
+        // Pass the current user explicitly to avoid timing issues
+        await resourceService.deleteResource(resource.id, state.currentUser);
         await loadResources(); // Refresh the list
       } catch (error) {
         console.error('Error deleting resource:', error);

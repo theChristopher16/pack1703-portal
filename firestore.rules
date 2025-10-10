@@ -63,13 +63,6 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['root', 'super_admin', 'super-admin'];
     }
     function isSuper() { return isPlatformSuper() || isRootRole() || isSuperViaUserDoc(); }
-    function memberOf(tenantId) {
-      return request.auth != null && exists(/databases/$(database)/documents/tenants/$(tenantId)/memberships/$(request.auth.uid));
-    }
-    function hasRole(tenantId, role) {
-      return request.auth != null &&
-             get(/databases/$(database)/documents/tenants/$(tenantId)/memberships/$(request.auth.uid)).data.roles.hasAny([role]);
-    }
 
     // ============================================================================
     // USER DATA SECURITY - Users can only access their own data
@@ -669,43 +662,6 @@ service cloud.firestore {
     match /organizations/{orgId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
-    }
-
-    // ===== Tenant-scoped data model =====
-    match /tenants/{tenantId} {
-      // Tenant config
-      allow read: if isSuper() || memberOf(tenantId);
-      allow write: if isSuper();
-
-      // Memberships
-      match /memberships/{userId} {
-        allow read: if isSuper() || memberOf(tenantId);
-        allow write: if isSuper() || hasRole(tenantId, 'TENANT_ADMIN');
-      }
-
-      // Events under tenant scope
-      match /events/{eventId} {
-        allow read: if isSuper() || memberOf(tenantId);
-        allow create, update, delete: if isSuper() || hasRole(tenantId, 'LEADER') || hasRole(tenantId, 'TENANT_ADMIN');
-      }
-
-      // Payments: server-only writes
-      match /payments/{pid} {
-        allow read: if isSuper() || memberOf(tenantId);
-        allow write: if false;
-      }
-
-      // Integrations public record
-      match /integrations/{integration} {
-        allow read: if isSuper() || hasRole(tenantId, 'TENANT_ADMIN');
-        allow write: if isSuper() || hasRole(tenantId, 'TENANT_ADMIN');
-      }
-    }
-
-    // Slug mapping collection (safe to read unauthenticated for bootstrapping UI)
-    match /tenant_slugs/{slug} {
-      allow read: if true;
-      allow write: if isSuper();
     }
 
     // Secure tokens store (server-only)

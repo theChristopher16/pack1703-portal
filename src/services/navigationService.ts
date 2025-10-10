@@ -13,7 +13,6 @@ import {
   Cog, 
   Shield,
   Monitor,
-  Building,
   Target,
   List,
   Sprout,
@@ -202,14 +201,6 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
     description: 'Security Operations Center'
-  },
-  {
-    name: 'Multi-Tenant',
-    href: '/multi-tenant',
-    icon: Building,
-    roles: [UserRole.SUPER_ADMIN],
-    category: 'system',
-    description: 'Multi-pack management'
   },
   {
     name: 'System Settings',

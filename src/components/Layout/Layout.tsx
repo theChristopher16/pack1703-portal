@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronDown, Settings, LogOut } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
-import { useTenant } from '../../contexts/TenantContext';
 import { useAdmin } from '../../contexts/AdminContext';
 import { UserRole } from '../../services/authService';
 import { getNavigationByCategory, isAdminOrAbove, isRoot, ALL_NAVIGATION_ITEMS } from '../../services/navigationService';
@@ -30,9 +29,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Get admin context for role-based navigation
   const { state } = useAdmin();
   
-  // Tenant-aware branding
-  const { cfg } = useTenant();
-  const packName = cfg?.name || 'Cub Scout Pack 1703';
+  // Pack branding
+  const packName = 'Cub Scout Pack 1703';
   
   // Track authentication changes from AdminContext
   useEffect(() => {
@@ -64,38 +62,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     // The AdminContext will automatically update the currentUser state
   };
 
-  // Prefix paths with current tenant slug when needed
+  // Return paths as-is (no tenant prefixing needed)
   const prefixPath = (path: string) => {
-    try {
-      if (!path || !path.startsWith('/')) return path;
-      // Global (non-tenant) routes
-      const globalPrefixes = ['/reset-password', '/password-setup', '/join', '/root-setup'];
-      if (globalPrefixes.some(p => path.startsWith(p))) return path;
-      
-      // Get tenant slug from config or default to pack-1703
-      let currentSlug = cfg?.slug || 'pack-1703';
-      
-      // If we're on a legacy URL, use the default tenant slug
-      if (typeof window !== 'undefined') {
-        const pathSegments = window.location.pathname.split('/');
-        const firstSegment = pathSegments[1];
-        
-        // If the first segment is a known legacy route, use default tenant
-        const legacyRoutes = ['events', 'home', 'announcements', 'locations', 'volunteer', 'resources', 'profile', 'admin'];
-        if (legacyRoutes.includes(firstSegment)) {
-          currentSlug = 'pack-1703';
-        } else if (firstSegment && firstSegment !== 'multi-tenant') {
-          // If it's a valid tenant slug, use it
-          currentSlug = firstSegment;
-        }
-      }
-      
-      if (!currentSlug) return path; // fallback to original
-      if (path.startsWith(`/${currentSlug}/`) || path === `/${currentSlug}`) return path;
-      return `/${currentSlug}${path}`;
-    } catch {
-      return path;
-    }
+    return path;
   };
 
   // Handle navigation with error recovery
@@ -144,9 +113,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         !['Events', 'Announcements', 'Locations', 'Volunteer', 'Ecology', 'Home'].includes(item.name)
       );
       
-      // For super-admin users, include SOC Console and Multi-Tenant
+      // For super-admin users, include SOC Console
       const superAdminItems = userRole === UserRole.SUPER_ADMIN ? [
-        ...systemNav.filter(item => ['SOC Console', 'Multi-Tenant'].includes(item.name))
+        ...systemNav.filter(item => ['SOC Console'].includes(item.name))
       ] : [];
       
       return [

@@ -173,14 +173,26 @@ const ResourcesPage: React.FC = () => {
         await resourceService.incrementDownloadCount(resource.id);
         console.log('🔍 Download count incremented successfully');
         
-        // Open in new tab
-        console.log('🔍 Opening URL:', resource.url);
-        window.open(resource.url, '_blank');
+        // Create a temporary anchor element to trigger download (avoids popup blockers)
+        console.log('🔍 Triggering download for:', resource.url);
+        const link = document.createElement('a');
+        link.href = resource.url;
+        link.download = resource.fileName || resource.title;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       } catch (error) {
         console.error('Error downloading resource:', error);
-        // Still try to open the URL even if count increment fails
-        console.log('🔍 Opening URL despite error:', resource.url);
-        window.open(resource.url, '_blank');
+        // Still try to download even if count increment fails
+        console.log('🔍 Downloading despite error:', resource.url);
+        const link = document.createElement('a');
+        link.href = resource.url;
+        link.download = resource.fileName || resource.title;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       }
     } else {
       console.warn('🔍 No URL found for resource:', resource.title);

@@ -69,7 +69,7 @@ service cloud.firestore {
     // ============================================================================
     
     // Users collection - SECURE RULES (root account now exists)
-  match /users/{userId} {
+    match /users/{userId} {
     // Users can read their own data
     allow read: if request.auth != null && request.auth.uid == userId;
     

@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileText, 
   Download, 
-  ExternalLink, 
-  Calendar, 
   MapPin, 
   Users, 
   Shield, 
@@ -12,13 +10,11 @@ import {
   Plus,
   Edit,
   Trash2,
-  MoreVertical,
-  Eye,
   EyeOff,
   Heart
 } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
-import { Resource, ResourceCategory, resourceService } from '../services/resourceService';
+import { Resource, resourceService } from '../services/resourceService';
 import { ResourceManagementModal } from '../components/Resources';
 
 // Resource interface is now imported from resourceService
@@ -360,10 +356,12 @@ const ResourcesPage: React.FC = () => {
                               <EyeOff className="h-4 w-4" />
                             </div>
                           )}
-                          {getFileTypeIcon(resource.fileType)}
+                          <div className="p-1" title={`File type: ${resource.fileType || 'unknown'}`}>
+                            {getFileTypeIcon(resource.fileType)}
+                          </div>
                           <button
                             onClick={() => handleLikeToggle(resource)}
-                            className={`p-2 transition-colors duration-200 ${
+                            className={`p-2 transition-colors duration-200 relative z-10 ${
                               resource.isLikedByCurrentUser 
                                 ? 'text-red-600 hover:text-red-700' 
                                 : 'text-gray-400 hover:text-red-600'
@@ -374,10 +372,14 @@ const ResourcesPage: React.FC = () => {
                           </button>
                           {resource.url ? (
                             <button
-                              onClick={() => handleDownload(resource)}
-                              className="p-2 text-gray-400 hover:text-primary-600 transition-colors duration-200 cursor-pointer"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDownload(resource);
+                              }}
+                              className="p-2 text-gray-400 hover:text-primary-600 transition-colors duration-200 cursor-pointer relative z-10"
                               title="Download"
-                              style={{ pointerEvents: 'auto', zIndex: 10 }}
+                              type="button"
                             >
                               <Download className="h-4 w-4" />
                             </button>

@@ -11,10 +11,11 @@ import {
   Edit,
   Trash2,
   EyeOff,
-  Heart
+  Heart,
+  Upload
 } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
-import { Resource, resourceService } from '../services/resourceService';
+import { Resource, ResourceSubmission, resourceService } from '../services/resourceService';
 import { ResourceManagementModal } from '../components/Resources';
 
 // Resource interface is now imported from resourceService
@@ -30,6 +31,9 @@ const ResourcesPage: React.FC = () => {
   const [showManagementModal, setShowManagementModal] = useState(false);
   const [deletingResource, setDeletingResource] = useState<string | null>(null);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const [submittingTo, setSubmittingTo] = useState<Resource | null>(null);
+  const [uploadingSubmission, setUploadingSubmission] = useState(false);
+  const [userSubmissions, setUserSubmissions] = useState<ResourceSubmission[]>([]);
   
   const { state } = useAdmin();
 
@@ -247,6 +251,31 @@ const ResourcesPage: React.FC = () => {
     handleModalClose();
   };
 
+  const handleSubmitForm = async (resource: Resource) => {
+    setSubmittingTo(resource);
+  };
+
+  const handleSubmissionUpload = async (file: File) => {
+    if (!submittingTo) return;
+    
+    try {
+      setUploadingSubmission(true);
+      await resourceService.submitForm(submittingTo.id, file);
+      alert(`Form submitted successfully for "${submittingTo.title}"!`);
+      setSubmittingTo(null);
+      // Reload user submissions
+      if (state.currentUser) {
+        const submissions = await resourceService.getUserSubmissions();
+        setUserSubmissions(submissions);
+      }
+    } catch (error: any) {
+      console.error('Error submitting form:', error);
+      alert(error.message || 'Failed to submit form. Please try again.');
+    } finally {
+      setUploadingSubmission(false);
+    }
+  };
+
   const getCategoryIcon = (categoryId: string) => {
     const category = categories.find(c => c.id === categoryId);
     return category ? category.icon : BookOpen;
@@ -428,6 +457,22 @@ const ResourcesPage: React.FC = () => {
                             </div>
                           )}
                           
+                          {/* Upload button - visible to authenticated users if resource allows submissions */}
+                          {resource.allowSubmissions && state.currentUser && (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleSubmitForm(resource);
+                              }}
+                              className="p-2 text-gray-400 hover:text-green-600 transition-colors duration-200 cursor-pointer relative z-10"
+                              title="Submit your completed form"
+                              type="button"
+                            >
+                              <Upload className="h-4 w-4" />
+                            </button>
+                          )}
+                          
                           {/* Admin-only buttons - only show for users who can manage resources */}
                           {canManageResources && (
                             <div className="flex items-center space-x-1">
@@ -525,6 +570,50 @@ const ResourcesPage: React.FC = () => {
           resource={editingResource || undefined}
           mode="edit"
         />
+
+        {/* Submission Modal */}
+        {submittingTo && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                Submit Completed Form
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Upload your completed "{submittingTo.title}" form:
+              </p>
+              
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    handleSubmissionUpload(file);
+                  }
+                }}
+                disabled={uploadingSubmission}
+                className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none hover:bg-gray-100 transition-colors duration-200 p-2"
+              />
+              
+              {uploadingSubmission && (
+                <div className="mt-4 flex items-center justify-center space-x-2 text-primary-600">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-600 border-t-transparent"></div>
+                  <span>Uploading...</span>
+                </div>
+              )}
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setSubmittingTo(null)}
+                  disabled={uploadingSubmission}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

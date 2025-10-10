@@ -35,6 +35,25 @@ export interface Resource {
   downloadCount: number;
   likeCount?: number;
   isLikedByCurrentUser?: boolean; // Client-side only field
+  allowSubmissions?: boolean; // Allow parents to submit completed forms
+}
+
+export interface ResourceSubmission {
+  id: string;
+  resourceId: string;
+  resourceTitle: string;
+  submittedBy: string;
+  submittedByName: string;
+  submittedByEmail: string;
+  submittedAt: Date;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewedBy?: string;
+  reviewedByName?: string;
+  reviewedAt?: Date;
+  reviewNotes?: string;
 }
 
 export type ResourceCategory = 
@@ -599,6 +618,228 @@ class ResourceService {
       };
     } catch (error) {
       console.error('Error getting resource stats:', error);
+      throw error;
+    }
+  }
+
+  // Submit a completed form (parents and up)
+  async submitForm(resourceId: string, file: File): Promise<string> {
+    try {
+      const user = this.currentUser;
+      if (!user) {
+        throw new Error('User must be authenticated');
+      }
+
+      console.log('📤 Submitting form for resource:', resourceId);
+
+      // Get resource to verify it allows submissions
+      const resource = await this.getResourceById(resourceId);
+      if (!resource) {
+        throw new Error('Resource not found');
+      }
+
+      if (!resource.allowSubmissions) {
+        throw new Error('This resource does not accept submissions');
+      }
+
+      // Upload file to storage
+      const fileExtension = file.name.split('.').pop();
+      const storageFileName = `submissions/${resourceId}/${user.uid}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExtension}`;
+      const fileRef = ref(storage, storageFileName);
+      
+      console.log('📤 Uploading submission file:', storageFileName);
+      await uploadBytes(fileRef, file);
+      const fileUrl = await getDownloadURL(fileRef);
+      console.log('✅ Submission file uploaded:', fileUrl);
+
+      // Create submission document
+      const submissionData: Omit<ResourceSubmission, 'id'> = {
+        resourceId: resource.id,
+        resourceTitle: resource.title,
+        submittedBy: user.uid,
+        submittedByName: user.displayName || user.email || 'Unknown',
+        submittedByEmail: user.email || 'Unknown',
+        submittedAt: serverTimestamp() as any,
+        fileUrl,
+        fileName: file.name,
+        fileSize: file.size,
+        status: 'pending',
+      };
+
+      const docRef = await addDoc(collection(db, 'resource-submissions'), submissionData);
+      console.log('✅ Submission created:', docRef.id);
+      
+      return docRef.id;
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      throw error;
+    }
+  }
+
+  // Get submissions for a resource (admin only)
+  async getResourceSubmissions(resourceId: string): Promise<ResourceSubmission[]> {
+    if (!this.canManageResources()) {
+      throw new Error('Only admins can view submissions');
+    }
+
+    try {
+      const submissionsQuery = query(
+        collection(db, 'resource-submissions'),
+        where('resourceId', '==', resourceId),
+        orderBy('submittedAt', 'desc')
+      );
+
+      const snapshot = await getDocs(submissionsQuery);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        submittedAt: doc.data().submittedAt?.toDate?.() || new Date(doc.data().submittedAt),
+        reviewedAt: doc.data().reviewedAt?.toDate?.() || (doc.data().reviewedAt ? new Date(doc.data().reviewedAt) : undefined),
+      })) as ResourceSubmission[];
+    } catch (error) {
+      console.error('Error getting resource submissions:', error);
+      throw error;
+    }
+  }
+
+  // Get all submissions (admin only)
+  async getAllSubmissions(status?: 'pending' | 'approved' | 'rejected'): Promise<ResourceSubmission[]> {
+    if (!this.canManageResources()) {
+      throw new Error('Only admins can view submissions');
+    }
+
+    try {
+      let submissionsQuery;
+      if (status) {
+        submissionsQuery = query(
+          collection(db, 'resource-submissions'),
+          where('status', '==', status),
+          orderBy('submittedAt', 'desc')
+        );
+      } else {
+        submissionsQuery = query(
+          collection(db, 'resource-submissions'),
+          orderBy('submittedAt', 'desc')
+        );
+      }
+
+      const snapshot = await getDocs(submissionsQuery);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        submittedAt: doc.data().submittedAt?.toDate?.() || new Date(doc.data().submittedAt),
+        reviewedAt: doc.data().reviewedAt?.toDate?.() || (doc.data().reviewedAt ? new Date(doc.data().reviewedAt) : undefined),
+      })) as ResourceSubmission[];
+    } catch (error) {
+      console.error('Error getting all submissions:', error);
+      throw error;
+    }
+  }
+
+  // Get user's own submissions
+  async getUserSubmissions(userId?: string): Promise<ResourceSubmission[]> {
+    try {
+      const user = this.currentUser;
+      if (!user) {
+        throw new Error('User must be authenticated');
+      }
+
+      const targetUserId = userId || user.uid;
+      
+      // Only allow users to view their own submissions unless they're admin
+      if (targetUserId !== user.uid && !this.canManageResources()) {
+        throw new Error('You can only view your own submissions');
+      }
+
+      const submissionsQuery = query(
+        collection(db, 'resource-submissions'),
+        where('submittedBy', '==', targetUserId),
+        orderBy('submittedAt', 'desc')
+      );
+
+      const snapshot = await getDocs(submissionsQuery);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        submittedAt: doc.data().submittedAt?.toDate?.() || new Date(doc.data().submittedAt),
+        reviewedAt: doc.data().reviewedAt?.toDate?.() || (doc.data().reviewedAt ? new Date(doc.data().reviewedAt) : undefined),
+      })) as ResourceSubmission[];
+    } catch (error) {
+      console.error('Error getting user submissions:', error);
+      throw error;
+    }
+  }
+
+  // Review submission (admin only)
+  async reviewSubmission(
+    submissionId: string,
+    status: 'approved' | 'rejected',
+    reviewNotes?: string
+  ): Promise<void> {
+    if (!this.canManageResources()) {
+      throw new Error('Only admins can review submissions');
+    }
+
+    try {
+      const user = this.currentUser;
+      if (!user) {
+        throw new Error('User must be authenticated');
+      }
+
+      const submissionRef = doc(db, 'resource-submissions', submissionId);
+      await updateDoc(submissionRef, {
+        status,
+        reviewedBy: user.uid,
+        reviewedByName: user.displayName || user.email || 'Unknown',
+        reviewedAt: serverTimestamp(),
+        reviewNotes: reviewNotes || '',
+      });
+
+      console.log(`✅ Submission ${submissionId} ${status}`);
+    } catch (error) {
+      console.error('Error reviewing submission:', error);
+      throw error;
+    }
+  }
+
+  // Delete submission
+  async deleteSubmission(submissionId: string): Promise<void> {
+    try {
+      const user = this.currentUser;
+      if (!user) {
+        throw new Error('User must be authenticated');
+      }
+
+      // Get submission to check ownership
+      const submissionRef = doc(db, 'resource-submissions', submissionId);
+      const submissionDoc = await getDoc(submissionRef);
+      
+      if (!submissionDoc.exists()) {
+        throw new Error('Submission not found');
+      }
+
+      const submission = submissionDoc.data() as ResourceSubmission;
+      
+      // Only allow deletion by owner or admin
+      if (submission.submittedBy !== user.uid && !this.canManageResources()) {
+        throw new Error('You can only delete your own submissions');
+      }
+
+      // Delete file from storage
+      if (submission.fileUrl) {
+        try {
+          const fileRef = ref(storage, submission.fileUrl);
+          await deleteObject(fileRef);
+        } catch (error) {
+          console.warn('Could not delete submission file:', error);
+        }
+      }
+
+      // Delete submission document
+      await deleteDoc(submissionRef);
+      console.log('✅ Submission deleted:', submissionId);
+    } catch (error) {
+      console.error('Error deleting submission:', error);
       throw error;
     }
   }

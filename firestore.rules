@@ -366,6 +366,32 @@ service cloud.firestore {
     match /user-resource-likes {
       allow read: if isAuthenticated();
     }
+    
+    // Resource submissions - parents can submit, admins can review
+    match /resource-submissions/{submissionId} {
+      // Users can read their own submissions, admins can read all
+      allow read: if isAuthenticated() && 
+                     (resource.data.submittedBy == request.auth.uid || 
+                      request.auth.token.get('role', '') in ['volunteer', 'admin', 'super-admin', 'root']);
+      // Any authenticated user can create submissions
+      allow create: if isAuthenticated() &&
+                       request.resource.data.submittedBy == request.auth.uid &&
+                       isValidString(request.resource.data.resourceTitle, 200) &&
+                       isValidString(request.resource.data.submittedByName, 100) &&
+                       isValidString(request.resource.data.fileName, 200);
+      // Only admins can update (for reviews)
+      allow update: if isAuthenticated() && 
+                       request.auth.token.get('role', '') in ['volunteer', 'admin', 'super-admin', 'root'];
+      // Users can delete their own submissions, admins can delete any
+      allow delete: if isAuthenticated() && 
+                       (resource.data.submittedBy == request.auth.uid || 
+                        request.auth.token.get('role', '') in ['volunteer', 'admin', 'super-admin', 'root']);
+    }
+    
+    // Allow aggregation queries on resource-submissions
+    match /resource-submissions {
+      allow read: if isAuthenticated();
+    }
 
     // ============================================================================
     

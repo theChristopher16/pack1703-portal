@@ -451,10 +451,10 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                     <button 
                       onClick={() => handleSocialLogin(SocialProvider.GOOGLE)}
                       disabled={isLoading === SocialProvider.GOOGLE}
-                      className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-cloud text-teal hover:bg-moss/5 hover:border-moss rounded-md transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-gray-50 border-2 border-gray-200 text-gray-700 hover:bg-gray-100 hover:border-gray-300 rounded-md transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                     >
                       {isLoading === SocialProvider.GOOGLE ? (
-                        <div className="w-5 h-5 border-2 border-teal border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-5 h-5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
                       ) : (
                         <svg viewBox="0 0 24 24" className="w-5 h-5">
                           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -481,7 +481,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                     {/* Email Sign In */}
                     <button 
                       onClick={handleEmailSignIn}
-                      className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-moss text-white hover:bg-moss-600 rounded-md transition-all duration-200 shadow-sm hover:shadow-md"
+                      className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-moss text-white hover:bg-moss-600 rounded-md transition-all duration-200 shadow-sm hover:shadow-md font-medium"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                         <path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/>
@@ -504,7 +504,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   <p className="text-teal-700 mb-6">Join Pack 1703 and start your scouting journey today!</p>
                   <button
                     onClick={() => setShowAccountRequestModal(true)}
-                    className="w-full text-white py-3 px-6 rounded-md transition-colors font-medium text-lg hover:opacity-90"
+                    className="w-full text-white py-3 px-6 rounded-md transition-all duration-200 font-medium text-lg hover:shadow-md shadow-sm border border-gray-300"
                     style={{ backgroundColor: '#4C6F7A' }}
                   >
                     Request Account Access
@@ -523,7 +523,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   <p className="text-teal-700 mb-6">Reset your password quickly and securely</p>
                   <button
                     onClick={handleOpenResetPassword}
-                    className="w-full text-ink py-3 px-6 rounded-md transition-colors font-medium text-lg hover:opacity-90"
+                    className="w-full text-ink py-3 px-6 rounded-md transition-all duration-200 font-medium text-lg hover:shadow-md shadow-sm border border-gray-300"
                     style={{ backgroundColor: '#F6C945' }}
                   >
                     Reset Password

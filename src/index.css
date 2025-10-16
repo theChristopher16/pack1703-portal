@@ -1195,3 +1195,32 @@ div[class*="bg-white"] p.text-teal-700 {
   color: #4C6F7A !important;
   -webkit-text-fill-color: #4C6F7A !important;
 }
+
+/* ========================================
+   CRITICAL FIX: Button background color overrides
+   ======================================== */
+
+/* Prevent red/pink/blue button backgrounds and ensure proper brand colors */
+button.bg-white,
+button[class*="bg-white"],
+.bg-white button,
+button.text-white {
+  background-color: white !important;
+}
+
+button.bg-moss,
+button[class*="bg-moss"],
+.bg-moss button {
+  background-color: #4C6F7A !important;
+}
+
+/* Fix any button color overrides */
+button.border-cloud,
+button[class*="border-cloud"] {
+  border-color: #E5E7EB !important;
+}
+
+button.text-teal,
+button[class*="text-teal"] {
+  color: #4B9C9C !important;
+}

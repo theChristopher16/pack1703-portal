@@ -144,7 +144,7 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
       provider: SocialProvider.GOOGLE,
       name: 'Google',
       label: 'Sign in with Google (if you have linked your account)',
-      className: 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-sm hover:shadow-md font-medium',
+      className: 'bg-white text-teal hover:bg-moss/5 border border-cloud shadow-sm hover:shadow-md font-medium',
       disabled: isLoading !== null && isLoading !== SocialProvider.GOOGLE
     }
   ];
@@ -154,10 +154,10 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
       <div className={`space-y-4 ${className}`}>
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="bg-teal/10 border border-teal/20 rounded-xl p-4">
             <div className="flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-              <p className="text-sm text-red-600">{error}</p>
+              <AlertCircle className="w-5 h-5 text-teal flex-shrink-0" />
+              <p className="text-sm text-teal">{error}</p>
             </div>
           </div>
         )}
@@ -170,29 +170,29 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
               onClick={() => handleSocialLogin(provider)}
               disabled={disabled}
               className={`
-                w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg font-medium
+                w-full flex items-center justify-center gap-3 px-4 py-3 rounded-md font-medium
                 border transition-all duration-200 transform hover:scale-[1.02]
                 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
                 shadow-sm hover:shadow-md ${buttonClassName}
               `}
             >
-                {isLoading === provider ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <div className="w-5 h-5 flex items-center justify-center">
-                    {provider === SocialProvider.GOOGLE && (
-                      <svg viewBox="0 0 24 24" className="w-5 h-5">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                      </svg>
-                    )}
-                  </div>
-                )}
-                <span className="font-medium">
-                  {isLoading === provider ? `Signing in with ${name}...` : label}
-                </span>
+              {isLoading === provider ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <div className="w-5 h-5 flex items-center justify-center">
+                  {provider === SocialProvider.GOOGLE && (
+                    <svg viewBox="0 0 24 24" className="w-5 h-5">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                  )}
+                </div>
+              )}
+              <span className="font-medium text-sm sm:text-base">
+                {isLoading === provider ? `Signing in with ${name}...` : label}
+              </span>
             </button>
           ))}
         </div>
@@ -202,44 +202,44 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
           <>
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
+                <div className="w-full border-t border-cloud" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">or</span>
+                <span className="px-2 bg-white text-teal-500">or</span>
               </div>
             </div>
 
             {/* Email Option */}
             <button
               onClick={() => setShowEmailModal(true)}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl font-medium
-                bg-white border border-gray-300 text-gray-700
-                hover:bg-gray-50 hover:border-gray-400
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-md font-medium
+                bg-white border border-cloud text-teal
+                hover:bg-moss/5 hover:border-moss
                 transition-all duration-200 transform hover:scale-[1.02]
                 shadow-sm hover:shadow-md"
             >
               <Mail className="w-5 h-5" />
-              <span>Sign in with Email & Password</span>
+              <span className="text-sm sm:text-base">Sign in with Email & Password</span>
             </button>
           </>
         )}
 
         {/* Modern Authentication Notice */}
         <div className="text-center">
-          <p className="text-xs text-gray-500 mb-2">
+          <p className="text-xs text-teal-600 mb-2">
             <strong>Modern Authentication:</strong> We'll try a popup first, then automatically use redirect if needed.
           </p>
         </div>
 
         {/* Privacy Notice */}
         <div className="text-center">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-teal-600">
             By continuing, you agree to our{' '}
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/terms'); }} className="text-blue-600 hover:text-blue-500 underline">
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/terms'); }} className="text-moss hover:text-moss-600 font-medium">
               Terms of Service
             </a>{' '}
             and{' '}
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/privacy'); }} className="text-blue-600 hover:text-blue-500 underline">
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/privacy'); }} className="text-moss hover:text-moss-600 font-medium">
               Privacy Policy
             </a>
           </p>
@@ -249,12 +249,12 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
       {/* Email Sign-In Modal */}
       {showEmailModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+          <div className="bg-white rounded-brand p-6 w-full max-w-md shadow-card">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-gray-900">Sign in with Email</h3>
+              <h3 className="text-xl font-semibold text-ink">Sign in with Email</h3>
               <button
                 onClick={() => setShowEmailModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-teal-400 hover:text-teal-600"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -262,7 +262,7 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
 
             <form onSubmit={handleEmailSignIn} className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="email" className="block text-sm font-medium text-teal-700 mb-1">
                   Email
                 </label>
                 <input
@@ -270,14 +270,14 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
                   id="email"
                   value={emailForm.email}
                   onChange={(e) => setEmailForm({ ...emailForm, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-cloud rounded-md focus:ring-2 focus:ring-moss/20 focus:border-moss transition-colors duration-200"
                   placeholder="Enter your email"
                   required
                 />
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="password" className="block text-sm font-medium text-teal-700 mb-1">
                   Password
                 </label>
                 <input
@@ -285,7 +285,7 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
                   id="password"
                   value={emailForm.password}
                   onChange={(e) => setEmailForm({ ...emailForm, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-cloud rounded-md focus:ring-2 focus:ring-moss/20 focus:border-moss transition-colors duration-200"
                   placeholder="Enter your password"
                   required
                 />
@@ -296,7 +296,7 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
                 <button
                   type="button"
                   onClick={handleOpenResetPassword}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200"
+                  className="text-sm text-moss hover:text-moss-600 font-medium transition-colors duration-200"
                 >
                   Forgot your password?
                 </button>
@@ -305,7 +305,7 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
               <button
                 type="submit"
                 disabled={isSigningIn}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-moss text-white rounded-md font-medium hover:bg-moss-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isSigningIn ? (
                   <>
@@ -320,15 +320,15 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
 
             {/* Reset Password Form */}
             {showResetPassword && (
-              <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <div className="mt-6 p-4 bg-fog rounded-brand border border-cloud">
                 <div className="flex items-center space-x-2 mb-4">
-                  <Key className="w-5 h-5 text-blue-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Reset Password</h3>
+                  <Key className="w-5 h-5 text-moss" />
+                  <h3 className="text-lg font-semibold text-ink">Reset Password</h3>
                 </div>
                 
                 <form onSubmit={handleResetPassword} className="space-y-4">
                   <div>
-                    <label htmlFor="resetEmail" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="resetEmail" className="block text-sm font-medium text-teal-700 mb-2">
                       Email Address
                     </label>
                     <input
@@ -336,7 +336,7 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
                       id="resetEmail"
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-cloud rounded-md focus:ring-2 focus:ring-moss/20 focus:border-moss transition-colors duration-200"
                       placeholder="Enter your email address"
                       required
                     />
@@ -345,8 +345,8 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
                   {resetMessage && (
                     <div className={`p-3 rounded-xl ${
                       resetMessage.includes('sent') 
-                        ? 'bg-green-50 border border-green-200 text-green-600' 
-                        : 'bg-red-50 border border-red-200 text-red-600'
+                        ? 'bg-moss/10 border border-moss/20 text-moss' 
+                        : 'bg-teal/10 border border-teal/20 text-teal'
                     }`}>
                       <p className="text-sm">{resetMessage}</p>
                     </div>
@@ -356,14 +356,14 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
                     <button
                       type="button"
                       onClick={handleBackToLogin}
-                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex-1 px-4 py-2 border border-cloud text-teal bg-white hover:bg-fog transition-colors rounded-md"
                     >
                       Back to Login
                     </button>
                     <button
                       type="submit"
                       disabled={resetLoading}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="flex-1 px-4 py-2 bg-moss text-white rounded-md hover:bg-moss-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       {resetLoading ? 'Sending...' : 'Send Reset Email'}
                     </button>

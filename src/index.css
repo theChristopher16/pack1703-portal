@@ -1292,6 +1292,14 @@ button.bg-white.border.border-cloud {
   color: #4B9C9C !important;
 }
 
+/* Override debug pink background rule specifically for email sign-in button */
+.grid .bg-white button.bg-white,
+.grid .bg-white button[class*="bg-white"],
+.bg-white button.bg-white,
+.bg-white button[class*="bg-white"] {
+  background-color: white !important;
+}
+
 
 /* Fix bright green background behind emoji spans - target the debug CSS rule */
 .bg-white span.text-2xl,

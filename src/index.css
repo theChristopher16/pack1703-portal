@@ -1277,11 +1277,19 @@ h3.text-xl {
 }
 
 /* Ensure no red/pink on buttons */
-button[class*="Sign in"],
+button[class*="Sign in"]:not([class*="bg-white"]),
 button[class*="Request"],
 button[class*="Reset"] {
   background-color: #4C6F7A !important;
   color: white !important;
+}
+
+/* Fix pink background on "Sign in with Email & Password" button */
+button.bg-white[class*="text-teal"],
+button[class*="bg-white"][class*="text-teal"],
+button.bg-white.border.border-cloud {
+  background-color: white !important;
+  color: #4B9C9C !important;
 }
 
 

@@ -304,6 +304,15 @@ body {
     word-spacing: normal !important;
     line-height: normal !important;
   }
+
+  /* IMMEDIATE OVERRIDE for buttons to prevent pink background */
+  .grid .bg-white button,
+  .grid .bg-white button.bg-white,
+  .bg-white button,
+  .bg-white button.bg-white {
+    background-color: white !important;
+    background: white !important;
+  }
   
   /* Custom Scrollbar */
   ::-webkit-scrollbar {
@@ -1298,6 +1307,13 @@ button.bg-white.border.border-cloud {
 .bg-white button.bg-white,
 .bg-white button[class*="bg-white"] {
   background-color: white !important;
+}
+
+/* ULTRA-SPECIFIC override for the persistent pink button issue */
+button.w-full.flex.items-center.justify-center.gap-3.px-4.py-3.rounded-md.font-medium.bg-white.border.border-cloud.text-teal,
+button[class*="w-full"][class*="flex"][class*="items-center"][class*="justify-center"][class*="gap-3"][class*="px-4"][class*="py-3"][class*="rounded-md"][class*="font-medium"][class*="bg-white"][class*="border"][class*="border-cloud"][class*="text-teal"] {
+  background-color: white !important;
+  background: white !important;
 }
 
 

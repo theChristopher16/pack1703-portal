@@ -90,9 +90,19 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
               <h1 className="text-3xl font-display font-bold text-ink mb-2">
                 Welcome to Pack 1703
               </h1>
-              <p className="text-lg text-teal-700">
+              <p className="text-lg text-teal-700 mb-6">
                 Scouting for Every Age - Kindergarten through 5th Grade
               </p>
+              
+              {/* Quick Login Button */}
+              <button
+                onClick={() => document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' })}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-moss to-teal text-white font-semibold rounded-md shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
+              >
+                <span className="text-xl">🔑</span>
+                Already a member? Sign In Here
+                <span className="text-sm opacity-90">↓</span>
+              </button>
             </div>
           </div>
 
@@ -414,7 +424,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
           </div>
 
           {/* Login Section - MOVED TO LAST POSITION */}
-          <div className="bg-gradient-to-br from-moss/10 via-teal/5 to-moss/5 py-16 px-4 sm:px-6 lg:px-8">
+          <div id="login-section" className="bg-gradient-to-br from-moss/10 via-teal/5 to-moss/5 py-16 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-12">
                 <h2 className="text-3xl font-display font-bold text-ink mb-4">

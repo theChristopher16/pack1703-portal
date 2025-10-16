@@ -100,7 +100,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                 className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-moss to-teal text-white font-semibold rounded-md shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
               >
                 <span className="text-xl">🔑</span>
-                Already a member? Sign In Here
+                Have an Account? Sign In or Join
                 <span className="text-sm opacity-90">↓</span>
               </button>
             </div>

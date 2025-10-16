@@ -81,158 +81,22 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     return (
       <>
         <div className="min-h-screen bg-fog">
-          {/* Hero Section - Primary User Actions */}
-          <div className="bg-gradient-to-br from-moss/10 via-teal/5 to-moss/5 py-16 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-12">
-                <div className="mx-auto w-20 h-20 bg-gradient-brand rounded-brand flex items-center justify-center mb-6 shadow-card">
-                  <span className="text-white text-3xl">🏕️</span>
-                </div>
-                <h1 className="text-4xl font-display font-bold text-ink mb-3">
-                  Welcome to Pack 1703
-                </h1>
-                <p className="text-lg text-teal-700 mb-2">
-                  Scouting for Every Age - Kindergarten through 5th Grade
-                </p>
-                <p className="text-teal-600 max-w-3xl mx-auto">
-                  Join our vibrant scouting community where your child will learn life skills, build character, and create lasting friendships through outdoor adventures, community service, and exciting activities.
-                </p>
+          {/* Header Section */}
+          <div className="bg-gradient-to-br from-moss/10 via-teal/5 to-moss/5 py-8 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto text-center">
+              <div className="mx-auto w-16 h-16 bg-gradient-brand rounded-brand flex items-center justify-center mb-4 shadow-card">
+                <span className="text-white text-2xl">🏕️</span>
               </div>
-
-              {/* Primary Action Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                {/* Sign In */}
-                <div className="bg-white rounded-brand shadow-card border border-cloud p-8 text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-6">
-                    <span className="text-white text-2xl">🔑</span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-ink mb-3">Sign In</h3>
-                  <p className="text-teal-700 mb-6">Access your pack activities and connect with the community</p>
-                  
-                  {/* Clean Login Options */}
-                  <div className="space-y-4">
-                    {/* Google Sign In */}
-                    <button 
-                      onClick={() => handleSocialLogin(SocialProvider.GOOGLE)}
-                      disabled={isLoading === SocialProvider.GOOGLE}
-                      className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-cloud text-teal hover:bg-moss/5 hover:border-moss rounded-md transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isLoading === SocialProvider.GOOGLE ? (
-                        <div className="w-5 h-5 border-2 border-teal border-t-transparent rounded-full animate-spin"></div>
-                      ) : (
-                        <svg viewBox="0 0 24 24" className="w-5 h-5">
-                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                        </svg>
-                      )}
-                      <span className="font-medium text-sm">
-                        {isLoading === SocialProvider.GOOGLE ? 'Signing in...' : 'Sign in with Google'}
-                      </span>
-                    </button>
-
-                    {/* Divider */}
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-cloud"></div>
-                      </div>
-                      <div className="relative flex justify-center text-sm">
-                        <span className="px-2 bg-white text-teal-500">or</span>
-                      </div>
-                    </div>
-
-                    {/* Email Sign In */}
-                    <button 
-                      onClick={handleEmailSignIn}
-                      className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-moss text-white hover:bg-moss-600 rounded-md transition-all duration-200 shadow-sm hover:shadow-md"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                        <path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/>
-                        <rect x="2" y="4" width="20" height="16" rx="2"/>
-                      </svg>
-                      <span className="font-medium text-sm">Sign in with Email & Password</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Request Access */}
-                <div className="bg-white rounded-brand shadow-card border border-cloud p-8 text-center">
-                  <div 
-                    className="w-16 h-16 rounded-brand flex items-center justify-center mx-auto mb-6"
-                    style={{ background: 'linear-gradient(135deg, #4C6F7A 0%, #6BAA75 100%)' }}
-                  >
-                    <UserPlus className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-ink mb-3">New Scout Family?</h3>
-                  <p className="text-teal-700 mb-6">Join Pack 1703 and start your scouting journey today!</p>
-                  <button
-                    onClick={() => setShowAccountRequestModal(true)}
-                    className="w-full text-white py-3 px-6 rounded-md transition-colors font-medium text-lg hover:opacity-90"
-                    style={{ backgroundColor: '#4C6F7A' }}
-                  >
-                    Request Account Access
-                  </button>
-                </div>
-
-                {/* Password Reset */}
-                <div className="bg-white rounded-brand shadow-card border border-cloud p-8 text-center">
-                  <div 
-                    className="w-16 h-16 rounded-brand flex items-center justify-center mx-auto mb-6"
-                    style={{ background: 'linear-gradient(135deg, #F6C945 0%, #6BAA75 100%)' }}
-                  >
-                    <Key className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-ink mb-3">Forgot Password?</h3>
-                  <p className="text-teal-700 mb-6">Reset your password quickly and securely</p>
-                  <button
-                    onClick={handleOpenResetPassword}
-                    className="w-full text-ink py-3 px-6 rounded-md transition-colors font-medium text-lg hover:opacity-90"
-                    style={{ backgroundColor: '#F6C945' }}
-                  >
-                    Reset Password
-                  </button>
-                </div>
-              </div>
+              <h1 className="text-3xl font-display font-bold text-ink mb-2">
+                Welcome to Pack 1703
+              </h1>
+              <p className="text-lg text-teal-700">
+                Scouting for Every Age - Kindergarten through 5th Grade
+              </p>
             </div>
           </div>
 
-          {/* Den Showcase Section */}
-          <div className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
-            <div className="max-w-6xl mx-auto">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl font-display font-bold text-ink mb-4">
-                  Scouting for Every Age Group
-                </h2>
-                <p className="text-lg text-teal-700">
-                  Our pack serves scouts from Kindergarten through 5th grade with age-appropriate activities and adventures
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-                {[
-                  DEN_TYPES.LION,
-                  DEN_TYPES.TIGER, 
-                  DEN_TYPES.WOLF,
-                  DEN_TYPES.BEAR,
-                  DEN_TYPES.WEBELOS,
-                  DEN_TYPES.ARROW_OF_LIGHT
-                ].map((denType) => {
-                  const denInfo = DEN_INFO[denType];
-                  return (
-                    <div key={denType} className="bg-gradient-to-br from-white to-fog/30 rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
-                      <div className="text-4xl mb-4">{denInfo.emoji}</div>
-                      <h3 className="text-xl font-semibold text-ink mb-2">{denInfo.displayName}</h3>
-                      <p className="text-sm text-teal-700 font-medium mb-2">{denInfo.grade}</p>
-                      <p className="text-sm text-teal-600">{denInfo.description}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Event Types Section */}
+          {/* Event Types Section - MOVED TO TOP */}
           <div className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-moss/5 to-teal/5">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
@@ -338,71 +202,42 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             </div>
           </div>
 
-          {/* Features Section */}
-          <div className="py-16 px-4 sm:px-6 lg:px-8">
+          {/* Den Showcase Section - Scouting for Every Age Group */}
+          <div className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
                 <h2 className="text-3xl font-display font-bold text-ink mb-4">
-                  What You'll Get Access To
+                  Scouting for Every Age Group
                 </h2>
                 <p className="text-lg text-teal-700">
-                  Once you're signed in, you'll have access to all these features
+                  Our pack serves scouts from Kindergarten through 5th grade with age-appropriate activities and adventures
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Events */}
-                <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300 hover:scale-105">
-                  <div className="w-12 h-12 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-4">
-                    <span className="text-white text-xl">📅</span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">Events & Activities</h3>
-                  <p className="text-sm text-teal-700 mb-4">View upcoming pack meetings, outings, and special events</p>
-                  <div className="bg-moss/10 text-moss px-3 py-1 rounded-full text-sm font-medium">
-                    Available after login
-                  </div>
-                </div>
-
-                {/* Announcements */}
-                <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300 hover:scale-105">
-                  <div className="w-12 h-12 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
-                    <span className="text-white text-xl">📢</span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">Announcements</h3>
-                  <p className="text-sm text-teal-700 mb-4">Stay updated with important pack news and updates</p>
-                  <div className="bg-moss/10 text-moss px-3 py-1 rounded-full text-sm font-medium">
-                    Available after login
-                  </div>
-                </div>
-
-                {/* RSVPs */}
-                <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300 hover:scale-105">
-                  <div className="w-12 h-12 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
-                    <span className="text-white text-xl">✋</span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">RSVP & Sign-ups</h3>
-                  <p className="text-sm text-teal-700 mb-4">Respond to events and volunteer for activities</p>
-                  <div className="bg-teal/10 text-teal px-3 py-1 rounded-full text-sm font-medium">
-                    Available after login
-                  </div>
-                </div>
-
-                {/* Community */}
-                <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300 hover:scale-105">
-                  <div className="w-12 h-12 bg-gradient-to-br from-moss/80 to-teal/80 rounded-brand flex items-center justify-center mx-auto mb-4">
-                    <span className="text-white text-xl">👥</span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">Community</h3>
-                  <p className="text-sm text-teal-700 mb-4">Connect with other scout families and leadership</p>
-                  <div className="bg-moss/10 text-moss px-3 py-1 rounded-full text-sm font-medium">
-                    Available after login
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+                {[
+                  DEN_TYPES.LION,
+                  DEN_TYPES.TIGER, 
+                  DEN_TYPES.WOLF,
+                  DEN_TYPES.BEAR,
+                  DEN_TYPES.WEBELOS,
+                  DEN_TYPES.ARROW_OF_LIGHT
+                ].map((denType) => {
+                  const denInfo = DEN_INFO[denType];
+                  return (
+                    <div key={denType} className="bg-gradient-to-br from-white to-fog/30 rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
+                      <div className="text-4xl mb-4">{denInfo.emoji}</div>
+                      <h3 className="text-xl font-semibold text-ink mb-2">{denInfo.displayName}</h3>
+                      <p className="text-sm text-teal-700 font-medium mb-2">{denInfo.grade}</p>
+                      <p className="text-sm text-teal-600">{denInfo.description}</p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
 
-          {/* New Scout Parents Section */}
+          {/* New Scout Parents Section - MOVED TO THIRD POSITION */}
           <div className="bg-gradient-to-r from-moss to-teal py-16 px-4 sm:px-6 lg:px-8">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
@@ -509,6 +344,180 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   </div>
                   <h4 className="font-semibold text-ink mb-2">Build Community</h4>
                   <p className="text-sm text-teal-700">Connect with other scout families and pack leadership</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Features Section */}
+          <div className="py-16 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl font-display font-bold text-ink mb-4">
+                  What You'll Get Access To
+                </h2>
+                <p className="text-lg text-teal-700">
+                  Once you're signed in, you'll have access to all these features
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Events */}
+                <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300 hover:scale-105">
+                  <div className="w-12 h-12 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-4">
+                    <span className="text-white text-xl">📅</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Events & Activities</h3>
+                  <p className="text-sm text-teal-700 mb-4">View upcoming pack meetings, outings, and special events</p>
+                  <div className="bg-moss/10 text-moss px-3 py-1 rounded-full text-sm font-medium">
+                    Available after login
+                  </div>
+                </div>
+
+                {/* Announcements */}
+                <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300 hover:scale-105">
+                  <div className="w-12 h-12 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
+                    <span className="text-white text-xl">📢</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Announcements</h3>
+                  <p className="text-sm text-teal-700 mb-4">Stay updated with important pack news and updates</p>
+                  <div className="bg-moss/10 text-moss px-3 py-1 rounded-full text-sm font-medium">
+                    Available after login
+                  </div>
+                </div>
+
+                {/* RSVPs */}
+                <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300 hover:scale-105">
+                  <div className="w-12 h-12 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
+                    <span className="text-white text-xl">✋</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-ink mb-2">RSVP & Sign-ups</h3>
+                  <p className="text-sm text-teal-700 mb-4">Respond to events and volunteer for activities</p>
+                  <div className="bg-teal/10 text-teal px-3 py-1 rounded-full text-sm font-medium">
+                    Available after login
+                  </div>
+                </div>
+
+                {/* Community */}
+                <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300 hover:scale-105">
+                  <div className="w-12 h-12 bg-gradient-to-br from-moss/80 to-teal/80 rounded-brand flex items-center justify-center mx-auto mb-4">
+                    <span className="text-white text-xl">👥</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Community</h3>
+                  <p className="text-sm text-teal-700 mb-4">Connect with other scout families and leadership</p>
+                  <div className="bg-moss/10 text-moss px-3 py-1 rounded-full text-sm font-medium">
+                    Available after login
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Login Section - MOVED TO LAST POSITION */}
+          <div className="bg-gradient-to-br from-moss/10 via-teal/5 to-moss/5 py-16 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl font-display font-bold text-ink mb-4">
+                  Ready to Access the Portal?
+                </h2>
+                <p className="text-lg text-teal-700">
+                  Sign in to access your pack activities, events, and community features
+                </p>
+              </div>
+
+              {/* Primary Action Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                {/* Sign In */}
+                <div className="bg-white rounded-brand shadow-card border border-cloud p-8 text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-6">
+                    <span className="text-white text-2xl">🔑</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-ink mb-3">Sign In</h3>
+                  <p className="text-teal-700 mb-6">Access your pack activities and connect with the community</p>
+                  
+                  {/* Clean Login Options */}
+                  <div className="space-y-4">
+                    {/* Google Sign In */}
+                    <button 
+                      onClick={() => handleSocialLogin(SocialProvider.GOOGLE)}
+                      disabled={isLoading === SocialProvider.GOOGLE}
+                      className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-cloud text-teal hover:bg-moss/5 hover:border-moss rounded-md transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLoading === SocialProvider.GOOGLE ? (
+                        <div className="w-5 h-5 border-2 border-teal border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <svg viewBox="0 0 24 24" className="w-5 h-5">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                      )}
+                      <span className="font-medium text-sm">
+                        {isLoading === SocialProvider.GOOGLE ? 'Signing in...' : 'Sign in with Google'}
+                      </span>
+                    </button>
+
+                    {/* Divider */}
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-cloud"></div>
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-white text-teal-500">or</span>
+                      </div>
+                    </div>
+
+                    {/* Email Sign In */}
+                    <button 
+                      onClick={handleEmailSignIn}
+                      className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-moss text-white hover:bg-moss-600 rounded-md transition-all duration-200 shadow-sm hover:shadow-md"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                        <path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/>
+                        <rect x="2" y="4" width="20" height="16" rx="2"/>
+                      </svg>
+                      <span className="font-medium text-sm">Sign in with Email & Password</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Request Access */}
+                <div className="bg-white rounded-brand shadow-card border border-cloud p-8 text-center">
+                  <div 
+                    className="w-16 h-16 rounded-brand flex items-center justify-center mx-auto mb-6"
+                    style={{ background: 'linear-gradient(135deg, #4C6F7A 0%, #6BAA75 100%)' }}
+                  >
+                    <UserPlus className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-ink mb-3">New Scout Family?</h3>
+                  <p className="text-teal-700 mb-6">Join Pack 1703 and start your scouting journey today!</p>
+                  <button
+                    onClick={() => setShowAccountRequestModal(true)}
+                    className="w-full text-white py-3 px-6 rounded-md transition-colors font-medium text-lg hover:opacity-90"
+                    style={{ backgroundColor: '#4C6F7A' }}
+                  >
+                    Request Account Access
+                  </button>
+                </div>
+
+                {/* Password Reset */}
+                <div className="bg-white rounded-brand shadow-card border border-cloud p-8 text-center">
+                  <div 
+                    className="w-16 h-16 rounded-brand flex items-center justify-center mx-auto mb-6"
+                    style={{ background: 'linear-gradient(135deg, #F6C945 0%, #6BAA75 100%)' }}
+                  >
+                    <Key className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-ink mb-3">Forgot Password?</h3>
+                  <p className="text-teal-700 mb-6">Reset your password quickly and securely</p>
+                  <button
+                    onClick={handleOpenResetPassword}
+                    className="w-full text-ink py-3 px-6 rounded-md transition-colors font-medium text-lg hover:opacity-90"
+                    style={{ backgroundColor: '#F6C945' }}
+                  >
+                    Reset Password
+                  </button>
                 </div>
               </div>
             </div>

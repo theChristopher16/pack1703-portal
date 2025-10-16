@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
 import { Calendar, Users, CheckCircle, AlertCircle, Loader2, LogIn } from 'lucide-react';
-import { submitRSVP } from '../../services/firestore';
+import { submitRSVP, createRSVPPayment, completeRSVPPayment } from '../../services/firestore';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { formValidator, SecurityMetadata } from '../../services/security';
 import { rsvpFormSchema } from '../../types/validation';
 import { useAdmin } from '../../contexts/AdminContext';
 import { authService, AppUser } from '../../services/authService';
 import LoginModal from '../Auth/LoginModal';
+
+interface SquarePaymentResult {
+  nonce: string;
+  paymentMethod: string;
+  status: string;
+}
 
 interface RSVPFormProps {
   eventId: string;
@@ -18,6 +24,11 @@ interface RSVPFormProps {
   onSuccess?: (data: RSVPData) => void;
   onError?: (error: string) => void;
   className?: string;
+  // Payment specific props
+  paymentRequired?: boolean;
+  paymentAmount?: number;
+  paymentCurrency?: string;
+  paymentDescription?: string;
   // Elective event specific props
   isElective?: boolean;
   electiveOptions?: {
@@ -41,6 +52,12 @@ interface RSVPData {
   timestamp: Date;
   rsvpId?: string;
   newRSVPCount?: number;
+  // Payment related fields
+  paymentRequired?: boolean;
+  paymentAmount?: number;
+  paymentCurrency?: string;
+  paymentDescription?: string;
+  paymentStatus?: 'not_required' | 'pending' | 'completed' | 'failed';
 }
 
 interface Attendee {
@@ -60,16 +77,21 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
   onSuccess,
   onError,
   className = '',
+  paymentRequired = false,
+  paymentAmount = 0,
+  paymentCurrency = 'USD',
+  paymentDescription = '',
   isElective = false,
   electiveOptions
 }) => {
   const { state } = useAdmin();
   const analytics = useAnalytics();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error' | 'payment_required'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [currentUserProfile, setCurrentUserProfile] = useState<AppUser | null>(null);
+  const [rsvpResult, setRsvpResult] = useState<any>(null);
   
   // Check if user is authenticated
   const isAuthenticated = !!state.currentUser;
@@ -289,21 +311,35 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
 
       // Check if submission was successful
       if (result.data && (result.data as any).success) {
-        setSubmitStatus('success');
+        const resultData = result.data as any;
+        setRsvpResult(resultData);
+        
+        // Determine status based on payment requirements
+        if (resultData.paymentRequired) {
+          setSubmitStatus('payment_required');
+        } else {
+          setSubmitStatus('success');
+        }
         
         // Track successful submission
         analytics.trackRSVPSubmission(eventId, true, { 
           attendees: secureData.attendees?.length || 0,
-          rsvpId: (result.data as any).rsvpId,
-          newRSVPCount: (result.data as any).newRSVPCount
+          rsvpId: resultData.rsvpId,
+          newRSVPCount: resultData.newRSVPCount,
+          paymentRequired: resultData.paymentRequired
         });
         
         // Call success callback with updated data
         if (onSuccess) {
           onSuccess({
             ...secureData as RSVPData,
-            rsvpId: (result.data as any).rsvpId,
-            newRSVPCount: (result.data as any).newRSVPCount
+            rsvpId: resultData.rsvpId,
+            newRSVPCount: resultData.newRSVPCount,
+            paymentRequired: resultData.paymentRequired,
+            paymentAmount: resultData.paymentAmount,
+            paymentCurrency: resultData.paymentCurrency,
+            paymentDescription: resultData.paymentDescription,
+            paymentStatus: resultData.paymentRequired ? 'pending' : 'not_required'
           });
         }
       } else {
@@ -408,6 +444,149 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  // Initialize Square payment using your existing USS Stewart configuration
+  const initializeSquarePayment = async (paymentData: any): Promise<SquarePaymentResult> => {
+    return new Promise<SquarePaymentResult>((resolve, reject) => {
+      // Load Square Web Payments SDK if not already loaded
+      if (typeof window !== 'undefined' && !(window as any).Square) {
+        const script = document.createElement('script');
+        script.src = 'https://web.squarecdn.com/v1/square.js';
+        script.onload = () => initializeSquareForm(paymentData, resolve, reject);
+        script.onerror = () => reject(new Error('Failed to load Square SDK'));
+        document.head.appendChild(script);
+      } else {
+        initializeSquareForm(paymentData, resolve, reject);
+      }
+    });
+  };
+
+  const initializeSquareForm = (paymentData: any, resolve: (value: SquarePaymentResult) => void, reject: (reason?: any) => void) => {
+    try {
+      const Square = (window as any).Square;
+      if (!Square) {
+        reject(new Error('Square SDK not loaded'));
+        return;
+      }
+
+      // Use your existing Square configuration
+      // You'll need to replace these with your actual USS Stewart Square credentials
+      const payments = Square.payments(paymentData.applicationId, paymentData.locationId);
+
+      payments.card({
+        style: {
+          '.input-container': {
+            'border-radius': '8px',
+          },
+          '.input-container.is-focus': {
+            borderColor: '#6BAA75',
+          },
+          '.message-text': {
+            color: '#4C6F7A',
+          },
+        },
+      }).then((card: any) => {
+        // Show the Square payment form
+        const paymentRequest = {
+          requestPaymentMethod: () => card,
+        };
+
+        // Create payment form UI
+        showSquarePaymentModal(paymentData, paymentRequest, resolve, reject);
+      }).catch((error: any) => {
+        console.error('Square card initialization failed:', error);
+        reject(error);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  };
+
+  const showSquarePaymentModal = async (paymentData: any, paymentRequest: any, resolve: (value: SquarePaymentResult) => void, reject: (reason?: any) => void) => {
+    try {
+      // Get the Square payment method token (nonce) from the form
+      const result = await paymentRequest.requestPaymentMethod();
+      
+      if (result.errors && result.errors.length > 0) {
+        reject(new Error('Payment form validation failed: ' + result.errors[0].detail));
+        return;
+      }
+
+      // Return the nonce for backend processing
+      resolve({
+        nonce: result.nonce, // This is the Square payment token we need
+        paymentMethod: 'card',
+        status: 'READY_FOR_PROCESSING'
+      });
+    } catch (error) {
+      reject(error);
+    }
+  };
+
+  // Handle payment processing
+  const handlePayment = async () => {
+    if (!rsvpResult?.rsvpId) {
+      setErrorMessage('RSVP ID not found. Please try submitting again.');
+      setSubmitStatus('error');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage('');
+
+    try {
+      // Create payment record
+      const paymentResult = await createRSVPPayment({
+        rsvpId: rsvpResult.rsvpId,
+        eventId: eventId
+      });
+
+      if (paymentResult.data && (paymentResult.data as any).success) {
+        const paymentData = paymentResult.data as any;
+        
+        // Integrate with Square Web Payments SDK
+        // This will use your existing USS Stewart Square configuration
+        try {
+          const squareResult = await initializeSquarePayment(paymentData);
+          
+          if (squareResult && squareResult.nonce) {
+            // Call completeRSVPPayment with the Square nonce
+            const completeResult = await completeRSVPPayment({
+              paymentId: paymentData.paymentId,
+              rsvpId: rsvpResult.rsvpId,
+              nonce: squareResult.nonce
+            });
+
+            if (completeResult.data && (completeResult.data as any).success) {
+              setSubmitStatus('success');
+              setErrorMessage('');
+              // Update the UI to show payment completed
+              if (onSuccess) {
+                onSuccess({
+                  ...rsvpResult,
+                  paymentStatus: 'completed'
+                });
+              }
+            } else {
+              throw new Error('Failed to complete payment after Square processing');
+            }
+          } else {
+            throw new Error('Square payment failed - no nonce returned');
+          }
+        } catch (squareError: any) {
+          console.error('Square payment processing failed:', squareError);
+          throw new Error('Payment processing failed: ' + squareError.message);
+        }
+      } else {
+        throw new Error((paymentResult.data as any)?.message || 'Failed to initiate payment');
+      }
+    } catch (error: any) {
+      setErrorMessage(error.message || 'Failed to process payment');
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -732,6 +911,23 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
           </div>
         )}
 
+        {/* Payment Notice */}
+        {paymentRequired && (
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-yellow-800">Payment Required</p>
+                <p className="text-sm text-yellow-600">
+                  ${(paymentAmount / 100).toFixed(2)} {paymentCurrency} - {paymentDescription || 'Event Fee'}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-yellow-600">Payment due after RSVP</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Submit Button */}
         <div className="pt-4">
           <button
@@ -747,7 +943,15 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
             ) : (
               <>
                 <CheckCircle className="w-5 h-5 mr-3" />
-                {isElective && electiveOptions?.casualAttendance ? 'Let Us Know You\'re Coming!' : 'Submit RSVP'}
+                {paymentRequired ? (
+                  <>
+                    Submit RSVP (Payment ${(paymentAmount / 100).toFixed(2)} required after)
+                  </>
+                ) : (
+                  <>
+                    {isElective && electiveOptions?.casualAttendance ? 'Let Us Know You\'re Coming!' : 'Submit RSVP'}
+                  </>
+                )}
               </>
             )}
           </button>
@@ -767,6 +971,33 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
             <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
             <h4 className="text-lg font-semibold text-red-700 mb-1">Submission Failed</h4>
             <p className="text-red-600">{errorMessage}</p>
+          </div>
+        )}
+
+        {submitStatus === 'payment_required' && rsvpResult && (
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-center">
+            <AlertCircle className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+            <h4 className="text-lg font-semibold text-yellow-700 mb-2">RSVP Submitted - Payment Required</h4>
+            <p className="text-yellow-600 mb-4">
+              Your RSVP has been submitted, but payment is required to complete your registration.
+            </p>
+            
+            <div className="bg-white p-4 rounded-lg border border-yellow-200 mb-4">
+              <p className="text-sm text-gray-600 mb-2">{rsvpResult.paymentDescription || 'Event Payment'}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                ${(rsvpResult.paymentAmount / 100).toFixed(2)} {rsvpResult.paymentCurrency}
+              </p>
+            </div>
+            
+            <button
+              onClick={() => handlePayment()}
+              className="w-full flex items-center justify-center px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold rounded-xl hover:from-yellow-600 hover:to-orange-600 transition-all duration-200 transform hover:scale-105 shadow-lg"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              Pay Now to Complete RSVP
+            </button>
           </div>
         )}
       </form>

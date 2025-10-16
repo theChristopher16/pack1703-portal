@@ -100,6 +100,12 @@ body {
     color: #111827 !important;
   }
 
+  /* Fix text-ink class override - ensure brand ink color is preserved */
+  .text-ink {
+    color: #1C1C1C !important;
+    -webkit-text-fill-color: #1C1C1C !important;
+  }
+
   p, span, div:not([class*="bg-"]) {
     color: #4b5563 !important;
   }
@@ -1134,4 +1140,25 @@ body {
   .link-primary:hover {
     color: #000080 !important;
   }
+}
+
+/* ========================================
+   CRITICAL FIX: text-ink class override
+   ======================================== */
+
+/* Ensure text-ink class always displays the correct brand color */
+.text-ink,
+h1.text-ink,
+h2.text-ink,
+h3.text-ink,
+h4.text-ink,
+h5.text-ink,
+h6.text-ink,
+.text-lg.text-ink,
+.text-xl.text-ink,
+.text-2xl.text-ink,
+.text-3xl.text-ink,
+.text-4xl.text-ink {
+  color: #1C1C1C !important;
+  -webkit-text-fill-color: #1C1C1C !important;
 }

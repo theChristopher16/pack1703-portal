@@ -82,7 +82,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
       <>
         <div className="min-h-screen bg-fog">
           {/* Hero Section - Primary User Actions */}
-          <div className="bg-gradient-to-br from-moss/10 via-teal/5 to-sun/10 py-16 px-4 sm:px-6 lg:px-8">
+          <div className="bg-gradient-to-br from-moss/10 via-teal/5 to-moss/5 py-16 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-12">
                 <div className="mx-auto w-20 h-20 bg-gradient-brand rounded-brand flex items-center justify-center mb-6 shadow-card">
@@ -277,7 +277,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                 {/* December - Winter Celebration */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
-                  <div className="w-16 h-16 bg-gradient-to-br from-sun to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">❄️</span>
                   </div>
                   <h3 className="text-lg font-semibold text-ink mb-2">Winter Celebration</h3>
@@ -287,7 +287,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                 {/* January - Pinewood Derby */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
-                  <div className="w-16 h-16 bg-gradient-to-br from-sun to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🏁</span>
                   </div>
                   <h3 className="text-lg font-semibold text-ink mb-2">Pinewood Derby</h3>
@@ -365,12 +365,12 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                 {/* Announcements */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300 hover:scale-105">
-                  <div className="w-12 h-12 bg-gradient-to-br from-sun to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-xl">📢</span>
                   </div>
                   <h3 className="text-lg font-semibold text-ink mb-2">Announcements</h3>
                   <p className="text-sm text-teal-700 mb-4">Stay updated with important pack news and updates</p>
-                  <div className="bg-sun/10 text-ink px-3 py-1 rounded-full text-sm font-medium">
+                  <div className="bg-moss/10 text-moss px-3 py-1 rounded-full text-sm font-medium">
                     Available after login
                   </div>
                 </div>
@@ -431,7 +431,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                   <div className="bg-white rounded-brand shadow-card border border-cloud p-6">
                     <div className="flex items-start space-x-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-sun to-moss rounded-brand flex items-center justify-center flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center flex-shrink-0">
                         <span className="text-white text-xl">👨‍👩‍👧‍👦</span>
                       </div>
                       <div>
@@ -579,8 +579,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                 {resetMessage && (
                   <div className={`p-3 rounded-xl ${
                     resetMessage.includes('sent') 
-                      ? 'bg-green-50 border border-green-200 text-green-600' 
-                      : 'bg-red-50 border border-red-200 text-red-600'
+                      ? 'bg-moss/10 border border-moss/20 text-moss' 
+                      : 'bg-teal/10 border border-teal/20 text-teal'
                   }`}>
                     <p className="text-sm">{resetMessage}</p>
                   </div>

@@ -1162,3 +1162,36 @@ h6.text-ink,
   color: #1C1C1C !important;
   -webkit-text-fill-color: #1C1C1C !important;
 }
+
+/* ========================================
+   CRITICAL FIX: teal color class overrides
+   ======================================== */
+
+/* Ensure teal color classes display correct brand colors */
+.text-teal-700,
+p.text-teal-700,
+.text-sm.text-teal-700,
+.text-lg.text-teal-700,
+.text-xl.text-teal-700,
+.bg-white .text-teal-700,
+.bg-white p.text-teal-700,
+.bg-white .text-sm.text-teal-700,
+div[class*="bg-white"] .text-teal-700,
+div[class*="bg-white"] p.text-teal-700 {
+  color: #2F4249 !important;
+  -webkit-text-fill-color: #2F4249 !important;
+}
+
+.text-teal-600,
+.text-sm.text-teal-600,
+.bg-white .text-teal-600 {
+  color: #3E5963 !important;
+  -webkit-text-fill-color: #3E5963 !important;
+}
+
+.text-teal-500,
+.text-sm.text-teal-500,
+.bg-white .text-teal-500 {
+  color: #4C6F7A !important;
+  -webkit-text-fill-color: #4C6F7A !important;
+}

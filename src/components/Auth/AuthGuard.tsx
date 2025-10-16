@@ -244,41 +244,95 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                {/* Sleepovers & Overnights */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+                {/* September - Kickoff */}
+                <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
+                  <div className="w-16 h-16 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-4">
+                    <span className="text-white text-2xl">🎒</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Pack Kickoff</h3>
+                  <p className="text-sm text-teal-700 font-medium mb-1">Sept 14</p>
+                  <p className="text-sm text-teal-700">Start the scouting year with excitement and meeting new friends</p>
+                </div>
+
+                {/* October - USS Stewart Sleepover */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
                   <div className="w-16 h-16 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🚢</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">Sleepovers & Overnights</h3>
-                  <p className="text-sm text-teal-700">USS Stewart sleepover, campouts, and exciting overnight adventures</p>
+                  <h3 className="text-lg font-semibold text-ink mb-2">USS Stewart Sleepover</h3>
+                  <p className="text-sm text-teal-700 font-medium mb-1">Oct 25-26</p>
+                  <p className="text-sm text-teal-700">Overnight adventure aboard a historic battleship</p>
                 </div>
 
-                {/* Racing Events */}
+                {/* November - Double Lake Campout */}
+                <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
+                  <div className="w-16 h-16 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
+                    <span className="text-white text-2xl">🏕️</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Double Lake Campout</h3>
+                  <p className="text-sm text-teal-700 font-medium mb-1">Nov 14-16</p>
+                  <p className="text-sm text-teal-700">Canoeing, stargazing, and campfire adventures</p>
+                </div>
+
+                {/* December - Winter Celebration */}
+                <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
+                  <div className="w-16 h-16 bg-gradient-to-br from-sun to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
+                    <span className="text-white text-2xl">❄️</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Winter Celebration</h3>
+                  <p className="text-sm text-teal-700 font-medium mb-1">Dec 19</p>
+                  <p className="text-sm text-teal-700">Festival of Light and holiday festivities</p>
+                </div>
+
+                {/* January - Pinewood Derby */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
                   <div className="w-16 h-16 bg-gradient-to-br from-sun to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🏁</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">Racing Events</h3>
-                  <p className="text-sm text-teal-700">Pinewood derby, rocket launches, and thrilling competitions</p>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Pinewood Derby</h3>
+                  <p className="text-sm text-teal-700 font-medium mb-1">Jan 18, 25 & Feb 1</p>
+                  <p className="text-sm text-teal-700">Build, test, and race your custom cars</p>
                 </div>
 
-                {/* Outdoor Adventures */}
+                {/* March - Rocket Launch */}
+                <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
+                  <div className="w-16 h-16 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
+                    <span className="text-white text-2xl">🚀</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Rocket Launch</h3>
+                  <p className="text-sm text-teal-700 font-medium mb-1">March 1</p>
+                  <p className="text-sm text-teal-700">Build and launch your own rockets</p>
+                </div>
+
+                {/* March - Brazos Bend */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
                   <div className="w-16 h-16 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🎣</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">Outdoor Adventures</h3>
-                  <p className="text-sm text-teal-700">Camping, canoeing, stargazing, fishing, and archery</p>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Brazos Bend Adventure</h3>
+                  <p className="text-sm text-teal-700 font-medium mb-1">March 27-28</p>
+                  <p className="text-sm text-teal-700">Fishing, ranger talks, and nature exploration</p>
                 </div>
 
-                {/* Cultural & Service */}
+                {/* April - Tia-Piah Powwow */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
                   <div className="w-16 h-16 bg-gradient-to-br from-moss/80 to-teal/80 rounded-brand flex items-center justify-center mx-auto mb-4">
-                    <span className="text-white text-2xl">🎪</span>
+                    <span className="text-white text-2xl">🌎</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">Special Celebrations</h3>
-                  <p className="text-sm text-teal-700">Winter celebration, cultural powwow, and seasonal festivities</p>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Tia-Piah Powwow</h3>
+                  <p className="text-sm text-teal-700 font-medium mb-1">April 26</p>
+                  <p className="text-sm text-teal-700">Cultural exchange, dance, and sun-art banners</p>
+                </div>
+
+                {/* May - Bovay Scout Ranch */}
+                <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
+                  <div className="w-16 h-16 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-4">
+                    <span className="text-white text-2xl">🏹</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Bovay Scout Ranch</h3>
+                  <p className="text-sm text-teal-700 font-medium mb-1">May</p>
+                  <p className="text-sm text-teal-700">Archery, fishing, and solar oven cooking</p>
                 </div>
               </div>
             </div>

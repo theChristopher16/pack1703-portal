@@ -1284,32 +1284,16 @@ button[class*="Reset"] {
   color: white !important;
 }
 
-/* Specific fix for Email & Password button - target all moss buttons in cards */
-.bg-white button.bg-moss,
-button.bg-moss,
-.bg-white button[class*="bg-moss"] {
-  background-color: #4C6F7A !important;
-  color: white !important;
-}
 
-/* Specific targeting for the email sign-in button */
-.bg-white button.bg-moss,
-button.bg-moss[class*="transition-all"] {
-  background-color: #4C6F7A !important;
-  color: white !important;
-}
-
-/* Fix emoji box backgrounds - make them more muted */
+/* Fix bright green emoji backgrounds - force muted colors */
 .bg-white div.w-16.h-16[class*="bg-gradient-to-br"],
 .bg-white div.w-12.h-12[class*="bg-gradient-to-br"],
-.bg-white div[class*="bg-gradient-to-br"] {
-  background: linear-gradient(135deg, rgba(76, 111, 122, 0.4) 0%, rgba(107, 170, 117, 0.4) 100%) !important;
-}
-
-/* More specific targeting for emoji container backgrounds */
+.bg-white div[class*="bg-gradient-to-br"],
 div[class*="from-moss"][class*="to-teal"],
-div[class*="from-teal"][class*="to-moss"] {
-  background: linear-gradient(135deg, rgba(76, 111, 122, 0.4) 0%, rgba(107, 170, 117, 0.4) 100%) !important;
+div[class*="from-teal"][class*="to-moss"],
+div[class*="from-moss/40"][class*="to-teal/40"],
+div[class*="from-teal/40"][class*="to-moss/40"] {
+  background: linear-gradient(135deg, rgba(76, 111, 122, 0.15) 0%, rgba(128, 190, 151, 0.15) 100%) !important;
 }
 
 /* Override any CSS that might be adding colored backgrounds */

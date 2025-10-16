@@ -108,6 +108,29 @@ export const RootOnly: React.FC<{ children: React.ReactNode; fallbackPath?: stri
   </RoleGuard>
 );
 
+export const SuperUserOnly: React.FC<{ children: React.ReactNode; fallbackPath?: string }> = ({ 
+  children, 
+  fallbackPath = '/' 
+}) => {
+  const { state } = useAdmin();
+  const currentUser = state.currentUser;
+  
+  // Check if user has super user role (super-admin or root)
+  const isSuperUser = currentUser?.role === 'super-admin' || 
+                     currentUser?.role === 'root';
+  
+  if (!isSuperUser) {
+    console.log('🔒 SuperUserOnly: User is not super user, redirecting to home', { 
+      currentUserRole: currentUser?.role,
+      isSuperUser,
+      fallbackPath 
+    });
+    return <Navigate to={fallbackPath} replace />;
+  }
+  
+  return <>{children}</>;
+};
+
 export const AuthenticatedOnly: React.FC<{ children: React.ReactNode; fallbackPath?: string }> = ({ 
   children, 
   fallbackPath = '/' 

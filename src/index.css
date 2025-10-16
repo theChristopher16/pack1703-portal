@@ -1224,3 +1224,67 @@ button.text-teal,
 button[class*="text-teal"] {
   color: #4B9C9C !important;
 }
+
+/* ========================================
+   CRITICAL FIX: Homepage component color overrides
+   ======================================== */
+
+/* Fix any yellow, red, or blue color appearances in homepage cards */
+.bg-white h3,
+.bg-white .text-lg,
+.bg-white .font-semibold,
+.grid .bg-white h3,
+.grid .bg-white .text-lg {
+  background-color: transparent !important;
+  color: #1C1C1C !important;
+  -webkit-text-fill-color: #1C1C1C !important;
+}
+
+/* Fix card button backgrounds */
+.bg-white button[class*="bg-white"],
+.bg-white .bg-white,
+button[class*="border-cloud"] {
+  background-color: white !important;
+  border-color: #E5E7EB !important;
+  color: #4B9C9C !important;
+}
+
+/* Fix any unintended background colors on headings */
+.bg-white h3::before,
+.bg-white h3::after,
+.grid .bg-white h3::before,
+.grid .bg-white h3::after {
+  display: none !important;
+}
+
+/* Fix description text backgrounds */
+.bg-white p,
+.bg-white .text-sm,
+.grid .bg-white p,
+.grid .bg-white .text-sm {
+  background-color: transparent !important;
+  color: #2F4249 !important;
+  -webkit-text-fill-color: #2F4249 !important;
+}
+
+/* Ensure no yellow backgrounds on titles */
+.text-lg.font-semibold.text-ink,
+.text-xl.font-semibold.text-ink,
+h3.text-lg,
+h3.text-xl {
+  background-color: transparent !important;
+  color: #1C1C1C !important;
+}
+
+/* Ensure no red/pink on buttons */
+button[class*="Sign in"],
+button[class*="Request"],
+button[class*="Reset"] {
+  background-color: #4C6F7A !important;
+  color: white !important;
+}
+
+/* Override any CSS that might be adding colored backgrounds */
+.bg-white *:not([class*="bg-"]) {
+  background-color: transparent !important;
+}

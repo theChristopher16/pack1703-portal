@@ -497,8 +497,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   <p className="text-sm text-teal-700">Get reminders and RSVP to all pack activities through our portal</p>
                 </div>
                 <div className="bg-white/80 rounded-brand p-6 text-center">
-                  <div className="w-12 h-12 bg-sun/10 rounded-brand flex items-center justify-center mx-auto mb-4">
-                    <span className="text-sun text-xl">📢</span>
+                  <div className="w-12 h-12 bg-moss/10 rounded-brand flex items-center justify-center mx-auto mb-4">
+                    <span className="text-moss text-xl">📢</span>
                   </div>
                   <h4 className="font-semibold text-ink mb-2">Stay Connected</h4>
                   <p className="text-sm text-teal-700">Receive important announcements and updates directly</p>

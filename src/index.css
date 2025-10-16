@@ -1294,6 +1294,13 @@ div.w-12.h-12.rounded-brand span {
   background-color: transparent !important;
 }
 
+/* Fix bright green background behind "or" divider spans */
+.bg-white span.px-2.bg-white,
+.bg-white span[class*="bg-white"],
+.bg-white span.bg-white {
+  background-color: white !important;
+}
+
 /* Override any CSS that might be adding colored backgrounds */
 .bg-white *:not([class*="bg-"]) {
   background-color: transparent !important;

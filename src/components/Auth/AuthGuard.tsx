@@ -82,16 +82,28 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
       <>
         <div className="min-h-screen bg-fog">
           {/* Header Section */}
-          <div className="bg-gradient-to-br from-moss/10 via-teal/5 to-moss/5 py-8 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl mx-auto text-center">
-              <div className="mx-auto w-16 h-16 bg-gradient-brand rounded-brand flex items-center justify-center mb-4 shadow-card">
-                <span className="text-white text-2xl">🏕️</span>
+          <div className="bg-gradient-to-br from-moss/10 via-teal/5 to-moss/5 py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+            {/* Solarpunk-inspired background elements */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+              <div className="absolute top-4 left-8 text-green-400/20 text-4xl animate-pulse">🌱</div>
+              <div className="absolute top-12 right-12 text-teal-400/15 text-3xl animate-bounce" style={{ animationDelay: '1s' }}>⚡</div>
+              <div className="absolute bottom-8 left-16 text-emerald-400/20 text-3xl animate-pulse" style={{ animationDelay: '2s' }}>🦋</div>
+              <div className="absolute top-20 right-24 text-blue-400/15 text-2xl animate-pulse" style={{ animationDelay: '0.5s' }}>🌟</div>
+            </div>
+            
+            <div className="max-w-4xl mx-auto text-center relative">
+              {/* Enhanced logo with solarpunk aesthetic */}
+              <div className="mx-auto w-20 h-20 bg-gradient-to-br from-green-400 via-teal-500 to-blue-500 rounded-full flex items-center justify-center mb-4 shadow-lg border-2 border-white/20 relative">
+                <span className="text-white text-3xl drop-shadow-lg">🏕️</span>
+                {/* Glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-green-400/30 via-teal-500/30 to-blue-500/30 rounded-full blur-md"></div>
               </div>
-              <h1 className="text-3xl font-display font-bold text-ink mb-2">
+              
+              <h1 className="text-4xl font-display font-bold bg-gradient-to-r from-green-600 via-teal-600 to-blue-600 bg-clip-text text-transparent mb-3">
                 Welcome to Pack 1703
               </h1>
-              <p className="text-lg text-teal-700 mb-6">
-                Scouting for Every Age - Kindergarten through 5th Grade
+              <p className="text-lg text-teal-700 mb-6 font-medium">
+                🌿 Building tomorrow's eco-conscious leaders through nature and technology 🌿
               </p>
               
               {/* Quick Login Button */}
@@ -111,10 +123,10 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
                 <h2 className="text-3xl font-display font-bold text-ink mb-4">
-                  Exciting Activities & Events
+                  🌍 Eco-Adventures & Future-Building Events
                 </h2>
                 <p className="text-lg text-teal-700">
-                  Year-round adventures that build character, friendships, and life skills
+                  Where nature meets innovation - adventures that cultivate tomorrow's green leaders through hands-on learning and sustainable exploration
                 </p>
               </div>
 
@@ -124,9 +136,9 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   <div className="w-16 h-16 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🎒</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">Pack Kickoff</h3>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Eco-Leadership Launch</h3>
                   <p className="text-sm text-teal-700 font-medium mb-1">Sept 14</p>
-                  <p className="text-sm text-teal-700">Start the scouting year with excitement and meeting new friends</p>
+                  <p className="text-sm text-teal-700">Ignite the future with sustainable adventures and green technology discovery</p>
                 </div>
 
                 {/* October - USS Stewart Sleepover */}
@@ -134,9 +146,9 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   <div className="w-16 h-16 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🚢</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">USS Stewart Sleepover</h3>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Historic Tech Discovery</h3>
                   <p className="text-sm text-teal-700 font-medium mb-1">Oct 25-26</p>
-                  <p className="text-sm text-teal-700">Overnight adventure aboard a historic battleship</p>
+                  <p className="text-sm text-teal-700">Explore sustainable engineering and renewable energy history through hands-on learning</p>
                 </div>
 
                 {/* November - Double Lake Campout */}
@@ -144,9 +156,9 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   <div className="w-16 h-16 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🏕️</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">Double Lake Campout</h3>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Biodiversity Basecamp</h3>
                   <p className="text-sm text-teal-700 font-medium mb-1">Nov 14-16</p>
-                  <p className="text-sm text-teal-700">Canoeing, stargazing, and campfire adventures</p>
+                  <p className="text-sm text-teal-700">Renewable energy in action with solar cooking, wind-powered navigation, and starlight mapping</p>
                 </div>
 
                 {/* December - Winter Celebration */}
@@ -154,9 +166,9 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   <div className="w-16 h-16 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">❄️</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">Winter Celebration</h3>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Renewable Light Festival</h3>
                   <p className="text-sm text-teal-700 font-medium mb-1">Dec 19</p>
-                  <p className="text-sm text-teal-700">Festival of Light and holiday festivities</p>
+                  <p className="text-sm text-teal-700">Celebrate sustainable energy with solar-powered light displays and eco-tech demonstrations</p>
                 </div>
 
                 {/* January - Pinewood Derby */}
@@ -164,9 +176,9 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   <div className="w-16 h-16 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🏁</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">Pinewood Derby</h3>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Sustainable Speed Challenge</h3>
                   <p className="text-sm text-teal-700 font-medium mb-1">Jan 18, 25 & Feb 1</p>
-                  <p className="text-sm text-teal-700">Build, test, and race your custom cars</p>
+                  <p className="text-sm text-teal-700">Engineering innovation meets renewable materials in our eco-friendly racing competition</p>
                 </div>
 
                 {/* March - Rocket Launch */}
@@ -174,9 +186,9 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   <div className="w-16 h-16 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🚀</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">Rocket Launch</h3>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Clean Energy Launch Lab</h3>
                   <p className="text-sm text-teal-700 font-medium mb-1">March 1</p>
-                  <p className="text-sm text-teal-700">Build and launch your own rockets</p>
+                  <p className="text-sm text-teal-700">Design and test sustainable propulsion systems using renewable energy principles</p>
                 </div>
 
                 {/* March - Brazos Bend */}
@@ -217,10 +229,10 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
                 <h2 className="text-3xl font-display font-bold text-ink mb-4">
-                  Scouting for Every Age Group
+                  🌱 Eco-Leaders for Every Stage
                 </h2>
                 <p className="text-lg text-teal-700">
-                  Our pack serves scouts from Kindergarten through 5th grade with age-appropriate activities and adventures
+                  From kindergarten to 5th grade, we cultivate sustainable leadership through age-appropriate nature-tech adventures and green innovation challenges
                 </p>
               </div>
 
@@ -252,10 +264,10 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
                 <h3 className="text-3xl font-display font-bold text-ink mb-4">
-                  New to Scouting?
+                  🌟 Join the Green Revolution?
                 </h3>
                 <p className="text-lg text-teal-700 max-w-3xl mx-auto">
-                  Pack 1703 welcomes new families! Here's what makes scouting special and how we support new families every step of the way.
+                  Pack 1703 pioneers the future! Discover how we're building tomorrow's sustainable leaders through cutting-edge nature-technology fusion and eco-innovation.
                 </p>
               </div>
 
@@ -268,8 +280,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                         <span className="text-white text-xl">🌟</span>
                       </div>
                       <div>
-                        <h4 className="font-semibold text-ink mb-2">Character & Values</h4>
-                        <p className="text-sm text-teal-700">We build character through the Scout Law: trustworthy, loyal, helpful, friendly, courteous, kind, obedient, cheerful, thrifty, brave, clean, and reverent.</p>
+                        <h4 className="font-semibold text-ink mb-2">Eco-Leadership Values</h4>
+                        <p className="text-sm text-teal-700">We cultivate sustainable character through innovation, stewardship, and environmental responsibility - building tomorrow's green guardians with integrity and purpose.</p>
                       </div>
                     </div>
                   </div>
@@ -280,8 +292,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                         <span className="text-white text-xl">👨‍👩‍👧‍👦</span>
                       </div>
                       <div>
-                        <h4 className="font-semibold text-ink mb-2">Family-Centered</h4>
-                        <p className="text-sm text-teal-700">Cub Scouting is family scouting. Parents are our partners and participate in activities with their children.</p>
+                        <h4 className="font-semibold text-ink mb-2">Intergenerational Innovation</h4>
+                        <p className="text-sm text-teal-700">Families collaborate as co-creators of sustainable solutions, with parents and children learning green technology together in our thriving eco-community.</p>
                       </div>
                     </div>
                   </div>
@@ -292,8 +304,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                         <span className="text-white text-xl">🏅</span>
                       </div>
                       <div>
-                        <h4 className="font-semibold text-ink mb-2">Personal Growth</h4>
-                        <p className="text-sm text-teal-700">Age-appropriate advancement program that builds confidence, leadership skills, and a sense of achievement.</p>
+                        <h4 className="font-semibold text-ink mb-2">Green Future Leaders</h4>
+                        <p className="text-sm text-teal-700">Progressive eco-innovation milestones that develop renewable energy expertise, sustainable design skills, and environmental leadership mastery.</p>
                       </div>
                     </div>
                   </div>
@@ -301,7 +313,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                 {/* Right Column - Call to Action */}
                 <div className="bg-gradient-to-br from-moss/5 to-teal/5 rounded-brand p-8 border border-moss/20">
-                  <h4 className="text-xl font-semibold text-ink mb-4">Ready to Start Your Scouting Adventure?</h4>
+                  <h4 className="text-xl font-semibold text-ink mb-4">🚀 Ready to Launch Your Eco-Future?</h4>
                   <div className="space-y-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-6 h-6 bg-moss rounded-full flex items-center justify-center flex-shrink-0">
@@ -364,10 +376,10 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
                 <h2 className="text-3xl font-display font-bold text-ink mb-4">
-                  What You'll Get Access To
+                  🌱 Your Green Innovation Portal
                 </h2>
                 <p className="text-lg text-teal-700">
-                  Once you're signed in, you'll have access to all these features
+                  Access our cutting-edge eco-platform where sustainable technology meets community action
                 </p>
               </div>
 
@@ -377,8 +389,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   <div className="w-12 h-12 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-xl">📅</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">Events & Activities</h3>
-                  <p className="text-sm text-teal-700 mb-4">View upcoming pack meetings, outings, and special events</p>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Eco-Adventure Hub</h3>
+                  <p className="text-sm text-teal-700 mb-4">Track sustainable expeditions, green tech workshops, and renewable energy challenges</p>
                   <div className="bg-moss/10 text-moss px-3 py-1 rounded-full text-sm font-medium">
                     Available after login
                   </div>
@@ -389,8 +401,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   <div className="w-12 h-12 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-xl">📢</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">Announcements</h3>
-                  <p className="text-sm text-teal-700 mb-4">Stay updated with important pack news and updates</p>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Green Innovation Updates</h3>
+                  <p className="text-sm text-teal-700 mb-4">Receive real-time eco-tech breakthroughs, sustainability milestones, and environmental action alerts</p>
                   <div className="bg-moss/10 text-moss px-3 py-1 rounded-full text-sm font-medium">
                     Available after login
                   </div>
@@ -401,8 +413,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   <div className="w-12 h-12 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-xl">✋</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">RSVP & Sign-ups</h3>
-                  <p className="text-sm text-teal-700 mb-4">Respond to events and volunteer for activities</p>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Eco-Action Commitments</h3>
+                  <p className="text-sm text-teal-700 mb-4">Join sustainable projects, green technology initiatives, and environmental stewardship opportunities</p>
                   <div className="bg-teal/10 text-teal px-3 py-1 rounded-full text-sm font-medium">
                     Available after login
                   </div>
@@ -413,8 +425,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   <div className="w-12 h-12 bg-gradient-to-br from-moss/80 to-teal/80 rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-xl">👥</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-ink mb-2">Community</h3>
-                  <p className="text-sm text-teal-700 mb-4">Connect with other scout families and leadership</p>
+                  <h3 className="text-lg font-semibold text-ink mb-2">Green Innovation Network</h3>
+                  <p className="text-sm text-teal-700 mb-4">Collaborate with fellow eco-leaders, share sustainable solutions, and build tomorrow's green community</p>
                   <div className="bg-moss/10 text-moss px-3 py-1 rounded-full text-sm font-medium">
                     Available after login
                   </div>
@@ -428,10 +440,10 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-12">
                 <h2 className="text-3xl font-display font-bold text-ink mb-4">
-                  Ready to Access the Portal?
+                  🌱 Ready to Enter the Green Innovation Lab?
                 </h2>
                 <p className="text-lg text-teal-700">
-                  Sign in to access your pack activities, events, and community features
+                  Connect to our sustainable technology platform and join the eco-revolution
                 </p>
               </div>
 
@@ -442,8 +454,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   <div className="w-16 h-16 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-6">
                     <span className="text-white text-2xl">🔑</span>
                   </div>
-                  <h3 className="text-xl font-semibold text-ink mb-3">Sign In</h3>
-                  <p className="text-teal-700 mb-6">Access your pack activities and connect with the community</p>
+                  <h3 className="text-xl font-semibold text-ink mb-3">🔑 Eco-Leader Access</h3>
+                  <p className="text-teal-700 mb-6">Enter the sustainable innovation hub and connect with fellow green pioneers</p>
                   
                   {/* Clean Login Options */}
                   <div className="space-y-4">
@@ -500,8 +512,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   >
                     <UserPlus className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold text-ink mb-3">New Scout Family?</h3>
-                  <p className="text-teal-700 mb-6">Join Pack 1703 and start your scouting journey today!</p>
+                  <h3 className="text-xl font-semibold text-ink mb-3">🌟 Future Eco-Innovator?</h3>
+                  <p className="text-teal-700 mb-6">Join Pack 1703's green revolution and help build tomorrow's sustainable world!</p>
                   <button
                     onClick={() => setShowAccountRequestModal(true)}
                     className="w-full text-white py-3 px-6 rounded-md transition-all duration-200 font-medium text-lg hover:shadow-md shadow-sm border border-gray-300"

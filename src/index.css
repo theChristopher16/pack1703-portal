@@ -1285,33 +1285,13 @@ button[class*="Reset"] {
 }
 
 
-/* Fix bright green emoji backgrounds - force muted colors with maximum specificity */
-.bg-white div.w-16.h-16[class*="bg-gradient-to-br"],
-.bg-white div.w-12.h-12[class*="bg-gradient-to-br"],
-.bg-white div[class*="bg-gradient-to-br"],
-div[class*="from-moss"][class*="to-teal"],
-div[class*="from-teal"][class*="to-moss"],
-div[class*="from-moss/40"][class*="to-teal/40"],
-div[class*="from-teal/40"][class*="to-moss/40"],
-div[class*="from-moss/10"][class*="to-teal/10"],
-div[class*="from-teal/10"][class*="to-moss/10"],
-.w-16.h-16.rounded-brand.flex.items-center.justify-center.mx-auto,
-.w-12.h-12.rounded-brand.flex.items-center.justify-center.mx-auto,
-.w-16.h-16.rounded-brand.flex.items-center.justify-center.flex-shrink-0 {
-  background: linear-gradient(135deg, rgba(76, 111, 122, 0.12) 0%, rgba(128, 190, 151, 0.12) 100%) !important;
-  background-image: linear-gradient(135deg, rgba(76, 111, 122, 0.12) 0%, rgba(128, 190, 151, 0.12) 100%) !important;
-}
-
-/* Target any div with specific emoji container patterns */
-div.w-16.h-16.rounded-brand.flex.items-center,
-div.w-12.h-12.rounded-brand.flex.items-center {
-  background: linear-gradient(135deg, rgba(76, 111, 122, 0.08) 0%, rgba(128, 190, 151, 0.08) 100%) !important;
-}
-
-/* Force all emoji container backgrounds to be muted */
-.bg-white .rounded-brand[class*="w-16"][class*="h-16"],
-.bg-white .rounded-brand[class*="w-12"][class*="h-12"] {
-  background: linear-gradient(135deg, rgba(76, 111, 122, 0.12) 0%, rgba(128, 190, 151, 0.12) 100%) !important;
+/* Fix bright green background behind emoji spans - target the debug CSS rule */
+.bg-white span.text-2xl,
+.bg-white span.text-xl,
+.bg-white div.rounded-brand span,
+div.w-16.h-16.rounded-brand span,
+div.w-12.h-12.rounded-brand span {
+  background-color: transparent !important;
 }
 
 /* Override any CSS that might be adding colored backgrounds */

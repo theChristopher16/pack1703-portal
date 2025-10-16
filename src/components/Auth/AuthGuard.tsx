@@ -103,7 +103,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                 {/* Sign In */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-8 text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-6">
+                  <div className="w-16 h-16 bg-gradient-to-br from-moss/10 to-teal/10 rounded-brand flex items-center justify-center mx-auto mb-6">
                     <span className="text-white text-2xl">🔑</span>
                   </div>
                   <h3 className="text-xl font-semibold text-ink mb-3">Sign In</h3>
@@ -247,7 +247,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
                 {/* September - Kickoff */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
-                  <div className="w-16 h-16 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-moss/10 to-teal/10 rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🎒</span>
                   </div>
                   <h3 className="text-lg font-semibold text-ink mb-2">Pack Kickoff</h3>
@@ -257,7 +257,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                 {/* October - USS Stewart Sleepover */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
-                  <div className="w-16 h-16 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-moss/10 to-teal/10 rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🚢</span>
                   </div>
                   <h3 className="text-lg font-semibold text-ink mb-2">USS Stewart Sleepover</h3>
@@ -267,7 +267,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                 {/* November - Double Lake Campout */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
-                  <div className="w-16 h-16 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-teal/10 to-moss/10 rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🏕️</span>
                   </div>
                   <h3 className="text-lg font-semibold text-ink mb-2">Double Lake Campout</h3>
@@ -277,7 +277,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                 {/* December - Winter Celebration */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
-                  <div className="w-16 h-16 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-teal/10 to-moss/10 rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">❄️</span>
                   </div>
                   <h3 className="text-lg font-semibold text-ink mb-2">Winter Celebration</h3>
@@ -287,7 +287,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                 {/* January - Pinewood Derby */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
-                  <div className="w-16 h-16 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-teal/10 to-moss/10 rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🏁</span>
                   </div>
                   <h3 className="text-lg font-semibold text-ink mb-2">Pinewood Derby</h3>
@@ -297,7 +297,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                 {/* March - Rocket Launch */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
-                  <div className="w-16 h-16 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-teal/10 to-moss/10 rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🚀</span>
                   </div>
                   <h3 className="text-lg font-semibold text-ink mb-2">Rocket Launch</h3>
@@ -307,7 +307,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                 {/* March - Brazos Bend */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
-                  <div className="w-16 h-16 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-teal/10 to-moss/10 rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🎣</span>
                   </div>
                   <h3 className="text-lg font-semibold text-ink mb-2">Brazos Bend Adventure</h3>
@@ -317,7 +317,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                 {/* April - Tia-Piah Powwow */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
-                  <div className="w-16 h-16 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-moss/10 to-teal/10 rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🌎</span>
                   </div>
                   <h3 className="text-lg font-semibold text-ink mb-2">Tia-Piah Powwow</h3>
@@ -327,7 +327,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                 {/* May - Bovay Scout Ranch */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300">
-                  <div className="w-16 h-16 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-moss/10 to-teal/10 rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-2xl">🏹</span>
                   </div>
                   <h3 className="text-lg font-semibold text-ink mb-2">Bovay Scout Ranch</h3>
@@ -353,7 +353,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Events */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300 hover:scale-105">
-                  <div className="w-12 h-12 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-moss/10 to-teal/10 rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-xl">📅</span>
                   </div>
                   <h3 className="text-lg font-semibold text-ink mb-2">Events & Activities</h3>
@@ -365,7 +365,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                 {/* Announcements */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300 hover:scale-105">
-                  <div className="w-12 h-12 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-teal/10 to-moss/10 rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-xl">📢</span>
                   </div>
                   <h3 className="text-lg font-semibold text-ink mb-2">Announcements</h3>
@@ -377,7 +377,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                 {/* RSVPs */}
                 <div className="bg-white rounded-brand shadow-card border border-cloud p-6 text-center hover:shadow-lg transition-all duration-300 hover:scale-105">
-                  <div className="w-12 h-12 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-teal/10 to-moss/10 rounded-brand flex items-center justify-center mx-auto mb-4">
                     <span className="text-white text-xl">✋</span>
                   </div>
                   <h3 className="text-lg font-semibold text-ink mb-2">RSVP & Sign-ups</h3>
@@ -419,7 +419,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                 <div className="space-y-6">
                   <div className="bg-white rounded-brand shadow-card border border-cloud p-6">
                     <div className="flex items-start space-x-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-moss to-teal rounded-brand flex items-center justify-center flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-br from-moss/10 to-teal/10 rounded-brand flex items-center justify-center flex-shrink-0">
                         <span className="text-white text-xl">🌟</span>
                       </div>
                       <div>
@@ -431,7 +431,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                   <div className="bg-white rounded-brand shadow-card border border-cloud p-6">
                     <div className="flex items-start space-x-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-br from-teal/10 to-moss/10 rounded-brand flex items-center justify-center flex-shrink-0">
                         <span className="text-white text-xl">👨‍👩‍👧‍👦</span>
                       </div>
                       <div>
@@ -443,7 +443,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                   <div className="bg-white rounded-brand shadow-card border border-cloud p-6">
                     <div className="flex items-start space-x-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-teal to-moss rounded-brand flex items-center justify-center flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-br from-teal/10 to-moss/10 rounded-brand flex items-center justify-center flex-shrink-0">
                         <span className="text-white text-xl">🏅</span>
                       </div>
                       <div>

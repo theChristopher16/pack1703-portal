@@ -38,6 +38,7 @@ class AccountRequestService {
   private getPendingAccountRequests = httpsCallable(functions, 'getPendingAccountRequests');
   private approveAccountRequest = httpsCallable(functions, 'approveAccountRequest');
   private rejectAccountRequest = httpsCallable(functions, 'rejectAccountRequest');
+  private resendPasswordSetupLinkCallable = httpsCallable(functions, 'resendPasswordSetupLink');
 
   async submitRequest(formData: AccountRequestFormData): Promise<{ success: boolean; requestId?: string; message: string; error?: string }> {
     try {
@@ -112,6 +113,26 @@ class AccountRequestService {
       return {
         success: false,
         message: error.message || 'Failed to reject account request',
+        error: error.message
+      };
+    }
+  }
+
+  async resendPasswordSetupLink(userId?: string, email?: string): Promise<{ success: boolean; message: string; setupLink?: string; emailSent?: boolean; error?: string }> {
+    try {
+      const result = await this.resendPasswordSetupLinkCallable({ userId, email });
+      const data = result.data as any;
+      return {
+        success: data.success,
+        message: data.message,
+        setupLink: data.setupLink,
+        emailSent: data.emailSent
+      };
+    } catch (error: any) {
+      console.error('Error resending password setup link:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to resend password setup link',
         error: error.message
       };
     }

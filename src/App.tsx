@@ -8,7 +8,7 @@ import { versionCheckService } from './services/versionCheckService';
 
 // Components
 import Layout from './components/Layout/Layout';
-import { AdminOnly, RootOnly, AuthenticatedOnly } from './components/Auth/RoleGuard';
+import { AdminOnly, RootOnly, AuthenticatedOnly, SuperUserOnly } from './components/Auth/RoleGuard';
 import AuthGuard from './components/Auth/AuthGuard';
 
 // Pages
@@ -27,6 +27,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import AnalyticsDashboard from './components/Analytics/AnalyticsDashboard';
 import AnalyticsTest from './components/Analytics/AnalyticsTest';
+import UserInteractionDashboard from './components/Analytics/UserInteractionDashboard';
 import FormsDemoPage from './pages/FormsDemoPage';
 import CloudFunctionsTestPage from './pages/CloudFunctionsTestPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -37,7 +38,7 @@ import AuthDebugPage from './pages/AuthDebugPage';
 // Admin Pages
 import AdminLocations from './pages/AdminLocations';
 import UnifiedChat from './components/Chat/UnifiedChat';
-import AdminAI from './pages/AdminAI';
+// AdminAI removed - AI functionality disabled
 import AdminLists from './pages/AdminLists';
 import AdminSeasons from './pages/AdminSeasons';
 import AdminFundraising from './pages/AdminFundraising';
@@ -155,6 +156,7 @@ function App() {
                     {/* Admin Routes - Protected by role guards, no /admin prefix needed */}
                     <Route path="/analytics" element={<Layout><AdminOnly><AnalyticsDashboard /></AdminOnly></Layout>} />
                     <Route path="/analytics/test" element={<Layout><AdminOnly><AnalyticsTest /></AdminOnly></Layout>} />
+                    <Route path="/user-interactions" element={<Layout><SuperUserOnly><UserInteractionDashboard /></SuperUserOnly></Layout>} />
                     <Route path="/users" element={<Layout><AdminOnly><AdminUsers /></AdminOnly></Layout>} />
                     <Route path="/fundraising" element={<Layout><AdminOnly><AdminFundraising /></AdminOnly></Layout>} />
                     <Route path="/finances" element={<Layout><AdminOnly><AdminFinances /></AdminOnly></Layout>} />
@@ -164,7 +166,7 @@ function App() {
                     <Route path="/cost-management" element={<Layout><AdminOnly><AdminCostManagement /></AdminOnly></Layout>} />
                     
                     {/* Root-only Routes */}
-                    <Route path="/ai" element={<Layout><RootOnly><AdminAI /></RootOnly></Layout>} />
+                    {/* AI route removed - AI functionality disabled */}
                     <Route path="/settings" element={<Layout><RootOnly><AdminSettings /></RootOnly></Layout>} />
                     <Route path="/soc" element={<Layout><RootOnly><HackerTab /></RootOnly></Layout>} />
                     <Route path="/system" element={<Layout><RootOnly><SystemMonitor /></RootOnly></Layout>} />

@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
+import { Client, Environment } from 'squareup';
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -412,17 +413,23 @@ export const submitRSVP = functions.https.onCall(async (data: any, context: func
 
     const eventData = eventDoc.data();
     
-    // Check event capacity
-    const currentRSVPCount = await getActualRSVPCount(data.eventId);
+    // Check if event requires payment
+    const paymentRequired = eventData?.paymentRequired || false;
+    const paymentAmount = eventData?.paymentAmount || 0;
+    const paymentCurrency = eventData?.paymentCurrency || 'USD';
+    const paymentDescription = eventData?.paymentDescription || '';
+    
+    // Check event capacity - only count paid RSVPs if payment is required
+    const currentPaidRSVPCount = await getActualRSVPCount(data.eventId, paymentRequired);
     const maxCapacity = eventData?.maxCapacity;
     
-    if (maxCapacity && (currentRSVPCount + data.attendees.length) > maxCapacity) {
-      const remainingSpots = maxCapacity - currentRSVPCount;
+    if (maxCapacity && (currentPaidRSVPCount + data.attendees.length) > maxCapacity) {
+      const remainingSpots = maxCapacity - currentPaidRSVPCount;
       throw new functions.https.HttpsError('resource-exhausted', 
         `Event is at capacity. Only ${remainingSpots} spots remaining.`);
     }
 
-    // Create RSVP submission with enhanced data
+    // Create RSVP submission with enhanced data and payment status
     const rsvpData = {
       eventId: data.eventId,
       userId: context.auth.uid,
@@ -436,6 +443,12 @@ export const submitRSVP = functions.https.onCall(async (data: any, context: func
       notes: data.notes || '',
       ipHash: data.ipHash || '',
       userAgent: data.userAgent || '',
+      // Payment-related fields
+      paymentRequired: paymentRequired,
+      paymentAmount: paymentAmount,
+      paymentCurrency: paymentCurrency,
+      paymentStatus: paymentRequired ? 'pending' : 'not_required',
+      paymentId: null, // Will be set when payment is completed
       submittedAt: getTimestamp(),
       createdAt: getTimestamp(),
       updatedAt: getTimestamp()
@@ -448,8 +461,12 @@ export const submitRSVP = functions.https.onCall(async (data: any, context: func
     const rsvpRef = db.collection('rsvps').doc();
     batch.set(rsvpRef, rsvpData);
 
-    // Update event RSVP count
-    const newRSVPCount = currentRSVPCount + data.attendees.length;
+    // Update event RSVP count - only increment if payment not required or payment completed
+    // For events requiring payment, only count paid RSVPs
+    let newRSVPCount = currentPaidRSVPCount;
+    if (!paymentRequired || (paymentRequired && rsvpData.paymentStatus === 'completed')) {
+      newRSVPCount += data.attendees.length;
+    }
     batch.update(eventRef, {
       currentRSVPs: newRSVPCount,
       updatedAt: getTimestamp()
@@ -487,7 +504,13 @@ export const submitRSVP = functions.https.onCall(async (data: any, context: func
       success: true,
       rsvpId: rsvpRef.id,
       newRSVPCount: newRSVPCount,
-      message: 'RSVP submitted successfully'
+      message: paymentRequired ? 
+        'RSVP submitted successfully. Payment required to complete registration.' : 
+        'RSVP submitted successfully',
+      paymentRequired: paymentRequired,
+      paymentAmount: paymentAmount,
+      paymentCurrency: paymentCurrency,
+      paymentDescription: paymentDescription
     };
 
   } catch (error) {
@@ -500,19 +523,29 @@ export const submitRSVP = functions.https.onCall(async (data: any, context: func
 });
 
 // Helper function to get actual RSVP count from database using aggregation
-async function getActualRSVPCount(eventId: string): Promise<number> {
+async function getActualRSVPCount(eventId: string, paymentRequired: boolean = false): Promise<number> {
   try {
     // Use aggregation query for better performance
     const rsvpsRef = db.collection('rsvps');
     const snapshot = await rsvpsRef
       .where('eventId', '==', eventId)
-      .select('attendees')
+      .select('attendees', 'paymentRequired', 'paymentStatus')
       .get();
     
     let totalAttendees = 0;
     snapshot.docs.forEach(doc => {
       const rsvpData = doc.data();
-      totalAttendees += rsvpData.attendees?.length || 1;
+      const attendeeCount = rsvpData.attendees?.length || 1;
+      
+      // If payment is required, only count RSVPs with completed payment
+      if (paymentRequired) {
+        if (rsvpData.paymentStatus === 'completed') {
+          totalAttendees += attendeeCount;
+        }
+      } else {
+        // If payment not required, count all RSVPs
+        totalAttendees += attendeeCount;
+      }
     });
     
     return totalAttendees;
@@ -2654,6 +2687,131 @@ export const createTestAnnouncement = functions.https.onCall(async (data: any, c
   }
 });
 
+// Create announcement and send emails in one call (like approveAccountRequest does)
+export const createAnnouncementWithEmails = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    const { announcementData, testMode = false } = data;
+    
+    if (!announcementData) {
+      throw new functions.https.HttpsError('invalid-argument', 'Announcement data is required');
+    }
+
+    // Create the announcement in Firestore
+    const docRef = await db.collection('announcements').add({
+      ...announcementData,
+      createdAt: getTimestamp(),
+      updatedAt: getTimestamp()
+    });
+
+    const announcement = {
+      id: docRef.id,
+      ...announcementData
+    };
+
+    functions.logger.info('✅ Announcement created with ID:', docRef.id);
+
+    // Send emails if requested
+    if (announcementData.sendEmail) {
+      try {
+        const { emailService } = await import('./emailService');
+        
+        // Get users based on announcement targeting
+        let targetUsers: any[] = [];
+        
+        if (announcement.targetDens && announcement.targetDens.length > 0) {
+          // Get users for specific dens
+          for (const denId of announcement.targetDens) {
+            const denUsersSnapshot = await db.collection('users')
+              .where('status', '==', 'approved')
+              .where('dens', 'array-contains', denId)
+              .get();
+            
+            denUsersSnapshot.forEach(userDoc => {
+              const userData = userDoc.data();
+              if (!targetUsers.find(u => u.id === userDoc.id)) {
+                targetUsers.push({ id: userDoc.id, ...userData });
+              }
+            });
+          }
+        } else {
+          // Get all approved users
+          const usersSnapshot = await db.collection('users')
+            .where('status', '==', 'approved')
+            .get();
+          
+          usersSnapshot.forEach((userDoc) => {
+            targetUsers.push({ id: userDoc.id, ...userDoc.data() });
+          });
+        }
+        
+        const emailPromises: Promise<boolean>[] = [];
+        const testEmails = ['christopher@smithstation.io', 'welcome-test@smithstation.io'];
+        
+        targetUsers.forEach((userData) => {
+          if (!userData.email) return;
+          
+          if (testMode && !testEmails.includes(userData.email)) {
+            functions.logger.info(`🧪 Test mode: Skipping ${userData.email}`);
+            return;
+          }
+          
+          const emailEnabled = userData.emailNotifications !== false;
+          if (!emailEnabled) {
+            functions.logger.info(`📧 Email disabled for ${userData.email}, skipping`);
+            return;
+          }
+          
+          emailPromises.push(
+            emailService.sendAnnouncementEmail(userData.email, announcement)
+          );
+        });
+        
+        const results = await Promise.allSettled(emailPromises);
+        const successful = results.filter(result => 
+          result.status === 'fulfilled' && result.value === true
+        ).length;
+        const failed = results.length - successful;
+        
+        const modeText = testMode ? ' (TEST MODE)' : '';
+        functions.logger.info(`📧 Announcement emails sent${modeText}: ${successful} successful, ${failed} failed`);
+        
+        return {
+          success: true,
+          announcementId: docRef.id,
+          emailsSent: successful,
+          emailsFailed: failed,
+          message: `Announcement created and ${successful} emails sent successfully`
+        };
+      } catch (emailError) {
+        functions.logger.error('❌ Error sending announcement emails:', emailError);
+        // Don't fail the announcement creation if emails fail
+        return {
+          success: true,
+          announcementId: docRef.id,
+          emailsSent: 0,
+          emailsFailed: 0,
+          message: 'Announcement created but emails failed to send'
+        };
+      }
+    }
+
+    return {
+      success: true,
+      announcementId: docRef.id,
+      message: 'Announcement created successfully (no emails requested)'
+    };
+    
+  } catch (error: any) {
+    functions.logger.error('❌ Error creating announcement:', error);
+    throw new functions.https.HttpsError('internal', error.message || 'Failed to create announcement');
+  }
+});
+
 // Send announcement emails via server-side email service
 export const sendAnnouncementEmails = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   try {
@@ -3592,6 +3750,258 @@ export const completePasswordSetup = functions.https.onCall(async (data: any, co
   }
 });
 
+// Resend Password Setup Link (admin only)
+export const resendPasswordSetupLink = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    console.log('📧 Resend Password Setup Link - Request received');
+
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if caller is admin
+    const callerDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!callerDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const callerData = callerDoc.data();
+    const isAdmin = callerData?.role === 'super_admin' || 
+                   callerData?.role === 'admin' || 
+                   callerData?.role === 'cubmaster' ||
+                   callerData?.isAdmin || 
+                   callerData?.isCubmaster ||
+                   callerData?.permissions?.includes('user_management');
+
+    if (!isAdmin) {
+      throw new functions.https.HttpsError('permission-denied', 'Only admins can resend password setup links');
+    }
+
+    const { userId, email } = data;
+
+    if (!userId && !email) {
+      throw new functions.https.HttpsError('invalid-argument', 'Either userId or email is required');
+    }
+
+    // Get user data
+    let userDoc;
+    if (userId) {
+      userDoc = await db.collection('users').doc(userId).get();
+    } else {
+      const usersSnapshot = await db.collection('users').where('email', '==', email).limit(1).get();
+      if (!usersSnapshot.empty) {
+        userDoc = usersSnapshot.docs[0];
+      }
+    }
+
+    if (!userDoc || !userDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    const userUid = userDoc.id;
+
+    // Check if user is approved
+    if (userData?.status !== 'approved') {
+      throw new functions.https.HttpsError('failed-precondition', 'User must be approved before sending password setup link');
+    }
+
+    // Check if user already has a password (has signed in)
+    try {
+      const authUser = await admin.auth().getUser(userUid);
+      if (authUser.passwordHash) {
+        // User already has a password, they should use password reset instead
+        throw new functions.https.HttpsError('failed-precondition', 'User already has a password. Use password reset instead.');
+      }
+    } catch (authError: any) {
+      if (authError.code === 'auth/user-not-found') {
+        throw new functions.https.HttpsError('not-found', 'User account not found in Firebase Auth');
+      }
+      throw authError;
+    }
+
+    // Invalidate any existing password setup tokens for this user
+    const existingTokensSnapshot = await db.collection('passwordSetupTokens')
+      .where('userId', '==', userUid)
+      .where('used', '==', false)
+      .get();
+
+    const batch = db.batch();
+    existingTokensSnapshot.docs.forEach(doc => {
+      batch.update(doc.ref, { used: true, invalidatedAt: getTimestamp() });
+    });
+    await batch.commit();
+
+    console.log(`Invalidated ${existingTokensSnapshot.size} existing tokens`);
+
+    // Create new password setup token
+    const setupToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const setupTokenExpiry = new Date();
+    setupTokenExpiry.setHours(setupTokenExpiry.getHours() + 24); // 24 hours
+
+    // Store password setup token
+    await db.collection('passwordSetupTokens').doc(setupToken).set({
+      userId: userUid,
+      email: userData?.email || email,
+      displayName: userData?.displayName || '',
+      expires: admin.firestore.Timestamp.fromDate(setupTokenExpiry),
+      used: false,
+      createdAt: getTimestamp(),
+      resentBy: context.auth.uid
+    });
+
+    console.log('New password setup token created:', setupToken);
+
+    // Send email with password setup link
+    try {
+      const { emailService } = await import('./emailService');
+      const emailData = {
+        uid: userUid,
+        email: userData?.email || email,
+        displayName: userData?.displayName || 'User',
+        phone: userData?.phone || '',
+        address: userData?.address || '',
+        emergencyContact: userData?.emergencyContact || '',
+        medicalInfo: userData?.medicalInfo || '',
+        role: userData?.role || 'parent',
+        setupToken: setupToken
+      };
+      
+      const emailSent = await emailService.sendWelcomeEmail(emailData);
+      
+      if (!emailSent) {
+        // Log warning but don't fail - return token so admin can manually share it
+        console.warn('Failed to send email, but token was created');
+        return {
+          success: true,
+          message: 'Password setup token created but email failed. Share this link manually.',
+          setupLink: `https://sfpack1703.web.app/password-setup?token=${setupToken}`,
+          emailSent: false
+        };
+      }
+
+      console.log('Welcome email sent successfully to:', userData?.email);
+      
+      // Log the action
+      await db.collection('adminActions').add({
+        userId: context.auth.uid,
+        userEmail: context.auth.token.email || '',
+        action: 'resend_password_setup_link',
+        entityType: 'user',
+        entityId: userUid,
+        entityName: userData?.displayName || '',
+        details: {
+          targetEmail: userData?.email || email,
+          setupToken: setupToken
+        },
+        timestamp: getTimestamp(),
+        ipAddress: context.rawRequest?.ip || 'unknown',
+        userAgent: context.rawRequest?.headers?.['user-agent'] || 'unknown',
+        success: true
+      });
+
+      return {
+        success: true,
+        message: 'Password setup link sent successfully',
+        emailSent: true,
+        setupLink: `https://sfpack1703.web.app/password-setup?token=${setupToken}`
+      };
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+      // Return the link so admin can manually share it
+      return {
+        success: true,
+        message: 'Password setup token created but email failed. Share this link manually.',
+        setupLink: `https://sfpack1703.web.app/password-setup?token=${setupToken}`,
+        emailSent: false,
+        error: emailError instanceof Error ? emailError.message : 'Unknown error'
+      };
+    }
+
+  } catch (error) {
+    console.error('Error resending password setup link:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to resend password setup link');
+  }
+});
+
+// Update RSVP (authenticated users only)
+export const updateRSVP = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    console.log('📝 Update RSVP - Request received');
+
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
+    }
+
+    const { rsvpId, updateData } = data;
+
+    if (!rsvpId) {
+      throw new functions.https.HttpsError('invalid-argument', 'RSVP ID is required');
+    }
+
+    if (!updateData) {
+      throw new functions.https.HttpsError('invalid-argument', 'Update data is required');
+    }
+
+    console.log(`Updating RSVP ${rsvpId} for user ${context.auth.uid}`);
+
+    // Get the RSVP document
+    const rsvpRef = db.collection('rsvps').doc(rsvpId);
+    const rsvpDoc = await rsvpRef.get();
+
+    if (!rsvpDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'RSVP not found');
+    }
+
+    const rsvpData = rsvpDoc.data();
+    
+    // Check if the user owns this RSVP
+    if (rsvpData?.userId !== context.auth.uid) {
+      throw new functions.https.HttpsError('permission-denied', 'You can only update your own RSVPs');
+    }
+
+    // Validate update data
+    const allowedFields = [
+      'familyName', 'email', 'phone', 'attendees', 
+      'dietaryRestrictions', 'specialNeeds', 'notes'
+    ];
+
+    const sanitizedUpdateData: any = {};
+    for (const field of allowedFields) {
+      if (updateData[field] !== undefined) {
+        sanitizedUpdateData[field] = updateData[field];
+      }
+    }
+
+    // Add updated timestamp
+    sanitizedUpdateData.updatedAt = getTimestamp();
+
+    // Update the RSVP
+    await rsvpRef.update(sanitizedUpdateData);
+
+    console.log(`RSVP ${rsvpId} updated successfully`);
+
+    return {
+      success: true,
+      message: 'RSVP updated successfully'
+    };
+
+  } catch (error) {
+    console.error('Error updating RSVP:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to update RSVP');
+  }
+});
+
 // Helper function to generate password reset email HTML
 function generatePasswordResetEmailHTML(displayName: string, resetUrl: string): string {
   return `
@@ -4042,6 +4452,230 @@ export const squareWebhook = functions.https.onRequest(async (req, res) => {
     res.status(200).send('OK');
   } catch (e: any) {
     res.status(400).send('Bad Request');
+  }
+});
+
+// RSVP Payment Functions - Added payment processing for RSVPs
+export const createRSVPPayment = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated to make payment');
+    }
+
+    // Validate required fields
+    if (!data.rsvpId || !data.eventId) {
+      throw new functions.https.HttpsError('invalid-argument', 'RSVP ID and Event ID are required');
+    }
+
+    // Get RSVP and Event details
+    const rsvpRef = db.collection('rsvps').doc(data.rsvpId);
+    const rsvpDoc = await rsvpRef.get();
+    
+    if (!rsvpDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'RSVP not found');
+    }
+
+    const rsvpData = rsvpDoc.data();
+    
+    // Verify RSVP belongs to the authenticated user
+    if (rsvpData?.userId !== context.auth.uid) {
+      throw new functions.https.HttpsError('permission-denied', 'You can only pay for your own RSVP');
+    }
+
+    // Check if payment is already completed
+    if (rsvpData?.paymentStatus === 'completed') {
+      throw new functions.https.HttpsError('already-exists', 'Payment already completed for this RSVP');
+    }
+
+    // Get event details
+    const eventRef = db.collection('events').doc(data.eventId);
+    const eventDoc = await eventRef.get();
+    
+    if (!eventDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Event not found');
+    }
+
+    const eventData = eventDoc.data();
+    
+    if (!eventData?.paymentRequired) {
+      throw new functions.https.HttpsError('invalid-argument', 'This event does not require payment');
+    }
+
+    // Create payment record
+    const paymentData = {
+      id: db.collection('payments').doc().id,
+      eventId: data.eventId,
+      rsvpId: data.rsvpId,
+      userId: context.auth.uid,
+      amount: eventData.paymentAmount,
+      currency: eventData.paymentCurrency || 'USD',
+      status: 'pending',
+      description: eventData.paymentDescription || `Payment for ${eventData.title}`,
+      createdAt: getTimestamp(),
+      updatedAt: getTimestamp()
+    };
+
+    // Save payment record
+    await db.collection('payments').doc(paymentData.id).set(paymentData);
+
+    // Get Square API configuration for frontend integration
+    const squareApplicationId = process.env.SQUARE_APPLICATION_ID;
+    const squareLocationId = process.env.SQUARE_LOCATION_ID;
+    const squareEnvironment = process.env.SQUARE_ENVIRONMENT || 'sandbox';
+
+    if (!squareApplicationId || !squareLocationId) {
+      throw new functions.https.HttpsError('failed-precondition', 'Square API configuration not complete');
+    }
+
+    // Return payment data for frontend Square integration
+    // The actual payment will be processed in completeRSVPPayment when we receive the nonce
+    return {
+      success: true,
+      paymentId: paymentData.id,
+      amount: paymentData.amount,
+      currency: paymentData.currency,
+      description: paymentData.description,
+      applicationId: squareApplicationId,
+      locationId: squareLocationId,
+      environment: squareEnvironment,
+      message: 'Payment initialized. Complete payment to finalize RSVP.'
+    };
+
+  } catch (error) {
+    console.error('Error creating RSVP payment:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to create payment');
+  }
+});
+
+// Complete RSVP Payment (called after successful Square payment)
+export const completeRSVPPayment = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Validate required fields - we need the payment nonce from Square form
+    if (!data.paymentId || !data.rsvpId || !data.nonce) {
+      throw new functions.https.HttpsError('invalid-argument', 'Payment ID, RSVP ID, and Square payment nonce are required');
+    }
+
+    // Get payment and RSVP details
+    const paymentRef = db.collection('payments').doc(data.paymentId);
+    const paymentDoc = await paymentRef.get();
+    
+    if (!paymentDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Payment not found');
+    }
+
+    const paymentData = paymentDoc.data();
+    
+    // Verify payment belongs to the authenticated user
+    if (paymentData?.userId !== context.auth.uid) {
+      throw new functions.https.HttpsError('permission-denied', 'You can only update your own payments');
+    }
+
+    const rsvpRef = db.collection('rsvps').doc(data.rsvpId);
+    const rsvpDoc = await rsvpRef.get();
+    
+    if (!rsvpDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'RSVP not found');
+    }
+
+    const rsvpData = rsvpDoc.data();
+
+    // Verify RSVP belongs to the authenticated user
+    if (rsvpData?.userId !== context.auth.uid) {
+      throw new functions.https.HttpsError('permission-denied', 'You can only update payments for your own RSVP');
+    }
+
+    // Get Square API configuration
+    const squareAccessToken = process.env.SQUARE_ACCESS_TOKEN;
+    const squareLocationId = process.env.SQUARE_LOCATION_ID;
+    const squareEnvironment = process.env.SQUARE_ENVIRONMENT || 'sandbox';
+
+    if (!squareAccessToken || !squareLocationId) {
+      throw new functions.https.HttpsError('failed-precondition', 'Square API credentials not configured');
+    }
+
+    // Initialize Square client
+    const squareClient = new Client({
+      accessToken: squareAccessToken,
+      environment: squareEnvironment === 'production' ? Environment.Production : Environment.Sandbox,
+    });
+
+    // Process the actual payment with Square
+    let squarePayment;
+    try {
+      const paymentResponse = await squareClient.paymentsApi.createPayment({
+        sourceId: data.nonce, // Nonce from Square payment form
+        idempotencyKey: data.paymentId, // Use our payment ID as idempotency key
+        amountMoney: {
+          amount: BigInt(paymentData.amount),
+          currency: paymentData.currency,
+        },
+        note: paymentData.description,
+        locationId: squareLocationId,
+      });
+
+      if (paymentResponse.result.payment) {
+        squarePayment = paymentResponse.result.payment;
+      } else {
+        throw new Error('Square payment creation failed');
+      }
+    } catch (squareError: any) {
+      console.error('Square payment error:', squareError);
+      throw new functions.https.HttpsError('internal', `Square payment failed: ${squareError.message}`);
+    }
+
+    // Use batch write for atomicity
+    const batch = db.batch();
+    
+    // Update payment record with Square payment details
+    batch.update(paymentRef, {
+      squarePaymentId: squarePayment.id,
+      squareOrderId: squarePayment.orderId,
+      status: 'completed',
+      processedAt: getTimestamp(),
+      updatedAt: getTimestamp()
+    });
+
+    // Update RSVP payment status
+    batch.update(rsvpRef, {
+      paymentStatus: 'completed',
+      paymentId: data.paymentId,
+      updatedAt: getTimestamp()
+    });
+
+    // If this was the first payment completion, update event RSVP count
+    const eventRef = db.collection('events').doc(paymentData.eventId);
+    const currentPaidCount = await getActualRSVPCount(paymentData.eventId, true);
+    const newPaidCount = currentPaidCount + rsvpData.attendees.length;
+    
+    batch.update(eventRef, {
+      currentRSVPs: newPaidCount,
+      updatedAt: getTimestamp()
+    });
+
+    // Commit the batch
+    await batch.commit();
+
+    return {
+      success: true,
+      message: 'Payment completed successfully. Your RSVP is now confirmed.',
+      rsvpConfirmed: true
+    };
+
+  } catch (error) {
+    console.error('Error completing RSVP payment:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to complete payment');
   }
 });
 

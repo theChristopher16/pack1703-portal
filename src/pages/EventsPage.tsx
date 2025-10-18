@@ -46,6 +46,12 @@ interface Event {
   startDate?: string;
   endDate?: string;
   
+  // Payment specific fields
+  paymentRequired?: boolean; // Whether payment is required for this event
+  paymentAmount?: number; // Amount in cents (e.g., 6000 for $60.00)
+  paymentCurrency?: string; // Currency code (default: USD)
+  paymentDescription?: string; // Description for payment (e.g., "USS Stewart Cover Fee")
+  
   // Elective Event specific fields
   isElective?: boolean;
   electiveOptions?: {
@@ -595,6 +601,11 @@ const EventsPage: React.FC = () => {
           maxCapacity: eventData.maxCapacity && eventData.maxCapacity.toString().trim() !== '' 
             ? parseInt(eventData.maxCapacity.toString()) 
             : undefined,
+          // Payment fields
+          paymentRequired: eventData.paymentRequired || false,
+          paymentAmount: eventData.paymentAmount || undefined,
+          paymentCurrency: eventData.paymentCurrency || 'USD',
+          paymentDescription: eventData.paymentDescription || undefined,
           sendNotification: false
         };
         
@@ -657,7 +668,12 @@ const EventsPage: React.FC = () => {
               isActive: firebaseEvent.isActive,
               locationId: firebaseEvent.locationId,
               startDate: firebaseEvent.startDate?.toDate?.()?.toISOString() || firebaseEvent.startDate,
-              endDate: firebaseEvent.endDate?.toDate?.()?.toISOString() || firebaseEvent.endDate
+              endDate: firebaseEvent.endDate?.toDate?.()?.toISOString() || firebaseEvent.endDate,
+              // Payment fields
+              paymentRequired: firebaseEvent.paymentRequired || false,
+              paymentAmount: firebaseEvent.paymentAmount || undefined,
+              paymentCurrency: firebaseEvent.paymentCurrency || 'USD',
+              paymentDescription: firebaseEvent.paymentDescription || undefined
             };
           });
           
@@ -686,6 +702,11 @@ const EventsPage: React.FC = () => {
           maxCapacity: eventData.maxCapacity && eventData.maxCapacity.toString().trim() !== '' 
             ? parseInt(eventData.maxCapacity.toString()) 
             : undefined,
+          // Payment fields
+          paymentRequired: eventData.paymentRequired || false,
+          paymentAmount: eventData.paymentAmount || undefined,
+          paymentCurrency: eventData.paymentCurrency || 'USD',
+          paymentDescription: eventData.paymentDescription || undefined,
         };
         
         console.log('Updating event with data:', eventToUpdate);
@@ -747,7 +768,12 @@ const EventsPage: React.FC = () => {
               isActive: firebaseEvent.isActive,
               locationId: firebaseEvent.locationId,
               startDate: firebaseEvent.startDate?.toDate?.()?.toISOString() || firebaseEvent.startDate,
-              endDate: firebaseEvent.endDate?.toDate?.()?.toISOString() || firebaseEvent.endDate
+              endDate: firebaseEvent.endDate?.toDate?.()?.toISOString() || firebaseEvent.endDate,
+              // Payment fields
+              paymentRequired: firebaseEvent.paymentRequired || false,
+              paymentAmount: firebaseEvent.paymentAmount || undefined,
+              paymentCurrency: firebaseEvent.paymentCurrency || 'USD',
+              paymentDescription: firebaseEvent.paymentDescription || undefined
             };
           });
           
@@ -827,14 +853,14 @@ const EventsPage: React.FC = () => {
   // Removed loading animation for faster page transitions
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 pt-20 pb-12">
+    <div className="min-h-screen bg-fog pt-20 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Page Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-display font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl md:text-5xl font-display font-bold text-ink mb-4">
             {isAdmin ? 'Events Management' : 'Pack Events & Activities'}
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl text-teal-700 max-w-3xl mx-auto">
             {isAdmin 
               ? 'Manage all pack events, including scheduling, visibility, and participant limits.'
               : 'Discover upcoming events, activities, and adventures for scout families. From den meetings to campouts, there\'s something for everyone!'
@@ -1202,6 +1228,11 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
     visibility: event?.visibility || 'public',
     maxCapacity: event?.maxCapacity ? event.maxCapacity.toString() : '',
     isActive: event?.isActive ?? true,
+    // Payment fields
+    paymentRequired: event?.paymentRequired || false,
+    paymentAmount: event?.paymentAmount ? (event.paymentAmount / 100).toString() : '', // Convert from cents to dollars
+    paymentCurrency: event?.paymentCurrency || 'USD',
+    paymentDescription: event?.paymentDescription || '',
     // Elective event fields
     isElective: event?.isElective || false,
     flexibleDates: event?.electiveOptions?.flexibleDates || false,
@@ -1252,6 +1283,13 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
       newErrors.maxCapacity = 'Maximum participants must be at least 1';
     }
 
+    // Validate payment fields if payment is required
+    if (formData.paymentRequired) {
+      if (!formData.paymentAmount || isNaN(parseFloat(formData.paymentAmount)) || parseFloat(formData.paymentAmount) <= 0) {
+        newErrors.paymentAmount = 'Payment amount is required and must be greater than $0';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -1260,7 +1298,7 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
     e.preventDefault();
     
     if (validateForm()) {
-      const { maxCapacity, locationId, isElective, flexibleDates, noBeltLoop, casualAttendance, familyFriendly, communicationNotes, leadershipNotes, ...formDataWithoutElectiveFields } = formData;
+      const { maxCapacity, locationId, isElective, flexibleDates, noBeltLoop, casualAttendance, familyFriendly, communicationNotes, leadershipNotes, paymentAmount, paymentCurrency, paymentDescription, ...formDataWithoutElectiveFields } = formData;
       const eventData: Partial<Event> = {
         title: formData.title,
         description: formData.description,
@@ -1271,11 +1309,24 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
         locationId: locationId || formData.location,
         startDate: new Date(formData.startDate).toISOString(),
         endDate: new Date(formData.endDate).toISOString(),
-        currentRSVPs: event?.currentRSVPs || 0
+        currentRSVPs: event?.currentRSVPs || 0,
+        // Payment fields
+        paymentRequired: formData.paymentRequired,
+        paymentCurrency: formData.paymentCurrency
       };
       
       if (maxCapacity && maxCapacity.trim() !== '' && !isNaN(parseInt(maxCapacity))) {
         eventData.maxCapacity = parseInt(maxCapacity);
+      }
+
+      // Add payment amount if payment is required
+      if (formData.paymentRequired && paymentAmount && !isNaN(parseFloat(paymentAmount))) {
+        eventData.paymentAmount = Math.round(parseFloat(paymentAmount) * 100); // Convert to cents
+      }
+
+      // Add payment description if provided
+      if (formData.paymentRequired && paymentDescription.trim()) {
+        eventData.paymentDescription = paymentDescription.trim();
       }
 
       // Add elective event data if this is an elective event
@@ -1506,6 +1557,93 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
               Event is active and visible to participants
             </span>
           </label>
+        </div>
+      </div>
+
+      {/* Payment Settings */}
+      <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <span className="text-yellow-600 mr-2">💳</span>
+          Payment Settings
+        </h3>
+        
+        <div className="space-y-6">
+          {/* Payment Required Toggle */}
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              checked={formData.paymentRequired}
+              onChange={(e) => handleInputChange('paymentRequired', e.target.checked)}
+              className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+            />
+            <span className="ml-2 text-sm font-medium text-gray-700">
+              This event requires payment (e.g., USS Stewart $60 cover fee)
+            </span>
+          </div>
+
+          {formData.paymentRequired && (
+            <div className="space-y-4 pl-6 border-l-2 border-yellow-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Payment Amount */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Payment Amount (USD) *
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 sm:text-sm">$</span>
+                    </div>
+                    <input
+                      type="number"
+                      value={formData.paymentAmount}
+                      onChange={(e) => handleInputChange('paymentAmount', e.target.value)}
+                      min="0"
+                      step="0.01"
+                      className={`w-full pl-7 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white/80 backdrop-blur-sm ${
+                        errors.paymentAmount ? 'border-red-300' : 'border-gray-200'
+                      }`}
+                      placeholder="60.00"
+                    />
+                  </div>
+                  {errors.paymentAmount && (
+                    <p className="text-red-600 text-sm mt-1">{errors.paymentAmount}</p>
+                  )}
+                </div>
+
+                {/* Payment Currency */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Currency
+                  </label>
+                  <select
+                    value={formData.paymentCurrency}
+                    onChange={(e) => handleInputChange('paymentCurrency', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
+                  >
+                    <option value="USD">USD - US Dollar</option>
+                    <option value="CAD">CAD - Canadian Dollar</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Payment Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Description
+                </label>
+                <input
+                  type="text"
+                  value={formData.paymentDescription}
+                  onChange={(e) => handleInputChange('paymentDescription', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
+                  placeholder="e.g., USS Stewart Cover Fee, Event Registration, etc."
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This description will be shown to users when they make their payment
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,8 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadSensorData = exports.uploadCameraImage = exports.completePasswordSetup = exports.verifyPasswordSetupToken = exports.resetPasswordWithToken = exports.verifyPasswordResetToken = exports.sendPasswordReset = exports.publicICSFeed = exports.icsFeed = exports.sendSMS = exports.sendAnnouncementSMS = exports.sendAnnouncementEmails = exports.createTestAnnouncement = exports.helloWorld = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.getUserRSVPs = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
+exports.completeRSVPPayment = exports.createRSVPPayment = exports.squareWebhook = exports.refundTenantPayment = exports.createTenantPayment = exports.squareOAuthCallback = exports.squareConnectStart = exports.uploadSensorData = exports.uploadCameraImage = exports.resendPasswordSetupLink = exports.completePasswordSetup = exports.verifyPasswordSetupToken = exports.resetPasswordWithToken = exports.verifyPasswordResetToken = exports.sendPasswordReset = exports.publicICSFeed = exports.icsFeed = exports.sendSMS = exports.sendAnnouncementSMS = exports.sendAnnouncementEmails = exports.createAnnouncementWithEmails = exports.createTestAnnouncement = exports.helloWorld = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.getUserRSVPs = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
+const squareup_1 = require("squareup");
 // Initialize Firebase Admin
 admin.initializeApp();
 // Get Firestore instance
@@ -334,14 +335,19 @@ exports.submitRSVP = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('not-found', 'Event not found');
         }
         const eventData = eventDoc.data();
-        // Check event capacity
-        const currentRSVPCount = await getActualRSVPCount(data.eventId);
+        // Check if event requires payment
+        const paymentRequired = (eventData === null || eventData === void 0 ? void 0 : eventData.paymentRequired) || false;
+        const paymentAmount = (eventData === null || eventData === void 0 ? void 0 : eventData.paymentAmount) || 0;
+        const paymentCurrency = (eventData === null || eventData === void 0 ? void 0 : eventData.paymentCurrency) || 'USD';
+        const paymentDescription = (eventData === null || eventData === void 0 ? void 0 : eventData.paymentDescription) || '';
+        // Check event capacity - only count paid RSVPs if payment is required
+        const currentPaidRSVPCount = await getActualRSVPCount(data.eventId, paymentRequired);
         const maxCapacity = eventData === null || eventData === void 0 ? void 0 : eventData.maxCapacity;
-        if (maxCapacity && (currentRSVPCount + data.attendees.length) > maxCapacity) {
-            const remainingSpots = maxCapacity - currentRSVPCount;
+        if (maxCapacity && (currentPaidRSVPCount + data.attendees.length) > maxCapacity) {
+            const remainingSpots = maxCapacity - currentPaidRSVPCount;
             throw new functions.https.HttpsError('resource-exhausted', `Event is at capacity. Only ${remainingSpots} spots remaining.`);
         }
-        // Create RSVP submission with enhanced data
+        // Create RSVP submission with enhanced data and payment status
         const rsvpData = {
             eventId: data.eventId,
             userId: context.auth.uid,
@@ -355,6 +361,12 @@ exports.submitRSVP = functions.https.onCall(async (data, context) => {
             notes: data.notes || '',
             ipHash: data.ipHash || '',
             userAgent: data.userAgent || '',
+            // Payment-related fields
+            paymentRequired: paymentRequired,
+            paymentAmount: paymentAmount,
+            paymentCurrency: paymentCurrency,
+            paymentStatus: paymentRequired ? 'pending' : 'not_required',
+            paymentId: null, // Will be set when payment is completed
             submittedAt: getTimestamp(),
             createdAt: getTimestamp(),
             updatedAt: getTimestamp()
@@ -364,8 +376,12 @@ exports.submitRSVP = functions.https.onCall(async (data, context) => {
         // Add RSVP
         const rsvpRef = db.collection('rsvps').doc();
         batch.set(rsvpRef, rsvpData);
-        // Update event RSVP count
-        const newRSVPCount = currentRSVPCount + data.attendees.length;
+        // Update event RSVP count - only increment if payment not required or payment completed
+        // For events requiring payment, only count paid RSVPs
+        let newRSVPCount = currentPaidRSVPCount;
+        if (!paymentRequired || (paymentRequired && rsvpData.paymentStatus === 'completed')) {
+            newRSVPCount += data.attendees.length;
+        }
         batch.update(eventRef, {
             currentRSVPs: newRSVPCount,
             updatedAt: getTimestamp()
@@ -399,7 +415,13 @@ exports.submitRSVP = functions.https.onCall(async (data, context) => {
             success: true,
             rsvpId: rsvpRef.id,
             newRSVPCount: newRSVPCount,
-            message: 'RSVP submitted successfully'
+            message: paymentRequired ?
+                'RSVP submitted successfully. Payment required to complete registration.' :
+                'RSVP submitted successfully',
+            paymentRequired: paymentRequired,
+            paymentAmount: paymentAmount,
+            paymentCurrency: paymentCurrency,
+            paymentDescription: paymentDescription
         };
     }
     catch (error) {
@@ -411,19 +433,29 @@ exports.submitRSVP = functions.https.onCall(async (data, context) => {
     }
 });
 // Helper function to get actual RSVP count from database using aggregation
-async function getActualRSVPCount(eventId) {
+async function getActualRSVPCount(eventId, paymentRequired = false) {
     try {
         // Use aggregation query for better performance
         const rsvpsRef = db.collection('rsvps');
         const snapshot = await rsvpsRef
             .where('eventId', '==', eventId)
-            .select('attendees')
+            .select('attendees', 'paymentRequired', 'paymentStatus')
             .get();
         let totalAttendees = 0;
         snapshot.docs.forEach(doc => {
             var _a;
             const rsvpData = doc.data();
-            totalAttendees += ((_a = rsvpData.attendees) === null || _a === void 0 ? void 0 : _a.length) || 1;
+            const attendeeCount = ((_a = rsvpData.attendees) === null || _a === void 0 ? void 0 : _a.length) || 1;
+            // If payment is required, only count RSVPs with completed payment
+            if (paymentRequired) {
+                if (rsvpData.paymentStatus === 'completed') {
+                    totalAttendees += attendeeCount;
+                }
+            }
+            else {
+                // If payment not required, count all RSVPs
+                totalAttendees += attendeeCount;
+            }
         });
         return totalAttendees;
     }
@@ -556,10 +588,9 @@ exports.getUserRSVPs = functions.https.onCall(async (data, context) => {
         if (!context.auth) {
             throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated to view RSVPs');
         }
-        // Get user's RSVPs
+        // Get user's RSVPs (avoid Firestore index/orderBy issues by sorting in code)
         const rsvpsQuery = await db.collection('rsvps')
             .where('userId', '==', context.auth.uid)
-            .orderBy('createdAt', 'desc')
             .get();
         const rsvps = [];
         for (const doc of rsvpsQuery.docs) {
@@ -574,10 +605,17 @@ exports.getUserRSVPs = functions.https.onCall(async (data, context) => {
                     location: eventData.location
                 } : null }));
         }
+        // Sort by createdAt descending in code to avoid index requirement
+        const sorted = rsvps.sort((a, b) => {
+            var _a, _b, _c, _d, _e, _f, _g, _h;
+            const aTime = (_c = (_b = (_a = a.createdAt) === null || _a === void 0 ? void 0 : _a.toMillis) === null || _b === void 0 ? void 0 : _b.call(_a)) !== null && _c !== void 0 ? _c : (((_d = a.createdAt) === null || _d === void 0 ? void 0 : _d._seconds) ? a.createdAt._seconds * 1000 : new Date(a.createdAt || 0).getTime());
+            const bTime = (_g = (_f = (_e = b.createdAt) === null || _e === void 0 ? void 0 : _e.toMillis) === null || _f === void 0 ? void 0 : _f.call(_e)) !== null && _g !== void 0 ? _g : (((_h = b.createdAt) === null || _h === void 0 ? void 0 : _h._seconds) ? b.createdAt._seconds * 1000 : new Date(b.createdAt || 0).getTime());
+            return bTime - aTime;
+        });
         return {
             success: true,
-            rsvps: rsvps,
-            count: rsvps.length
+            rsvps: sorted,
+            count: sorted.length
         };
     }
     catch (error) {
@@ -659,13 +697,13 @@ exports.getRSVPData = functions.https.onCall(async (data, context) => {
         if (!data.eventId) {
             throw new functions.https.HttpsError('invalid-argument', 'Event ID is required');
         }
-        // Check if user is admin
+        // Check if user is den leader or higher (den_leader, admin, super_admin, root)
         const userDoc = await db.collection('users').doc(context.auth.uid).get();
         const userData = userDoc.data();
-        const isAdmin = (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' ||
-            (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.isAdmin);
-        if (!isAdmin) {
-            throw new functions.https.HttpsError('permission-denied', 'Only admin users can access RSVP data');
+        const role = ((userData === null || userData === void 0 ? void 0 : userData.role) || '').toString().toLowerCase();
+        const isLeaderOrAbove = role === 'den_leader' || role === 'admin' || role === 'super_admin' || role === 'root' || (userData === null || userData === void 0 ? void 0 : userData.isAdmin) === true || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) === true;
+        if (!isLeaderOrAbove) {
+            throw new functions.https.HttpsError('permission-denied', 'Only den leaders and above can access RSVP data');
         }
         console.log(`Admin ${context.auth.uid} requesting RSVP data for event ${data.eventId}`);
         // Query RSVPs with admin privileges (bypasses client-side rules)
@@ -2203,6 +2241,103 @@ exports.createTestAnnouncement = functions.https.onCall(async (data, context) =>
         throw new functions.https.HttpsError('internal', 'Failed to create test announcement');
     }
 });
+// Create announcement and send emails in one call (like approveAccountRequest does)
+exports.createAnnouncementWithEmails = functions.https.onCall(async (data, context) => {
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        const { announcementData, testMode = false } = data;
+        if (!announcementData) {
+            throw new functions.https.HttpsError('invalid-argument', 'Announcement data is required');
+        }
+        // Create the announcement in Firestore
+        const docRef = await db.collection('announcements').add(Object.assign(Object.assign({}, announcementData), { createdAt: getTimestamp(), updatedAt: getTimestamp() }));
+        const announcement = Object.assign({ id: docRef.id }, announcementData);
+        functions.logger.info('✅ Announcement created with ID:', docRef.id);
+        // Send emails if requested
+        if (announcementData.sendEmail) {
+            try {
+                const { emailService } = await Promise.resolve().then(() => require('./emailService'));
+                // Get users based on announcement targeting
+                let targetUsers = [];
+                if (announcement.targetDens && announcement.targetDens.length > 0) {
+                    // Get users for specific dens
+                    for (const denId of announcement.targetDens) {
+                        const denUsersSnapshot = await db.collection('users')
+                            .where('status', '==', 'approved')
+                            .where('dens', 'array-contains', denId)
+                            .get();
+                        denUsersSnapshot.forEach(userDoc => {
+                            const userData = userDoc.data();
+                            if (!targetUsers.find(u => u.id === userDoc.id)) {
+                                targetUsers.push(Object.assign({ id: userDoc.id }, userData));
+                            }
+                        });
+                    }
+                }
+                else {
+                    // Get all approved users
+                    const usersSnapshot = await db.collection('users')
+                        .where('status', '==', 'approved')
+                        .get();
+                    usersSnapshot.forEach((userDoc) => {
+                        targetUsers.push(Object.assign({ id: userDoc.id }, userDoc.data()));
+                    });
+                }
+                const emailPromises = [];
+                const testEmails = ['christopher@smithstation.io', 'welcome-test@smithstation.io'];
+                targetUsers.forEach((userData) => {
+                    if (!userData.email)
+                        return;
+                    if (testMode && !testEmails.includes(userData.email)) {
+                        functions.logger.info(`🧪 Test mode: Skipping ${userData.email}`);
+                        return;
+                    }
+                    const emailEnabled = userData.emailNotifications !== false;
+                    if (!emailEnabled) {
+                        functions.logger.info(`📧 Email disabled for ${userData.email}, skipping`);
+                        return;
+                    }
+                    emailPromises.push(emailService.sendAnnouncementEmail(userData.email, announcement));
+                });
+                const results = await Promise.allSettled(emailPromises);
+                const successful = results.filter(result => result.status === 'fulfilled' && result.value === true).length;
+                const failed = results.length - successful;
+                const modeText = testMode ? ' (TEST MODE)' : '';
+                functions.logger.info(`📧 Announcement emails sent${modeText}: ${successful} successful, ${failed} failed`);
+                return {
+                    success: true,
+                    announcementId: docRef.id,
+                    emailsSent: successful,
+                    emailsFailed: failed,
+                    message: `Announcement created and ${successful} emails sent successfully`
+                };
+            }
+            catch (emailError) {
+                functions.logger.error('❌ Error sending announcement emails:', emailError);
+                // Don't fail the announcement creation if emails fail
+                return {
+                    success: true,
+                    announcementId: docRef.id,
+                    emailsSent: 0,
+                    emailsFailed: 0,
+                    message: 'Announcement created but emails failed to send'
+                };
+            }
+        }
+        return {
+            success: true,
+            announcementId: docRef.id,
+            message: 'Announcement created successfully (no emails requested)'
+        };
+    }
+    catch (error) {
+        functions.logger.error('❌ Error creating announcement:', error);
+        throw new functions.https.HttpsError('internal', error.message || 'Failed to create announcement');
+    }
+});
 // Send announcement emails via server-side email service
 exports.sendAnnouncementEmails = functions.https.onCall(async (data, context) => {
     try {
@@ -2941,6 +3076,164 @@ exports.completePasswordSetup = functions.https.onCall(async (data, context) => 
         throw new functions.https.HttpsError('internal', 'Failed to complete password setup');
     }
 });
+// Resend Password Setup Link (admin only)
+exports.resendPasswordSetupLink = functions.https.onCall(async (data, context) => {
+    var _a, _b, _c, _d;
+    try {
+        console.log('📧 Resend Password Setup Link - Request received');
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        // Check if caller is admin
+        const callerDoc = await db.collection('users').doc(context.auth.uid).get();
+        if (!callerDoc.exists) {
+            throw new functions.https.HttpsError('permission-denied', 'User not found');
+        }
+        const callerData = callerDoc.data();
+        const isAdmin = (callerData === null || callerData === void 0 ? void 0 : callerData.role) === 'super_admin' ||
+            (callerData === null || callerData === void 0 ? void 0 : callerData.role) === 'admin' ||
+            (callerData === null || callerData === void 0 ? void 0 : callerData.role) === 'cubmaster' ||
+            (callerData === null || callerData === void 0 ? void 0 : callerData.isAdmin) ||
+            (callerData === null || callerData === void 0 ? void 0 : callerData.isCubmaster) ||
+            ((_a = callerData === null || callerData === void 0 ? void 0 : callerData.permissions) === null || _a === void 0 ? void 0 : _a.includes('user_management'));
+        if (!isAdmin) {
+            throw new functions.https.HttpsError('permission-denied', 'Only admins can resend password setup links');
+        }
+        const { userId, email } = data;
+        if (!userId && !email) {
+            throw new functions.https.HttpsError('invalid-argument', 'Either userId or email is required');
+        }
+        // Get user data
+        let userDoc;
+        if (userId) {
+            userDoc = await db.collection('users').doc(userId).get();
+        }
+        else {
+            const usersSnapshot = await db.collection('users').where('email', '==', email).limit(1).get();
+            if (!usersSnapshot.empty) {
+                userDoc = usersSnapshot.docs[0];
+            }
+        }
+        if (!userDoc || !userDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'User not found');
+        }
+        const userData = userDoc.data();
+        const userUid = userDoc.id;
+        // Check if user is approved
+        if ((userData === null || userData === void 0 ? void 0 : userData.status) !== 'approved') {
+            throw new functions.https.HttpsError('failed-precondition', 'User must be approved before sending password setup link');
+        }
+        // Check if user already has a password (has signed in)
+        try {
+            const authUser = await admin.auth().getUser(userUid);
+            if (authUser.passwordHash) {
+                // User already has a password, they should use password reset instead
+                throw new functions.https.HttpsError('failed-precondition', 'User already has a password. Use password reset instead.');
+            }
+        }
+        catch (authError) {
+            if (authError.code === 'auth/user-not-found') {
+                throw new functions.https.HttpsError('not-found', 'User account not found in Firebase Auth');
+            }
+            throw authError;
+        }
+        // Invalidate any existing password setup tokens for this user
+        const existingTokensSnapshot = await db.collection('passwordSetupTokens')
+            .where('userId', '==', userUid)
+            .where('used', '==', false)
+            .get();
+        const batch = db.batch();
+        existingTokensSnapshot.docs.forEach(doc => {
+            batch.update(doc.ref, { used: true, invalidatedAt: getTimestamp() });
+        });
+        await batch.commit();
+        console.log(`Invalidated ${existingTokensSnapshot.size} existing tokens`);
+        // Create new password setup token
+        const setupToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        const setupTokenExpiry = new Date();
+        setupTokenExpiry.setHours(setupTokenExpiry.getHours() + 24); // 24 hours
+        // Store password setup token
+        await db.collection('passwordSetupTokens').doc(setupToken).set({
+            userId: userUid,
+            email: (userData === null || userData === void 0 ? void 0 : userData.email) || email,
+            displayName: (userData === null || userData === void 0 ? void 0 : userData.displayName) || '',
+            expires: admin.firestore.Timestamp.fromDate(setupTokenExpiry),
+            used: false,
+            createdAt: getTimestamp(),
+            resentBy: context.auth.uid
+        });
+        console.log('New password setup token created:', setupToken);
+        // Send email with password setup link
+        try {
+            const { emailService } = await Promise.resolve().then(() => require('./emailService'));
+            const emailData = {
+                uid: userUid,
+                email: (userData === null || userData === void 0 ? void 0 : userData.email) || email,
+                displayName: (userData === null || userData === void 0 ? void 0 : userData.displayName) || 'User',
+                phone: (userData === null || userData === void 0 ? void 0 : userData.phone) || '',
+                address: (userData === null || userData === void 0 ? void 0 : userData.address) || '',
+                emergencyContact: (userData === null || userData === void 0 ? void 0 : userData.emergencyContact) || '',
+                medicalInfo: (userData === null || userData === void 0 ? void 0 : userData.medicalInfo) || '',
+                role: (userData === null || userData === void 0 ? void 0 : userData.role) || 'parent',
+                setupToken: setupToken
+            };
+            const emailSent = await emailService.sendWelcomeEmail(emailData);
+            if (!emailSent) {
+                // Log warning but don't fail - return token so admin can manually share it
+                console.warn('Failed to send email, but token was created');
+                return {
+                    success: true,
+                    message: 'Password setup token created but email failed. Share this link manually.',
+                    setupLink: `https://sfpack1703.web.app/password-setup?token=${setupToken}`,
+                    emailSent: false
+                };
+            }
+            console.log('Welcome email sent successfully to:', userData === null || userData === void 0 ? void 0 : userData.email);
+            // Log the action
+            await db.collection('adminActions').add({
+                userId: context.auth.uid,
+                userEmail: context.auth.token.email || '',
+                action: 'resend_password_setup_link',
+                entityType: 'user',
+                entityId: userUid,
+                entityName: (userData === null || userData === void 0 ? void 0 : userData.displayName) || '',
+                details: {
+                    targetEmail: (userData === null || userData === void 0 ? void 0 : userData.email) || email,
+                    setupToken: setupToken
+                },
+                timestamp: getTimestamp(),
+                ipAddress: ((_b = context.rawRequest) === null || _b === void 0 ? void 0 : _b.ip) || 'unknown',
+                userAgent: ((_d = (_c = context.rawRequest) === null || _c === void 0 ? void 0 : _c.headers) === null || _d === void 0 ? void 0 : _d['user-agent']) || 'unknown',
+                success: true
+            });
+            return {
+                success: true,
+                message: 'Password setup link sent successfully',
+                emailSent: true,
+                setupLink: `https://sfpack1703.web.app/password-setup?token=${setupToken}`
+            };
+        }
+        catch (emailError) {
+            console.error('Failed to send welcome email:', emailError);
+            // Return the link so admin can manually share it
+            return {
+                success: true,
+                message: 'Password setup token created but email failed. Share this link manually.',
+                setupLink: `https://sfpack1703.web.app/password-setup?token=${setupToken}`,
+                emailSent: false,
+                error: emailError instanceof Error ? emailError.message : 'Unknown error'
+            };
+        }
+    }
+    catch (error) {
+        console.error('Error resending password setup link:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to resend password setup link');
+    }
+});
 // Helper function to generate password reset email HTML
 function generatePasswordResetEmailHTML(displayName, resetUrl) {
     return `
@@ -3236,6 +3529,318 @@ exports.uploadSensorData = functions.https.onRequest(async (req, res) => {
             error: 'Upload failed',
             message: error.message
         });
+    }
+});
+// ============================================================================
+// Square Multi-Merchant (Scaffold) - No Traefik required
+// ============================================================================
+async function verifyIdTokenFromRequest(req) {
+    const authHeader = req.get('Authorization') || req.get('authorization') || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.substring('Bearer '.length) : '';
+    if (!token) {
+        throw new functions.https.HttpsError('unauthenticated', 'Missing Authorization bearer token');
+    }
+    return await admin.auth().verifyIdToken(token);
+}
+function extractTenantId(req) {
+    const fromHeader = (req.header('x-tenant') || '').trim();
+    const fromQuery = req.query.tenantId || '';
+    const fromBody = (req.body && req.body.tenantId) || '';
+    // Note: onRequest does not support path params; map via Hosting rewrites if needed
+    return fromHeader || fromQuery || fromBody || null;
+}
+async function assertTenantAccess(uid, decoded, tenantId) {
+    const platform = decoded.platform || [];
+    const isSuper = Array.isArray(platform) && platform.includes('SUPER_ADMIN');
+    if (isSuper)
+        return;
+    const memRef = db.doc(`tenants/${tenantId}/memberships/${uid}`);
+    const memSnap = await memRef.get();
+    if (!memSnap.exists) {
+        throw new functions.https.HttpsError('permission-denied', 'Not a member of tenant');
+    }
+}
+function applyCors(req, res) {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-tenant');
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return true;
+    }
+    return false;
+}
+exports.squareConnectStart = functions.https.onRequest(async (req, res) => {
+    if (applyCors(req, res))
+        return;
+    if (req.method !== 'POST') {
+        res.status(405).json({ success: false, error: 'Method Not Allowed' });
+        return;
+    }
+    try {
+        const decoded = await verifyIdTokenFromRequest(req);
+        const tenantId = extractTenantId(req);
+        if (!tenantId)
+            throw new functions.https.HttpsError('invalid-argument', 'tenantId required');
+        await assertTenantAccess(decoded.uid, decoded, tenantId);
+        // TODO: construct actual Square OAuth URL with client_id, scopes, state
+        const redirectUrl = 'https://connect.squareup.com/oauth2/authorize';
+        res.json({ success: true, redirectUrl });
+    }
+    catch (e) {
+        const code = e instanceof functions.https.HttpsError ? 401 : 500;
+        res.status(code).json({ success: false, error: e.message || 'Unauthorized' });
+    }
+});
+exports.squareOAuthCallback = functions.https.onRequest(async (req, res) => {
+    // Note: this endpoint is called by Square after user approval
+    try {
+        // TODO: validate state, exchange code for tokens, fetch merchant/location
+        // TODO: write tenants/{tenantId}/integrations/square and integrations_secure/{tenantId}_square
+        res.status(200).send('OK');
+    }
+    catch (e) {
+        res.status(500).send('Internal Error');
+    }
+});
+exports.createTenantPayment = functions.https.onRequest(async (req, res) => {
+    if (applyCors(req, res))
+        return;
+    if (req.method !== 'POST') {
+        res.status(405).json({ success: false, error: 'Method Not Allowed' });
+        return;
+    }
+    try {
+        const decoded = await verifyIdTokenFromRequest(req);
+        const tenantId = extractTenantId(req);
+        if (!tenantId)
+            throw new functions.https.HttpsError('invalid-argument', 'tenantId required');
+        await assertTenantAccess(decoded.uid, decoded, tenantId);
+        // TODO: load creds from integrations_secure, call Square Payments with idempotency key
+        res.json({ success: true });
+    }
+    catch (e) {
+        const code = e instanceof functions.https.HttpsError ? 401 : 500;
+        res.status(code).json({ success: false, error: e.message || 'Unauthorized' });
+    }
+});
+exports.refundTenantPayment = functions.https.onRequest(async (req, res) => {
+    if (applyCors(req, res))
+        return;
+    if (req.method !== 'POST') {
+        res.status(405).json({ success: false, error: 'Method Not Allowed' });
+        return;
+    }
+    try {
+        const decoded = await verifyIdTokenFromRequest(req);
+        const tenantId = extractTenantId(req);
+        if (!tenantId)
+            throw new functions.https.HttpsError('invalid-argument', 'tenantId required');
+        await assertTenantAccess(decoded.uid, decoded, tenantId);
+        // TODO: call Square Refunds and update payment doc
+        res.json({ success: true });
+    }
+    catch (e) {
+        const code = e instanceof functions.https.HttpsError ? 401 : 500;
+        res.status(code).json({ success: false, error: e.message || 'Unauthorized' });
+    }
+});
+exports.squareWebhook = functions.https.onRequest(async (req, res) => {
+    // Public endpoint; verify signature before mutating
+    try {
+        // TODO: verify signature; map merchant_id -> tenantId; upsert payments with idempotency
+        res.status(200).send('OK');
+    }
+    catch (e) {
+        res.status(400).send('Bad Request');
+    }
+});
+// RSVP Payment Functions - Added payment processing for RSVPs
+exports.createRSVPPayment = functions.https.onCall(async (data, context) => {
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated to make payment');
+        }
+        // Validate required fields
+        if (!data.rsvpId || !data.eventId) {
+            throw new functions.https.HttpsError('invalid-argument', 'RSVP ID and Event ID are required');
+        }
+        // Get RSVP and Event details
+        const rsvpRef = db.collection('rsvps').doc(data.rsvpId);
+        const rsvpDoc = await rsvpRef.get();
+        if (!rsvpDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'RSVP not found');
+        }
+        const rsvpData = rsvpDoc.data();
+        // Verify RSVP belongs to the authenticated user
+        if ((rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.userId) !== context.auth.uid) {
+            throw new functions.https.HttpsError('permission-denied', 'You can only pay for your own RSVP');
+        }
+        // Check if payment is already completed
+        if ((rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.paymentStatus) === 'completed') {
+            throw new functions.https.HttpsError('already-exists', 'Payment already completed for this RSVP');
+        }
+        // Get event details
+        const eventRef = db.collection('events').doc(data.eventId);
+        const eventDoc = await eventRef.get();
+        if (!eventDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'Event not found');
+        }
+        const eventData = eventDoc.data();
+        if (!(eventData === null || eventData === void 0 ? void 0 : eventData.paymentRequired)) {
+            throw new functions.https.HttpsError('invalid-argument', 'This event does not require payment');
+        }
+        // Create payment record
+        const paymentData = {
+            id: db.collection('payments').doc().id,
+            eventId: data.eventId,
+            rsvpId: data.rsvpId,
+            userId: context.auth.uid,
+            amount: eventData.paymentAmount,
+            currency: eventData.paymentCurrency || 'USD',
+            status: 'pending',
+            description: eventData.paymentDescription || `Payment for ${eventData.title}`,
+            createdAt: getTimestamp(),
+            updatedAt: getTimestamp()
+        };
+        // Save payment record
+        await db.collection('payments').doc(paymentData.id).set(paymentData);
+        // Get Square API configuration for frontend integration
+        const squareApplicationId = process.env.SQUARE_APPLICATION_ID;
+        const squareLocationId = process.env.SQUARE_LOCATION_ID;
+        const squareEnvironment = process.env.SQUARE_ENVIRONMENT || 'sandbox';
+        if (!squareApplicationId || !squareLocationId) {
+            throw new functions.https.HttpsError('failed-precondition', 'Square API configuration not complete');
+        }
+        // Return payment data for frontend Square integration
+        // The actual payment will be processed in completeRSVPPayment when we receive the nonce
+        return {
+            success: true,
+            paymentId: paymentData.id,
+            amount: paymentData.amount,
+            currency: paymentData.currency,
+            description: paymentData.description,
+            applicationId: squareApplicationId,
+            locationId: squareLocationId,
+            environment: squareEnvironment,
+            message: 'Payment initialized. Complete payment to finalize RSVP.'
+        };
+    }
+    catch (error) {
+        console.error('Error creating RSVP payment:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to create payment');
+    }
+});
+// Complete RSVP Payment (called after successful Square payment)
+exports.completeRSVPPayment = functions.https.onCall(async (data, context) => {
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        // Validate required fields - we need the payment nonce from Square form
+        if (!data.paymentId || !data.rsvpId || !data.nonce) {
+            throw new functions.https.HttpsError('invalid-argument', 'Payment ID, RSVP ID, and Square payment nonce are required');
+        }
+        // Get payment and RSVP details
+        const paymentRef = db.collection('payments').doc(data.paymentId);
+        const paymentDoc = await paymentRef.get();
+        if (!paymentDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'Payment not found');
+        }
+        const paymentData = paymentDoc.data();
+        // Verify payment belongs to the authenticated user
+        if ((paymentData === null || paymentData === void 0 ? void 0 : paymentData.userId) !== context.auth.uid) {
+            throw new functions.https.HttpsError('permission-denied', 'You can only update your own payments');
+        }
+        const rsvpRef = db.collection('rsvps').doc(data.rsvpId);
+        const rsvpDoc = await rsvpRef.get();
+        if (!rsvpDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'RSVP not found');
+        }
+        const rsvpData = rsvpDoc.data();
+        // Verify RSVP belongs to the authenticated user
+        if ((rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.userId) !== context.auth.uid) {
+            throw new functions.https.HttpsError('permission-denied', 'You can only update payments for your own RSVP');
+        }
+        // Get Square API configuration
+        const squareAccessToken = process.env.SQUARE_ACCESS_TOKEN;
+        const squareLocationId = process.env.SQUARE_LOCATION_ID;
+        const squareEnvironment = process.env.SQUARE_ENVIRONMENT || 'sandbox';
+        if (!squareAccessToken || !squareLocationId) {
+            throw new functions.https.HttpsError('failed-precondition', 'Square API credentials not configured');
+        }
+        // Initialize Square client
+        const squareClient = new squareup_1.Client({
+            accessToken: squareAccessToken,
+            environment: squareEnvironment === 'production' ? squareup_1.Environment.Production : squareup_1.Environment.Sandbox,
+        });
+        // Process the actual payment with Square
+        let squarePayment;
+        try {
+            const paymentResponse = await squareClient.paymentsApi.createPayment({
+                sourceId: data.nonce, // Nonce from Square payment form
+                idempotencyKey: data.paymentId, // Use our payment ID as idempotency key
+                amountMoney: {
+                    amount: BigInt(paymentData.amount),
+                    currency: paymentData.currency,
+                },
+                note: paymentData.description,
+                locationId: squareLocationId,
+            });
+            if (paymentResponse.result.payment) {
+                squarePayment = paymentResponse.result.payment;
+            }
+            else {
+                throw new Error('Square payment creation failed');
+            }
+        }
+        catch (squareError) {
+            console.error('Square payment error:', squareError);
+            throw new functions.https.HttpsError('internal', `Square payment failed: ${squareError.message}`);
+        }
+        // Use batch write for atomicity
+        const batch = db.batch();
+        // Update payment record with Square payment details
+        batch.update(paymentRef, {
+            squarePaymentId: squarePayment.id,
+            squareOrderId: squarePayment.orderId,
+            status: 'completed',
+            processedAt: getTimestamp(),
+            updatedAt: getTimestamp()
+        });
+        // Update RSVP payment status
+        batch.update(rsvpRef, {
+            paymentStatus: 'completed',
+            paymentId: data.paymentId,
+            updatedAt: getTimestamp()
+        });
+        // If this was the first payment completion, update event RSVP count
+        const eventRef = db.collection('events').doc(paymentData.eventId);
+        const currentPaidCount = await getActualRSVPCount(paymentData.eventId, true);
+        const newPaidCount = currentPaidCount + rsvpData.attendees.length;
+        batch.update(eventRef, {
+            currentRSVPs: newPaidCount,
+            updatedAt: getTimestamp()
+        });
+        // Commit the batch
+        await batch.commit();
+        return {
+            success: true,
+            message: 'Payment completed successfully. Your RSVP is now confirmed.',
+            rsvpConfirmed: true
+        };
+    }
+    catch (error) {
+        console.error('Error completing RSVP payment:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to complete payment');
     }
 });
 //# sourceMappingURL=index.js.map

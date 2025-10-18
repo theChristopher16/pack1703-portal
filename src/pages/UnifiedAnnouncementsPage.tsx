@@ -200,7 +200,7 @@ const UnifiedAnnouncementsPage: React.FC = () => {
     setSaveStatus('saving');
     
     try {
-      const announcementData = {
+      const announcementData: any = {
         title: formData.title,
         content: formData.content,
         category: formData.category,
@@ -209,9 +209,14 @@ const UnifiedAnnouncementsPage: React.FC = () => {
         sendSMS: formData.sendSMS,
         testMode: formData.testMode,
         pinned: formData.pinned,
-        expiresAt: formData.expiresAt || null,
-        targetDens: formData.targetDens.length > 0 ? formData.targetDens : undefined
+        expiresAt: formData.expiresAt || null
       };
+
+      // Only include targetDens if it has values, otherwise omit the field entirely
+      // Empty array means pack-wide (all dens), so we can omit it for Firestore
+      if (formData.targetDens.length > 0) {
+        announcementData.targetDens = formData.targetDens;
+      }
 
       if (modalMode === 'create') {
         await firestoreService.createAnnouncement(announcementData, formData.testMode);
@@ -268,17 +273,17 @@ const UnifiedAnnouncementsPage: React.FC = () => {
 
   // Unified View - same component for all users
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-fog">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center">
-            <Megaphone className="h-8 w-8 text-blue-600 mr-3" />
+            <Megaphone className="h-8 w-8 text-moss mr-3" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-ink">
                 {isAdmin ? 'Announcement Management' : 'Scout Pack Announcements'}
               </h1>
-              <p className="text-gray-600">
+              <p className="text-teal-700">
                 {isAdmin ? 'Create and manage pack announcements and news' : 'Stay connected with the latest news, updates, and important information from pack leadership'}
               </p>
             </div>
@@ -286,7 +291,7 @@ const UnifiedAnnouncementsPage: React.FC = () => {
           {isAdmin && (
             <button
               onClick={handleCreateAnnouncement}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
+              className="flex items-center px-4 py-2 bg-moss text-white rounded-brand hover:bg-moss-600 transition-colors w-full sm:w-auto shadow-card"
             >
               <Plus className="h-4 w-4 mr-2" />
               Create Announcement
@@ -295,27 +300,27 @@ const UnifiedAnnouncementsPage: React.FC = () => {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <div className="bg-white rounded-brand shadow-card border border-cloud p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+              <label className="block text-sm font-medium text-teal-700 mb-2">Search</label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-teal-400" />
                 <input
                   type="text"
                   placeholder="Search announcements..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="pl-10 w-full px-3 py-2 border border-cloud rounded-md focus:ring-2 focus:ring-moss/20 focus:border-moss"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <label className="block text-sm font-medium text-teal-700 mb-2">Category</label>
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-cloud rounded-md focus:ring-2 focus:ring-moss/20 focus:border-moss"
               >
                 <option value="all">All Categories</option>
                 <option value="general">General</option>
@@ -326,11 +331,11 @@ const UnifiedAnnouncementsPage: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+              <label className="block text-sm font-medium text-teal-700 mb-2">Priority</label>
               <select
                 value={filterPriority}
                 onChange={(e) => setFilterPriority(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-cloud rounded-md focus:ring-2 focus:ring-moss/20 focus:border-moss"
               >
                 <option value="all">All Priorities</option>
                 <option value="low">Low</option>
@@ -345,9 +350,9 @@ const UnifiedAnnouncementsPage: React.FC = () => {
                 id="pinnedOnly"
                 checked={showPinnedOnly}
                 onChange={(e) => setShowPinnedOnly(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-moss focus:ring-moss border-cloud rounded"
               />
-              <label htmlFor="pinnedOnly" className="ml-2 text-sm text-gray-700">
+              <label htmlFor="pinnedOnly" className="ml-2 text-sm text-teal-700">
                 Pinned only
               </label>
             </div>
@@ -355,36 +360,36 @@ const UnifiedAnnouncementsPage: React.FC = () => {
         </div>
 
         {/* Announcements List */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-white rounded-brand shadow-card border border-cloud">
           {loading ? (
             <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-2 text-gray-600">Loading announcements...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-moss mx-auto"></div>
+              <p className="mt-2 text-teal-700">Loading announcements...</p>
             </div>
           ) : (isAdmin ? filteredAnnouncements : announcements).length === 0 ? (
             <div className="p-8 text-center">
-              <div className="text-gray-400 mb-4">
+              <div className="text-teal-400 mb-4">
                 <Megaphone className="h-12 w-12 mx-auto mb-2" />
-                <h3 className="text-lg font-medium">No announcements found</h3>
+                <h3 className="text-lg font-medium text-ink">No announcements found</h3>
               </div>
-              <p className="text-gray-600">
+              <p className="text-teal-700">
                 {isAdmin ? 'Create your first announcement to get started.' : 'Check back later for updates from pack leadership.'}
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y divide-cloud">
               {(isAdmin ? filteredAnnouncements : announcements).map((announcement) => (
-                <div key={announcement.id} className="p-6 hover:bg-gray-50">
+                <div key={announcement.id} className="p-6 hover:bg-fog/50 transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center mb-2">
                         {announcement.pinned && (
-                          <Pin className="h-4 w-4 text-yellow-600 mr-2" />
+                          <Pin className="h-4 w-4 text-sun mr-2" />
                         )}
-                        <h3 className="text-lg font-medium text-gray-900">{announcement.title}</h3>
+                        <h3 className="text-lg font-medium text-ink">{announcement.title}</h3>
                         <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
                           announcement.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                          announcement.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                          announcement.priority === 'high' ? 'bg-sun/20 text-ink border border-sun/40' :
                           announcement.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>

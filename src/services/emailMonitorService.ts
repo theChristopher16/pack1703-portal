@@ -1,7 +1,7 @@
 import { getFirestore, collection, addDoc, serverTimestamp, query, where, orderBy, limit as firestoreLimit, getDocs } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { externalApiService } from './externalApiService';
-import aiService from './aiService';
+// aiService removed - AI functionality disabled
 
 interface EmailMessage {
   id: string;
@@ -1296,10 +1296,10 @@ class EmailMonitorService {
     try {
       const message = `📧 **Email Event Created**\n\nI just processed an email from **${email.from}** and created a new event:\n\n**${analysis.eventData?.title || 'Untitled Event'}**\n\n*Subject: ${email.subject}*\n\nThis event has been automatically added to the calendar. Please review and make any necessary adjustments.`;
       
-      // Send to general announcements channel
-      await aiService.sendAIMessage('general', message, true);
+      // AI functionality disabled - chat notification skipped
+      // await aiService.sendAIMessage('general', message, true);
       
-      console.log('Chat notification sent about created event');
+      console.log('Chat notification skipped (AI disabled)');
     } catch (error) {
       console.error('Error sending chat notification:', error);
     }

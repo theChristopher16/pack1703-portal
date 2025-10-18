@@ -47,6 +47,12 @@ export interface Event {
   updatedAt: Timestamp;
   createdAt: Timestamp;
   
+  // Payment specific fields
+  paymentRequired?: boolean; // Whether payment is required for this event
+  paymentAmount?: number; // Amount in cents (e.g., 6000 for $60.00)
+  paymentCurrency?: string; // Currency code (default: USD)
+  paymentDescription?: string; // Description for payment (e.g., "USS Stewart Cover Fee")
+  
   // Elective Event specific fields
   isElective?: boolean; // Flag to mark as elective event
   electiveOptions?: ElectiveEventOptions; // Optional configuration for elective events
@@ -369,4 +375,39 @@ export interface VolunteerFormData {
   quantity: number;
   notes?: string;
   contactOk: boolean;
+}
+
+// ============================================================================
+// PAYMENT TYPES
+// ============================================================================
+
+export interface PaymentInfo {
+  id: string;
+  eventId: string;
+  rsvpId: string;
+  userId: string;
+  amount: number; // Amount in cents
+  currency: string; // Currency code (e.g., 'USD')
+  status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'refunded';
+  squarePaymentId?: string; // Square payment ID if applicable
+  squareOrderId?: string; // Square order ID if applicable
+  description: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  processedAt?: Timestamp;
+  refundedAt?: Timestamp;
+  refundReason?: string;
+}
+
+export interface RSVPPaymentData {
+  rsvpId: string;
+  eventId: string;
+  userId: string;
+  paymentRequired: boolean;
+  paymentAmount?: number; // Amount in cents
+  paymentCurrency?: string;
+  paymentStatus: 'not_required' | 'pending' | 'completed' | 'failed';
+  paymentId?: string; // Reference to payment document
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }

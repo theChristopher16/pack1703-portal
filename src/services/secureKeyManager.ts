@@ -174,15 +174,9 @@ class SecureKeyManager {
         name: 'recaptcha-site-key',
         required: true,
         description: 'reCAPTCHA v3 site key'
-      },
-      // SECRET_KEY removed - should only be used in Cloud Functions, not client-side
-
-      // Vertex AI / Google AI Keys
-      'REACT_APP_GOOGLE_AI_API_KEY': {
-        name: 'google-ai-key',
-        required: true,
-        description: 'Google AI API key for Vertex AI/Gemini access'
       }
+      // SECRET_KEY removed - should only be used in Cloud Functions, not client-side
+      // AI Keys removed - AI functionality disabled to prevent costs
     };
 
     const keys: Record<string, string> = {};

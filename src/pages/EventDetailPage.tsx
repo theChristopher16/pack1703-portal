@@ -654,6 +654,10 @@ const EventDetailPage: React.FC = () => {
                 maxCapacity={event?.capacity || undefined}
                 currentRSVPs={rsvpCount}
                 rsvpCountLoading={rsvpCountLoading}
+                paymentRequired={event?.paymentRequired || false}
+                paymentAmount={event?.paymentAmount || 0}
+                paymentCurrency={event?.paymentCurrency || 'USD'}
+                paymentDescription={event?.paymentDescription || ''}
                 isElective={event?.isElective || false}
                 electiveOptions={event?.electiveOptions}
               />

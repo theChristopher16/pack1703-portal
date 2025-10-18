@@ -20,7 +20,8 @@ import {
   Activity,
   CreditCard,
   User,
-  Leaf
+  Leaf,
+  MousePointer
 } from 'lucide-react';
 
 export interface NavigationItem {
@@ -217,6 +218,14 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
     description: 'System health monitoring'
+  },
+  {
+    name: 'User Interactions',
+    href: '/user-interactions',
+    icon: MousePointer,
+    roles: [UserRole.SUPER_ADMIN],
+    category: 'system',
+    description: 'Detailed user interaction analytics and behavior tracking'
   },
 ];
 

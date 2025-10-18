@@ -379,66 +379,101 @@ User ID: ${userData.uid || 'Unknown'}
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to Pack 1703 Portal</title>
-    <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #1e40af; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { background: #f8fafc; padding: 30px; border-radius: 0 0 8px 8px; }
-        .button { display: inline-block; background: #1e40af; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
-    </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🎉 Welcome to Pack 1703 Portal!</h1>
-        </div>
-        <div class="content">
-            <h2>Hello ${userData.displayName}!</h2>
-            
-            <p>Great news! Your account request has been approved and you're now a member of the Pack 1703 Portal.</p>
-            
-            <p><strong>Your Account Details:</strong></p>
-            <ul>
-                <li><strong>Name:</strong> ${userData.displayName}</li>
-                <li><strong>Email:</strong> ${userData.email}</li>
-                <li><strong>Role:</strong> ${userData.role || 'Member'}</li>
-                <li><strong>Status:</strong> Active</li>
-            </ul>
-            
-            <p>You can now access the portal and enjoy all the features available to members of Pack 1703.</p>
-            
-            <div style="text-align: center;">
-                <a href="https://pack1703-portal.web.app" class="button">Access Portal</a>
-            </div>
-            
-            <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="color: #92400e; margin-top: 0;">🔐 First Time Setup Required</h3>
-                <p style="margin-bottom: 10px;">To complete your account setup, you need to create a secure password for your account.</p>
-                <div style="text-align: center;">
-                    <a href="https://sfpack1703.web.app/password-setup?token=${userData.setupToken}" class="button">Set Your Password</a>
-                </div>
-                <p style="margin: 10px 0 0 0; font-size: 14px; color: #92400e;"><strong>Important:</strong> This link will expire in 24 hours for security reasons.</p>
-            </div>
-            
-            <p><strong>What's Next?</strong></p>
-            <ol>
-                <li><strong>Set your password</strong> using the link above</li>
-                <li>Sign in to your account using your email address and new password</li>
-                <li>Complete your profile information</li>
-                <li>Explore the portal features and upcoming events</li>
-                <li>Connect with other pack members</li>
-            </ol>
-            
-            <p>If you have any questions or need assistance, please don't hesitate to contact the pack leadership.</p>
-            
-            <p>Welcome to the Pack 1703 family!</p>
-        </div>
-        <div class="footer">
-            <p>Best regards,<br>Pack 1703 Leadership Team</p>
-            <p>This email was sent because your account was approved for the Pack 1703 Portal.</p>
-        </div>
-    </div>
+<body style="margin:0;padding:0;background:#F4F6F7;font-family:Inter,system-ui,sans-serif;">
+    <table role="presentation" width="100%" style="background:#F4F6F7;padding:24px 0;">
+        <tr><td align="center">
+            <table role="presentation" width="640" style="background:#ffffff;border:1px solid #E6EBED;border-radius:14px;overflow:hidden;">
+                <!-- Header -->
+                <tr>
+                    <td style="padding:24px 28px;border-bottom:1px solid #E6EBED;">
+                        <div style="font:700 22px/1.2 Inter,system-ui,sans-serif;color:#1C1C1C;">
+                            🎉 Welcome to Pack 1703!
+                        </div>
+                        <div style="font:500 12px/1.4 Inter,system-ui,sans-serif;color:#4C6F7A;">
+                            Community • Nature • Technology
+                        </div>
+                    </td>
+                </tr>
+                <!-- Content -->
+                <tr>
+                    <td style="padding:32px 28px;">
+                        <h2 style="font:700 24px/1.3 Inter,system-ui,sans-serif;color:#1C1C1C;margin:0 0 16px 0;">
+                            Hello ${userData.displayName}!
+                        </h2>
+                        <p style="font:400 16px/1.6 Inter,system-ui,sans-serif;color:#4C6F7A;margin:16px 0;">
+                            Great news! Your account request has been approved and you're now a member of the Pack 1703 Portal.
+                        </p>
+                        
+                        <div style="background:#F4F6F7;border:1px solid #E6EBED;border-radius:8px;padding:16px;margin:24px 0;">
+                            <p style="font:600 14px Inter,system-ui,sans-serif;color:#1C1C1C;margin:0 0 8px 0;">Your Account Details:</p>
+                            <ul style="font:400 14px/1.6 Inter,system-ui,sans-serif;color:#4C6F7A;margin:0;padding-left:20px;">
+                                <li><strong>Name:</strong> ${userData.displayName}</li>
+                                <li><strong>Email:</strong> ${userData.email}</li>
+                                <li><strong>Role:</strong> ${userData.role || 'Member'}</li>
+                                <li><strong>Status:</strong> Active</li>
+                            </ul>
+                        </div>
+                        
+                        <div style="text-align:center;margin:24px 0;">
+                            <a href="https://pack1703-portal.web.app" 
+                               style="background:#6BAA75;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;display:inline-block;font:600 16px Inter,system-ui,sans-serif;">
+                                Access Portal
+                            </a>
+                        </div>
+                        
+                        <div style="background:#FFF8E1;border:2px solid #F6C945;border-radius:14px;padding:20px;margin:24px 0;">
+                            <h3 style="font:700 18px Inter,system-ui,sans-serif;color:#1C1C1C;margin:0 0 12px 0;">🔐 First Time Setup Required</h3>
+                            <p style="font:400 14px/1.5 Inter,system-ui,sans-serif;color:#4C6F7A;margin:0 0 16px 0;">
+                                To complete your account setup, you need to create a secure password for your account.
+                            </p>
+                            <div style="text-align:center;">
+                                <a href="https://sfpack1703.web.app/password-setup?token=${userData.setupToken}" 
+                                   style="background:#4C6F7A;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;display:inline-block;font:600 16px Inter,system-ui,sans-serif;">
+                                    Set Your Password
+                                </a>
+                            </div>
+                            <p style="font:400 12px/1.4 Inter,system-ui,sans-serif;color:#6E5720;margin:12px 0 0 0;">
+                                <strong>Important:</strong> This link will expire in 24 hours for security reasons.
+                            </p>
+                        </div>
+                        
+                        <p style="font:600 16px Inter,system-ui,sans-serif;color:#1C1C1C;margin:24px 0 12px 0;">What's Next?</p>
+                        <ol style="font:400 14px/1.6 Inter,system-ui,sans-serif;color:#4C6F7A;margin:0;padding-left:20px;">
+                            <li>Set your password using the link above</li>
+                            <li>Sign in to your account using your email address and new password</li>
+                            <li>Complete your profile information</li>
+                            <li>Explore the portal features and upcoming events</li>
+                            <li>Connect with other pack members</li>
+                        </ol>
+                        
+                        <p style="font:400 14px/1.5 Inter,system-ui,sans-serif;color:#4C6F7A;margin:24px 0 16px 0;">
+                            If you have any questions or need assistance, please don't hesitate to contact the pack leadership.
+                        </p>
+                        
+                        <p style="font:600 16px Inter,system-ui,sans-serif;color:#6BAA75;margin:16px 0 0 0;">
+                            Welcome to the Pack 1703 family!
+                        </p>
+                    </td>
+                </tr>
+                <!-- Footer Accent -->
+                <tr>
+                    <td style="height:6px;background:#F6C945;"></td>
+                </tr>
+                <!-- Footer Text -->
+                <tr>
+                    <td style="padding:16px 28px;text-align:center;background:#F4F6F7;">
+                        <p style="font:400 14px/1.5 Inter,system-ui,sans-serif;color:#4C6F7A;margin:0 0 8px 0;">
+                            Best regards,<br>Pack 1703 Leadership Team
+                        </p>
+                        <p style="font:400 12px/1.4 Inter,system-ui,sans-serif;color:#4C6F7A;margin:0;">
+                            &copy; ${new Date().getFullYear()} Pack 1703. All rights reserved.
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </td></tr>
+    </table>
 </body>
 </html>
     `.trim();
@@ -495,33 +530,60 @@ This email was sent because your account was approved for the Pack 1703 Portal.
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pack 1703 Announcement</title>
-    <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #1e40af; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { background: #f8fafc; padding: 30px; border-radius: 0 0 8px 8px; }
-        .announcement-title { color: #1e40af; font-size: 1.5em; margin-bottom: 15px; }
-        .announcement-content { margin: 20px 0; }
-        .footer { text-align: center; font-size: 0.8em; color: #777; margin-top: 20px; }
-    </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>📢 Pack 1703 Announcement</h1>
-        </div>
-        <div class="content">
-            <h2 class="announcement-title">${announcement.title}</h2>
-            <div class="announcement-content">
-                ${announcement.content || announcement.body || ''}
-            </div>
-            <p>Stay connected with Pack 1703!</p>
-            <p>Best regards,<br>Pack 1703 Leadership Team</p>
-        </div>
-        <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} Pack 1703. All rights reserved.</p>
-        </div>
-    </div>
+<body style="margin:0;padding:0;background:#F4F6F7;font-family:Inter,system-ui,sans-serif;">
+    <table role="presentation" width="100%" style="background:#F4F6F7;padding:24px 0;">
+        <tr><td align="center">
+            <table role="presentation" width="640" style="background:#ffffff;border:1px solid #E6EBED;border-radius:14px;overflow:hidden;">
+                <!-- Header -->
+                <tr>
+                    <td style="padding:24px 28px;border-bottom:1px solid #E6EBED;">
+                        <div style="font:700 22px/1.2 Inter,system-ui,sans-serif;color:#1C1C1C;">
+                            Pack 1703 Portal
+                        </div>
+                        <div style="font:500 12px/1.4 Inter,system-ui,sans-serif;color:#4C6F7A;">
+                            Community • Nature • Technology
+                        </div>
+                    </td>
+                </tr>
+                <!-- Content -->
+                <tr>
+                    <td style="padding:32px 28px;">
+                        <h2 style="font:700 24px/1.3 Inter,system-ui,sans-serif;color:#1C1C1C;margin:0 0 16px 0;">
+                            ${announcement.title}
+                        </h2>
+                        <div style="font:400 16px/1.6 Inter,system-ui,sans-serif;color:#4C6F7A;margin:20px 0;">
+                            ${announcement.content || announcement.body || ''}
+                        </div>
+                        <div style="margin:32px 0 24px 0;">
+                            <a href="https://pack1703-portal.web.app/announcements" 
+                               style="background:#6BAA75;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;display:inline-block;font:600 16px Inter,system-ui,sans-serif;">
+                                View in Portal
+                            </a>
+                        </div>
+                        <p style="font:400 14px/1.5 Inter,system-ui,sans-serif;color:#4C6F7A;margin:16px 0 0 0;">
+                            Stay connected with Pack 1703!
+                        </p>
+                        <p style="font:400 14px/1.5 Inter,system-ui,sans-serif;color:#4C6F7A;margin:8px 0 0 0;">
+                            Best regards,<br>Pack 1703 Leadership Team
+                        </p>
+                    </td>
+                </tr>
+                <!-- Footer Accent -->
+                <tr>
+                    <td style="height:6px;background:#F6C945;"></td>
+                </tr>
+                <!-- Footer Text -->
+                <tr>
+                    <td style="padding:16px 28px;text-align:center;background:#F4F6F7;">
+                        <p style="font:400 12px/1.4 Inter,system-ui,sans-serif;color:#4C6F7A;margin:0;">
+                            &copy; ${new Date().getFullYear()} Pack 1703. All rights reserved.
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </td></tr>
+    </table>
 </body>
 </html>
     `.trim();

@@ -27,6 +27,9 @@ export const submitFeedback = httpsCallable(functions, 'submitFeedback');
 export const claimVolunteerRole = httpsCallable(functions, 'claimVolunteerRole');
 export const generateICSFeed = httpsCallable(functions, 'generateICSFeed');
 export const getWeatherData = httpsCallable(functions, 'getWeatherData');
+// Payment functions
+export const createRSVPPayment = httpsCallable(functions, 'createRSVPPayment');
+export const completeRSVPPayment = httpsCallable(functions, 'completeRSVPPayment');
 
 
 
@@ -262,6 +265,18 @@ export const firestoreService = {
     }
   },
 
+  // Update RSVP - Use Cloud Function for enhanced security
+  async updateRSVP(rsvpId: string, updateData: any): Promise<any> {
+    try {
+      const updateRSVPFunction = httpsCallable(functions, 'updateRSVP');
+      const result = await updateRSVPFunction({ rsvpId, updateData });
+      return result.data;
+    } catch (error) {
+      console.error('Failed to update RSVP via Cloud Function:', error);
+      throw error;
+    }
+  },
+
   // Get user's RSVPs
   async getUserRSVPs(): Promise<any> {
     try {
@@ -342,49 +357,25 @@ export const firestoreService = {
 
   async createAnnouncement(announcementData: any, testMode: boolean = false): Promise<any> {
     try {
-      const announcementsRef = collection(db, 'announcements');
-      const docRef = await addDoc(announcementsRef, {
-        ...announcementData,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
-        createdBy: 'ai_solyn',
-        testMode: testMode
+      // Use the new cloud function that creates announcement and sends emails in one call
+      // This works like the registration system (approveAccountRequest)
+      console.log('📧 Creating announcement with emails via Cloud Function...');
+      const createAnnouncementWithEmailsFunction = httpsCallable(functions, 'createAnnouncementWithEmails');
+      const result = await createAnnouncementWithEmailsFunction({
+        announcementData: {
+          ...announcementData,
+          createdBy: 'ai_solyn',
+          testMode: testMode
+        },
+        testMode
       });
       
-      const announcement = { id: docRef.id, ...announcementData, testMode };
+      console.log('✅ Announcement created via Cloud Function:', result.data);
       
-      // Send email notification to users if this is a high priority announcement
-      if (announcementData.priority === 'high' || announcementData.sendEmail === true) {
-        try {
-          await this.sendAnnouncementEmailsViaCloudFunction(announcement, testMode);
-        } catch (emailError) {
-          console.error('Failed to send announcement emails via Cloud Function:', emailError);
-          console.log('📧 Falling back to client-side email service...');
-          try {
-            await this.sendAnnouncementEmails(announcement, testMode);
-          } catch (fallbackError) {
-            console.error('Failed to send announcement emails via fallback:', fallbackError);
-          }
-        }
-      }
-
-      // Send SMS notification to users if this is a high priority announcement or SMS is explicitly requested
       // TODO: SMS notifications are currently disabled - coming soon
-      if (false && (announcementData.priority === 'high' || announcementData.sendSMS === true)) {
-        try {
-          await this.sendAnnouncementSMSViaCloudFunction(announcement, testMode);
-        } catch (smsError) {
-          console.error('Failed to send announcement SMS via Cloud Function:', smsError);
-          console.log('📱 Falling back to client-side SMS service...');
-          try {
-            await this.sendAnnouncementSMS(announcement, testMode);
-          } catch (fallbackError) {
-            console.error('Failed to send announcement SMS via fallback:', fallbackError);
-          }
-        }
-      }
+      // The cloud function handles email sending, SMS will be added later
       
-      return announcement;
+      return result.data;
     } catch (error) {
       console.error('Failed to create announcement in Firestore:', error);
       throw error;

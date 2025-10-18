@@ -532,41 +532,9 @@ class ChatService {
       this.updateChannelActivity(channelId).catch(error => 
         console.warn('Failed to update channel activity:', error)
       );
-
-      // Check for AI mentions and process them (non-blocking)
-      this.processAIMentions(message, channelId);
     } catch (error) {
       console.error('Failed to send message:', error);
       throw error;
-    }
-  }
-
-  // Process AI mentions in messages (truly async - no blocking)
-  private processAIMentions(message: string, channelId: string): void {
-    try {
-      // Check if message contains @mention of AI
-      const mentionPattern = /@(solyn|ai|assistant)/i;
-      if (mentionPattern.test(message)) {
-        // Process the mention asynchronously without blocking message sending
-        setImmediate(async () => {
-          try {
-            // Import AI service dynamically to avoid circular dependencies
-            const aiService = (await import('./aiService')).default;
-            
-            await aiService.processChatMention(
-              message, 
-              channelId, 
-              this.currentUser?.id || '', 
-              this.currentUser?.name || '',
-              this.currentUser?.den
-            );
-          } catch (error) {
-            console.error('Error processing AI mention:', error);
-          }
-        });
-      }
-    } catch (error) {
-      console.warn('Failed to process AI mentions:', error);
     }
   }
 

@@ -8,6 +8,7 @@ import { heroButtonService, HeroButtonConfig } from '../services/heroButtonServi
 import { usageTrackingService } from '../services/usageTrackingService';
 import { useAdmin } from '../contexts/AdminContext';
 import AccountRequestModal from '../components/Auth/AccountRequestModal';
+import { useUserInteraction } from '../hooks/useUserInteraction';
 
 const HomePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -21,6 +22,13 @@ const HomePage: React.FC = () => {
   const { state: adminState } = useAdmin();
   const currentUser = adminState.currentUser;
   const userRole = currentUser ? (currentUser.role as UserRole) : null;
+
+  // Initialize user interaction tracking for this page
+  const { trackUserAction } = useUserInteraction({
+    componentName: 'HomePage',
+    componentPath: '/',
+    trackComponentView: true
+  });
 
   useEffect(() => {
     // Remove artificial loading delays for better performance
@@ -246,33 +254,33 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 pt-20 pb-12">
+    <div className="min-h-screen bg-fog pt-20 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Hero Section with Enhanced Solar-Punk Aesthetic */}
+        {/* Hero Section - Brand Styled */}
         <div className="text-center mb-20 relative overflow-hidden">
           {/* Simplified Background Elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-primary-200/20 to-transparent rounded-full"></div>
-            <div className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-br from-secondary-200/20 to-transparent rounded-full"></div>
-            <div className="absolute bottom-20 left-1/4 w-20 h-20 bg-gradient-to-br from-accent-200/20 to-transparent rounded-full"></div>
+            <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-moss/10 to-transparent rounded-full"></div>
+            <div className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-br from-teal/10 to-transparent rounded-full"></div>
+            <div className="absolute bottom-20 left-1/4 w-20 h-20 bg-gradient-to-br from-sun/10 to-transparent rounded-full"></div>
           </div>
 
           {/* Main Hero Content */}
           <div className="relative z-10">
-            <div className={`inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-100 to-secondary-100 text-primary-700 rounded-full text-sm font-medium mb-6 ${animationsTriggered ? "animate-fade-in" : ""}`}>
+            <div className={`inline-flex items-center px-4 py-2 bg-sun/15 text-ink rounded-full text-sm font-medium mb-6 border border-sun/40 ${animationsTriggered ? "animate-fade-in" : ""}`}>
               <span className="text-2xl mr-2">🏕️</span>
               Welcome to the Future of Scouting
             </div>
             
             <h1 className={`text-5xl md:text-7xl font-display font-bold mb-6 ${animationsTriggered ? "animate-slide-up" : ""}`}>
-              <span className="text-gradient">Scout</span>
+              <span className="text-gradient-brand">Scout</span>
               <br />
-              <span className="text-gray-900">Families Portal</span>
+              <span className="text-ink">Families Portal</span>
             </h1>
             
-            <p className={`text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed ${animationsTriggered ? "animate-slide-up" : ""}`} style={{ animationDelay: '200ms' }}>
+            <p className={`text-xl md:text-2xl text-teal-700 mb-8 max-w-3xl mx-auto leading-relaxed ${animationsTriggered ? "animate-slide-up" : ""}`} style={{ animationDelay: '200ms' }}>
               Where technology meets tradition, and every family becomes part of an 
-              <span className="text-gradient font-semibold"> adventure</span> that shapes the future.
+              <span className="text-gradient-warm font-semibold"> adventure</span> that shapes the future.
             </p>
             
             <div className={`flex flex-col sm:flex-row gap-6 justify-center items-center ${animationsTriggered ? "animate-slide-up" : ""}`} 
@@ -281,7 +289,7 @@ const HomePage: React.FC = () => {
                 <>
                   <Link
                     to={heroButtons[0].href}
-                    className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold text-lg rounded-2xl shadow-glow-primary hover:shadow-glow-primary/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-primary-300/50"
+                    className="group relative inline-flex items-center justify-center px-8 py-4 bg-moss hover:bg-moss-600 text-white font-semibold text-lg rounded-brand shadow-card hover:shadow-glow-primary transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-moss/30"
                     onClick={() => trackHeroButtonClick(heroButtons[0])}
                   >
                     {React.createElement(getIconComponent(heroButtons[0].icon), { 
@@ -293,7 +301,7 @@ const HomePage: React.FC = () => {
                   
                   <Link
                     to={heroButtons[1].href}
-                    className="group relative inline-flex items-center justify-center px-8 py-4 bg-white/90 backdrop-blur-sm border-2 border-primary-300 text-primary-600 hover:bg-primary-50 hover:border-primary-400 font-semibold text-lg rounded-2xl shadow-soft hover:shadow-glow-primary/50 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-primary-300/50"
+                    className="group relative inline-flex items-center justify-center px-8 py-4 bg-white/90 backdrop-blur-sm border-2 border-cloud text-teal hover:bg-moss/5 hover:border-moss font-semibold text-lg rounded-brand shadow-soft hover:shadow-card transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-moss/20"
                     onClick={() => trackHeroButtonClick(heroButtons[1])}
                   >
                     {React.createElement(getIconComponent(heroButtons[1].icon), { 
@@ -307,7 +315,7 @@ const HomePage: React.FC = () => {
                 <>
                   <Link
                     to="/events"
-                    className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold text-lg rounded-2xl shadow-glow-primary hover:shadow-glow-primary/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-primary-300/50"
+                    className="group relative inline-flex items-center justify-center px-8 py-4 bg-moss hover:bg-moss-600 text-white font-semibold text-lg rounded-brand shadow-card hover:shadow-glow-primary transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-moss/30"
                   >
                     <Calendar className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-200" />
                     Explore Events
@@ -316,7 +324,7 @@ const HomePage: React.FC = () => {
                   
                   <Link
                     to="/locations"
-                    className="group relative inline-flex items-center justify-center px-8 py-4 bg-white/90 backdrop-blur-sm border-2 border-primary-300 text-primary-600 hover:bg-primary-50 hover:border-primary-400 font-semibold text-lg rounded-2xl shadow-soft hover:shadow-glow-primary/50 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-primary-300/50"
+                    className="group relative inline-flex items-center justify-center px-8 py-4 bg-white/90 backdrop-blur-sm border-2 border-cloud text-teal hover:bg-moss/5 hover:border-moss font-semibold text-lg rounded-brand shadow-soft hover:shadow-card transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-moss/20"
                   >
                     <Compass className="w-5 h-5 mr-3 group-hover:rotate-12 transition-transform duration-200" />
                     Discover Locations
@@ -326,7 +334,7 @@ const HomePage: React.FC = () => {
                   {!userRole && (
                     <button
                       onClick={() => setShowAccountRequestModal(true)}
-                      className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-semibold text-lg rounded-2xl shadow-glow-secondary hover:shadow-glow-secondary/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-secondary-300/50"
+                      className="group relative inline-flex items-center justify-center px-8 py-4 bg-teal hover:bg-teal-600 text-white font-semibold text-lg rounded-brand shadow-card hover:shadow-glow-secondary transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 border-0 focus:outline-none focus:ring-4 focus:ring-teal/30"
                     >
                       <UserPlus className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-200" />
                       Request Account Access
@@ -463,15 +471,15 @@ const HomePage: React.FC = () => {
                 className={`text-center ${animationsTriggered ? "animate-fade-in" : ""}`}
                 style={{ animationDelay: `${index * 200}ms` }}
               >
-                <div className="w-16 h-16 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center shadow-glow mx-auto mb-6">
+                <div className="w-16 h-16 bg-gradient-brand rounded-brand flex items-center justify-center shadow-card mx-auto mb-6">
                   <span className="text-white" style={{ fontSize: '24px' }}>{feature.emoji}</span>
                 </div>
                 
-                <h3 className="text-xl font-display font-semibold text-gray-900 mb-4">
+                <h3 className="text-xl font-display font-semibold text-ink mb-4">
                   {feature.title}
                 </h3>
                 
-                <p className="text-gray-600 leading-relaxed">
+                <p className="text-teal-700 leading-relaxed">
                   {feature.description}
                 </p>
               </div>
@@ -496,15 +504,15 @@ const HomePage: React.FC = () => {
                 className={`text-center ${animationsTriggered ? "animate-fade-in" : ""}`}
                 style={{ animationDelay: `${index * 200}ms` }}
               >
-                <div className="w-16 h-16 bg-gradient-to-br from-accent-400 to-purple-500 rounded-xl flex items-center justify-center shadow-glow mx-auto mb-6">
+                <div className="w-16 h-16 bg-gradient-cool rounded-brand flex items-center justify-center shadow-card mx-auto mb-6">
                   <span className="text-white" style={{ fontSize: '24px' }}>{feature.emoji}</span>
                 </div>
                 
-                <h3 className="text-xl font-display font-semibold text-gray-900 mb-4">
+                <h3 className="text-xl font-display font-semibold text-ink mb-4">
                   {feature.title}
                 </h3>
                 
-                <p className="text-gray-600 leading-relaxed mb-4">
+                <p className="text-teal-700 leading-relaxed mb-4">
                   {feature.description}
                 </p>
 

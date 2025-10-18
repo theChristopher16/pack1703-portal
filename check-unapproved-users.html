@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Account Analysis - Pack 1703 Portal</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #2c5282;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .status {
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .status.loading {
+      background: #e6f3ff;
+      color: #0066cc;
+    }
+    .status.error {
+      background: #ffe6e6;
+      color: #cc0000;
+    }
+    .status.success {
+      background: #e6ffe6;
+      color: #008800;
+    }
+    .status.info {
+      background: #f0f9ff;
+      color: #1e40af;
+    }
+    .user-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 15px;
+      background: #f8fafc;
+    }
+    .user-card.problem {
+      border-left: 4px solid #f59e0b;
+      background: #fffbeb;
+    }
+    .user-card.ok {
+      border-left: 4px solid #10b981;
+      background: #f0fdf4;
+    }
+    .user-card.request {
+      border-left: 4px solid #3b82f6;
+      background: #eff6ff;
+    }
+    .user-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .info-item {
+      font-size: 14px;
+    }
+    .info-label {
+      font-weight: 600;
+      color: #4a5568;
+    }
+    .info-value {
+      color: #2d3748;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+    .badge.pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .badge.approved {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .badge.problem {
+      background: #fecaca;
+      color: #991b1b;
+    }
+    .badge.request {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .summary-card {
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .summary-card.total {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .summary-card.problem {
+      background: #fed7aa;
+      color: #92400e;
+    }
+    .summary-card.ok {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .summary-card.requests {
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+    .summary-number {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .summary-label {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 10px;
+      font-size: 14px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn.primary {
+      background: #3b82f6;
+      color: white;
+    }
+    .btn.secondary {
+      background: #6b7280;
+      color: white;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+    .instructions {
+      background: #f0f9ff;
+      border-left: 4px solid #3b82f6;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 30px;
+    }
+    .instructions h3 {
+      margin-top: 0;
+      color: #1e40af;
+    }
+    .instructions ol {
+      margin-left: 20px;
+    }
+    .instructions li {
+      margin-bottom: 10px;
+      color: #1e3a8a;
+    }
+    .code-block {
+      background: #1f2937;
+      color: #f9fafb;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 14px;
+      margin: 10px 0;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 User Account Analysis</h1>
+    <p class="subtitle">Analyzes users, account requests, and approval workflow issues</p>
+
+    <div id="status" class="status loading">
+      <strong>⏳ Loading...</strong><br>
+      Checking users and account requests...
+    </div>
+
+    <div id="summary" style="display: none;"></div>
+    <div id="results"></div>
+    <div id="instructions" style="display: none;"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getFirestore, collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBWMECPNLGYNIslBIHYCQnywS0E6Ep-Zvc",
+      authDomain: "pack1703-portal.firebaseapp.com",
+      projectId: "pack1703-portal",
+      storageBucket: "pack1703-portal.firebasestorage.app",
+      messagingSenderId: "869412763535",
+      appId: "1:869412763535:web:73a6a8ea7d12aae4b8cc1f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const statusDiv = document.getElementById('status');
+    const summaryDiv = document.getElementById('summary');
+    const resultsDiv = document.getElementById('results');
+    const instructionsDiv = document.getElementById('instructions');
+
+    async function checkAuthentication() {
+      return new Promise((resolve) => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          unsubscribe();
+          resolve(user);
+        });
+      });
+    }
+
+    async function performSignInWithRedirect() {
+      try {
+        const provider = new GoogleAuthProvider();
+        await signInWithRedirect(auth, provider);
+      } catch (error) {
+        console.error('Sign-in error:', error);
+        throw error;
+      }
+    }
+
+    async function handleRedirectResult() {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          console.log('User signed in via redirect:', result.user.email);
+          return result.user;
+        }
+        return null;
+      } catch (error) {
+        console.error('Redirect result error:', error);
+        return null;
+      }
+    }
+
+    async function analyzeUsers() {
+      try {
+        // First check for redirect result
+        await handleRedirectResult();
+        
+        // Check authentication
+        let user = await checkAuthentication();
+        
+        if (!user) {
+          statusDiv.className = 'status info';
+          statusDiv.innerHTML = `
+            <strong>🔐 Authentication Required</strong><br>
+            Please sign in to analyze users.<br>
+            <button onclick="signIn()" class="btn primary" style="margin-top: 10px;">Sign In with Google</button>
+          `;
+          return;
+        }
+
+        statusDiv.className = 'status loading';
+        statusDiv.innerHTML = '<strong>⏳ Analyzing...</strong><br>Checking users, account requests, and approval workflow...';
+
+        // Get all users
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        
+        // Get all account requests
+        const requestsSnapshot = await getDocs(collection(db, 'accountRequests'));
+        
+        const allUsers = [];
+        const problematicUsers = [];
+        const okUsers = [];
+        const accountRequests = [];
+        const orphanedUsers = []; // Users without corresponding requests
+
+        // Process account requests
+        requestsSnapshot.forEach((doc) => {
+          const requestData = doc.data();
+          accountRequests.push({
+            id: doc.id,
+            email: requestData.email,
+            displayName: requestData.displayName,
+            status: requestData.status,
+            createdAt: requestData.createdAt?.toDate?.() || requestData.createdAt,
+            phone: requestData.phone,
+            den: requestData.den,
+            scoutRank: requestData.scoutRank
+          });
+        });
+
+        // Process users
+        usersSnapshot.forEach((doc) => {
+          const userData = doc.data();
+          const userId = doc.id;
+
+          // Skip AI accounts
+          if (userId === 'ai_solyn' || userId === 'ai_nova') {
+            return;
+          }
+
+          const user = {
+            uid: userId,
+            email: userData.email || 'No email',
+            displayName: userData.displayName || 'Unknown',
+            role: userData.role || 'parent',
+            status: userData.status || 'unknown',
+            approvedBy: userData.approvedBy,
+            approvedAt: userData.approvedAt?.toDate?.() || userData.approvedAt,
+            createdAt: userData.createdAt?.toDate?.() || userData.createdAt,
+            authProvider: userData.authProvider || 'unknown'
+          };
+
+          allUsers.push(user);
+
+          // Check if user has approval metadata
+          const hasApprovalMetadata = user.approvedBy || user.approvedAt;
+          const isApproved = user.status === 'approved' || !user.status;
+
+          // Skip super admins (root users)
+          if (user.role === 'super_admin') {
+            okUsers.push(user);
+            return;
+          }
+
+          // Check if user has a corresponding account request
+          const hasRequest = accountRequests.some(req => req.email === user.email);
+
+          if (isApproved && !hasApprovalMetadata) {
+            problematicUsers.push({...user, hasRequest});
+          } else if (!hasRequest && user.authProvider === 'google') {
+            orphanedUsers.push(user); // Google users without requests
+          } else {
+            okUsers.push(user);
+          }
+        });
+
+        // Display summary
+        summaryDiv.style.display = 'block';
+        summaryDiv.innerHTML = `
+          <div class="summary">
+            <div class="summary-card total">
+              <div class="summary-number">${allUsers.length}</div>
+              <div class="summary-label">Total Users</div>
+            </div>
+            <div class="summary-card.requests">
+              <div class="summary-number">${accountRequests.length}</div>
+              <div class="summary-label">Account Requests</div>
+            </div>
+            <div class="summary-card problem">
+              <div class="summary-number">${problematicUsers.length}</div>
+              <div class="summary-label">Need Approval Fix</div>
+            </div>
+            <div class="summary-card problem">
+              <div class="summary-number">${orphanedUsers.length}</div>
+              <div class="summary-label">Orphaned Google Users</div>
+            </div>
+          </div>
+        `;
+
+        statusDiv.className = 'status success';
+        statusDiv.innerHTML = '<strong>✅ Analysis Complete!</strong><br>Found users and requests that need attention.';
+
+        let html = '';
+
+        // Show orphaned Google users (users without requests)
+        if (orphanedUsers.length > 0) {
+          html += '<h2>🚨 Orphaned Google Users (No Account Requests)</h2>';
+          html += '<p style="color: #dc2626; font-weight: 600;">These users signed in with Google but never submitted account requests. They should be redirected back to login.</p>';
+          
+          orphanedUsers.forEach(user => {
+            html += `
+              <div class="user-card problem">
+                <div>
+                  <strong>${user.displayName}</strong>
+                  <span class="badge problem">No Request</span>
+                </div>
+                <div class="user-info">
+                  <div class="info-item">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">${user.email}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Auth Provider</div>
+                    <div class="info-value">${user.authProvider}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Created</div>
+                    <div class="info-value">${user.createdAt ? user.createdAt.toLocaleString() : 'Unknown'}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Status</div>
+                    <div class="info-value">${user.status}</div>
+                  </div>
+                </div>
+                <div class="actions">
+                  <strong>⚠️ Action Needed:</strong> This user should be redirected to login with message "You don't have an account. Please request one first."
+                </div>
+              </div>
+            `;
+          });
+        }
+
+        // Show problematic users (approved but no metadata)
+        if (problematicUsers.length > 0) {
+          html += '<h2>🔴 Users That Need Approval Fix</h2>';
+          html += '<p style="color: #dc2626; font-weight: 600;">These users are approved but missing approval metadata. They may have bypassed the approval system.</p>';
+          
+          problematicUsers.forEach(user => {
+            html += `
+              <div class="user-card problem">
+                <div>
+                  <strong>${user.displayName}</strong>
+                  <span class="badge problem">Needs Fix</span>
+                  ${user.hasRequest ? '<span class="badge request">Has Request</span>' : '<span class="badge problem">No Request</span>'}
+                </div>
+                <div class="user-info">
+                  <div class="info-item">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">${user.email}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Role</div>
+                    <div class="info-value">${user.role}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Status</div>
+                    <div class="info-value">${user.status}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Auth Provider</div>
+                    <div class="info-value">${user.authProvider}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Created</div>
+                    <div class="info-value">${user.createdAt ? user.createdAt.toLocaleString() : 'Unknown'}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Approved By</div>
+                    <div class="info-value">${user.approvedBy || '❌ Missing'}</div>
+                  </div>
+                </div>
+                <div class="actions">
+                  <strong>⚠️ Issue:</strong> User is approved but has no approval metadata (no approvedBy or approvedAt)
+                </div>
+              </div>
+            `;
+          });
+        }
+
+        // Show account requests
+        if (accountRequests.length > 0) {
+          html += '<h2 style="margin-top: 40px;">📋 Account Requests</h2>';
+          accountRequests.forEach(request => {
+            html += `
+              <div class="user-card request">
+                <div>
+                  <strong>${request.displayName}</strong>
+                  <span class="badge request">Pending Request</span>
+                </div>
+                <div class="user-info">
+                  <div class="info-item">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">${request.email}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Phone</div>
+                    <div class="info-value">${request.phone || 'Not provided'}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Den</div>
+                    <div class="info-value">${request.den || 'Not specified'}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Scout Rank</div>
+                    <div class="info-value">${request.scoutRank || 'Not specified'}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Requested</div>
+                    <div class="info-value">${request.createdAt ? request.createdAt.toLocaleString() : 'Unknown'}</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+        }
+
+        resultsDiv.innerHTML = html;
+
+        // Show instructions
+        instructionsDiv.style.display = 'block';
+        instructionsDiv.innerHTML = `
+          <div class="instructions">
+            <h3>🔧 How to Fix These Issues</h3>
+            
+            <h4>1. For Orphaned Google Users (No Account Requests)</h4>
+            <p>These users tried to sign in with Google but never submitted account requests. They should be redirected back to login.</p>
+            <div class="code-block">
+// In your authService.ts, modify createUserFromFirebaseUser():
+// Check if user has a corresponding account request
+const hasRequest = await checkForAccountRequest(user.email);
+if (!hasRequest) {
+  // Sign out and redirect with message
+  await signOut(auth);
+  throw new Error('You don\\'t have an account. Please request one first.');
+}
+            </div>
+
+            <h4>2. For Users That Need Approval Fix</h4>
+            <p>These users are approved but missing approval metadata. You need to:</p>
+            <ol>
+              <li><strong>Go to Admin Panel > User Management</strong></li>
+              <li><strong>For each user:</strong>
+                <ul>
+                  <li>If they should have access → Approve them properly (add approvedBy, approvedAt)</li>
+                  <li>If they shouldn't have access → Remove them</li>
+                  <li>If unsure → Set to pending for review</li>
+                </ul>
+              </li>
+            </ol>
+
+            <h4>3. For Account Requests</h4>
+            <p>These are legitimate requests waiting for approval. You can:</p>
+            <ol>
+              <li><strong>Approve them</strong> through the Admin Panel</li>
+              <li><strong>Link their Google accounts</strong> if they try to sign in later</li>
+            </ol>
+
+            <h4>4. Test the Fix</h4>
+            <p>After implementing the fix:</p>
+            <ol>
+              <li>Try signing in with Google using a test account that has no request</li>
+              <li>Verify you get redirected back to login with the message</li>
+              <li>Try signing in with Google using an account that has a request</li>
+              <li>Verify they get linked properly and you receive approval notification</li>
+            </ol>
+          </div>
+        `;
+
+      } catch (error) {
+        console.error('Error:', error);
+        statusDiv.className = 'status error';
+        statusDiv.innerHTML = `<strong>❌ Error</strong><br>${error.message}`;
+      }
+    }
+
+    // Global function for sign in button
+    window.signIn = async function() {
+      try {
+        await performSignInWithRedirect();
+      } catch (error) {
+        console.error('Sign-in error:', error);
+        statusDiv.className = 'status error';
+        statusDiv.innerHTML = `<strong>❌ Sign-in Error</strong><br>${error.message}`;
+      }
+    };
+
+    // Start analysis
+    analyzeUsers();
+  </script>
+</body>
+</html>

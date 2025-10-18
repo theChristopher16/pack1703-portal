@@ -23,10 +23,6 @@ import {
 export interface CostBreakdown {
   // External API Costs
   api: {
-    // AI Services
-    gemini: number; // Firebase AI Logic (Gemini)
-    openai: number; // Legacy/fallback
-    
     // Google Services
     googleMaps: number;
     googlePlaces: number;
@@ -74,10 +70,6 @@ export interface CostBreakdown {
 export interface UsageMetrics {
   date: string;
   requests: {
-    // AI Services
-    gemini: number;
-    openai: number;
-    
     // Google Services
     googleMaps: number;
     googlePlaces: number;
@@ -167,10 +159,6 @@ class CostManagementService {
       const currentData = usageDoc.exists() ? usageDoc.data() : {
         date: today,
         requests: {
-          // AI Services
-          gemini: 0,
-          openai: 0,
-          
           // Google Services
           googleMaps: 0,
           googlePlaces: 0,
@@ -195,10 +183,6 @@ class CostManagementService {
         },
         costs: {
           api: {
-            // AI Services
-            gemini: 0,
-            openai: 0,
-            
             // Google Services
             googleMaps: 0,
             googlePlaces: 0,
@@ -386,10 +370,6 @@ class CostManagementService {
         const defaultData: UsageMetrics = {
           date: today,
           requests: {
-            // AI Services
-            gemini: 0,
-            openai: 0,
-            
             // Google Services
             googleMaps: 0,
             googlePlaces: 0,
@@ -414,10 +394,6 @@ class CostManagementService {
           },
           costs: {
             api: {
-              // AI Services
-              gemini: 0,
-              openai: 0,
-              
               // Google Services
               googleMaps: 0,
               googlePlaces: 0,
@@ -799,7 +775,6 @@ class CostManagementService {
         googlePlaces: { requests: 0, cost: 0, status: 'active' },
         phoneValidation: { requests: 0, cost: 0, status: 'active' },
         tenor: { requests: 0, cost: 0, status: 'active' },
-        gemini: { requests: 0, cost: 0, status: 'active' },
         emailService: { requests: 0, cost: 0, status: 'active' }
       };
 
@@ -823,7 +798,6 @@ class CostManagementService {
         stats.googleMaps = { requests: 45, cost: 0.225, status: 'active' };
         stats.openWeather = { requests: 28, cost: 0.028, status: 'active' };
         stats.phoneValidation = { requests: 12, cost: 0.012, status: 'active' };
-        stats.gemini = { requests: 8, cost: 6.00, status: 'active' };
         stats.tenor = { requests: 15, cost: 0.015, status: 'active' };
         stats.emailService = { requests: 25, cost: 0.25, status: 'active' };
       }
@@ -836,7 +810,6 @@ class CostManagementService {
         googleMaps: { requests: 45, cost: 0.225, status: 'active' },
         openWeather: { requests: 28, cost: 0.028, status: 'active' },
         phoneValidation: { requests: 12, cost: 0.012, status: 'active' },
-        gemini: { requests: 8, cost: 6.00, status: 'active' },
         tenor: { requests: 15, cost: 0.015, status: 'active' },
         ieeeXplore: { requests: 3, cost: 0.15, status: 'active' },
         emailService: { requests: 25, cost: 0.25, status: 'active' }
@@ -873,7 +846,6 @@ class CostManagementService {
       service: {
         googleMaps: 1.00,     // $1 per day for Google Maps
         openWeather: 0.50,    // $0.50 per day for weather
-        gemini: 2.00,         // $2 per day for AI
         firestore: 3.00       // $3 per day for Firestore
       }
     };

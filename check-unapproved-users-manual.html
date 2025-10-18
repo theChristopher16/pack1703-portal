@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check Unapproved Users - Pack 1703 Portal</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #2c5282;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .status {
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .status.loading {
+      background: #e6f3ff;
+      color: #0066cc;
+    }
+    .status.error {
+      background: #ffe6e6;
+      color: #cc0000;
+    }
+    .status.success {
+      background: #e6ffe6;
+      color: #008800;
+    }
+    .status.info {
+      background: #f0f9ff;
+      color: #1e40af;
+    }
+    .user-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 15px;
+      background: #f8fafc;
+    }
+    .user-card.problem {
+      border-left: 4px solid #f59e0b;
+      background: #fffbeb;
+    }
+    .user-card.ok {
+      border-left: 4px solid #10b981;
+      background: #f0fdf4;
+    }
+    .user-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .info-item {
+      font-size: 14px;
+    }
+    .info-label {
+      font-weight: 600;
+      color: #4a5568;
+    }
+    .info-value {
+      color: #2d3748;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+    .badge.pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .badge.approved {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .badge.problem {
+      background: #fecaca;
+      color: #991b1b;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .summary-card {
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .summary-card.total {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .summary-card.problem {
+      background: #fed7aa;
+      color: #92400e;
+    }
+    .summary-card.ok {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .summary-number {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .summary-label {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    .instructions {
+      background: #f0f9ff;
+      border-left: 4px solid #3b82f6;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 30px;
+    }
+    .instructions h3 {
+      margin-top: 0;
+      color: #1e40af;
+    }
+    .instructions ol {
+      margin-left: 20px;
+    }
+    .instructions li {
+      margin-bottom: 10px;
+      color: #1e3a8a;
+    }
+    .code-block {
+      background: #1f2937;
+      color: #f9fafb;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 14px;
+      margin: 10px 0;
+      overflow-x: auto;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 10px;
+      font-size: 14px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn.primary {
+      background: #3b82f6;
+      color: white;
+    }
+    .btn.secondary {
+      background: #6b7280;
+      color: white;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Check Unapproved Users</h1>
+    <p class="subtitle">Identifies users who may have bypassed the approval system</p>
+
+    <div id="status" class="status info">
+      <strong>📋 Manual Check Required</strong><br>
+      Due to browser popup restrictions, this tool will guide you through checking users manually.
+    </div>
+
+    <div id="instructions">
+      <div class="instructions">
+        <h3>🔧 How to Check for Unapproved Users</h3>
+        
+        <h4>Method 1: Use Firebase Console (Easiest)</h4>
+        <ol>
+          <li><strong>Open Firebase Console:</strong>
+            <a href="https://console.firebase.google.com/project/pack1703-portal/firestore/data" target="_blank" class="btn primary">
+              Open Firebase Console
+            </a>
+          </li>
+          <li><strong>Navigate to Firestore Database</strong></li>
+          <li><strong>Go to the "users" collection</strong></li>
+          <li><strong>Look for users with these characteristics:</strong>
+            <ul>
+              <li>Status is "approved" or missing</li>
+              <li>No "approvedBy" field</li>
+              <li>No "approvedAt" field</li>
+              <li>Role is NOT "super_admin"</li>
+            </ul>
+          </li>
+        </ol>
+
+        <h4>Method 2: Use Command Line Script</h4>
+        <ol>
+          <li><strong>Get Firebase Service Account Key:</strong>
+            <div class="code-block">
+# Go to Firebase Console > Project Settings > Service Accounts
+# Click "Generate New Private Key"
+# Download the JSON file
+# Save it as: service-account-key.json in project root
+            </div>
+          </li>
+          <li><strong>Run the fix script:</strong>
+            <div class="code-block">
+cd /Users/christophersmith/Documents/GitHub/pack1703-portal
+node scripts/fix-unapproved-users.js
+            </div>
+          </li>
+        </ol>
+
+        <h4>Method 3: Use Admin Panel</h4>
+        <ol>
+          <li><strong>Sign in to your portal</strong> as an admin</li>
+          <li><strong>Go to Admin Panel > User Management</strong></li>
+          <li><strong>Look for users without approval metadata</strong></li>
+          <li><strong>Review and approve/deny as needed</strong></li>
+        </ol>
+
+        <h3>🎯 What to Look For</h3>
+        <p><strong>Problematic users will have:</strong></p>
+        <ul>
+          <li>✅ <strong>Status:</strong> "approved" or missing</li>
+          <li>❌ <strong>approvedBy:</strong> Missing or null</li>
+          <li>❌ <strong>approvedAt:</strong> Missing or null</li>
+          <li>⚠️ <strong>Auth Provider:</strong> "google" or other social provider</li>
+          <li>📅 <strong>Created:</strong> Recent dates (after social login was enabled)</li>
+        </ul>
+
+        <h3>🔧 How to Fix Each User</h3>
+        <p><strong>For each problematic user (like Stephen Tadlock, Wei Gao):</strong></p>
+        
+        <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <h4>Option A: Approve Them (Recommended)</h4>
+          <p>If they should have access to the system:</p>
+          <div class="code-block">
+# In Firebase Console, edit the user document:
+{
+  "status": "approved",
+  "approvedBy": "your-admin-uid",
+  "approvedAt": "2025-10-17T00:00:00Z"
+}
+          </div>
+        </div>
+
+        <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <h4>Option B: Set to Pending</h4>
+          <p>If you want to review them through the normal approval process:</p>
+          <div class="code-block">
+# In Firebase Console, edit the user document:
+{
+  "status": "pending",
+  "approvedBy": null,
+  "approvedAt": null
+}
+          </div>
+        </div>
+
+        <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <h4>Option C: Remove Them</h4>
+          <p>If they shouldn't have access:</p>
+          <div class="code-block">
+# Delete the user document from Firestore
+# Also delete from Firebase Authentication
+          </div>
+        </div>
+
+        <h3>📊 Expected Results</h3>
+        <p>After fixing, all users should have:</p>
+        <ul>
+          <li>✅ Proper approval metadata (approvedBy, approvedAt)</li>
+          <li>✅ Correct status ("approved" or "pending")</li>
+          <li>✅ Audit trail of who approved them and when</li>
+        </ul>
+
+        <h3>🧪 Test the Fix</h3>
+        <p>After fixing existing users, test that new social logins work correctly:</p>
+        <ol>
+          <li>Create a test Google account</li>
+          <li>Try to sign in with Google</li>
+          <li>Verify you see: "Account created successfully! Your account is pending approval."</li>
+          <li>Check that you receive an email notification</li>
+          <li>Verify the user appears in Admin Panel as "pending"</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Add some interactivity
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('Manual check tool loaded');
+      
+      // Add click handlers for buttons
+      const buttons = document.querySelectorAll('.btn');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          if (this.href) {
+            console.log('Opening:', this.href);
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
+

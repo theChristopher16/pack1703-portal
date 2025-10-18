@@ -782,6 +782,23 @@ service cloud.firestore {
     }
     
     // ============================================================================
+    // USER INTERACTION TRACKING
+    // ============================================================================
+    
+    // User interactions - users can only access their own data
+    match /userInteractions/{interactionId} {
+      allow read, write: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Allow aggregation queries on user interactions for admins
+    match /userInteractions {
+      allow read: if isAdmin();
+    }
+
+    // ============================================================================
     // DENY ALL OTHER ACCESS
     // ============================================================================
     

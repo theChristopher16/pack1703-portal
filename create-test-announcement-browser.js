@@ -44,7 +44,8 @@ async function createTestAnnouncement(targetDens = [], testMode = true) {
 **Created:** ${new Date().toLocaleString()}
 
 This announcement should only be visible to users in the targeted dens. If you can see this announcement, the targeting is working correctly!`,
-      targetDens: targetDens.length > 0 ? targetDens : undefined,
+      // Only include targetDens if it has values, otherwise omit the field entirely
+      ...(targetDens.length > 0 ? { targetDens } : {}),
       priority: 'medium',
       category: 'general',
       sendEmail: true,

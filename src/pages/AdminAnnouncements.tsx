@@ -117,16 +117,20 @@ const AdminAnnouncements: React.FC = () => {
     try {
       if (modalMode === 'create') {
         // Create in Firestore
-        const newAnnouncement = await firestoreService.createAnnouncement({
+        const createData: any = {
           ...announcementData,
           pinned: false, // Default to unpinned
           isActive: true,
           priority: announcementData.priority || 'medium',
-          category: announcementData.category || 'general',
-          targetDens: announcementData.targetDens && announcementData.targetDens.length > 0 
-            ? announcementData.targetDens 
-            : undefined
-        });
+          category: announcementData.category || 'general'
+        };
+
+        // Only include targetDens if it has values, otherwise omit the field entirely
+        if (announcementData.targetDens && announcementData.targetDens.length > 0) {
+          createData.targetDens = announcementData.targetDens;
+        }
+
+        const newAnnouncement = await firestoreService.createAnnouncement(createData);
         
         // Update local state with the returned announcement (includes Firestore ID)
         setAnnouncements(prev => [...prev, {

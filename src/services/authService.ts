@@ -677,61 +677,174 @@ class AuthService {
     const usersSnapshot = await getDocs(usersQuery);
     const isFirstUser = usersSnapshot.empty;
 
-    // Determine role based on whether this is the first user
-    const role = isFirstUser ? UserRole.SUPER_ADMIN : UserRole.PARENT;
-
-    // Create user document in Firestore
-    console.log('Creating Firestore user document...');
-    const userData: Omit<AppUser, 'uid' | 'createdAt' | 'updatedAt'> = {
-      email: firebaseUser.email!,
-      displayName: firebaseUser.displayName || 'User',
-      photoURL: firebaseUser.photoURL || undefined, // Include profile picture from social login
-      role: role,
-      permissions: ROLE_PERMISSIONS[role],
-      isActive: true,
-      authProvider: authProvider,
-      profile: {
-        socialData: {
-          google: firebaseUser.providerData.find((p: any) => p.providerId === 'google.com') ? {
-            id: firebaseUser.uid,
-            email: firebaseUser.email || undefined,
-            name: firebaseUser.displayName || undefined,
-            picture: firebaseUser.photoURL || undefined,
-            verifiedEmail: firebaseUser.emailVerified
-          } : undefined,
-          apple: firebaseUser.providerData.find((p: any) => p.providerId === 'apple.com') ? {
-            id: firebaseUser.uid,
-            email: firebaseUser.email || undefined,
-            name: firebaseUser.displayName || undefined,
-            picture: firebaseUser.photoURL || undefined
-          } : undefined,
-          facebook: firebaseUser.providerData.find((p: any) => p.providerId === 'facebook.com') ? {
-            id: firebaseUser.uid,
-            email: firebaseUser.email || undefined,
-            name: firebaseUser.displayName || undefined,
-            picture: firebaseUser.photoURL || undefined
-          } : undefined
+    // If this is the first user, create them as SUPER_ADMIN directly (no approval needed)
+    if (isFirstUser) {
+      console.log('🔐 AuthService: First user detected, creating as SUPER_ADMIN...');
+      
+      const userData: any = {
+        email: firebaseUser.email!,
+        displayName: firebaseUser.displayName || 'User',
+        role: UserRole.SUPER_ADMIN,
+        permissions: ROLE_PERMISSIONS[UserRole.SUPER_ADMIN],
+        isActive: true,
+        status: 'approved',
+        authProvider: authProvider,
+        profile: {
+          socialData: {
+            google: firebaseUser.providerData.find((p: any) => p.providerId === 'google.com') ? {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || undefined,
+              name: firebaseUser.displayName || undefined,
+              picture: firebaseUser.photoURL || undefined,
+              verifiedEmail: firebaseUser.emailVerified
+            } : undefined,
+            apple: firebaseUser.providerData.find((p: any) => p.providerId === 'apple.com') ? {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || undefined,
+              name: firebaseUser.displayName || undefined,
+              picture: firebaseUser.photoURL || undefined
+            } : undefined,
+            facebook: firebaseUser.providerData.find((p: any) => p.providerId === 'facebook.com') ? {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || undefined,
+              name: firebaseUser.displayName || undefined,
+              picture: firebaseUser.photoURL || undefined
+            } : undefined
+          }
         }
+      };
+
+      // Only add photoURL if it exists
+      if (firebaseUser.photoURL) {
+        userData.photoURL = firebaseUser.photoURL;
       }
-    };
 
-    await setDoc(doc(db, 'users', firebaseUser.uid), {
-      ...userData,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      lastLoginAt: serverTimestamp()
-    });
+      await setDoc(doc(db, 'users', firebaseUser.uid), {
+        ...userData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        lastLoginAt: serverTimestamp()
+      });
 
-    // Return the created user
-    const appUser: AppUser = {
-      uid: firebaseUser.uid,
-      ...userData,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      lastLoginAt: new Date()
-    };
+      const appUser: AppUser = {
+        uid: firebaseUser.uid,
+        ...userData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date()
+      };
 
-    return appUser;
+      return appUser;
+    }
+
+    // Check if user has an existing account request
+    console.log('🔐 AuthService: Checking for existing account request...');
+    const accountRequestsQuery = query(
+      collection(db, 'accountRequests'),
+      where('email', '==', firebaseUser.email)
+    );
+    const accountRequestsSnapshot = await getDocs(accountRequestsQuery);
+    
+    if (accountRequestsSnapshot.empty) {
+      // No account request found - user shouldn't be able to sign in
+      console.log('🔐 AuthService: No account request found for', firebaseUser.email);
+      await signOut(this.auth);
+      throw new Error('You don\'t have an account. Please request one first by visiting the portal and submitting an account request.');
+    }
+    
+    // User has an account request - link their Google account to it
+    console.log('🔐 AuthService: Found account request, linking Google account...');
+    const accountRequest = accountRequestsSnapshot.docs[0];
+    const requestData = accountRequest.data();
+    
+    try {
+      // Create pending user document via Cloud Function
+      const createPendingUserFunction = httpsCallable(functions, 'createPendingUser');
+      const result = await createPendingUserFunction({
+        userId: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName || requestData.displayName || '',
+        preferences: {
+          emailNotifications: true,
+          pushNotifications: true,
+          smsNotifications: false
+        }
+      });
+      
+      console.log('🔐 AuthService: createPendingUser result:', result.data);
+      
+      // Update the user document with social data and request info
+      await updateDoc(doc(db, 'users', firebaseUser.uid), {
+        authProvider: authProvider,
+        photoURL: firebaseUser.photoURL || null,
+        profile: {
+          firstName: requestData.firstName || '',
+          lastName: requestData.lastName || '',
+          phone: requestData.phone || '',
+          address: requestData.address || '',
+          city: requestData.city || '',
+          state: requestData.state || '',
+          zipCode: requestData.zipCode || '',
+          emergencyContact: requestData.emergencyContact || '',
+          emergencyPhone: requestData.emergencyPhone || '',
+          medicalInfo: requestData.medicalInfo || '',
+          dietaryRestrictions: requestData.dietaryRestrictions || '',
+          specialNeeds: requestData.specialNeeds || '',
+          den: requestData.den || '',
+          rank: requestData.scoutRank || '',
+          parentGuardian: requestData.parentGuardian || '',
+          parentPhone: requestData.parentPhone || '',
+          parentEmail: requestData.parentEmail || '',
+          socialData: {
+            google: firebaseUser.providerData.find((p: any) => p.providerId === 'google.com') ? {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || undefined,
+              name: firebaseUser.displayName || undefined,
+              picture: firebaseUser.photoURL || undefined,
+              verifiedEmail: firebaseUser.emailVerified
+            } : undefined,
+            apple: firebaseUser.providerData.find((p: any) => p.providerId === 'apple.com') ? {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || undefined,
+              name: firebaseUser.displayName || undefined,
+              picture: firebaseUser.photoURL || undefined
+            } : undefined,
+            facebook: firebaseUser.providerData.find((p: any) => p.providerId === 'facebook.com') ? {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || undefined,
+              name: firebaseUser.displayName || undefined,
+              picture: firebaseUser.photoURL || undefined
+            } : undefined
+          }
+        },
+        updatedAt: serverTimestamp()
+      });
+      
+      // Update the account request to mark it as linked
+      await updateDoc(doc(db, 'accountRequests', accountRequest.id), {
+        linkedUserId: firebaseUser.uid,
+        linkedAt: serverTimestamp(),
+        status: 'linked'
+      });
+      
+      // Sign out the user immediately since they're pending approval
+      console.log('🔐 AuthService: User linked to account request, signing them out...');
+      await signOut(this.auth);
+      
+      // Throw error to inform user they need approval
+      throw new Error('Your Google account has been linked to your account request. Your account is pending approval. You will receive an email when your account has been approved by pack leadership.');
+      
+    } catch (error: any) {
+      console.error('🔐 AuthService: Error linking user to account request:', error);
+      
+      // If it's our approval message, re-throw it
+      if (error.message?.includes('pending approval')) {
+        throw error;
+      }
+      
+      // For other errors, provide a helpful message
+      throw new Error('Failed to link your account. Please contact pack leadership for assistance.');
+    }
   }
 
   // Extract social login data from Firebase user

@@ -108,8 +108,8 @@ class UserInteractionService {
       eventName,
       elementType: 'button',
       elementText: buttonElement.textContent?.trim(),
-      elementId: buttonElement.id || undefined,
-      elementClass: buttonElement.className || undefined,
+      elementId: buttonElement.id || '',
+      elementClass: buttonElement.className || '',
       page: window.location.pathname,
       metadata: {
         ...additionalMetadata,
@@ -141,7 +141,7 @@ class UserInteractionService {
       eventName: action,
       elementType: 'form',
       elementText: formName,
-      elementId: fieldName,
+      elementId: fieldName || '',
       page: window.location.pathname,
       metadata: {
         formName,

@@ -750,8 +750,32 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Loading Existing RSVP Notice */}
+        {isLoadingExistingRSVP && (
+          <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+            <div className="flex items-center">
+              <Loader2 className="w-5 h-5 text-gray-600 mr-2 animate-spin" />
+              <p className="text-sm text-gray-700">
+                Checking for existing RSVP...
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Editing Existing RSVP Notice */}
+        {existingRSVP && !isLoadingExistingRSVP && (
+          <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+            <div className="flex items-center">
+              <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+              <p className="text-sm text-green-700">
+                You already have an RSVP for this event. You can update your information below.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Auto-Population Notice */}
-        {isAuthenticated && currentUserProfile && (
+        {isAuthenticated && currentUserProfile && !existingRSVP && !isLoadingExistingRSVP && (
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
             <div className="flex items-center">
               <CheckCircle className="w-5 h-5 text-blue-600 mr-2" />
@@ -1014,12 +1038,14 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
             {isSubmitting ? (
               <>
                 <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-                {isElective && electiveOptions?.casualAttendance ? 'Letting us know...' : 'Submitting RSVP...'}
+                {existingRSVP ? 'Updating...' : (isElective && electiveOptions?.casualAttendance ? 'Letting us know...' : 'Submitting RSVP...')}
               </>
             ) : (
               <>
                 <CheckCircle className="w-5 h-5 mr-3" />
-                {paymentRequired ? (
+                {existingRSVP ? (
+                  'Update RSVP'
+                ) : paymentRequired ? (
                   <>
                     Submit RSVP (Payment ${(paymentAmount / 100).toFixed(2)} required after)
                   </>
@@ -1037,8 +1063,12 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
         {submitStatus === 'success' && (
           <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-center">
             <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
-            <h4 className="text-lg font-semibold text-green-700 mb-1">RSVP Submitted Successfully!</h4>
-            <p className="text-green-600">Thank you for your RSVP. We'll see you at the event!</p>
+            <h4 className="text-lg font-semibold text-green-700 mb-1">
+              {existingRSVP ? 'RSVP Updated Successfully!' : 'RSVP Submitted Successfully!'}
+            </h4>
+            <p className="text-green-600">
+              {existingRSVP ? 'Your RSVP has been updated. See you at the event!' : 'Thank you for your RSVP. We\'ll see you at the event!'}
+            </p>
           </div>
         )}
 

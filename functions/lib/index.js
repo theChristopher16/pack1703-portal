@@ -3237,6 +3237,7 @@ exports.resendPasswordSetupLink = functions.https.onCall(async (data, context) =
 });
 // Update RSVP (authenticated users only)
 exports.updateRSVP = functions.https.onCall(async (data, context) => {
+    var _a;
     try {
         console.log('📝 Update RSVP - Request received');
         // Check authentication
@@ -3273,18 +3274,58 @@ exports.updateRSVP = functions.https.onCall(async (data, context) => {
                 sanitizedUpdateData[field] = updateData[field];
             }
         }
+        // Check if attendees are being updated
+        if (updateData.attendees && Array.isArray(updateData.attendees)) {
+            const oldAttendeesCount = ((_a = rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.attendees) === null || _a === void 0 ? void 0 : _a.length) || 0;
+            const newAttendeesCount = updateData.attendees.length;
+            // Validate attendees count
+            if (newAttendeesCount === 0 || newAttendeesCount > 20) {
+                throw new functions.https.HttpsError('invalid-argument', 'Must have 1-20 attendees');
+            }
+            // If attendees count changed, we need to check event capacity
+            if (newAttendeesCount !== oldAttendeesCount) {
+                const eventRef = db.collection('events').doc(rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.eventId);
+                const eventDoc = await eventRef.get();
+                if (!eventDoc.exists) {
+                    throw new functions.https.HttpsError('not-found', 'Event not found');
+                }
+                const eventData = eventDoc.data();
+                const maxCapacity = eventData === null || eventData === void 0 ? void 0 : eventData.maxCapacity;
+                const paymentRequired = (eventData === null || eventData === void 0 ? void 0 : eventData.paymentRequired) || false;
+                if (maxCapacity) {
+                    // Get current RSVP count for the event (excluding this RSVP)
+                    const currentPaidRSVPCount = await getActualRSVPCount(rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.eventId, paymentRequired);
+                    const otherRSVPsCount = currentPaidRSVPCount - oldAttendeesCount;
+                    const newTotalCount = otherRSVPsCount + newAttendeesCount;
+                    if (newTotalCount > maxCapacity) {
+                        const remainingSpots = maxCapacity - otherRSVPsCount;
+                        throw new functions.https.HttpsError('resource-exhausted', `Event capacity exceeded. Only ${remainingSpots} spots remaining.`);
+                    }
+                }
+                // Update event RSVP count
+                const attendeesDifference = newAttendeesCount - oldAttendeesCount;
+                // Only update event count if payment is not required or RSVP is paid
+                const shouldCountRSVP = !paymentRequired || ((rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.paymentStatus) === 'completed' || (rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.paymentStatus) === 'not_required');
+                if (shouldCountRSVP) {
+                    await eventRef.update({
+                        currentRSVPs: admin.firestore.FieldValue.increment(attendeesDifference),
+                        updatedAt: getTimestamp()
+                    });
+                }
+            }
+        }
         // Add updated timestamp
         sanitizedUpdateData.updatedAt = getTimestamp();
         // Update the RSVP
         await rsvpRef.update(sanitizedUpdateData);
-        console.log(`RSVP ${rsvpId} updated successfully`);
+        console.log(`✅ RSVP ${rsvpId} updated successfully`);
         return {
             success: true,
             message: 'RSVP updated successfully'
         };
     }
     catch (error) {
-        console.error('Error updating RSVP:', error);
+        console.error('❌ Error updating RSVP:', error);
         if (error instanceof functions.https.HttpsError) {
             throw error;
         }

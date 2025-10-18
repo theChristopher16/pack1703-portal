@@ -15,6 +15,8 @@ interface Event {
   description: string;
   startDate: string;
   endDate: string;
+  startTime?: string; // Added time fields
+  endTime?: string;   // Added time fields
   location?: string; // Fallback for display
   locationId?: string; // Primary field from Firestore
   category?: string;
@@ -171,18 +173,24 @@ const AdminEvents: React.FC = () => {
       } else if (modalMode === 'edit' && selectedEvent) {
         console.log('Updating existing event...');
         // Use Cloud Function to update event with proper permission checking
+        // Parse dates and extract times properly
+        const startDateObj = new Date(eventData.startDate!);
+        const endDateObj = new Date(eventData.endDate!);
+        const startTime = startDateObj.toTimeString().substring(0, 5);
+        const endTime = endDateObj.toTimeString().substring(0, 5);
+        
         const eventToUpdate = {
           eventId: selectedEvent.id,
           eventData: {
             title: eventData.title!,
             description: eventData.description!,
-            startDate: new Date(eventData.startDate!), // Convert to Date object
-            endDate: new Date(eventData.endDate!), // Convert to Date object
-            startTime: eventData.startDate?.split('T')[1]?.substring(0, 5) || '09:00', // Extract time part
-            endTime: eventData.endDate?.split('T')[1]?.substring(0, 5) || '17:00', // Extract time part
+            startDate: startDateObj,
+            endDate: endDateObj,
+            startTime: startTime,
+            endTime: endTime,
             category: eventData.category || 'Meeting',
             visibility: eventData.visibility || 'public',
-            maxCapacity: eventData.maxParticipants ? parseInt(eventData.maxParticipants.toString()) : null, // Use null instead of undefined
+            maxCapacity: eventData.maxParticipants ? parseInt(eventData.maxParticipants.toString()) : null,
           }
         };
         
@@ -518,12 +526,20 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) 
     if (validateForm()) {
       console.log('Form validation passed');
       const { maxParticipants, locationId, ...formDataWithoutMaxParticipants } = formData;
+      // Parse dates and extract times properly
+      const startDateObj = new Date(formData.startDate);
+      const endDateObj = new Date(formData.endDate);
+      const startTime = startDateObj.toTimeString().substring(0, 5);
+      const endTime = endDateObj.toTimeString().substring(0, 5);
+      
       const eventData: Partial<Event> = {
         ...formDataWithoutMaxParticipants,
         locationId: locationId || formData.location, // Use locationId if available, fallback to location
         // Convert string dates to Date objects
-        startDate: new Date(formData.startDate).toISOString(),
-        endDate: new Date(formData.endDate).toISOString(),
+        startDate: startDateObj.toISOString() as any, // Convert to string for frontend, Cloud Function will handle Timestamp
+        endDate: endDateObj.toISOString() as any, // Convert to string for frontend, Cloud Function will handle Timestamp
+        startTime: startTime,
+        endTime: endTime,
         currentParticipants: event?.currentParticipants || 0,
         createdAt: event?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()

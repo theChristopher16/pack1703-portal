@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.completeRSVPPayment = exports.createRSVPPayment = exports.squareWebhook = exports.refundTenantPayment = exports.createTenantPayment = exports.squareOAuthCallback = exports.squareConnectStart = exports.uploadSensorData = exports.uploadCameraImage = exports.resendPasswordSetupLink = exports.completePasswordSetup = exports.verifyPasswordSetupToken = exports.resetPasswordWithToken = exports.verifyPasswordResetToken = exports.sendPasswordReset = exports.publicICSFeed = exports.icsFeed = exports.sendSMS = exports.sendAnnouncementSMS = exports.sendAnnouncementEmails = exports.createAnnouncementWithEmails = exports.createTestAnnouncement = exports.helloWorld = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.getUserRSVPs = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
+exports.squareWebhook = exports.refundTenantPayment = exports.createTenantPayment = exports.squareOAuthCallback = exports.squareConnectStart = exports.uploadSensorData = exports.uploadCameraImage = exports.fixUSSStewartLocation = exports.updateRSVP = exports.resendPasswordSetupLink = exports.completePasswordSetup = exports.verifyPasswordSetupToken = exports.resetPasswordWithToken = exports.verifyPasswordResetToken = exports.sendPasswordReset = exports.publicICSFeed = exports.icsFeed = exports.sendSMS = exports.sendAnnouncementSMS = exports.sendAnnouncementEmails = exports.createAnnouncementWithEmails = exports.createTestAnnouncement = exports.helloWorld = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.getUserRSVPs = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
+exports.completeRSVPPayment = exports.createRSVPPayment = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 const squareup_1 = require("squareup");
@@ -3232,6 +3233,120 @@ exports.resendPasswordSetupLink = functions.https.onCall(async (data, context) =
             throw error;
         }
         throw new functions.https.HttpsError('internal', 'Failed to resend password setup link');
+    }
+});
+// Update RSVP (authenticated users only)
+exports.updateRSVP = functions.https.onCall(async (data, context) => {
+    try {
+        console.log('📝 Update RSVP - Request received');
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
+        }
+        const { rsvpId, updateData } = data;
+        if (!rsvpId) {
+            throw new functions.https.HttpsError('invalid-argument', 'RSVP ID is required');
+        }
+        if (!updateData) {
+            throw new functions.https.HttpsError('invalid-argument', 'Update data is required');
+        }
+        console.log(`Updating RSVP ${rsvpId} for user ${context.auth.uid}`);
+        // Get the RSVP document
+        const rsvpRef = db.collection('rsvps').doc(rsvpId);
+        const rsvpDoc = await rsvpRef.get();
+        if (!rsvpDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'RSVP not found');
+        }
+        const rsvpData = rsvpDoc.data();
+        // Check if the user owns this RSVP
+        if ((rsvpData === null || rsvpData === void 0 ? void 0 : rsvpData.userId) !== context.auth.uid) {
+            throw new functions.https.HttpsError('permission-denied', 'You can only update your own RSVPs');
+        }
+        // Validate update data
+        const allowedFields = [
+            'familyName', 'email', 'phone', 'attendees',
+            'dietaryRestrictions', 'specialNeeds', 'notes'
+        ];
+        const sanitizedUpdateData = {};
+        for (const field of allowedFields) {
+            if (updateData[field] !== undefined) {
+                sanitizedUpdateData[field] = updateData[field];
+            }
+        }
+        // Add updated timestamp
+        sanitizedUpdateData.updatedAt = getTimestamp();
+        // Update the RSVP
+        await rsvpRef.update(sanitizedUpdateData);
+        console.log(`RSVP ${rsvpId} updated successfully`);
+        return {
+            success: true,
+            message: 'RSVP updated successfully'
+        };
+    }
+    catch (error) {
+        console.error('Error updating RSVP:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to update RSVP');
+    }
+});
+// Fix missing USS Stewart location
+exports.fixUSSStewartLocation = functions.https.onCall(async (data, context) => {
+    var _a;
+    try {
+        console.log('🔧 Fixing USS Stewart location...');
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        // Check if user has admin privileges
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError('permission-denied', 'User not found');
+        }
+        const userData = userDoc.data();
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'den_leader';
+        const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
+        const hasEventManagementPermission = (_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('event_management');
+        if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
+            throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to fix locations');
+        }
+        const ussStewartLocation = {
+            name: "USS Stewart / Galveston Naval Museum",
+            address: "100 Seawolf Parkway, Galveston, TX 77554",
+            category: "other",
+            geo: {
+                lat: 29.3013,
+                lng: -94.7977
+            },
+            notesPublic: "Historic WWII destroyer escort preserved on land as part of the Galveston Naval Museum at Seawolf Park. Perfect for overnight adventures and historical education.",
+            notesPrivate: "Check-in at 4:30 PM, contact museum coordinator for group rates",
+            parking: {
+                text: "Museum parking lot available, follow signs to Seawolf Park"
+            },
+            amenities: ["Historic ship tour", "Museum exhibits", "Sleeping quarters", "Educational programs"],
+            isImportant: true,
+            isActive: true,
+            createdAt: getTimestamp(),
+            updatedAt: getTimestamp()
+        };
+        // Add the location document with the specific ID that's referenced in events
+        const locationRef = db.collection('locations').doc('RwI4opwHcUx3GKKF7Ten');
+        await locationRef.set(ussStewartLocation);
+        console.log('✅ USS Stewart location fixed successfully!');
+        return {
+            success: true,
+            message: 'USS Stewart location created successfully',
+            locationId: 'RwI4opwHcUx3GKKF7Ten'
+        };
+    }
+    catch (error) {
+        console.error('Error fixing USS Stewart location:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to fix USS Stewart location');
     }
 });
 // Helper function to generate password reset email HTML

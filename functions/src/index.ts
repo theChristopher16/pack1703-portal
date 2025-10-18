@@ -3980,13 +3980,64 @@ export const updateRSVP = functions.https.onCall(async (data: any, context: func
       }
     }
 
+    // Check if attendees are being updated
+    if (updateData.attendees && Array.isArray(updateData.attendees)) {
+      const oldAttendeesCount = rsvpData?.attendees?.length || 0;
+      const newAttendeesCount = updateData.attendees.length;
+      
+      // Validate attendees count
+      if (newAttendeesCount === 0 || newAttendeesCount > 20) {
+        throw new functions.https.HttpsError('invalid-argument', 'Must have 1-20 attendees');
+      }
+
+      // If attendees count changed, we need to check event capacity
+      if (newAttendeesCount !== oldAttendeesCount) {
+        const eventRef = db.collection('events').doc(rsvpData?.eventId);
+        const eventDoc = await eventRef.get();
+        
+        if (!eventDoc.exists) {
+          throw new functions.https.HttpsError('not-found', 'Event not found');
+        }
+
+        const eventData = eventDoc.data();
+        const maxCapacity = eventData?.maxCapacity;
+        const paymentRequired = eventData?.paymentRequired || false;
+        
+        if (maxCapacity) {
+          // Get current RSVP count for the event (excluding this RSVP)
+          const currentPaidRSVPCount = await getActualRSVPCount(rsvpData?.eventId, paymentRequired);
+          const otherRSVPsCount = currentPaidRSVPCount - oldAttendeesCount;
+          const newTotalCount = otherRSVPsCount + newAttendeesCount;
+          
+          if (newTotalCount > maxCapacity) {
+            const remainingSpots = maxCapacity - otherRSVPsCount;
+            throw new functions.https.HttpsError('resource-exhausted', 
+              `Event capacity exceeded. Only ${remainingSpots} spots remaining.`);
+          }
+        }
+
+        // Update event RSVP count
+        const attendeesDifference = newAttendeesCount - oldAttendeesCount;
+        
+        // Only update event count if payment is not required or RSVP is paid
+        const shouldCountRSVP = !paymentRequired || (rsvpData?.paymentStatus === 'completed' || rsvpData?.paymentStatus === 'not_required');
+        
+        if (shouldCountRSVP) {
+          await eventRef.update({
+            currentRSVPs: admin.firestore.FieldValue.increment(attendeesDifference),
+            updatedAt: getTimestamp()
+          });
+        }
+      }
+    }
+
     // Add updated timestamp
     sanitizedUpdateData.updatedAt = getTimestamp();
 
     // Update the RSVP
     await rsvpRef.update(sanitizedUpdateData);
 
-    console.log(`RSVP ${rsvpId} updated successfully`);
+    console.log(`✅ RSVP ${rsvpId} updated successfully`);
 
     return {
       success: true,
@@ -3994,11 +4045,77 @@ export const updateRSVP = functions.https.onCall(async (data: any, context: func
     };
 
   } catch (error) {
-    console.error('Error updating RSVP:', error);
+    console.error('❌ Error updating RSVP:', error);
     if (error instanceof functions.https.HttpsError) {
       throw error;
     }
     throw new functions.https.HttpsError('internal', 'Failed to update RSVP');
+  }
+});
+
+// Fix missing USS Stewart location
+export const fixUSSStewartLocation = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    console.log('🔧 Fixing USS Stewart location...');
+
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    const hasAdminRole = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'den_leader';
+    const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
+    const hasEventManagementPermission = userData?.permissions?.includes('event_management');
+
+    if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to fix locations');
+    }
+
+    const ussStewartLocation = {
+      name: "USS Stewart / Galveston Naval Museum",
+      address: "100 Seawolf Parkway, Galveston, TX 77554",
+      category: "other",
+      geo: { 
+        lat: 29.3013, 
+        lng: -94.7977 
+      },
+      notesPublic: "Historic WWII destroyer escort preserved on land as part of the Galveston Naval Museum at Seawolf Park. Perfect for overnight adventures and historical education.",
+      notesPrivate: "Check-in at 4:30 PM, contact museum coordinator for group rates",
+      parking: {
+        text: "Museum parking lot available, follow signs to Seawolf Park"
+      },
+      amenities: ["Historic ship tour", "Museum exhibits", "Sleeping quarters", "Educational programs"],
+      isImportant: true,
+      isActive: true,
+      createdAt: getTimestamp(),
+      updatedAt: getTimestamp()
+    };
+
+    // Add the location document with the specific ID that's referenced in events
+    const locationRef = db.collection('locations').doc('RwI4opwHcUx3GKKF7Ten');
+    await locationRef.set(ussStewartLocation);
+
+    console.log('✅ USS Stewart location fixed successfully!');
+
+    return {
+      success: true,
+      message: 'USS Stewart location created successfully',
+      locationId: 'RwI4opwHcUx3GKKF7Ten'
+    };
+
+  } catch (error) {
+    console.error('Error fixing USS Stewart location:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to fix USS Stewart location');
   }
 });
 

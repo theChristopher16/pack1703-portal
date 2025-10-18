@@ -277,6 +277,18 @@ export const firestoreService = {
     }
   },
 
+  // Fix USS Stewart location
+  async fixUSSStewartLocation(): Promise<any> {
+    try {
+      const fixLocationFunction = httpsCallable(functions, 'fixUSSStewartLocation');
+      const result = await fixLocationFunction({});
+      return result.data;
+    } catch (error) {
+      console.error('Failed to fix USS Stewart location via Cloud Function:', error);
+      throw error;
+    }
+  },
+
   // Get user's RSVPs
   async getUserRSVPs(): Promise<any> {
     try {

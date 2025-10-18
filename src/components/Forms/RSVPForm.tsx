@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Users, CheckCircle, AlertCircle, Loader2, LogIn } from 'lucide-react';
-import { submitRSVP, createRSVPPayment, completeRSVPPayment } from '../../services/firestore';
+import { submitRSVP, createRSVPPayment, completeRSVPPayment, firestoreService } from '../../services/firestore';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { formValidator, SecurityMetadata } from '../../services/security';
 import { rsvpFormSchema } from '../../types/validation';
@@ -92,6 +92,8 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [currentUserProfile, setCurrentUserProfile] = useState<AppUser | null>(null);
   const [rsvpResult, setRsvpResult] = useState<any>(null);
+  const [existingRSVP, setExistingRSVP] = useState<any>(null);
+  const [isLoadingExistingRSVP, setIsLoadingExistingRSVP] = useState(false);
   
   // Check if user is authenticated
   const isAuthenticated = !!state.currentUser;
@@ -109,7 +111,7 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
   });
 
   // Effect to get current user profile data
-  React.useEffect(() => {
+  useEffect(() => {
     if (isAuthenticated) {
       const user = authService.getCurrentUser();
       if (user) {
@@ -120,10 +122,45 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
     }
   }, [isAuthenticated]);
 
+  // Effect to check for existing RSVP when component loads
+  useEffect(() => {
+    const checkExistingRSVP = async () => {
+      if (!isAuthenticated || !eventId) return;
+      
+      setIsLoadingExistingRSVP(true);
+      try {
+        const result = await firestoreService.getUserRSVPs();
+        if (result.success && result.rsvps) {
+          // Find RSVP for this specific event
+          const existingEventRSVP = result.rsvps.find((rsvp: any) => rsvp.eventId === eventId);
+          if (existingEventRSVP) {
+            setExistingRSVP(existingEventRSVP);
+            // Pre-populate form with existing RSVP data
+            setFormData({
+              eventId,
+              familyName: existingEventRSVP.familyName,
+              email: existingEventRSVP.email,
+              phone: existingEventRSVP.phone || '',
+              attendees: existingEventRSVP.attendees || [{ name: '', age: 0, den: '', isAdult: false }],
+              dietaryRestrictions: existingEventRSVP.dietaryRestrictions || '',
+              specialNeeds: existingEventRSVP.specialNeeds || '',
+              notes: existingEventRSVP.notes || ''
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error checking existing RSVP:', error);
+      } finally {
+        setIsLoadingExistingRSVP(false);
+      }
+    };
 
-  // Effect to populate form with user profile data when profile is loaded
-  React.useEffect(() => {
-    if (currentUserProfile) {
+    checkExistingRSVP();
+  }, [isAuthenticated, eventId]);
+
+  // Effect to populate form with user profile data when profile is loaded (only if no existing RSVP)
+  useEffect(() => {
+    if (currentUserProfile && !existingRSVP) {
       // Auto-populate basic info from user profile
       setFormData(prev => ({
         ...prev,
@@ -141,7 +178,7 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
         }));
       }
     }
-  }, [currentUserProfile]);
+  }, [currentUserProfile, existingRSVP]);
 
   // Helper function to build family name from user data
   const buildFamilyName = (user: AppUser): string => {
@@ -275,9 +312,48 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
 
     try {
       // Track form submission attempt
-      analytics.trackFeatureClick('RSVP Form', { eventId, action: 'submit_attempt' });
+      analytics.trackFeatureClick('RSVP Form', { eventId, action: existingRSVP ? 'update_attempt' : 'submit_attempt' });
 
-      // Generate security metadata
+      // If updating an existing RSVP, use the update function
+      if (existingRSVP) {
+        const updateData = {
+          familyName: formData.familyName,
+          email: formData.email,
+          phone: formData.phone,
+          attendees: formData.attendees,
+          dietaryRestrictions: formData.dietaryRestrictions,
+          specialNeeds: formData.specialNeeds,
+          notes: formData.notes
+        };
+
+        const result = await firestoreService.updateRSVP(existingRSVP.id, updateData);
+
+        if (result.success) {
+          setSubmitStatus('success');
+          
+          // Track successful update
+          analytics.trackFeatureClick('RSVP Form', { eventId, action: 'update_success' });
+          
+          // Call success callback
+          if (onSuccess) {
+            onSuccess({
+              ...formData as RSVPData,
+              rsvpId: existingRSVP.id
+            });
+          }
+
+          // Reset to show updated data
+          setTimeout(() => {
+            setSubmitStatus('idle');
+          }, 3000);
+
+          return;
+        } else {
+          throw new Error(result.message || 'Failed to update RSVP');
+        }
+      }
+
+      // Generate security metadata for new RSVPs
       const securityMeta = await SecurityMetadata.generateMetadata();
 
       // Prepare submission data with security metadata

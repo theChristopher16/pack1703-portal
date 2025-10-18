@@ -590,10 +590,10 @@ const EventsPage: React.FC = () => {
         const cloudFunctionData = {
           title: eventData.title,
           description: eventData.description,
-          startDate: new Date(eventData.startDate!),
-          endDate: new Date(eventData.endDate!),
-          startTime: eventData.startDate?.split('T')[1]?.substring(0, 5) || '09:00',
-          endTime: eventData.endDate?.split('T')[1]?.substring(0, 5) || '17:00',
+          startDate: eventData.startDate,
+          endDate: eventData.endDate,
+          startTime: eventData.startTime || '09:00',
+          endTime: eventData.endTime || '17:00',
           locationId: locationId,
           category: eventData.category || 'Meeting',
           seasonId: 'qPEnr3WZN91NhM8jOypp',
@@ -1299,6 +1299,14 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
     
     if (validateForm()) {
       const { maxCapacity, locationId, isElective, flexibleDates, noBeltLoop, casualAttendance, familyFriendly, communicationNotes, leadershipNotes, paymentAmount, paymentCurrency, paymentDescription, ...formDataWithoutElectiveFields } = formData;
+      // Parse dates and extract times properly
+      const startDateObj = new Date(formData.startDate);
+      const endDateObj = new Date(formData.endDate);
+      
+      // Extract time components (HH:MM format)
+      const startTime = startDateObj.toTimeString().substring(0, 5);
+      const endTime = endDateObj.toTimeString().substring(0, 5);
+      
       const eventData: Partial<Event> = {
         title: formData.title,
         description: formData.description,
@@ -1307,8 +1315,10 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
         visibility: formData.visibility,
         isActive: formData.isActive,
         locationId: locationId || formData.location,
-        startDate: new Date(formData.startDate).toISOString(),
-        endDate: new Date(formData.endDate).toISOString(),
+        startDate: startDateObj.toISOString() as any, // Convert to string for frontend, Cloud Function will handle Timestamp
+        endDate: endDateObj.toISOString() as any, // Convert to string for frontend, Cloud Function will handle Timestamp
+        startTime: startTime,
+        endTime: endTime,
         currentRSVPs: event?.currentRSVPs || 0,
         // Payment fields
         paymentRequired: formData.paymentRequired,

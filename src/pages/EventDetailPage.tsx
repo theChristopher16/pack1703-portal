@@ -16,6 +16,7 @@ import { Event, Location } from '../types';
 import { LoadingSpinner } from '../components/Loading';
 import RSVPForm from '../components/Forms/RSVPForm';
 import WeatherForecast from '../components/Weather/WeatherForecast';
+import AppleLocationMap from '../components/Locations/AppleLocationMap';
 import { firestoreService } from '../services/firestore';
 import { useAdmin } from '../contexts/AdminContext';
 import { weatherService, WeatherForecast as WeatherForecastType } from '../services/weatherService';
@@ -664,23 +665,30 @@ const EventDetailPage: React.FC = () => {
             )}
 
             {activeTab === 'map' && (
-              <div className="text-center py-12">
-                <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-display font-semibold text-text mb-2">Interactive Map</h3>
-                <p className="text-gray-600 mb-6">
-                  Map integration coming soon! This will show the event location with directions.
-                </p>
-                <div className="bg-gray-50 rounded-lg p-4 max-w-md mx-auto">
-                  <p className="text-sm text-gray-600">
-                    Features planned:
-                  </p>
-                  <ul className="text-sm text-gray-600 mt-2 space-y-1">
-                    <li>• Interactive map with location pin</li>
-                    <li>• Directions from your location</li>
-                    <li>• Parking information overlay</li>
-                    <li>• Mobile-friendly navigation</li>
-                  </ul>
-                </div>
+              <div>
+                {location && location.geo?.lat && location.geo?.lng ? (
+                  <AppleLocationMap
+                    locations={[location]}
+                    onLocationSelect={() => {}}
+                    selectedLocation={location}
+                    height="500px"
+                    showControls={true}
+                  />
+                ) : (
+                  <div className="text-center py-12">
+                    <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-display font-semibold text-text mb-2">No Location Available</h3>
+                    <p className="text-gray-600 mb-6">
+                      This event doesn't have a location with coordinates set yet.
+                    </p>
+                    {location && (
+                      <div className="bg-gray-50 rounded-lg p-4 max-w-md mx-auto">
+                        <h4 className="font-medium text-text mb-2">{location.name}</h4>
+                        <p className="text-gray-600 text-sm">{location.address}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

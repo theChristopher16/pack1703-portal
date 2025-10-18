@@ -202,7 +202,7 @@ export const FEATURE_FLAGS = {
   // Shared Features
   LOCATION_VERIFICATION: true,
   PHONE_VALIDATION: true, // Enabled with real API key
-  WEATHER_INTEGRATION: true, // Enabled with real API key
+  WEATHER_INTEGRATION: false, // Disabled until API keys are configured
   BUSINESS_INFO_ENRICHMENT: true, // Using Google Places instead of Yelp
   PARKING_INFO: true, // Using Google Places
   COST_MONITORING: true,
@@ -258,7 +258,7 @@ export const API_STATUS = {
       errorsToday: 0,
     },
     OPENWEATHER: {
-      status: 'active',
+      status: 'disabled',
       lastCheck: new Date(),
       requestsToday: 0,
       errorsToday: 0,
@@ -280,7 +280,7 @@ export const API_STATUS = {
       errorsToday: 0,
     },
     OPENWEATHER: {
-      status: 'active', // User API key now configured
+      status: 'disabled',
       lastCheck: new Date(),
       requestsToday: 0,
       errorsToday: 0,

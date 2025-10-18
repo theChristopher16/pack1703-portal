@@ -168,7 +168,7 @@ const EventCard: React.FC<EventCardProps> = ({
   const rsvpStatus = getRSVPStatus();
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-soft border border-white/50 overflow-hidden transition-all duration-300 hover:shadow-glow hover:-translate-y-1">
+    <div className="bg-white/90 backdrop-blur-sm rounded-brand shadow-card border border-cloud overflow-hidden transition-all duration-300 hover:shadow-glow hover:-translate-y-1">
       {/* Header with Category Badge */}
       <div className="p-6 pb-4">
         <div className="flex items-start justify-between mb-3">
@@ -468,86 +468,107 @@ const EventCard: React.FC<EventCardProps> = ({
               console.log('EventCard: Full event object:', event);
               onViewDetails(event.id);
             }}
-            className="px-4 py-2 bg-white border-2 border-primary-300 text-primary-600 font-medium rounded-xl hover:bg-primary-50 hover:border-primary-400 transition-all duration-200"
+            className="px-4 py-2 bg-white border-2 border-cloud text-teal font-medium rounded-md hover:bg-moss/5 hover:border-moss transition-all duration-200"
           >
             View Details
           </button>
         </div>
 
         {/* Secondary Actions */}
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => onAddToCalendar(event)}
-              className="flex items-center space-x-2 text-sm text-gray-600 hover:text-primary-600 transition-colors duration-200"
-            >
-              <Calendar className="w-4 h-4" />
-              <span>Add to Calendar</span>
-            </button>
-            
-            <button
-              onClick={() => onShare(event)}
-              className="flex items-center space-x-2 text-sm text-gray-600 hover:text-primary-600 transition-colors duration-200"
-            >
-              <Share2 className="w-4 h-4" />
-              <span>Share</span>
-            </button>
-
-            {/* Admin RSVP Viewer Button */}
-            {isAdmin && onViewRSVPs && (
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          {/* Regular Actions Row */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-3">
               <button
-                onClick={() => onViewRSVPs(event)}
-                className="flex items-center space-x-2 text-sm text-purple-600 hover:text-purple-700 transition-colors duration-200"
-                title="View RSVPs (Admin Only)"
+                onClick={() => onAddToCalendar(event)}
+                className="flex items-center space-x-2 text-sm text-gray-600 hover:text-primary-600 transition-colors duration-200"
               >
-                <Users className="w-4 h-4" />
-                <span>View RSVPs</span>
+                <Calendar className="w-4 h-4" />
+                <span className="hidden sm:inline">Add to Calendar</span>
+                <span className="sm:hidden">Calendar</span>
               </button>
-            )}
-
-            {/* Export Report Button - Den Leaders and up */}
-            {canExport && (
+              
               <button
-                onClick={loadRSVPData}
-                disabled={loadingRSVPs}
-                className="flex items-center space-x-2 text-sm text-green-600 hover:text-green-700 transition-colors duration-200 disabled:opacity-50"
-                title="Export Event Report (Den Leaders and up)"
+                onClick={() => onShare(event)}
+                className="flex items-center space-x-2 text-sm text-gray-600 hover:text-primary-600 transition-colors duration-200"
               >
-                {loadingRSVPs ? (
-                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                ) : (
-                  <FileText className="w-4 h-4" />
-                )}
-                <span>{loadingRSVPs ? 'Loading...' : 'Export Report'}</span>
+                <Share2 className="w-4 h-4" />
+                <span>Share</span>
               </button>
-            )}
+            </div>
 
-            {/* Admin Edit/Delete Buttons */}
-            {isAdmin && (
-              <>
+            {/* Expand/Collapse */}
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
+            >
+              {isExpanded ? 'Show Less' : 'Show More'}
+            </button>
+          </div>
+
+          {/* Admin Actions Row - Responsive Grid */}
+          {(isAdmin || canExport) && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+              {/* Admin RSVP Viewer Button */}
+              {isAdmin && onViewRSVPs && (
+                <button
+                  onClick={() => onViewRSVPs(event)}
+                  className="flex items-center justify-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-purple-600 hover:text-purple-700 transition-colors duration-200 p-2 rounded-md hover:bg-purple-50"
+                  title="View RSVPs (Admin Only)"
+                >
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">View RSVPs</span>
+                  <span className="sm:hidden">RSVPs</span>
+                </button>
+              )}
+
+              {/* Export Report Button - Den Leaders and up */}
+              {canExport && (
+                <button
+                  onClick={loadRSVPData}
+                  disabled={loadingRSVPs}
+                  className="flex items-center justify-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-green-600 hover:text-green-700 transition-colors duration-200 disabled:opacity-50 p-2 rounded-md hover:bg-green-50"
+                  title="Export Event Report (Den Leaders and up)"
+                >
+                  {loadingRSVPs ? (
+                    <svg className="animate-spin w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
+                  )}
+                  <span className="hidden sm:inline">{loadingRSVPs ? 'Loading...' : 'Export Report'}</span>
+                  <span className="sm:hidden">{loadingRSVPs ? 'Loading' : 'Export'}</span>
+                </button>
+              )}
+
+              {/* Admin Edit Button */}
+              {isAdmin && (
                 <button
                   onClick={() => {
                     // This will be handled by the parent component
                     const editEvent = new CustomEvent('editEvent', { detail: event });
                     window.dispatchEvent(editEvent);
                   }}
-                  className="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-700 transition-colors duration-200"
+                  className="flex items-center justify-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-blue-600 hover:text-blue-700 transition-colors duration-200 p-2 rounded-md hover:bg-blue-50"
                   title="Edit Event (Admin Only)"
                 >
-                  <Edit className="w-4 h-4" />
-                  <span>Edit</span>
+                  <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Edit</span>
+                  <span className="sm:hidden">Edit</span>
                 </button>
-                
+              )}
+              
+              {/* Admin Delete Button */}
+              {isAdmin && (
                 <button
                   onClick={() => {
                     // This will be handled by the parent component
                     const deleteEvent = new CustomEvent('deleteEvent', { detail: event.id });
                     window.dispatchEvent(deleteEvent);
                   }}
-                  className={`flex items-center space-x-2 text-sm transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`flex items-center justify-center space-x-1 sm:space-x-2 text-xs sm:text-sm transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed p-2 rounded-md hover:bg-red-50 ${
                     isDeleting 
                       ? 'text-yellow-600 cursor-wait' 
                       : 'text-red-600 hover:text-red-700'
@@ -555,20 +576,13 @@ const EventCard: React.FC<EventCardProps> = ({
                   title={isDeleting ? "Deleting..." : "Delete Event (Admin Only)"}
                   disabled={isDeleting}
                 >
-                  <Trash2 className="w-4 h-4" />
-                  <span>{isDeleting ? 'Deleting...' : 'Delete'}</span>
+                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">{isDeleting ? 'Deleting...' : 'Delete'}</span>
+                  <span className="sm:hidden">{isDeleting ? 'Deleting' : 'Delete'}</span>
                 </button>
-              </>
-            )}
-          </div>
-
-          {/* Expand/Collapse */}
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
-          >
-            {isExpanded ? 'Show Less' : 'Show More'}
-          </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

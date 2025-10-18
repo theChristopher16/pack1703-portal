@@ -283,9 +283,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-secondary-50/30 flex flex-col">
-      {/* Enhanced Header with Solar-Punk Aesthetic */}
-      <header className="bg-white/90 backdrop-blur-md shadow-soft border-b border-gray-200/50 sticky top-0 z-50">
+    <div className="min-h-screen bg-fog flex flex-col">
+      {/* Brand Header */}
+      <header className="bg-white/90 backdrop-blur-md shadow-card border-b border-cloud sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo/Brand */}
@@ -293,19 +293,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               onClick={() => handleNavigation('/')}
               className="flex items-center space-x-3 hover:opacity-80 transition-opacity duration-200 cursor-pointer"
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center shadow-glow">
+              <div className="w-10 h-10 bg-gradient-brand rounded-brand flex items-center justify-center shadow-card">
                 <span className="text-white" style={{ fontSize: '24px' }}>🏕️</span>
               </div>
-              <div className="block">
-                <h1 className="text-lg sm:text-xl font-display font-bold text-gradient">
-                  {packName || 'Cub Scout Pack 1703'}
+              <div className="block min-w-0 flex-shrink">
+                <h1 className="text-lg sm:text-xl font-display font-bold text-ink truncate max-w-48 sm:max-w-64 md:max-w-none">
+                  <span className="hidden sm:inline">{packName || 'Cub Scout Pack 1703'}</span>
+                  <span className="sm:hidden">Pack 1703</span>
                 </h1>
-                <p className="text-xs footer-text">Families Portal</p>
+                <p className="text-xs text-teal-600 truncate max-w-48 sm:max-w-64 md:max-w-none">
+                  <span className="hidden sm:inline">Families Portal</span>
+                  <span className="sm:hidden">Portal</span>
+                </p>
               </div>
             </button>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-0.5">
+            <nav className="hidden lg:flex items-center space-x-1">
               {mainToolbarItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -315,19 +319,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       // console.log('Main toolbar navigation clicked:', item.href);
                       handleNavigation(item.href);
                     }}
-                    className={`px-2 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
+                    className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
                       isActive(item.href)
-                        ? 'nav-text-active bg-primary-50 shadow-soft'
-                        : 'nav-text-inactive hover:nav-text-active hover:bg-primary-50/50'
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg'
+                        : 'bg-white/90 backdrop-blur-sm border border-gray-200 text-gray-700 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 hover:border-emerald-200 hover:text-emerald-700'
                     }`}
                   >
-                    <div className="flex items-center justify-center space-x-1.5">
+                    <div className="flex items-center justify-center space-x-2">
                       <Icon className="w-4 h-4" />
-                      <span className="text-xs font-semibold">{item.name}</span>
+                      <span className="text-sm font-semibold">{item.name}</span>
                     </div>
                     
                     {/* Hover Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary-100/50 to-secondary-100/50 -translate-x-full group-hover:translate-x-0 transition-transform duration-500 rounded-xl"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-teal-500/20 -translate-x-full group-hover:translate-x-0 transition-transform duration-500 rounded-xl"></div>
                   </button>
                 );
               })}
@@ -346,8 +350,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     }}
                     className={`px-3 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
                       isActive(item.href)
-                        ? 'nav-text-active bg-primary-50 shadow-soft'
-                        : 'nav-text-inactive hover:nav-text-active hover:bg-primary-50/50'
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg'
+                        : 'bg-white/90 backdrop-blur-sm border border-gray-200 text-gray-700 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 hover:border-emerald-200 hover:text-emerald-700'
                     }`}
                   >
                     <div className="flex items-center justify-center space-x-2">
@@ -356,7 +360,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </div>
                     
                     {/* Hover Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary-100/50 to-secondary-100/50 -translate-x-full group-hover:translate-x-0 transition-transform duration-500 rounded-xl"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-teal-500/20 -translate-x-full group-hover:translate-x-0 transition-transform duration-500 rounded-xl"></div>
                   </button>
                 );
               })}

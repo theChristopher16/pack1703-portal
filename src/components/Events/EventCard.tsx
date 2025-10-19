@@ -377,6 +377,21 @@ const EventCard: React.FC<EventCardProps> = ({
             </div>
           )}
 
+          {/* Full Event Description */}
+          {event.description && (
+            <div className="mb-6">
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                <span className="text-lg mr-2">📝</span>
+                Event Description
+              </h4>
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  {event.description}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Packing List */}
           {event.packingList && event.packingList.length > 0 && (
             <div className="mb-4">

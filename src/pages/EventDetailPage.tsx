@@ -589,7 +589,7 @@ const EventDetailPage: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-display font-semibold text-text mb-3">Description</h3>
                   <p className="text-gray-600 leading-relaxed">
-                    {event.description}
+                    {event.description || 'No description available for this event.'}
                   </p>
                 </div>
 

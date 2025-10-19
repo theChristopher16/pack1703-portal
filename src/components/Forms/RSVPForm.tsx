@@ -129,10 +129,13 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
       
       setIsLoadingExistingRSVP(true);
       try {
+        console.log('🔍 Checking for existing RSVP for event:', eventId);
         const result = await firestoreService.getUserRSVPs();
+        console.log('📋 User RSVPs result:', result);
         if (result.success && result.rsvps) {
           // Find RSVP for this specific event
           const existingEventRSVP = result.rsvps.find((rsvp: any) => rsvp.eventId === eventId);
+          console.log('🎯 Found existing RSVP:', existingEventRSVP);
           if (existingEventRSVP) {
             setExistingRSVP(existingEventRSVP);
             // Pre-populate form with existing RSVP data
@@ -149,7 +152,7 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
           }
         }
       } catch (error) {
-        console.error('Error checking existing RSVP:', error);
+        console.error('❌ Error checking existing RSVP:', error);
       } finally {
         setIsLoadingExistingRSVP(false);
       }
@@ -1043,6 +1046,7 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
             ) : (
               <>
                 <CheckCircle className="w-5 h-5 mr-3" />
+                {console.log('🔘 Button text - existingRSVP:', existingRSVP, 'eventId:', eventId)}
                 {existingRSVP ? (
                   'Update RSVP'
                 ) : paymentRequired ? (

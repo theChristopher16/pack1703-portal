@@ -239,70 +239,70 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-hidden">
       <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
-              <Users className="w-6 h-6 text-primary-600" />
+        {/* Header - More compact for mobile */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
+            <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Users className="w-4 h-4 text-primary-600" />
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">RSVP List</h2>
-              <p className="text-gray-600">{eventTitle}</p>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-bold text-gray-900 truncate">RSVP List</h2>
+              <p className="text-sm text-gray-600 truncate">{eventTitle}</p>
             </div>
           </div>
           
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 flex-shrink-0">
             <button
               onClick={exportRSVPs}
-              className="px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors duration-200 flex items-center space-x-2"
+              className="px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center space-x-1 text-sm"
             >
-              <Download className="w-4 h-4" />
-              <span>Export CSV</span>
+              <Download className="w-3 h-3" />
+              <span className="hidden sm:inline">Export</span>
             </button>
             
             <button
               onClick={loadRSVPs}
-              className="px-4 py-2 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors duration-200 flex items-center space-x-2"
+              className="px-3 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200 flex items-center space-x-1 text-sm"
             >
-              <RefreshCw className="w-4 h-4" />
-              <span>Refresh</span>
+              <RefreshCw className="w-3 h-3" />
+              <span className="hidden sm:inline">Refresh</span>
             </button>
             
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+              className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors duration-200"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="p-6 bg-gray-50 border-b border-gray-200 flex-shrink-0">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary-600">{rsvps.length}</div>
-              <div className="text-gray-600">Total RSVPs</div>
+        {/* Stats - Compact horizontal layout */}
+        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex-shrink-0">
+          <div className="flex justify-between items-center">
+            <div className="text-center flex-1">
+              <div className="text-lg font-bold text-primary-600">{rsvps.length}</div>
+              <div className="text-xs text-gray-600">RSVPs</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-secondary-600">{getTotalAttendees()}</div>
-              <div className="text-gray-600">Total Attendees</div>
+            <div className="text-center flex-1">
+              <div className="text-lg font-bold text-secondary-600">{getTotalAttendees()}</div>
+              <div className="text-xs text-gray-600">Attendees</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-accent-600">
+            <div className="text-center flex-1">
+              <div className="text-lg font-bold text-accent-600">
                 {Object.keys(getDenBreakdown()).length}
               </div>
-              <div className="text-gray-600">Dens Represented</div>
+              <div className="text-xs text-gray-600">Dens</div>
             </div>
           </div>
         </div>
 
-        {/* Error State */}
+        {/* Error State - More compact */}
         {error && (
-          <div className="p-6 flex-shrink-0">
-            <div className="flex items-center space-x-3 p-4 bg-red-50 border border-red-200 rounded-xl">
-              <AlertCircle className="w-5 h-5 text-red-500" />
-              <span className="text-red-700">{error}</span>
+          <div className="px-4 py-3 flex-shrink-0">
+            <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+              <span className="text-red-700 text-sm">{error}</span>
             </div>
           </div>
         )}
@@ -316,31 +316,32 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
               <p className="text-gray-600">No one has RSVP'd for this event yet.</p>
             </div>
           ) : (
-            <div className="p-6 space-y-6">
+            <div className="p-4 space-y-4">
               {rsvps.map((rsvp) => (
-                <div key={rsvp.id} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold text-gray-900">{rsvp.familyName}</h3>
+                <div key={rsvp.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-base font-semibold text-gray-900 truncate">{rsvp.familyName}</h3>
                         {rsvp.paperworkComplete && (
                           <div 
-                            className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium flex-shrink-0"
                             title={`Paperwork approved by ${rsvp.paperworkApprovedByName || 'Admin'} on ${rsvp.paperworkCompletedAt ? new Date(rsvp.paperworkCompletedAt).toLocaleDateString() : 'N/A'}`}
                           >
                             <CheckCircle className="h-3 w-3" />
-                            <span>Paperwork Complete</span>
+                            <span className="hidden sm:inline">Paperwork Complete</span>
+                            <span className="sm:hidden">✓</span>
                           </div>
                         )}
                       </div>
-                      <p className="text-gray-600">{rsvp.email}</p>
+                      <p className="text-sm text-gray-600 truncate">{rsvp.email}</p>
                       {rsvp.phone && (
-                        <p className="text-sm text-gray-500">{rsvp.phone}</p>
+                        <p className="text-xs text-gray-500">{rsvp.phone}</p>
                       )}
                     </div>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
                       <div className="text-right">
-                        <div className="text-sm text-gray-500">
+                        <div className="text-xs text-gray-500">
                           {formatDate(rsvp.submittedAt)}
                         </div>
                         <div className="text-sm font-medium text-primary-600">
@@ -354,13 +355,13 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
                           <button
                             onClick={() => setShowDeleteConfirm(rsvp.id)}
                             disabled={deletingRSVP === rsvp.id}
-                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200 disabled:opacity-50"
                             title="Delete RSVP"
                           >
                             {deletingRSVP === rsvp.id ? (
-                              <RefreshCw className="w-4 h-4 animate-spin" />
+                              <RefreshCw className="w-3 h-3 animate-spin" />
                             ) : (
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3 h-3" />
                             )}
                           </button>
                         );
@@ -369,23 +370,23 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
                   </div>
 
                   {/* Attendees */}
-                  <div className="mb-4">
-                    <h4 className="font-medium text-gray-900 mb-2">Attendees</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="mb-3">
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">Attendees</h4>
+                    <div className="grid grid-cols-1 gap-1.5">
                       {rsvp.attendees.map((attendee, index) => (
-                        <div key={index} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
-                          <div className={`w-2 h-2 rounded-full ${
+                        <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                          <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
                             attendee.isAdult ? 'bg-blue-500' : 'bg-green-500'
                           }`}></div>
-                          <div className="flex-1">
-                            <span className="font-medium text-gray-900">{attendee.name}</span>
-                            <span className="text-sm text-gray-600 ml-2">
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium text-gray-900">{attendee.name}</span>
+                            <span className="text-xs text-gray-600 ml-2">
                               Age {attendee.age}
                               {attendee.den && ` • ${attendee.den}`}
                             </span>
                           </div>
                           {attendee.isAdult && (
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                            <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full flex-shrink-0">
                               Adult
                             </span>
                           )}
@@ -396,23 +397,23 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
 
                   {/* Additional Information */}
                   {(rsvp.dietaryRestrictions || rsvp.specialNeeds || rsvp.notes) && (
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {rsvp.dietaryRestrictions && (
                         <div>
-                          <span className="text-sm font-medium text-gray-700">Dietary Restrictions: </span>
-                          <span className="text-sm text-gray-600">{rsvp.dietaryRestrictions}</span>
+                          <span className="text-xs font-medium text-gray-700">Dietary: </span>
+                          <span className="text-xs text-gray-600">{rsvp.dietaryRestrictions}</span>
                         </div>
                       )}
                       {rsvp.specialNeeds && (
                         <div>
-                          <span className="text-sm font-medium text-gray-700">Special Needs: </span>
-                          <span className="text-sm text-gray-600">{rsvp.specialNeeds}</span>
+                          <span className="text-xs font-medium text-gray-700">Special Needs: </span>
+                          <span className="text-xs text-gray-600">{rsvp.specialNeeds}</span>
                         </div>
                       )}
                       {rsvp.notes && (
                         <div>
-                          <span className="text-sm font-medium text-gray-700">Notes: </span>
-                          <span className="text-sm text-gray-600">{rsvp.notes}</span>
+                          <span className="text-xs font-medium text-gray-700">Notes: </span>
+                          <span className="text-xs text-gray-600">{rsvp.notes}</span>
                         </div>
                       )}
                     </div>
@@ -455,15 +456,15 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
           </div>
         )}
 
-        {/* Footer */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+        {/* Footer - More compact */}
+        <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              Showing {rsvps.length} RSVP{rsvps.length !== 1 ? 's' : ''} • {getTotalAttendees()} total attendees
+            <div className="text-xs text-gray-600">
+              {rsvps.length} RSVP{rsvps.length !== 1 ? 's' : ''} • {getTotalAttendees()} attendees
             </div>
             <button
               onClick={onClose}
-              className="px-6 py-2 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors duration-200"
+              className="px-4 py-1.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200 text-sm"
             >
               Close
             </button>

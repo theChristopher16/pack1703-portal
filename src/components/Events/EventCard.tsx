@@ -54,27 +54,33 @@ interface Event {
 interface EventCardProps {
   event: Event;
   onRSVP: (eventId: string) => void;
+  onEditRSVP?: (eventId: string) => void;
   onViewDetails: (eventId: string) => void;
   onAddToCalendar: (event: Event) => void;
   onShare: (event: Event) => void;
   onViewRSVPs?: (event: Event) => void;
+  onDelete?: (eventId: string) => void;
   isAuthenticated?: boolean;
   isAdmin?: boolean;
   isDeleting?: boolean;
   rsvpCountLoading?: boolean;
+  userHasRSVP?: boolean;
 }
 
 const EventCard: React.FC<EventCardProps> = ({ 
   event, 
   onRSVP, 
+  onEditRSVP,
   onViewDetails, 
   onAddToCalendar, 
   onShare,
   onViewRSVPs, 
+  onDelete,
   isAuthenticated = true, 
   isAdmin = false,
   isDeleting = false,
-  rsvpCountLoading = false
+  rsvpCountLoading = false,
+  userHasRSVP = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -447,17 +453,21 @@ const EventCard: React.FC<EventCardProps> = ({
         <div className="flex flex-wrap gap-3">
           {/* Primary Actions */}
           <button
-            onClick={() => onRSVP(event.id)}
+            onClick={() => userHasRSVP && onEditRSVP ? onEditRSVP(event.id) : onRSVP(event.id)}
             className={`flex-1 px-4 py-2 font-medium rounded-xl transition-all duration-200 transform hover:scale-105 ${
               isAuthenticated 
-                ? event.isElective && event.electiveOptions?.casualAttendance
-                  ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white hover:from-indigo-600 hover:to-indigo-700 shadow-glow-indigo/50'
-                  : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 shadow-glow-primary/50'
+                ? userHasRSVP
+                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 shadow-glow-green/50'
+                  : event.isElective && event.electiveOptions?.casualAttendance
+                    ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white hover:from-indigo-600 hover:to-indigo-700 shadow-glow-indigo/50'
+                    : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 shadow-glow-primary/50'
                 : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-gray-500 hover:to-gray-600 shadow-glow-gray/50'
             }`}
           >
             {isAuthenticated 
-              ? (event.isElective && event.electiveOptions?.casualAttendance ? 'Let Us Know You\'re Coming!' : 'RSVP Now')
+              ? userHasRSVP 
+                ? 'Edit RSVP'
+                : (event.isElective && event.electiveOptions?.casualAttendance ? 'Let Us Know You\'re Coming!' : 'RSVP Now')
               : 'Login to RSVP'
             }
           </button>

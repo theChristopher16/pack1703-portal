@@ -96,6 +96,10 @@ const EventsPage: React.FC = () => {
   const [rsvpCountCache, setRsvpCountCache] = useState<{ [eventId: string]: { count: number; timestamp: number } }>({});
   const [rsvpCountsLoading, setRsvpCountsLoading] = useState<{ [eventId: string]: boolean }>({});
   
+  // Cache for user's RSVPs to check if they have RSVP'd for each event
+  const [userRSVPs, setUserRSVPs] = useState<{ [eventId: string]: boolean }>({});
+  const [userRSVPsLoading, setUserRSVPsLoading] = useState(false);
+  
   // Admin RSVP viewer state
   const [showRSVPViewer, setShowRSVPViewer] = useState(false);
   const [selectedEventForRSVP, setSelectedEventForRSVP] = useState<Event | null>(null);
@@ -410,6 +414,38 @@ const EventsPage: React.FC = () => {
     loadEvents();
   }, [fetchRSVPCounts]);
 
+  // Load user's RSVPs to check which events they've RSVP'd for
+  useEffect(() => {
+    const loadUserRSVPs = async () => {
+      if (!adminState.currentUser) {
+        setUserRSVPs({});
+        return;
+      }
+
+      try {
+        setUserRSVPsLoading(true);
+        const result = await firestoreService.getUserRSVPs();
+        
+        if (result.success && result.rsvps) {
+          const rsvpMap: { [eventId: string]: boolean } = {};
+          result.rsvps.forEach((rsvp: any) => {
+            rsvpMap[rsvp.eventId] = true;
+          });
+          setUserRSVPs(rsvpMap);
+        } else {
+          setUserRSVPs({});
+        }
+      } catch (error) {
+        console.error('Error loading user RSVPs:', error);
+        setUserRSVPs({});
+      } finally {
+        setUserRSVPsLoading(false);
+      }
+    };
+
+    loadUserRSVPs();
+  }, [adminState.currentUser]);
+
   // Handle custom events from EventCard
   useEffect(() => {
     const handleEditEventFromCard = (event: CustomEvent) => {
@@ -445,6 +481,13 @@ const EventsPage: React.FC = () => {
     console.log('🎯 EventsPage: RSVP button clicked for event ID:', eventId);
     console.log('🎯 EventsPage: Current URL:', window.location.href);
     console.log('🎯 EventsPage: Target URL:', `/events/${eventId}?tab=rsvp`);
+    navigate(`/events/${eventId}?tab=rsvp`);
+  };
+
+  const handleEditRSVP = (eventId: string) => {
+    console.log('✏️ EventsPage: Edit RSVP button clicked for event ID:', eventId);
+    console.log('✏️ EventsPage: Current URL:', window.location.href);
+    console.log('✏️ EventsPage: Target URL:', `/events/${eventId}?tab=rsvp`);
     navigate(`/events/${eventId}?tab=rsvp`);
   };
 
@@ -1054,6 +1097,7 @@ const EventsPage: React.FC = () => {
                         <EventCard
                           event={normalizedEvent}
                           onRSVP={handleRSVP}
+                          onEditRSVP={handleEditRSVP}
                           onViewDetails={handleViewDetails}
                           onAddToCalendar={handleAddToCalendar}
                           onShare={handleShare}
@@ -1061,6 +1105,7 @@ const EventsPage: React.FC = () => {
                           isAdmin={isAdmin}
                           isDeleting={deletingEventId === event.id}
                           rsvpCountLoading={rsvpCountsLoading[event.id] || false}
+                          userHasRSVP={userRSVPs[event.id] || false}
                         />
                       </div>
                     );

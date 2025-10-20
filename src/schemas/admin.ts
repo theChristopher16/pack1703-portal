@@ -36,8 +36,8 @@ export const deleteSeasonSchema = z.object({
 export const createEventSchema = z.object({
   title: z.string().min(1, 'Event title is required').max(100, 'Event title too long'),
   description: z.string().min(1, 'Event description is required').max(1000, 'Event description too long'),
-  startDate: z.date(),
-  endDate: z.date(),
+  startDate: z.string().transform((str) => new Date(str)),
+  endDate: z.string().transform((str) => new Date(str)),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format'),
   endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format'),
   locationId: z.string().min(1, 'Location is required'),

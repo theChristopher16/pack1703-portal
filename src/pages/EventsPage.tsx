@@ -1262,12 +1262,41 @@ interface EventFormProps {
   isSubmitting?: boolean;
 }
 
+// Helper function to format dates for input fields
+const formatDateForInput = (dateValue: any): string => {
+  if (!dateValue) return '';
+  
+  let date: Date;
+  
+  // Handle different date formats
+  if (typeof dateValue === 'string') {
+    date = new Date(dateValue);
+  } else if (dateValue.toDate && typeof dateValue.toDate === 'function') {
+    // Firestore Timestamp
+    date = dateValue.toDate();
+  } else if (dateValue.seconds) {
+    // Firestore Timestamp object
+    date = new Date(dateValue.seconds * 1000);
+  } else {
+    date = new Date(dateValue);
+  }
+  
+  // Format as YYYY-MM-DDTHH:MM for datetime-local input
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, isSubmitting = false }) => {
   const [formData, setFormData] = useState({
     title: event?.title || '',
     description: event?.description || '',
-    startDate: event?.startDate ? event.startDate.slice(0, 16) : '',
-    endDate: event?.endDate ? event.endDate.slice(0, 16) : '',
+    startDate: event?.startDate ? formatDateForInput(event.startDate) : '',
+    endDate: event?.endDate ? formatDateForInput(event.endDate) : '',
     location: typeof event?.location === 'object' ? event.location.name : (event?.location || ''),
     locationId: event?.locationId || '',
     category: event?.category || 'Meeting',

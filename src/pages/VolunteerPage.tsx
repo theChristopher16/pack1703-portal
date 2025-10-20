@@ -66,6 +66,12 @@ const VolunteerPage: React.FC = () => {
             needs.map(async (need) => {
               try {
                 const signups = await volunteerService.getVolunteerSignupsForNeed(need.id);
+                console.log(`🔍 Need "${need.role}" (${need.id}):`, {
+                  claimed: need.claimed,
+                  needed: need.needed,
+                  signupsFound: signups.length,
+                  signups: signups.map(s => ({ name: s.volunteerName, status: s.status, count: s.count }))
+                });
                 signupsMap[need.id] = signups;
               } catch (error) {
                 console.error(`Error loading signups for need ${need.id}:`, error);

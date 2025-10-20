@@ -4,6 +4,7 @@ import { EntityType, AdminActionType } from '../types/admin';
 import { firestoreService } from '../services/firestore';
 import { adminService } from '../services/adminService';
 import { authService } from '../services/authService';
+import { LocationSelector } from '../components/Locations';
 import { collection, query, orderBy, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { Link } from 'react-router-dom';
@@ -499,6 +500,25 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) 
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedLocation, setSelectedLocation] = useState<any>(null);
+
+  // Handle location selection from LocationSelector
+  const handleLocationSelect = (location: any) => {
+    setSelectedLocation(location);
+    if (location) {
+      setFormData(prev => ({
+        ...prev,
+        location: location.name,
+        locationId: location.id
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        location: '',
+        locationId: ''
+      }));
+    }
+  };
 
   const categories = ['Meeting', 'Competition', 'Outdoor', 'Service', 'Social', 'Training'];
   const visibilityOptions = [
@@ -530,8 +550,8 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) 
       newErrors.endDate = 'End date must be after start date';
     }
 
-    if (!formData.location.trim()) {
-      newErrors.location = 'Location is required';
+    if (!formData.locationId) {
+      newErrors.location = 'Please select a location';
     }
 
     if (formData.maxParticipants && parseInt(formData.maxParticipants) < 1) {
@@ -721,14 +741,11 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel }) 
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Location *
             </label>
-            <input
-              type="text"
-              value={formData.location}
-              onChange={(e) => handleInputChange('location', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/80 backdrop-blur-sm ${
-                errors.location ? 'border-red-300' : 'border-gray-200'
-              }`}
-              placeholder="Enter event location..."
+            <LocationSelector
+              selectedLocationId={formData.locationId}
+              onLocationSelect={handleLocationSelect}
+              placeholder="Select a location..."
+              className={`${errors.location ? 'border-red-300' : 'border-gray-200'}`}
             />
             {errors.location && (
               <p className="text-red-600 text-sm mt-1">{errors.location}</p>

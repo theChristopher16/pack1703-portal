@@ -78,29 +78,32 @@ const EVENTS_CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
 export const firestoreService = {
   // Events
   async getEvents(): Promise<any[]> {
-    // Check cache first
-    if (eventsCache && (Date.now() - eventsCache.timestamp) < EVENTS_CACHE_DURATION) {
-      console.log('📦 Using cached events data');
-      return eventsCache.data;
-    }
-
     return safeFirestoreCall(async () => {
-      const eventsRef = collection(db, 'events');
-      // Use composite index for better performance: visibility + startDate
-      const q = query(
-        eventsRef, 
-        where('visibility', 'in', ['public', null]), // Filter at database level
-        orderBy('startDate')
-      );
-      const snapshot = await getDocs(q);
-      const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+      let events: any[] = [];
       
-      // Enrich events with location coordinates
+      // Check cache first
+      if (eventsCache && (Date.now() - eventsCache.timestamp) < EVENTS_CACHE_DURATION) {
+        console.log('📦 Using cached events data');
+        events = eventsCache.data;
+      } else {
+        // Fetch fresh data from Firestore
+        const eventsRef = collection(db, 'events');
+        // Use composite index for better performance: visibility + startDate
+        const q = query(
+          eventsRef, 
+          where('visibility', 'in', ['public', null]), // Filter at database level
+          orderBy('startDate')
+        );
+        const snapshot = await getDocs(q);
+        events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+        
+        // Update cache
+        eventsCache = { data: events, timestamp: Date.now() };
+        console.log('💾 Cached events data');
+      }
+      
+      // Always enrich events with location coordinates (even cached data)
       const enrichedEvents = await this.enrichEventsWithLocationData(events);
-      
-      // Update cache
-      eventsCache = { data: enrichedEvents, timestamp: Date.now() };
-      console.log('💾 Cached events data with location coordinates');
       
       return enrichedEvents;
     });
@@ -132,7 +135,7 @@ export const firestoreService = {
       // Get all unique location IDs from events
       const locationIds = [...new Set(events
         .map(event => event.locationId)
-        .filter(id => id && id !== 'RwI4opwHcUx3GKKF7Ten') // Exclude default location
+        .filter(id => id) // Include all valid location IDs
       )];
 
       if (locationIds.length === 0) {

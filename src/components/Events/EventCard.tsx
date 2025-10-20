@@ -10,6 +10,8 @@ interface Event {
   date: string;
   startTime: string;
   endTime: string;
+  startDate?: string; // Add start and end dates for multi-day events
+  endDate?: string;
   location: {
     name: string;
     address: string;
@@ -164,6 +166,40 @@ const EventCard: React.FC<EventCardProps> = ({
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
+  // Helper function to format event dates for display
+  const formatEventDates = (event: Event): string => {
+    // If we have start and end dates, check if it's a multi-day event
+    if (event.startDate && event.endDate) {
+      try {
+        const startDate = new Date(event.startDate);
+        const endDate = new Date(event.endDate);
+        
+        // Check if it's a multi-day event (different dates)
+        if (startDate.toDateString() !== endDate.toDateString()) {
+          // Multi-day event: show both dates
+          const startFormatted = startDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long', 
+            day: 'numeric',
+            year: 'numeric'
+          });
+          const endFormatted = endDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric'
+          });
+          return `${startFormatted} - ${endFormatted}`;
+        }
+      } catch (error) {
+        console.warn('Error parsing event dates:', error);
+      }
+    }
+    
+    // Single day event or fallback: use the existing date field
+    return formatDate(event.date);
+  };
+
   const getRSVPStatus = () => {
     const percentage = (event.currentRSVPs / event.maxCapacity) * 100;
     if (percentage >= 90) return { color: 'bg-red-500', text: 'Almost Full' };
@@ -250,7 +286,7 @@ const EventCard: React.FC<EventCardProps> = ({
         <div className="flex items-center space-x-4 mb-4 text-sm text-gray-600">
           <div className="flex items-center space-x-2">
             <Calendar className="w-4 h-4 text-primary-500" />
-            <span>{formatDate(event.date)}</span>
+            <span>{formatEventDates(event)}</span>
           </div>
           <div className="flex items-center space-x-2">
             <Clock className="w-4 h-4 text-secondary-500" />

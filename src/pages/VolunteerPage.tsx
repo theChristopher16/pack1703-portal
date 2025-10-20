@@ -23,6 +23,7 @@ const VolunteerPage: React.FC = () => {
   const [volunteerNeeds, setVolunteerNeeds] = useState<VolunteerNeed[]>([]);
   const [userSignups, setUserSignups] = useState<VolunteerSignup[]>([]);
   const [volunteerSignups, setVolunteerSignups] = useState<VolunteerSignup[]>([]);
+  const [needSignups, setNeedSignups] = useState<Record<string, VolunteerSignup[]>>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -54,6 +55,23 @@ const VolunteerPage: React.FC = () => {
         // Load volunteer needs
         const needs = await volunteerService.getVolunteerNeeds();
         setVolunteerNeeds(needs);
+        
+        // Load signups for each need (for all logged-in users to see who volunteered)
+        if (currentUser) {
+          const signupsMap: Record<string, VolunteerSignup[]> = {};
+          await Promise.all(
+            needs.map(async (need) => {
+              try {
+                const signups = await volunteerService.getVolunteerSignupsForNeed(need.id);
+                signupsMap[need.id] = signups;
+              } catch (error) {
+                console.error(`Error loading signups for need ${need.id}:`, error);
+                signupsMap[need.id] = [];
+              }
+            })
+          );
+          setNeedSignups(signupsMap);
+        }
         
         // Load user signups if logged in
         if (currentUser) {
@@ -230,6 +248,10 @@ const VolunteerPage: React.FC = () => {
       const needs = await volunteerService.getVolunteerNeeds();
       setVolunteerNeeds(needs);
       
+      // Refresh signups for this specific need
+      const needSignupsData = await volunteerService.getVolunteerSignupsForNeed(need.id);
+      setNeedSignups(prev => ({ ...prev, [need.id]: needSignupsData }));
+      
       const signups = await volunteerService.getUserVolunteerSignups();
       setUserSignups(signups);
       
@@ -247,11 +269,21 @@ const VolunteerPage: React.FC = () => {
   const handleCancelVolunteerSignup = async (signupId: string) => {
     if (window.confirm('Are you sure you want to cancel your volunteer signup? This action cannot be undone.')) {
       try {
+        // Find the signup to get the needId before cancelling
+        const signup = userSignups.find(s => s.id === signupId);
+        const needId = signup?.needId;
+        
         await volunteerService.cancelVolunteerSignup(signupId);
         
         // Refresh the data
         const needs = await volunteerService.getVolunteerNeeds();
         setVolunteerNeeds(needs);
+        
+        // Refresh signups for the affected need
+        if (needId) {
+          const needSignupsData = await volunteerService.getVolunteerSignupsForNeed(needId);
+          setNeedSignups(prev => ({ ...prev, [needId]: needSignupsData }));
+        }
         
         const signups = await volunteerService.getUserVolunteerSignups();
         setUserSignups(signups);
@@ -745,9 +777,20 @@ const VolunteerPage: React.FC = () => {
                             Current Volunteers:
                           </span>
                         </div>
-                        <div className="text-xs text-blue-600">
-                          {need.claimed} volunteer{need.claimed !== 1 ? 's' : ''} signed up
-                        </div>
+                        {currentUser && needSignups[need.id] && needSignups[need.id].length >= 1 && needSignups[need.id].length <= 4 ? (
+                          <div className="space-y-1">
+                            {needSignups[need.id].map((signup, index) => (
+                              <div key={signup.id} className="text-xs text-blue-600">
+                                • {signup.volunteerName}
+                                {signup.count > 1 && ` (+${signup.count - 1})`}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-blue-600">
+                            {need.claimed} volunteer{need.claimed !== 1 ? 's' : ''} signed up
+                          </div>
+                        )}
                       </div>
                     )}
 

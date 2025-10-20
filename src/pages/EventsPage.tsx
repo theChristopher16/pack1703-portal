@@ -366,8 +366,8 @@ const EventsPage: React.FC = () => {
             endTime: firebaseEvent.endTime || '00:00',
             startDate: firebaseEvent.startDate?.toDate?.() ? formatLocalDateTime(firebaseEvent.startDate.toDate()) : firebaseEvent.startDate,
             endDate: firebaseEvent.endDate?.toDate?.() ? formatLocalDateTime(firebaseEvent.endDate.toDate()) : firebaseEvent.endDate,
-            location: {
-              name: firebaseEvent.locationName || firebaseEvent.location || 'TBD',
+            location: firebaseEvent.location || {
+              name: firebaseEvent.locationName || 'TBD',
               address: firebaseEvent.address || 'Address TBD',
               coordinates: firebaseEvent.coordinates || undefined
             },

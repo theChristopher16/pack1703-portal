@@ -129,6 +129,14 @@
       ]
     },
     {
+      "collectionGroup": "volunteer-signups",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "needId", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "cost-alerts",
       "queryScope": "COLLECTION",
       "fields": [

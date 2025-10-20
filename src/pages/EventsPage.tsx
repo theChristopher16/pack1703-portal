@@ -74,7 +74,18 @@ interface Event {
 }
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-const EVENTS_PER_PAGE = 12; // Pagination limit
+const EVENTS_PER_PAGE = 12;
+
+// Helper function to format dates in local timezone (preserves local time)
+const formatLocalDateTime = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+}; // Pagination limit
 const DEBOUNCE_DELAY = 300; // Debounce filter changes
 
 const EventsPage: React.FC = () => {
@@ -710,8 +721,8 @@ const EventsPage: React.FC = () => {
               visibility: firebaseEvent.visibility,
               isActive: firebaseEvent.isActive,
               locationId: firebaseEvent.locationId,
-              startDate: firebaseEvent.startDate?.toDate?.()?.toISOString() || firebaseEvent.startDate,
-              endDate: firebaseEvent.endDate?.toDate?.()?.toISOString() || firebaseEvent.endDate,
+              startDate: firebaseEvent.startDate?.toDate?.() ? formatLocalDateTime(firebaseEvent.startDate.toDate()) : firebaseEvent.startDate,
+              endDate: firebaseEvent.endDate?.toDate?.() ? formatLocalDateTime(firebaseEvent.endDate.toDate()) : firebaseEvent.endDate,
               // Payment fields
               paymentRequired: firebaseEvent.paymentRequired || false,
               paymentAmount: firebaseEvent.paymentAmount || undefined,
@@ -811,8 +822,8 @@ const EventsPage: React.FC = () => {
               visibility: firebaseEvent.visibility,
               isActive: firebaseEvent.isActive,
               locationId: firebaseEvent.locationId,
-              startDate: firebaseEvent.startDate?.toDate?.()?.toISOString() || firebaseEvent.startDate,
-              endDate: firebaseEvent.endDate?.toDate?.()?.toISOString() || firebaseEvent.endDate,
+              startDate: firebaseEvent.startDate?.toDate?.() ? formatLocalDateTime(firebaseEvent.startDate.toDate()) : firebaseEvent.startDate,
+              endDate: firebaseEvent.endDate?.toDate?.() ? formatLocalDateTime(firebaseEvent.endDate.toDate()) : firebaseEvent.endDate,
               // Payment fields
               paymentRequired: firebaseEvent.paymentRequired || false,
               paymentAmount: firebaseEvent.paymentAmount || undefined,

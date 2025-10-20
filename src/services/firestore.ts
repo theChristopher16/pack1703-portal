@@ -106,15 +106,18 @@ export const firestoreService = {
     });
   },
 
-  async getEvent(eventId: string): Promise<any> {
-    return safeFirestoreCall(async () => {
+  async getEvent(eventId: string): Promise<{ success: boolean; event?: any; error?: string }> {
+    try {
       const eventRef = doc(db, 'events', eventId);
       const eventDoc = await getDoc(eventRef);
       if (eventDoc.exists()) {
-        return { id: eventDoc.id, ...eventDoc.data() };
+        return { success: true, event: { id: eventDoc.id, ...eventDoc.data() } };
       }
-      throw new Error('Event not found');
-    });
+      return { success: false, error: 'Event not found' };
+    } catch (error) {
+      console.error('Error getting event:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   },
 
   // Clear events cache (call when events are updated)

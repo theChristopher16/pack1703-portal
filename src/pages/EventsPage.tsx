@@ -573,10 +573,28 @@ const EventsPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleEditEvent = (event: Event) => {
-    setModalMode('edit');
-    setSelectedEvent(event);
-    setIsModalOpen(true);
+  const handleEditEvent = async (event: Event) => {
+    try {
+      setModalMode('edit');
+      setIsModalOpen(true);
+      
+      // Fetch the event directly from database to get raw data
+      console.log('Fetching event from database for editing:', event.id);
+      const result = await firestoreService.getEvent(event.id);
+      
+      if (result.success && result.event) {
+        console.log('Raw event data from database:', result.event);
+        setSelectedEvent(result.event);
+      } else {
+        console.error('Failed to fetch event for editing:', result.error);
+        // Fallback to cached event
+        setSelectedEvent(event);
+      }
+    } catch (error) {
+      console.error('Error fetching event for editing:', error);
+      // Fallback to cached event
+      setSelectedEvent(event);
+    }
   };
 
   const handleDeleteEvent = async (eventId: string) => {

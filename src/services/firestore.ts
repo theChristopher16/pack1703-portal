@@ -171,6 +171,13 @@ export const firestoreService = {
           if (location) {
             return {
               ...event,
+              // Create the location object that EventCard expects
+              location: {
+                name: location.name,
+                address: location.address,
+                coordinates: location.geo ? { lat: location.geo.lat, lng: location.geo.lng } : undefined
+              },
+              // Keep legacy fields for backward compatibility
               locationName: location.name,
               address: location.address,
               coordinates: location.geo ? { lat: location.geo.lat, lng: location.geo.lng } : undefined

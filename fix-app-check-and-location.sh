@@ -1,0 +1,62 @@
+#!/bin/bash
+
+echo "🔧 Firebase App Check & Location Fix Script"
+echo "=========================================="
+echo ""
+
+echo "📋 ISSUE DIAGNOSIS:"
+echo "- App Check enforcement is enabled in Firebase Console"
+echo "- Frontend has debug token but Console still blocks requests"
+echo "- Location updates succeed but don't appear due to blocked reads"
+echo ""
+
+echo "🛠️ SOLUTION STEPS:"
+echo ""
+echo "1. DISABLE APP CHECK ENFORCEMENT IN FIREBASE CONSOLE:"
+echo "   a) Go to: https://console.firebase.google.com/project/pack1703-portal"
+echo "   b) Click 'App Check' in left sidebar"
+echo "   c) Click 'APIs' tab"
+echo "   d) Find 'Cloud Firestore' and toggle OFF enforcement"
+echo "   e) Find 'Cloud Functions' and toggle OFF enforcement"
+echo "   f) Click 'Save'"
+echo ""
+
+echo "2. VERIFY LOCATION DATA FLOW:"
+echo "   - Event updates are working (console shows success)"
+echo "   - LocationSelector is saving locationId correctly"
+echo "   - Issue is in reading/displaying updated data"
+echo ""
+
+echo "3. ALTERNATIVE: TEMPORARY WORKAROUND"
+echo "   - Clear browser cache completely"
+echo "   - Hard refresh (Cmd+Shift+R)"
+echo "   - Try editing event again"
+echo ""
+
+echo "4. LONG-TERM FIX:"
+echo "   - Configure reCAPTCHA v3 properly"
+echo "   - Re-enable App Check with proper tokens"
+echo "   - This provides better security than debug tokens"
+echo ""
+
+echo "🚀 QUICK TEST AFTER FIXING:"
+echo "1. Edit the 'Double Lake Recreation Area Family Campout' event"
+echo "2. Select 'U.S.S. Stewart' from LocationSelector"
+echo "3. Save the event"
+echo "4. Check if location appears on event card (should show 'U.S.S. Stewart' not 'TBD')"
+echo ""
+
+echo "✅ EXPECTED RESULT:"
+echo "- No more 'access control checks' errors in console"
+echo "- Location updates appear immediately after saving"
+echo "- Weather data loads properly (API key is now valid)"
+echo "- All Firestore operations work smoothly"
+echo ""
+
+echo "🔍 DEBUG INFO:"
+echo "- Your OpenWeather API key is working (no more 401 errors)"
+echo "- Event update succeeds (console shows 'Event update result: {success: true}')"
+echo "- Location enrichment fetches 1 location correctly"
+echo "- Issue is App Check blocking the read operations after updates"
+echo ""
+

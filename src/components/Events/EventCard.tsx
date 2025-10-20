@@ -208,6 +208,11 @@ const EventCard: React.FC<EventCardProps> = ({
   };
 
   const getRSVPStatus = () => {
+    // Handle unlimited capacity events
+    if (!event.maxCapacity || event.maxCapacity === null) {
+      return { color: 'bg-blue-500', text: 'Unlimited Spots' };
+    }
+    
     const percentage = (event.currentRSVPs / event.maxCapacity) * 100;
     if (percentage >= 90) return { color: 'bg-red-500', text: 'Almost Full' };
     if (percentage >= 75) return { color: 'bg-yellow-500', text: 'Filling Up' };
@@ -277,7 +282,7 @@ const EventCard: React.FC<EventCardProps> = ({
                   <span className="text-xs text-gray-600">{rsvpStatus.text}</span>
                 </div>
                 <div className="text-sm text-gray-700">
-                  {event.currentRSVPs} / {event.maxCapacity} spots
+                  {event.maxCapacity ? `${event.currentRSVPs} / ${event.maxCapacity} spots` : `${event.currentRSVPs} RSVPs`}
                 </div>
               </>
             )}

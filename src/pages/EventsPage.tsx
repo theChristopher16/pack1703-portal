@@ -1363,6 +1363,38 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Update form data when event prop changes (for edit mode)
+  useEffect(() => {
+    if (event && mode === 'edit') {
+      console.log('EventForm: Updating form data with event:', event);
+      setFormData({
+        title: event.title || '',
+        description: event.description || '',
+        startDate: event.startDate ? formatDateForInput(event.startDate) : '',
+        endDate: event.endDate ? formatDateForInput(event.endDate) : '',
+        location: typeof event.location === 'object' ? event.location.name : (event.location || ''),
+        locationId: event.locationId || '',
+        category: event.category || 'Meeting',
+        visibility: event.visibility || 'public',
+        maxCapacity: event.maxCapacity ? event.maxCapacity.toString() : '',
+        isActive: event.isActive ?? true,
+        // Payment fields
+        paymentRequired: event.paymentRequired || false,
+        paymentAmount: event.paymentAmount ? (event.paymentAmount / 100).toString() : '',
+        paymentCurrency: event.paymentCurrency || 'USD',
+        paymentDescription: event.paymentDescription || '',
+        // Elective event fields
+        isElective: event.isElective || false,
+        flexibleDates: event.electiveOptions?.flexibleDates || false,
+        noBeltLoop: event.electiveOptions?.noBeltLoop || false,
+        casualAttendance: event.electiveOptions?.casualAttendance || false,
+        familyFriendly: event.electiveOptions?.familyFriendly || false,
+        communicationNotes: event.electiveOptions?.communicationNotes || '',
+        leadershipNotes: event.electiveOptions?.leadershipNotes || ''
+      });
+    }
+  }, [event, mode]);
+
   const categories = ['Meeting', 'Competition', 'Outdoor', 'Service', 'Social', 'Training', 'Elective'];
   const visibilityOptions = [
     { value: 'public', label: 'Public', description: 'Visible to everyone' },

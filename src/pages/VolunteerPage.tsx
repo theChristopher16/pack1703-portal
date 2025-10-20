@@ -72,6 +72,21 @@ const VolunteerPage: React.FC = () => {
                   signupsFound: signups.length,
                   signups: signups.map(s => ({ name: s.volunteerName, status: s.status, count: s.count }))
                 });
+                
+                // Check for data inconsistency and fix it
+                const actualCount = signups.reduce((sum, signup) => sum + signup.count, 0);
+                if (need.claimed !== actualCount) {
+                  console.warn(`⚠️ Data inconsistency detected for "${need.role}": claimed=${need.claimed}, actual=${actualCount}. Auto-fixing...`);
+                  try {
+                    await volunteerService.updateVolunteerNeedClaimedCount(need.id, actualCount);
+                    // Update the local need data to reflect the fix
+                    need.claimed = actualCount;
+                    console.log(`✅ Fixed claimed count for "${need.role}": ${need.claimed} -> ${actualCount}`);
+                  } catch (error) {
+                    console.error(`Failed to fix claimed count for "${need.role}":`, error);
+                  }
+                }
+                
                 signupsMap[need.id] = signups;
               } catch (error) {
                 console.error(`Error loading signups for need ${need.id}:`, error);

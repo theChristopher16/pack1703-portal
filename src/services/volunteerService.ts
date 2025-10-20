@@ -376,6 +376,21 @@ class VolunteerService {
   }
 
   /**
+   * Update the claimed count for a volunteer need (admin only)
+   */
+  async updateVolunteerNeedClaimedCount(needId: string, newCount: number): Promise<void> {
+    try {
+      await updateDoc(doc(db, this.VOLUNTEER_NEEDS_COLLECTION, needId), {
+        claimed: newCount,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Error updating volunteer need claimed count:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Create a new volunteer need (admin only)
    */
   async createVolunteerNeed(needData: Omit<VolunteerNeed, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {

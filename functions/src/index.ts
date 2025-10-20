@@ -247,12 +247,20 @@ export const adminUpdateEvent = functions.https.onCall(async (data: any, context
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update events');
     }
 
-    // Update the event
+    // Update the event with proper timezone handling
     const eventRef = db.collection('events').doc(data.eventId);
-    await eventRef.update({
-      ...data.eventData,
-      updatedAt: getTimestamp()
-    });
+    
+    // Convert local timezone date strings to Firestore Timestamps if they exist
+    const updateData = { ...data.eventData };
+    if (updateData.startDate) {
+      updateData.startDate = admin.firestore.Timestamp.fromDate(new Date(updateData.startDate));
+    }
+    if (updateData.endDate) {
+      updateData.endDate = admin.firestore.Timestamp.fromDate(new Date(updateData.endDate));
+    }
+    updateData.updatedAt = getTimestamp();
+    
+    await eventRef.update(updateData);
 
     return {
       success: true,

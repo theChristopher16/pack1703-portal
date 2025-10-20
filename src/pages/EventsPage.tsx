@@ -736,10 +736,11 @@ const EventsPage: React.FC = () => {
         const eventToUpdate = {
           title: eventData.title!,
           description: eventData.description!,
-          startDate: new Date(eventData.startDate!),
-          endDate: new Date(eventData.endDate!),
-          startTime: eventData.startDate?.split('T')[1]?.substring(0, 5) || '09:00',
-          endTime: eventData.endDate?.split('T')[1]?.substring(0, 5) || '17:00',
+          // FIXED TIMEZONE ISSUE - Use local timezone format instead of Date objects
+          startDate: eventData.startDate!,
+          endDate: eventData.endDate!,
+          startTime: eventData.startTime!,
+          endTime: eventData.endTime!,
           category: eventData.category || 'Meeting',
           visibility: eventData.visibility || 'public',
           maxCapacity: eventData.maxCapacity && eventData.maxCapacity.toString().trim() !== '' 

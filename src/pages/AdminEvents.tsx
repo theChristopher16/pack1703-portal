@@ -173,21 +173,16 @@ const AdminEvents: React.FC = () => {
       } else if (modalMode === 'edit' && selectedEvent) {
         console.log('Updating existing event...');
         // Use Cloud Function to update event with proper permission checking
-        // Parse dates and extract times properly
-        const startDateObj = new Date(eventData.startDate!);
-        const endDateObj = new Date(eventData.endDate!);
-        const startTime = startDateObj.toTimeString().substring(0, 5);
-        const endTime = endDateObj.toTimeString().substring(0, 5);
-        
+        // FIXED TIMEZONE ISSUE - Use local timezone format instead of Date objects
         const eventToUpdate = {
           eventId: selectedEvent.id,
           eventData: {
             title: eventData.title!,
             description: eventData.description!,
-            startDate: startDateObj,
-            endDate: endDateObj,
-            startTime: startTime,
-            endTime: endTime,
+            startDate: eventData.startDate!,
+            endDate: eventData.endDate!,
+            startTime: eventData.startTime!,
+            endTime: eventData.endTime!,
             category: eventData.category || 'Meeting',
             visibility: eventData.visibility || 'public',
             maxCapacity: eventData.maxParticipants ? parseInt(eventData.maxParticipants.toString()) : null,

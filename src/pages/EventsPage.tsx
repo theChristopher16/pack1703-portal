@@ -364,6 +364,8 @@ const EventsPage: React.FC = () => {
             date: localDate || '',
             startTime: firebaseEvent.startTime || '00:00',
             endTime: firebaseEvent.endTime || '00:00',
+            startDate: firebaseEvent.startDate?.toDate?.() ? formatLocalDateTime(firebaseEvent.startDate.toDate()) : firebaseEvent.startDate,
+            endDate: firebaseEvent.endDate?.toDate?.() ? formatLocalDateTime(firebaseEvent.endDate.toDate()) : firebaseEvent.endDate,
             location: {
               name: firebaseEvent.locationName || firebaseEvent.location || 'TBD',
               address: firebaseEvent.address || 'Address TBD',
@@ -379,7 +381,15 @@ const EventsPage: React.FC = () => {
             contactEmail: firebaseEvent.contactEmail || 'cubmaster@sfpack1703.com',
             isOvernight: firebaseEvent.isOvernight || false,
             requiresPermission: firebaseEvent.requiresPermission || false,
-            attachments: firebaseEvent.attachments || []
+            attachments: firebaseEvent.attachments || [],
+            visibility: firebaseEvent.visibility,
+            isActive: firebaseEvent.isActive,
+            locationId: firebaseEvent.locationId,
+            // Payment fields
+            paymentRequired: firebaseEvent.paymentRequired || false,
+            paymentAmount: firebaseEvent.paymentAmount || undefined,
+            paymentCurrency: firebaseEvent.paymentCurrency || 'USD',
+            paymentDescription: firebaseEvent.paymentDescription || undefined
           };
           
           return transformedEvent;
@@ -1119,8 +1129,12 @@ const EventsPage: React.FC = () => {
                       ...event,
                       location: typeof event.location === 'string' 
                         ? { name: event.location, address: '', coordinates: undefined }
-                        : event.location
+                        : event.location,
+                      // Ensure startDate and endDate are passed through
+                      startDate: event.startDate,
+                      endDate: event.endDate
                     };
+                    
                     
                     return (
                       <div key={event.id} className="relative">

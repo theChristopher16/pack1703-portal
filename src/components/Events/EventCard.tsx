@@ -176,7 +176,7 @@ const EventCard: React.FC<EventCardProps> = ({
         
         // Check if it's a multi-day event (different dates)
         if (startDate.toDateString() !== endDate.toDateString()) {
-          // Multi-day event: show both dates
+          // Multi-day event: show both dates with their respective times
           const startFormatted = startDate.toLocaleDateString('en-US', {
             weekday: 'long',
             month: 'long', 
@@ -189,15 +189,22 @@ const EventCard: React.FC<EventCardProps> = ({
             day: 'numeric',
             year: 'numeric'
           });
-          return `${startFormatted} - ${endFormatted}`;
+          
+          // Format times for each date
+          const startTime = formatTime(event.startTime);
+          const endTime = formatTime(event.endTime);
+          
+          return `${startFormatted} (${startTime}) - ${endFormatted} (${endTime})`;
         }
       } catch (error) {
         console.warn('Error parsing event dates:', error);
       }
     }
     
-    // Single day event or fallback: use the existing date field
-    return formatDate(event.date);
+    // Single day event: show date with time range
+    const dateFormatted = formatDate(event.date);
+    const timeRange = `${formatTime(event.startTime)} - ${formatTime(event.endTime)}`;
+    return `${dateFormatted} (${timeRange})`;
   };
 
   const getRSVPStatus = () => {
@@ -287,10 +294,6 @@ const EventCard: React.FC<EventCardProps> = ({
           <div className="flex items-center space-x-2">
             <Calendar className="w-4 h-4 text-primary-500" />
             <span>{formatEventDates(event)}</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Clock className="w-4 h-4 text-secondary-500" />
-            <span>{formatTime(event.startTime)} - {formatTime(event.endTime)}</span>
           </div>
         </div>
 

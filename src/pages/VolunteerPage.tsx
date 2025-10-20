@@ -66,14 +66,8 @@ const VolunteerPage: React.FC = () => {
             needs.map(async (need) => {
               try {
                 const signups = await volunteerService.getVolunteerSignupsForNeed(need.id);
-                console.log(`🔍 Need "${need.role}" (${need.id}):`, {
-                  claimed: need.claimed,
-                  needed: need.needed,
-                  signupsFound: signups.length,
-                  signups: signups.map(s => ({ name: s.volunteerName, status: s.status, count: s.count }))
-                });
                 
-                // Check for data inconsistency and fix it
+                // Check for data inconsistency and fix it automatically
                 const actualCount = signups.reduce((sum, signup) => sum + signup.count, 0);
                 if (need.claimed !== actualCount) {
                   console.warn(`⚠️ Data inconsistency detected for "${need.role}": claimed=${need.claimed}, actual=${actualCount}. Auto-fixing...`);

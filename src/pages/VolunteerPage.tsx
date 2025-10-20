@@ -12,7 +12,9 @@ import {
   Edit,
   Trash2,
   Eye,
-  Clock
+  Clock,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { volunteerService, VolunteerNeed, VolunteerSignup } from '../services/volunteerService';
 import { authService } from '../services/authService';
@@ -24,6 +26,7 @@ const VolunteerPage: React.FC = () => {
   const [userSignups, setUserSignups] = useState<VolunteerSignup[]>([]);
   const [volunteerSignups, setVolunteerSignups] = useState<VolunteerSignup[]>([]);
   const [needSignups, setNeedSignups] = useState<Record<string, VolunteerSignup[]>>({});
+  const [expandedVolunteerLists, setExpandedVolunteerLists] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -264,6 +267,13 @@ const VolunteerPage: React.FC = () => {
 
   const getUserSignupForNeed = (needId: string) => {
     return userSignups.find(signup => signup.needId === needId && signup.status !== 'cancelled');
+  };
+
+  const toggleVolunteerList = (needId: string) => {
+    setExpandedVolunteerLists(prev => ({
+      ...prev,
+      [needId]: !prev[needId]
+    }));
   };
 
   const handleCancelVolunteerSignup = async (signupId: string) => {
@@ -778,15 +788,44 @@ const VolunteerPage: React.FC = () => {
                           </span>
                         </div>
                         {currentUser && needSignups[need.id] && needSignups[need.id].length >= 1 && needSignups[need.id].length <= 4 ? (
+                          // Show all names for 1-4 volunteers
                           <div className="space-y-1">
-                            {needSignups[need.id].map((signup, index) => (
+                            {needSignups[need.id].map((signup) => (
                               <div key={signup.id} className="text-xs text-blue-600">
                                 • {signup.volunteerName}
                                 {signup.count > 1 && ` (+${signup.count - 1})`}
                               </div>
                             ))}
                           </div>
+                        ) : currentUser && needSignups[need.id] && needSignups[need.id].length >= 5 ? (
+                          // Show expandable list for 5+ volunteers
+                          <div>
+                            <button
+                              onClick={() => toggleVolunteerList(need.id)}
+                              className="flex items-center justify-between w-full text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                            >
+                              <span>
+                                {need.claimed} volunteer{need.claimed !== 1 ? 's' : ''} signed up
+                              </span>
+                              {expandedVolunteerLists[need.id] ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </button>
+                            {expandedVolunteerLists[need.id] && (
+                              <div className="mt-2 space-y-1 pl-2 border-l-2 border-blue-300">
+                                {needSignups[need.id].map((signup) => (
+                                  <div key={signup.id} className="text-xs text-blue-600">
+                                    • {signup.volunteerName}
+                                    {signup.count > 1 && ` (+${signup.count - 1})`}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         ) : (
+                          // Fallback for when not logged in or no signup data
                           <div className="text-xs text-blue-600">
                             {need.claimed} volunteer{need.claimed !== 1 ? 's' : ''} signed up
                           </div>

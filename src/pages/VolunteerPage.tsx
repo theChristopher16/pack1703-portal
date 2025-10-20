@@ -778,8 +778,8 @@ const VolunteerPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Show who is signed up (for non-signed-up users) */}
-                    {!isUserSignedUp && need.claimed > 0 && (
+                    {/* Show who is signed up (for all logged-in users) */}
+                    {currentUser && need.claimed > 0 && (
                       <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
                         <div className="flex items-center mb-2">
                           <Users className="h-4 w-4 text-blue-600 mr-2" />

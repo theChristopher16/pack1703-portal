@@ -1344,13 +1344,33 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
     
     if (validateForm()) {
       const { maxCapacity, locationId, isElective, flexibleDates, noBeltLoop, casualAttendance, familyFriendly, communicationNotes, leadershipNotes, paymentAmount, paymentCurrency, paymentDescription, ...formDataWithoutElectiveFields } = formData;
-      // Parse dates and extract times properly
+      // Parse dates and extract times properly - FIXED TIMEZONE ISSUE
       const startDateObj = new Date(formData.startDate);
       const endDateObj = new Date(formData.endDate);
       
-      // Extract time components (HH:MM format)
-      const startTime = startDateObj.toTimeString().substring(0, 5);
-      const endTime = endDateObj.toTimeString().substring(0, 5);
+      // Extract time components (HH:MM format) - use local time, not UTC
+      const startTime = startDateObj.toLocaleTimeString('en-US', { 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      const endTime = endDateObj.toLocaleTimeString('en-US', { 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      
+      // Create date strings in local timezone format (YYYY-MM-DDTHH:MM:SS)
+      // This preserves the local time without UTC conversion
+      const formatLocalDateTime = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+      };
       
       const eventData: Partial<Event> = {
         title: formData.title,
@@ -1360,8 +1380,8 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
         visibility: formData.visibility,
         isActive: formData.isActive,
         locationId: locationId || formData.location,
-        startDate: startDateObj.toISOString() as any, // Convert to string for frontend, Cloud Function will handle Timestamp
-        endDate: endDateObj.toISOString() as any, // Convert to string for frontend, Cloud Function will handle Timestamp
+        startDate: formatLocalDateTime(startDateObj) as any, // Local timezone format
+        endDate: formatLocalDateTime(endDateObj) as any, // Local timezone format
         startTime: startTime,
         endTime: endTime,
         currentRSVPs: event?.currentRSVPs || 0,

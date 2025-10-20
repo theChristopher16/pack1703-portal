@@ -351,9 +351,12 @@ export const adminCreateEvent = functions.https.onCall(async (data: any, context
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to create events');
     }
 
-    // Create the event
+    // Create the event with proper timezone handling
     const eventData = {
       ...data,
+      // Convert local timezone date strings to Firestore Timestamps
+      startDate: data.startDate ? admin.firestore.Timestamp.fromDate(new Date(data.startDate)) : null,
+      endDate: data.endDate ? admin.firestore.Timestamp.fromDate(new Date(data.endDate)) : null,
       createdAt: getTimestamp(),
       updatedAt: getTimestamp()
     };

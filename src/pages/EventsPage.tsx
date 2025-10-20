@@ -781,6 +781,7 @@ const EventsPage: React.FC = () => {
           endDate: eventData.endDate!,
           startTime: eventData.startTime!,
           endTime: eventData.endTime!,
+          locationId: eventData.locationId!, // Location selection from LocationSelector
           category: eventData.category || 'Meeting',
           visibility: eventData.visibility || 'public',
           maxCapacity: eventData.maxCapacity && eventData.maxCapacity.toString().trim() !== '' 

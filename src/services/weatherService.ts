@@ -187,6 +187,10 @@ class WeatherService {
     );
 
     if (!response.ok) {
+      if (response.status === 401) {
+        console.warn('❌ OpenWeather API key is invalid or expired. Weather disabled. Please update REACT_APP_ADMIN_OPENWEATHER_API_KEY');
+        return null;
+      }
       throw new Error(`Weather API request failed: ${response.status}`);
     }
 
@@ -230,6 +234,10 @@ class WeatherService {
     );
 
     if (!response.ok) {
+      if (response.status === 401) {
+        console.warn('❌ OpenWeather API key is invalid or expired. Weather forecasts disabled. Please update REACT_APP_ADMIN_OPENWEATHER_API_KEY');
+        return [];
+      }
       throw new Error(`Weather API request failed: ${response.status}`);
     }
 

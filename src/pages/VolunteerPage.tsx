@@ -291,12 +291,19 @@ const VolunteerPage: React.FC = () => {
     }));
   };
 
-  const handleCancelVolunteerSignup = async (signupId: string) => {
-    if (window.confirm('Are you sure you want to cancel your volunteer signup? This action cannot be undone.')) {
+  const handleCancelVolunteerSignup = async (signupId: string, needId?: string) => {
+    const isAdminAction = isAdmin && needId;
+    const confirmMessage = isAdminAction 
+      ? 'Are you sure you want to remove this volunteer? This action cannot be undone.'
+      : 'Are you sure you want to cancel your volunteer signup? This action cannot be undone.';
+    
+    if (window.confirm(confirmMessage)) {
       try {
-        // Find the signup to get the needId before cancelling
-        const signup = userSignups.find(s => s.id === signupId);
-        const needId = signup?.needId;
+        // Find the signup to get the needId if not provided
+        const userSignup = userSignups.find(s => s.id === signupId);
+        const needSignup = needId ? needSignups[needId]?.find(s => s.id === signupId) : null;
+        const signup = userSignup || needSignup;
+        const actualNeedId = needId || signup?.needId;
         
         await volunteerService.cancelVolunteerSignup(signupId);
         
@@ -305,18 +312,24 @@ const VolunteerPage: React.FC = () => {
         setVolunteerNeeds(needs);
         
         // Refresh signups for the affected need
-        if (needId) {
-          const needSignupsData = await volunteerService.getVolunteerSignupsForNeed(needId);
-          setNeedSignups(prev => ({ ...prev, [needId]: needSignupsData }));
+        if (actualNeedId) {
+          const needSignupsData = await volunteerService.getVolunteerSignupsForNeed(actualNeedId);
+          setNeedSignups(prev => ({ ...prev, [actualNeedId]: needSignupsData }));
         }
         
         const signups = await volunteerService.getUserVolunteerSignups();
         setUserSignups(signups);
         
-        addNotification('success', 'Success', 'Volunteer signup cancelled successfully');
+        const successMessage = isAdminAction 
+          ? 'Volunteer removed successfully'
+          : 'Volunteer signup cancelled successfully';
+        addNotification('success', 'Success', successMessage);
       } catch (error) {
         console.error('Error cancelling volunteer signup:', error);
-        addNotification('error', 'Error', 'Failed to cancel volunteer signup');
+        const errorMessage = isAdminAction 
+          ? 'Failed to remove volunteer'
+          : 'Failed to cancel volunteer signup';
+        addNotification('error', 'Error', errorMessage);
       }
     }
   };
@@ -765,30 +778,16 @@ const VolunteerPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* User Signup Status */}
+                    {/* Cancel Button (for signed up users) */}
                     {isUserSignedUp && (
-                      <div className="mb-4 flex items-center justify-between gap-4">
-                        {/* Status Box */}
-                        <div className="flex-1 p-3 bg-green-50 border border-green-200 rounded-xl">
-                          <div className="flex items-center">
-                            <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
-                            <span className="text-sm font-medium text-green-800">
-                              You're signed up for this role!
-                            </span>
-                          </div>
-                          <p className="text-xs text-green-600 mt-1">
-                            Status: {userSignup.status} • Count: {userSignup.count}
-                          </p>
-                        </div>
-                        
-                        {/* Cancel Button */}
+                      <div className="mb-4">
                         <button
                           onClick={() => handleCancelVolunteerSignup(userSignup.id)}
-                          className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
+                          className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
                           title="Cancel volunteer signup"
                         >
                           <XCircle className="h-4 w-4" />
-                          Cancel
+                          Cancel Signup
                         </button>
                       </div>
                     )}
@@ -806,9 +805,20 @@ const VolunteerPage: React.FC = () => {
                           // Show all names for 1-4 volunteers
                           <div className="space-y-1">
                             {needSignups[need.id].map((signup) => (
-                              <div key={signup.id} className="text-xs text-blue-600">
-                                • {signup.volunteerName}
-                                {signup.count > 1 && ` (+${signup.count - 1})`}
+                              <div key={signup.id} className="flex items-center justify-between group">
+                                <span className="text-xs text-blue-600">
+                                  • {signup.volunteerName}
+                                  {signup.count > 1 && ` (+${signup.count - 1})`}
+                                </span>
+                                {isAdmin && (
+                                  <button
+                                    onClick={() => handleCancelVolunteerSignup(signup.id, need.id)}
+                                    className="opacity-0 group-hover:opacity-100 text-xs text-red-600 hover:text-red-800 ml-2 transition-opacity"
+                                    title="Remove volunteer (Admin)"
+                                  >
+                                    Remove
+                                  </button>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -831,9 +841,20 @@ const VolunteerPage: React.FC = () => {
                             {expandedVolunteerLists[need.id] && (
                               <div className="mt-2 space-y-1 pl-2 border-l-2 border-blue-300">
                                 {needSignups[need.id].map((signup) => (
-                                  <div key={signup.id} className="text-xs text-blue-600">
-                                    • {signup.volunteerName}
-                                    {signup.count > 1 && ` (+${signup.count - 1})`}
+                                  <div key={signup.id} className="flex items-center justify-between group">
+                                    <span className="text-xs text-blue-600">
+                                      • {signup.volunteerName}
+                                      {signup.count > 1 && ` (+${signup.count - 1})`}
+                                    </span>
+                                    {isAdmin && (
+                                      <button
+                                        onClick={() => handleCancelVolunteerSignup(signup.id, need.id)}
+                                        className="opacity-0 group-hover:opacity-100 text-xs text-red-600 hover:text-red-800 ml-2 transition-opacity"
+                                        title="Remove volunteer (Admin)"
+                                      >
+                                        Remove
+                                      </button>
+                                    )}
                                   </div>
                                 ))}
                               </div>

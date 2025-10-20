@@ -130,14 +130,14 @@ const AdminEvents: React.FC = () => {
           }
         }
         
-             // Transform data to match validation schema expectations
+             // Transform data to match validation schema expectations - FIXED TIMEZONE ISSUE
              const cloudFunctionData = {
                title: eventData.title,
                description: eventData.description,
-               startDate: new Date(eventData.startDate!), // Convert to Date object
-               endDate: new Date(eventData.endDate!), // Convert to Date object
-               startTime: eventData.startDate?.split('T')[1]?.substring(0, 5) || '09:00', // Extract time part
-               endTime: eventData.endDate?.split('T')[1]?.substring(0, 5) || '17:00', // Extract time part
+               startDate: eventData.startDate, // Use local timezone format directly
+               endDate: eventData.endDate, // Use local timezone format directly
+               startTime: eventData.startTime, // Use extracted time directly
+               endTime: eventData.endTime, // Use extracted time directly
                locationId: locationId, // Use created or default location ID
                category: eventData.category || 'Meeting',
                seasonId: 'qPEnr3WZN91NhM8jOypp', // Use the default season ID we created

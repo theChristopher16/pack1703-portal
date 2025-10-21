@@ -98,10 +98,23 @@ const EventCard: React.FC<EventCardProps> = ({
   const [showExportModal, setShowExportModal] = useState(false);
   const [rsvpData, setRsvpData] = useState<any[]>([]);
   const [loadingRSVPs, setLoadingRSVPs] = useState(false);
+  const [cancellingRSVP, setCancellingRSVP] = useState(false);
   const { state } = useAdmin();
 
   // Check if user can export (den leaders and up)
   const canExport = state.currentUser?.role && ['moderator', 'content-admin', 'super-admin'].includes(state.currentUser.role);
+
+  // Handle cancel RSVP with loading state
+  const handleCancelRSVP = async () => {
+    if (!onCancelRSVP) return;
+    
+    setCancellingRSVP(true);
+    try {
+      await onCancelRSVP(event.id);
+    } finally {
+      setCancellingRSVP(false);
+    }
+  };
 
   const loadRSVPData = async () => {
     if (!canExport) return;
@@ -604,10 +617,22 @@ const EventCard: React.FC<EventCardProps> = ({
               
               {onCancelRSVP && (
                 <button
-                  onClick={() => onCancelRSVP(event.id)}
-                  className="px-4 py-2 font-medium rounded-xl transition-all duration-200 transform hover:scale-105 bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-glow-red/50"
+                  onClick={handleCancelRSVP}
+                  disabled={cancellingRSVP}
+                  className={`px-4 py-2 font-medium rounded-xl transition-all duration-200 transform hover:scale-105 ${
+                    cancellingRSVP 
+                      ? 'bg-gradient-to-r from-gray-400 to-gray-500 text-white cursor-not-allowed opacity-75' 
+                      : 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-glow-red/50'
+                  }`}
                 >
-                  Cancel RSVP
+                  {cancellingRSVP ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Cancelling...</span>
+                    </div>
+                  ) : (
+                    'Cancel RSVP'
+                  )}
                 </button>
               )}
             </>

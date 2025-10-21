@@ -538,7 +538,7 @@ const EventsPage: React.FC = () => {
     navigate(`/events/${eventId}?tab=rsvp`);
   };
 
-  const handleCancelRSVP = async (eventId: string) => {
+  const handleCancelRSVP = async (eventId: string): Promise<void> => {
     try {
       console.log('❌ EventsPage: Cancel RSVP button clicked for event ID:', eventId);
       

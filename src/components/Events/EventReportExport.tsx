@@ -19,6 +19,14 @@ interface RSVPData {
   dietaryRestrictions?: string;
   specialNeeds?: string;
   notes?: string;
+  // Payment-related fields
+  paymentRequired?: boolean;
+  paymentAmount?: number;
+  paymentCurrency?: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  paymentNotes?: string;
+  paidAt?: string;
   submittedAt: string;
   createdAt: string;
 }
@@ -69,31 +77,33 @@ const EventReportExport: React.FC<EventReportExportProps> = ({ event, rsvps, onC
       'Family Name',
       'Email',
       'Phone',
-      'Attendee Name',
-      'Age',
-      'Den',
-      'Is Adult',
+      'Attendee Count',
+      'Attendees',
+      'Payment Status',
+      'Payment Amount',
+      'Payment Method',
       'Dietary Restrictions',
       'Special Needs',
       'Notes',
       'RSVP Submitted'
     ];
 
-    const csvRows = rsvps.flatMap(rsvp => 
-      rsvp.attendees.map(attendee => [
-        rsvp.familyName,
-        rsvp.email,
-        rsvp.phone || '',
-        attendee.name,
-        attendee.age.toString(),
-        attendee.den || '',
-        attendee.isAdult ? 'Yes' : 'No',
-        rsvp.dietaryRestrictions || '',
-        rsvp.specialNeeds || '',
-        rsvp.notes || '',
-        new Date(rsvp.submittedAt).toLocaleDateString('en-US')
-      ])
-    );
+    const csvRows = rsvps.map(rsvp => [
+      rsvp.familyName,
+      rsvp.email,
+      rsvp.phone || '',
+      rsvp.attendees.length.toString(),
+      rsvp.attendees.map(a => `${a.name} (${a.age}, ${a.den || 'N/A'})`).join('; '),
+      rsvp.paymentStatus === 'completed' ? 'Paid' : 
+      rsvp.paymentStatus === 'pending' ? 'Payment Pending' : 
+      rsvp.paymentStatus === 'failed' ? 'Payment Failed' : 'N/A',
+      rsvp.paymentAmount ? `$${(rsvp.paymentAmount / 100).toFixed(2)}` : 'N/A',
+      rsvp.paymentMethod || 'N/A',
+      rsvp.dietaryRestrictions || '',
+      rsvp.specialNeeds || '',
+      rsvp.notes || '',
+      new Date(rsvp.submittedAt).toLocaleDateString('en-US')
+    ]);
 
     const csvContent = [csvHeaders, ...csvRows]
       .map(row => row.map(field => `"${field}"`).join(','))
@@ -141,6 +151,9 @@ const EventReportExport: React.FC<EventReportExportProps> = ({ event, rsvps, onC
           <p><strong>Total Attendees:</strong> ${rsvps.reduce((sum, rsvp) => sum + rsvp.attendees.length, 0)}</p>
           <p><strong>Adults:</strong> ${rsvps.reduce((sum, rsvp) => sum + rsvp.attendees.filter(a => a.isAdult).length, 0)}</p>
           <p><strong>Youth:</strong> ${rsvps.reduce((sum, rsvp) => sum + rsvp.attendees.filter(a => !a.isAdult).length, 0)}</p>
+          <p><strong>Paid Families:</strong> ${rsvps.filter(rsvp => rsvp.paymentStatus === 'completed').length}</p>
+          <p><strong>Payment Pending:</strong> ${rsvps.filter(rsvp => rsvp.paymentStatus === 'pending').length}</p>
+          <p><strong>Total Revenue:</strong> $${(rsvps.filter(rsvp => rsvp.paymentStatus === 'completed').reduce((sum, rsvp) => sum + (rsvp.paymentAmount || 0), 0) / 100).toFixed(2)}</p>
         </div>
         
         <h3>Participant Details</h3>
@@ -148,26 +161,24 @@ const EventReportExport: React.FC<EventReportExportProps> = ({ event, rsvps, onC
           <thead>
             <tr>
               <th>Family</th>
-              <th>Attendee</th>
-              <th>Age</th>
-              <th>Den</th>
-              <th>Type</th>
+              <th>Attendees</th>
+              <th>Payment Status</th>
+              <th>Payment Amount</th>
               <th>Contact</th>
             </tr>
           </thead>
           <tbody>
-            ${rsvps.flatMap(rsvp => 
-              rsvp.attendees.map(attendee => `
-                <tr>
-                  <td>${rsvp.familyName}</td>
-                  <td>${attendee.name}</td>
-                  <td>${attendee.age}</td>
-                  <td>${attendee.den || 'N/A'}</td>
-                  <td>${attendee.isAdult ? 'Adult' : 'Youth'}</td>
-                  <td>${rsvp.email}${rsvp.phone ? `<br/>${rsvp.phone}` : ''}</td>
-                </tr>
-              `)
-            ).join('')}
+            ${rsvps.map(rsvp => `
+              <tr>
+                <td>${rsvp.familyName}</td>
+                <td>${rsvp.attendees.map(a => `${a.name} (${a.age}, ${a.den || 'N/A'})`).join('<br/>')}</td>
+                <td>${rsvp.paymentStatus === 'completed' ? '✅ Paid' : 
+                    rsvp.paymentStatus === 'pending' ? '⏳ Payment Pending' : 
+                    rsvp.paymentStatus === 'failed' ? '❌ Payment Failed' : 'N/A'}</td>
+                <td>${rsvp.paymentAmount ? `$${(rsvp.paymentAmount / 100).toFixed(2)}` : 'N/A'}</td>
+                <td>${rsvp.email}${rsvp.phone ? `<br/>${rsvp.phone}` : ''}</td>
+              </tr>
+            `).join('')}
           </tbody>
         </table>
         

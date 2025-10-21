@@ -902,6 +902,14 @@ export const getRSVPData = functions.https.onCall(async (data: any, context: fun
         dietaryRestrictions: data.dietaryRestrictions,
         specialNeeds: data.specialNeeds,
         notes: data.notes,
+        // Payment-related fields
+        paymentRequired: data.paymentRequired || false,
+        paymentAmount: data.paymentAmount || 0,
+        paymentCurrency: data.paymentCurrency || 'USD',
+        paymentStatus: data.paymentStatus || 'not_required',
+        paymentMethod: data.paymentMethod || null,
+        paymentNotes: data.paymentNotes || null,
+        paidAt: data.paidAt?.toDate ? data.paidAt.toDate().toISOString() : data.paidAt,
         submittedAt: data.submittedAt?.toDate ? data.submittedAt.toDate().toISOString() : data.submittedAt,
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt
       });

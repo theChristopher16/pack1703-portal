@@ -1,10 +1,10 @@
 // Service Worker for Pack 1703 Families Portal
 // Implements proper cache invalidation and update handling
-// Updated: 2025-10-06T14:51:11Z
+// Updated: 2025-10-21T02:01:00Z
 
-const CACHE_NAME = 'pack1703-portal-v1';
-const STATIC_CACHE_NAME = 'pack1703-static-v1';
-const DYNAMIC_CACHE_NAME = 'pack1703-dynamic-v1';
+const CACHE_NAME = 'pack1703-portal-v2-payment';
+const STATIC_CACHE_NAME = 'pack1703-static-v2-payment';
+const DYNAMIC_CACHE_NAME = 'pack1703-dynamic-v2-payment';
 
 // Production-friendly logging
 const isDevelopment = false;

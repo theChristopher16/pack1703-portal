@@ -456,21 +456,27 @@ const EventsPage: React.FC = () => {
           const rsvpMap: { [eventId: string]: boolean } = {};
           const paymentMap: { [eventId: string]: 'completed' | 'pending' | 'failed' | 'not_required' | null } = {};
           
+          console.log('User RSVPs loaded:', result.rsvps);
+          
           result.rsvps.forEach((rsvp: any) => {
             rsvpMap[rsvp.eventId] = true;
             
             // Set payment status based on RSVP data
             if (rsvp.paymentStatus) {
               paymentMap[rsvp.eventId] = rsvp.paymentStatus;
+              console.log(`Event ${rsvp.eventId}: Payment status = ${rsvp.paymentStatus}`);
             } else if (rsvp.paymentRequired) {
               paymentMap[rsvp.eventId] = 'pending'; // RSVP'd but payment not completed
+              console.log(`Event ${rsvp.eventId}: Payment required but no status, setting to pending`);
             } else {
               paymentMap[rsvp.eventId] = 'not_required';
+              console.log(`Event ${rsvp.eventId}: No payment required`);
             }
           });
           
           setUserRSVPs(rsvpMap);
           setUserPaymentStatus(paymentMap);
+          console.log('Payment status map:', paymentMap);
         } else {
           setUserRSVPs({});
           setUserPaymentStatus({});

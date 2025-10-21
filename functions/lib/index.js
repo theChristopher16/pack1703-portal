@@ -203,9 +203,18 @@ exports.adminUpdateEvent = functions.https.onCall(async (data, context) => {
         if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
             throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to update events');
         }
-        // Update the event
+        // Update the event with proper timezone handling
         const eventRef = db.collection('events').doc(data.eventId);
-        await eventRef.update(Object.assign(Object.assign({}, data.eventData), { updatedAt: getTimestamp() }));
+        // Convert local timezone date strings to Firestore Timestamps if they exist
+        const updateData = Object.assign({}, data.eventData);
+        if (updateData.startDate) {
+            updateData.startDate = admin.firestore.Timestamp.fromDate(new Date(updateData.startDate));
+        }
+        if (updateData.endDate) {
+            updateData.endDate = admin.firestore.Timestamp.fromDate(new Date(updateData.endDate));
+        }
+        updateData.updatedAt = getTimestamp();
+        await eventRef.update(updateData);
         return {
             success: true,
             message: 'Event updated successfully'
@@ -289,8 +298,10 @@ exports.adminCreateEvent = functions.https.onCall(async (data, context) => {
         if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
             throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to create events');
         }
-        // Create the event
-        const eventData = Object.assign(Object.assign({}, data), { createdAt: getTimestamp(), updatedAt: getTimestamp() });
+        // Create the event with proper timezone handling
+        const eventData = Object.assign(Object.assign({}, data), { 
+            // Convert local timezone date strings to Firestore Timestamps
+            startDate: data.startDate ? admin.firestore.Timestamp.fromDate(new Date(data.startDate)) : null, endDate: data.endDate ? admin.firestore.Timestamp.fromDate(new Date(data.endDate)) : null, createdAt: getTimestamp(), updatedAt: getTimestamp() });
         const eventRef = await db.collection('events').add(eventData);
         return {
             success: true,
@@ -599,7 +610,9 @@ exports.getUserRSVPs = functions.https.onCall(async (data, context) => {
             // Get event details
             const eventDoc = await db.collection('events').doc(rsvpData.eventId).get();
             const eventData = eventDoc.exists ? eventDoc.data() : null;
-            rsvps.push(Object.assign(Object.assign({ id: doc.id }, rsvpData), { event: eventData ? {
+            rsvps.push(Object.assign(Object.assign({ id: doc.id }, rsvpData), { 
+                // Include payment status fields
+                paymentStatus: rsvpData.paymentStatus || 'not_required', paymentRequired: rsvpData.paymentRequired || false, paymentAmount: rsvpData.paymentAmount || 0, paymentMethod: rsvpData.paymentMethod || null, paymentNotes: rsvpData.paymentNotes || null, paidAt: rsvpData.paidAt || null, event: eventData ? {
                     id: eventData.id,
                     title: eventData.title,
                     date: eventData.date,

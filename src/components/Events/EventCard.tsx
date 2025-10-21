@@ -228,6 +228,8 @@ const EventCard: React.FC<EventCardProps> = ({
   };
 
   const getPaymentStatusDisplay = () => {
+    console.log(`EventCard ${event.id}: paymentRequired=${paymentRequired}, isAuthenticated=${isAuthenticated}, userHasRSVP=${userHasRSVP}, userPaymentStatus=${userPaymentStatus}, paymentAmount=${paymentAmount}`);
+    
     if (!paymentRequired || !isAuthenticated) {
       return null;
     }

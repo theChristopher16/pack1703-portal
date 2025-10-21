@@ -748,6 +748,13 @@ export const getUserRSVPs = functions.https.onCall(async (data: any, context: fu
       rsvps.push({
         id: doc.id,
         ...rsvpData,
+        // Include payment status fields
+        paymentStatus: rsvpData.paymentStatus || 'not_required',
+        paymentRequired: rsvpData.paymentRequired || false,
+        paymentAmount: rsvpData.paymentAmount || 0,
+        paymentMethod: rsvpData.paymentMethod || null,
+        paymentNotes: rsvpData.paymentNotes || null,
+        paidAt: rsvpData.paidAt || null,
         event: eventData ? {
           id: eventData.id,
           title: eventData.title,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, Clock, Users, Tent, MountainSnow, Heart, Share2, Download, ExternalLink, Edit, Trash2, FileText, DollarSign } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Tent, MountainSnow, Heart, Share2, Download, ExternalLink, Edit, Trash2, FileText, DollarSign, CheckCircle, AlertCircle, Clock as ClockIcon } from 'lucide-react';
 import WeatherForecastComponent from '../Weather/WeatherForecast';
 import EventReportExport from './EventReportExport';
 import { useAdmin } from '../../contexts/AdminContext';
@@ -69,6 +69,8 @@ interface EventCardProps {
   rsvpCountLoading?: boolean;
   userHasRSVP?: boolean;
   paymentRequired?: boolean;
+  userPaymentStatus?: 'completed' | 'pending' | 'failed' | 'not_required' | null;
+  paymentAmount?: number;
 }
 
 const EventCard: React.FC<EventCardProps> = ({ 
@@ -86,7 +88,9 @@ const EventCard: React.FC<EventCardProps> = ({
   isDeleting = false,
   rsvpCountLoading = false,
   userHasRSVP = false,
-  paymentRequired = false
+  paymentRequired = false,
+  userPaymentStatus = null,
+  paymentAmount = 0
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -223,6 +227,57 @@ const EventCard: React.FC<EventCardProps> = ({
     return { color: 'bg-green-500', text: 'Plenty of Space' };
   };
 
+  const getPaymentStatusDisplay = () => {
+    if (!paymentRequired || !isAuthenticated) {
+      return null;
+    }
+
+    if (!userHasRSVP) {
+      return {
+        icon: <DollarSign className="w-4 h-4" />,
+        text: `$${(paymentAmount / 100).toFixed(2)} Required`,
+        color: 'text-yellow-600',
+        bgColor: 'bg-yellow-50',
+        borderColor: 'border-yellow-200'
+      };
+    }
+
+    switch (userPaymentStatus) {
+      case 'completed':
+        return {
+          icon: <CheckCircle className="w-4 h-4" />,
+          text: 'Payment Complete',
+          color: 'text-green-600',
+          bgColor: 'bg-green-50',
+          borderColor: 'border-green-200'
+        };
+      case 'pending':
+        return {
+          icon: <ClockIcon className="w-4 h-4" />,
+          text: 'Payment Pending',
+          color: 'text-orange-600',
+          bgColor: 'bg-orange-50',
+          borderColor: 'border-orange-200'
+        };
+      case 'failed':
+        return {
+          icon: <AlertCircle className="w-4 h-4" />,
+          text: 'Payment Failed',
+          color: 'text-red-600',
+          bgColor: 'bg-red-50',
+          borderColor: 'border-red-200'
+        };
+      default:
+        return {
+          icon: <DollarSign className="w-4 h-4" />,
+          text: 'Payment Required',
+          color: 'text-yellow-600',
+          bgColor: 'bg-yellow-50',
+          borderColor: 'border-yellow-200'
+        };
+    }
+  };
+
   const rsvpStatus = getRSVPStatus();
 
   return (
@@ -297,6 +352,24 @@ const EventCard: React.FC<EventCardProps> = ({
         <h3 className="text-xl font-display font-bold text-gray-900 mb-3 group-hover:text-gradient transition-all duration-300">
           {event.title}
         </h3>
+
+        {/* Payment Status Indicator */}
+        {(() => {
+          const paymentStatus = getPaymentStatusDisplay();
+          if (paymentStatus) {
+            return (
+              <div className={`flex items-center space-x-2 mb-3 px-3 py-2 rounded-lg border ${paymentStatus.bgColor} ${paymentStatus.borderColor}`}>
+                <div className={paymentStatus.color}>
+                  {paymentStatus.icon}
+                </div>
+                <span className={`text-sm font-medium ${paymentStatus.color}`}>
+                  {paymentStatus.text}
+                </span>
+              </div>
+            );
+          }
+          return null;
+        })()}
 
         {/* Date and Time */}
         <div className="flex items-center space-x-4 mb-4 text-sm text-gray-600">

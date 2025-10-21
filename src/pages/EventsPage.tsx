@@ -112,6 +112,9 @@ const EventsPage: React.FC = () => {
   const [userRSVPs, setUserRSVPs] = useState<{ [eventId: string]: boolean }>({});
   const [userRSVPsLoading, setUserRSVPsLoading] = useState(false);
   
+  // Cache for user's payment status for each event
+  const [userPaymentStatus, setUserPaymentStatus] = useState<{ [eventId: string]: 'completed' | 'pending' | 'failed' | 'not_required' | null }>({});
+  
   // Admin RSVP viewer state
   const [showRSVPViewer, setShowRSVPViewer] = useState(false);
   const [selectedEventForRSVP, setSelectedEventForRSVP] = useState<Event | null>(null);
@@ -436,11 +439,12 @@ const EventsPage: React.FC = () => {
     loadEvents();
   }, [fetchRSVPCounts]);
 
-  // Load user's RSVPs to check which events they've RSVP'd for
+  // Load user's RSVPs and payment status to check which events they've RSVP'd for and paid
   useEffect(() => {
     const loadUserRSVPs = async () => {
       if (!adminState.currentUser) {
         setUserRSVPs({});
+        setUserPaymentStatus({});
         return;
       }
 
@@ -450,16 +454,31 @@ const EventsPage: React.FC = () => {
         
         if (result.success && result.rsvps) {
           const rsvpMap: { [eventId: string]: boolean } = {};
+          const paymentMap: { [eventId: string]: 'completed' | 'pending' | 'failed' | 'not_required' | null } = {};
+          
           result.rsvps.forEach((rsvp: any) => {
             rsvpMap[rsvp.eventId] = true;
+            
+            // Set payment status based on RSVP data
+            if (rsvp.paymentStatus) {
+              paymentMap[rsvp.eventId] = rsvp.paymentStatus;
+            } else if (rsvp.paymentRequired) {
+              paymentMap[rsvp.eventId] = 'pending'; // RSVP'd but payment not completed
+            } else {
+              paymentMap[rsvp.eventId] = 'not_required';
+            }
           });
+          
           setUserRSVPs(rsvpMap);
+          setUserPaymentStatus(paymentMap);
         } else {
           setUserRSVPs({});
+          setUserPaymentStatus({});
         }
       } catch (error) {
         console.error('Error loading user RSVPs:', error);
         setUserRSVPs({});
+        setUserPaymentStatus({});
       } finally {
         setUserRSVPsLoading(false);
       }
@@ -570,6 +589,11 @@ const EventsPage: React.FC = () => {
   const handleViewRSVPs = (event: Event) => {
     setSelectedEventForRSVP(event);
     setShowRSVPViewer(true);
+  };
+
+  const handleViewPayments = (event: Event) => {
+    // Navigate to payment dashboard for this event
+    navigate(`/admin/payments/${event.id}`);
   };
 
   const handleCloseRSVPViewer = () => {
@@ -1148,10 +1172,14 @@ const EventsPage: React.FC = () => {
                           onAddToCalendar={handleAddToCalendar}
                           onShare={handleShare}
                           onViewRSVPs={isAdmin ? handleViewRSVPs : undefined}
+                          onViewPayments={isAdmin ? handleViewPayments : undefined}
                           isAdmin={isAdmin}
                           isDeleting={deletingEventId === event.id}
                           rsvpCountLoading={rsvpCountsLoading[event.id] || false}
                           userHasRSVP={userRSVPs[event.id] || false}
+                          paymentRequired={event.paymentRequired || false}
+                          userPaymentStatus={userPaymentStatus[event.id] || null}
+                          paymentAmount={event.paymentAmount || 0}
                         />
                       </div>
                     );

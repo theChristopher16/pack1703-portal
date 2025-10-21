@@ -393,10 +393,12 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
         const resultData = result.data as any;
         setRsvpResult(resultData);
         
-        // Determine status based on payment requirements
+        // For events requiring payment, we need to process payment BEFORE finalizing RSVP
         if (resultData.paymentRequired) {
+          // Don't finalize RSVP yet - require payment first
           setSubmitStatus('payment_required');
         } else {
+          // No payment required, RSVP is complete
           setSubmitStatus('success');
         }
         
@@ -1025,7 +1027,7 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-xs text-yellow-600">Payment due after RSVP</p>
+                <p className="text-xs text-yellow-600">Payment required to confirm RSVP</p>
               </div>
             </div>
           </div>
@@ -1087,9 +1089,10 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
         {submitStatus === 'payment_required' && rsvpResult && (
           <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-center">
             <AlertCircle className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-            <h4 className="text-lg font-semibold text-yellow-700 mb-2">RSVP Submitted - Payment Required</h4>
+            <h4 className="text-lg font-semibold text-yellow-700 mb-2">Payment Required to Complete RSVP</h4>
             <p className="text-yellow-600 mb-4">
-              Your RSVP has been submitted, but payment is required to complete your registration.
+              Your RSVP information has been saved, but payment is required to secure your spot.
+              <strong> Your registration is not confirmed until payment is completed.</strong>
             </p>
             
             <div className="bg-white p-4 rounded-lg border border-yellow-200 mb-4">
@@ -1106,7 +1109,7 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
-              Pay Now to Complete RSVP
+              Pay Now to Confirm RSVP
             </button>
           </div>
         )}

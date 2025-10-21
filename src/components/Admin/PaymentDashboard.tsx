@@ -32,7 +32,7 @@ const PaymentDashboard: React.FC<PaymentDashboardProps> = ({
   eventTitle,
   onClose
 }) => {
-  const { hasRole } = useAdmin();
+  const { state } = useAdmin();
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<PaymentStatusSummary | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<RSVPPaymentInfo[]>([]);
@@ -87,7 +87,11 @@ const PaymentDashboard: React.FC<PaymentDashboardProps> = ({
     return true;
   });
 
-  if (!hasRole(['admin', 'super_admin', 'den_leader'])) {
+  // Check if user is admin or den leader
+  const isAuthorized = state.currentUser?.isAdmin || 
+                       ['super-admin', 'content-admin', 'moderator'].includes(state.currentUser?.role || '');
+  
+  if (!isAuthorized) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg p-6 max-w-md">

@@ -6,7 +6,7 @@
 
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db } from '../firebase/config';
 import { PaymentInfo } from '../types/firestore';
 
 // Square Web SDK types

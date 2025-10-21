@@ -538,6 +538,98 @@ const EventsPage: React.FC = () => {
     navigate(`/events/${eventId}?tab=rsvp`);
   };
 
+  const handleCancelRSVP = async (eventId: string) => {
+    try {
+      console.log('❌ EventsPage: Cancel RSVP button clicked for event ID:', eventId);
+      
+      // Find the user's RSVP for this event
+      const userRSVPResult = await firestoreService.getUserRSVPs();
+      if (!userRSVPResult.success || !userRSVPResult.rsvps) {
+        addNotification('error', 'Error', 'Could not find your RSVP');
+        return;
+      }
+
+      const userRSVP = userRSVPResult.rsvps.find((rsvp: any) => rsvp.eventId === eventId);
+      if (!userRSVP) {
+        addNotification('error', 'Error', 'Could not find your RSVP for this event');
+        return;
+      }
+
+      // Confirm cancellation
+      const confirmed = window.confirm(
+        `Are you sure you want to cancel your RSVP for "${userRSVP.event?.title || 'this event'}"?\n\nThis action cannot be undone.`
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+
+      // Delete the RSVP
+      const result = await firestoreService.deleteRSVP(userRSVP.id);
+      
+      if (result.success) {
+        addNotification('success', 'Success', 'RSVP cancelled successfully');
+        
+        // Refresh the user's RSVP data
+        const loadUserRSVPs = async () => {
+          if (!adminState.currentUser) {
+            setUserRSVPs({});
+            setUserPaymentStatus({});
+            return;
+          }
+
+          try {
+            setUserRSVPsLoading(true);
+            const result = await firestoreService.getUserRSVPs();
+
+            if (result.success && result.rsvps) {
+              const rsvpMap: { [eventId: string]: boolean } = {};
+              const paymentMap: { [eventId: string]: 'completed' | 'pending' | 'failed' | 'not_required' | null } = {};
+
+              console.log('User RSVPs loaded:', result.rsvps);
+
+              result.rsvps.forEach((rsvp: any) => {
+                rsvpMap[rsvp.eventId] = true;
+
+                // Set payment status based on RSVP data
+                if (rsvp.paymentStatus) {
+                  paymentMap[rsvp.eventId] = rsvp.paymentStatus;
+                  console.log(`Event ${rsvp.eventId}: Payment status = ${rsvp.paymentStatus}`);
+                } else if (rsvp.paymentRequired) {
+                  paymentMap[rsvp.eventId] = 'pending'; // RSVP'd but payment not completed
+                  console.log(`Event ${rsvp.eventId}: Payment required but no status, setting to pending`);
+                } else {
+                  paymentMap[rsvp.eventId] = 'not_required';
+                  console.log(`Event ${rsvp.eventId}: No payment required`);
+                }
+              });
+
+              setUserRSVPs(rsvpMap);
+              setUserPaymentStatus(paymentMap);
+              console.log('Payment status map:', paymentMap);
+            } else {
+              setUserRSVPs({});
+              setUserPaymentStatus({});
+            }
+          } catch (error) {
+            console.error('Error loading user RSVPs:', error);
+            setUserRSVPs({});
+            setUserPaymentStatus({});
+          } finally {
+            setUserRSVPsLoading(false);
+          }
+        };
+
+        loadUserRSVPs();
+      } else {
+        addNotification('error', 'Error', result.message || 'Failed to cancel RSVP');
+      }
+    } catch (error) {
+      console.error('Error cancelling RSVP:', error);
+      addNotification('error', 'Error', 'Failed to cancel RSVP');
+    }
+  };
+
   const handleViewDetails = (eventId: string) => {
     console.log('👁️ EventsPage: View Details button clicked for event ID:', eventId);
     console.log('👁️ EventsPage: Current URL:', window.location.href);
@@ -1174,6 +1266,7 @@ const EventsPage: React.FC = () => {
                           event={normalizedEvent}
                           onRSVP={handleRSVP}
                           onEditRSVP={handleEditRSVP}
+                          onCancelRSVP={handleCancelRSVP}
                           onViewDetails={handleViewDetails}
                           onAddToCalendar={handleAddToCalendar}
                           onShare={handleShare}

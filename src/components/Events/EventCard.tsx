@@ -57,6 +57,7 @@ interface EventCardProps {
   event: Event;
   onRSVP: (eventId: string) => void;
   onEditRSVP?: (eventId: string) => void;
+  onCancelRSVP?: (eventId: string) => void;
   onViewDetails: (eventId: string) => void;
   onAddToCalendar: (event: Event) => void;
   onShare: (event: Event) => void;
@@ -77,6 +78,7 @@ const EventCard: React.FC<EventCardProps> = ({
   event, 
   onRSVP, 
   onEditRSVP,
+  onCancelRSVP,
   onViewDetails, 
   onAddToCalendar,
   onShare,
@@ -590,25 +592,43 @@ const EventCard: React.FC<EventCardProps> = ({
       <div className="px-6 pb-6">
         <div className="flex flex-wrap gap-3">
           {/* Primary Actions */}
-          <button
-            onClick={() => userHasRSVP && onEditRSVP ? onEditRSVP(event.id) : onRSVP(event.id)}
-            className={`flex-1 px-4 py-2 font-medium rounded-xl transition-all duration-200 transform hover:scale-105 ${
-              isAuthenticated 
-                ? userHasRSVP
-                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 shadow-glow-green/50'
-                  : event.isElective && event.electiveOptions?.casualAttendance
+          {userHasRSVP ? (
+            // User has RSVP'd - show Edit and Cancel options
+            <>
+              <button
+                onClick={() => onEditRSVP ? onEditRSVP(event.id) : onRSVP(event.id)}
+                className="flex-1 px-4 py-2 font-medium rounded-xl transition-all duration-200 transform hover:scale-105 bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 shadow-glow-green/50"
+              >
+                Edit RSVP
+              </button>
+              
+              {onCancelRSVP && (
+                <button
+                  onClick={() => onCancelRSVP(event.id)}
+                  className="px-4 py-2 font-medium rounded-xl transition-all duration-200 transform hover:scale-105 bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-glow-red/50"
+                >
+                  Cancel RSVP
+                </button>
+              )}
+            </>
+          ) : (
+            // User hasn't RSVP'd - show RSVP button
+            <button
+              onClick={() => onRSVP(event.id)}
+              className={`flex-1 px-4 py-2 font-medium rounded-xl transition-all duration-200 transform hover:scale-105 ${
+                isAuthenticated 
+                  ? event.isElective && event.electiveOptions?.casualAttendance
                     ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white hover:from-indigo-600 hover:to-indigo-700 shadow-glow-indigo/50'
                     : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 shadow-glow-primary/50'
-                : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-gray-500 hover:to-gray-600 shadow-glow-gray/50'
-            }`}
-          >
-            {isAuthenticated 
-              ? userHasRSVP 
-                ? 'Edit RSVP'
-                : (event.isElective && event.electiveOptions?.casualAttendance ? 'Let Us Know You\'re Coming!' : 'RSVP Now')
-              : 'Login to RSVP'
-            }
-          </button>
+                  : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-gray-500 hover:to-gray-600 shadow-glow-gray/50'
+              }`}
+            >
+              {isAuthenticated 
+                ? (event.isElective && event.electiveOptions?.casualAttendance ? 'Let Us Know You\'re Coming!' : 'RSVP Now')
+                : 'Login to RSVP'
+              }
+            </button>
+          )}
           
           <button
             onClick={() => {

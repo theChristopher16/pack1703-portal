@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.squareWebhook = exports.refundTenantPayment = exports.createTenantPayment = exports.squareOAuthCallback = exports.squareConnectStart = exports.uploadSensorData = exports.uploadCameraImage = exports.fixUSSStewartLocation = exports.updateRSVP = exports.resendPasswordSetupLink = exports.completePasswordSetup = exports.verifyPasswordSetupToken = exports.resetPasswordWithToken = exports.verifyPasswordResetToken = exports.sendPasswordReset = exports.publicICSFeed = exports.icsFeed = exports.sendSMS = exports.sendAnnouncementSMS = exports.sendAnnouncementEmails = exports.createAnnouncementWithEmails = exports.createTestAnnouncement = exports.helloWorld = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.getUserRSVPs = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
-exports.completeRSVPPayment = exports.createRSVPPayment = void 0;
+exports.completeRSVPPayment = exports.adminUpdatePaymentStatus = exports.createRSVPPayment = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 const squareup_1 = require("squareup");
@@ -3905,6 +3905,74 @@ exports.createRSVPPayment = functions.https.onCall(async (data, context) => {
     }
 });
 // Complete RSVP Payment (called after successful Square payment)
+// Admin function to update payment status manually
+exports.adminUpdatePaymentStatus = functions.https.onCall(async (data, context) => {
+    var _a;
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        // Check if user is admin
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        const userData = userDoc.data();
+        const userRole = (userData === null || userData === void 0 ? void 0 : userData.role) || ((_a = context.auth.token) === null || _a === void 0 ? void 0 : _a.role) || '';
+        if (!['admin', 'super_admin', 'super-admin', 'root'].includes(userRole)) {
+            throw new functions.https.HttpsError('permission-denied', 'Admin access required');
+        }
+        // Validate required fields
+        if (!data.eventId || !data.userEmail || !data.paymentStatus) {
+            throw new functions.https.HttpsError('invalid-argument', 'Event ID, user email, and payment status are required');
+        }
+        // Find the RSVP
+        const rsvpQuery = await db.collection('rsvps')
+            .where('eventId', '==', data.eventId)
+            .where('userEmail', '==', data.userEmail)
+            .get();
+        if (rsvpQuery.empty) {
+            throw new functions.https.HttpsError('not-found', 'RSVP not found');
+        }
+        const rsvpDoc = rsvpQuery.docs[0];
+        const rsvpData = rsvpDoc.data();
+        // Update the RSVP payment status
+        await rsvpDoc.ref.update({
+            paymentStatus: data.paymentStatus,
+            paymentMethod: data.paymentMethod || 'manual',
+            paymentNotes: data.paymentNotes || 'Updated by admin',
+            paidAt: data.paymentStatus === 'completed' ? getTimestamp() : null,
+            updatedAt: getTimestamp()
+        });
+        // If payment is completed, also create a payment record
+        if (data.paymentStatus === 'completed') {
+            await db.collection('payments').add({
+                eventId: data.eventId,
+                rsvpId: rsvpDoc.id,
+                userId: rsvpData.userId,
+                amount: rsvpData.paymentAmount || 6000,
+                currency: 'USD',
+                status: 'completed',
+                description: `Manual payment update for ${rsvpData.familyName || data.userEmail}`,
+                paymentMethod: data.paymentMethod || 'manual',
+                notes: data.paymentNotes || 'Updated by admin',
+                createdAt: getTimestamp(),
+                updatedAt: getTimestamp(),
+                processedAt: getTimestamp()
+            });
+        }
+        return {
+            success: true,
+            message: `Payment status updated to ${data.paymentStatus} for ${rsvpData.familyName || data.userEmail}`,
+            rsvpId: rsvpDoc.id
+        };
+    }
+    catch (error) {
+        console.error('Error updating payment status:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to update payment status');
+    }
+});
 exports.completeRSVPPayment = functions.https.onCall(async (data, context) => {
     try {
         // Check authentication

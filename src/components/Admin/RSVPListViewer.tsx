@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Users, X, Download, RefreshCw, AlertCircle, CheckCircle, Home, Mail, Phone, Clipboard, User, Trash2 } from 'lucide-react';
+import { Users, X, Download, RefreshCw, AlertCircle, CheckCircle, Home, Mail, Phone, Clipboard, User, Trash2, DollarSign, Clock } from 'lucide-react';
 import { firestoreService } from '../../services/firestore';
 import { useAdmin } from '../../contexts/AdminContext';
+import { paymentService } from '../../services/paymentService';
 
 interface RSVPData {
   id: string;
@@ -26,6 +27,11 @@ interface RSVPData {
   paperworkCompletedAt?: any;
   paperworkApprovedBy?: string;
   paperworkApprovedByName?: string;
+  paymentRequired?: boolean;
+  paymentStatus?: 'not_required' | 'pending' | 'completed' | 'failed';
+  paymentAmount?: number;
+  paymentMethod?: string;
+  paidAt?: any;
 }
 
 interface RSVPListViewerProps {
@@ -145,13 +151,16 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
 
   const exportRSVPs = () => {
     const csvData = [
-      ['Family Name', 'Email', 'Phone', 'Attendee Count', 'Attendees', 'Dietary Restrictions', 'Special Needs', 'Notes', 'Submitted At'],
+      ['Family Name', 'Email', 'Phone', 'Attendee Count', 'Attendees', 'Payment Status', 'Payment Amount', 'Payment Method', 'Dietary Restrictions', 'Special Needs', 'Notes', 'Submitted At'],
       ...rsvps.map(rsvp => [
         rsvp.familyName,
         rsvp.email,
         rsvp.phone || '',
         rsvp.attendees.length.toString(),
         rsvp.attendees.map(a => `${a.name} (${a.age}, ${a.den || 'No Den'})`).join('; '),
+        rsvp.paymentStatus || 'N/A',
+        rsvp.paymentAmount ? `$${(rsvp.paymentAmount / 100).toFixed(2)}` : 'N/A',
+        rsvp.paymentMethod || 'N/A',
         rsvp.dietaryRestrictions || '',
         rsvp.specialNeeds || '',
         rsvp.notes || '',
@@ -321,7 +330,7 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
                 <div key={rsvp.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                   <div className="flex items-start justify-between mb-3">
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <h3 className="text-base font-semibold text-gray-900 truncate">{rsvp.familyName}</h3>
                         {rsvp.paperworkComplete && (
                           <div 
@@ -331,6 +340,26 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
                             <CheckCircle className="h-3 w-3" />
                             <span className="hidden sm:inline">Paperwork Complete</span>
                             <span className="sm:hidden">✓</span>
+                          </div>
+                        )}
+                        {rsvp.paymentRequired && rsvp.paymentStatus === 'completed' && (
+                          <div 
+                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium flex-shrink-0"
+                            title={`Paid ${rsvp.paymentAmount ? paymentService.formatCurrency(rsvp.paymentAmount) : ''} via ${rsvp.paymentMethod || 'unknown'}`}
+                          >
+                            <DollarSign className="h-3 w-3" />
+                            <span className="hidden sm:inline">Paid</span>
+                            <span className="sm:hidden">$</span>
+                          </div>
+                        )}
+                        {rsvp.paymentRequired && rsvp.paymentStatus === 'pending' && (
+                          <div 
+                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-medium flex-shrink-0"
+                            title={`Payment pending: ${rsvp.paymentAmount ? paymentService.formatCurrency(rsvp.paymentAmount) : ''}`}
+                          >
+                            <Clock className="h-3 w-3" />
+                            <span className="hidden sm:inline">Payment Pending</span>
+                            <span className="sm:hidden">⏱</span>
                           </div>
                         )}
                       </div>

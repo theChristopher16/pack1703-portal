@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, Clock, Users, Tent, MountainSnow, Heart, Share2, Download, ExternalLink, Edit, Trash2, FileText } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Tent, MountainSnow, Heart, Share2, Download, ExternalLink, Edit, Trash2, FileText, DollarSign } from 'lucide-react';
 import WeatherForecastComponent from '../Weather/WeatherForecast';
 import EventReportExport from './EventReportExport';
 import { useAdmin } from '../../contexts/AdminContext';
@@ -61,12 +61,14 @@ interface EventCardProps {
   onAddToCalendar: (event: Event) => void;
   onShare: (event: Event) => void;
   onViewRSVPs?: (event: Event) => void;
+  onViewPayments?: (event: Event) => void;
   onDelete?: (eventId: string) => void;
   isAuthenticated?: boolean;
   isAdmin?: boolean;
   isDeleting?: boolean;
   rsvpCountLoading?: boolean;
   userHasRSVP?: boolean;
+  paymentRequired?: boolean;
 }
 
 const EventCard: React.FC<EventCardProps> = ({ 
@@ -74,15 +76,17 @@ const EventCard: React.FC<EventCardProps> = ({
   onRSVP, 
   onEditRSVP,
   onViewDetails, 
-  onAddToCalendar, 
+  onAddToCalendar,
   onShare,
-  onViewRSVPs, 
+  onViewRSVPs,
+  onViewPayments,
   onDelete,
   isAuthenticated = true, 
   isAdmin = false,
   isDeleting = false,
   rsvpCountLoading = false,
-  userHasRSVP = false
+  userHasRSVP = false,
+  paymentRequired = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -609,6 +613,19 @@ const EventCard: React.FC<EventCardProps> = ({
                   )}
                   <span className="hidden sm:inline">{loadingRSVPs ? 'Loading...' : 'Export Report'}</span>
                   <span className="sm:hidden">{loadingRSVPs ? 'Loading' : 'Export'}</span>
+                </button>
+              )}
+
+              {/* Admin Payment Dashboard Button */}
+              {isAdmin && paymentRequired && onViewPayments && (
+                <button
+                  onClick={() => onViewPayments(event)}
+                  className="flex items-center justify-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-green-600 hover:text-green-700 transition-colors duration-200 p-2 rounded-md hover:bg-green-50"
+                  title="View Payments (Admin Only)"
+                >
+                  <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Payments</span>
+                  <span className="sm:hidden">$</span>
                 </button>
               )}
 

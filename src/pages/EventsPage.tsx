@@ -141,6 +141,7 @@ const EventsPage: React.FC = () => {
     isOvernight: null,
     requiresPermission: null
   });
+  const [showMyDenMeetingsOnly, setShowMyDenMeetingsOnly] = useState(false);
   
   // Check if user has admin permissions (only for actual admins, not parents)
   const isAdmin = hasRole('super-admin') || 
@@ -255,6 +256,16 @@ const EventsPage: React.FC = () => {
         event.denTags.some(tag => filterData.denTags.includes(tag))
       );
     }
+
+    // Apply My Den Meetings filter
+    if (showMyDenMeetingsOnly) {
+      const userDens = (adminState.currentUser?.profile as any)?.dens || ((adminState.currentUser?.profile as any)?.den ? [(adminState.currentUser?.profile as any)?.den] : []);
+      if (userDens.length > 0) {
+        filtered = filtered.filter(event => event.category === 'meeting' && event.denTags.some(tag => userDens.includes(tag)));
+      } else {
+        filtered = filtered.filter(() => false);
+      }
+    }
     
     // Apply date range filter
     if (filterData.dateRange.start) {
@@ -305,7 +316,7 @@ const EventsPage: React.FC = () => {
     }
     
     return filtered;
-  }, []);
+  }, [showMyDenMeetingsOnly, adminState.currentUser]);
 
   // Memoized pagination
   const paginatedEvents = useMemo(() => {
@@ -1140,6 +1151,18 @@ const EventsPage: React.FC = () => {
               <Filter className="w-4 h-4 inline mr-2" />
               Filters
             </button>
+
+          {/* My Den Meetings Toggle */}
+          <button
+            onClick={() => setShowMyDenMeetingsOnly(!showMyDenMeetingsOnly)}
+            className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
+              showMyDenMeetingsOnly
+                ? 'bg-yellow-500 text-white'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            My Den Meetings
+          </button>
 
             {/* Admin Controls */}
             {isAdmin && (

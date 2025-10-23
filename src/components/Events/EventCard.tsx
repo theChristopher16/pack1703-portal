@@ -143,6 +143,7 @@ const EventCard: React.FC<EventCardProps> = ({
       case 'camping': return <Tent className="w-4 h-4" />;
       case 'overnight': return <MountainSnow className="w-4 h-4" />;
       case 'service': return <Heart className="w-4 h-4" />;
+      case 'meeting': return <Users className="w-4 h-4" />;
       case 'elective': return <Calendar className="w-4 h-4" />;
       default: return <Users className="w-4 h-4" />;
     }
@@ -153,6 +154,7 @@ const EventCard: React.FC<EventCardProps> = ({
       case 'camping': return 'bg-orange-100 text-orange-700 border-orange-200';
       case 'overnight': return 'bg-purple-100 text-purple-700 border-purple-200';
       case 'service': return 'bg-green-100 text-green-700 border-green-200';
+      case 'meeting': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       case 'den': return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'elective': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
       default: return 'bg-primary-100 text-primary-700 border-primary-200';
@@ -162,6 +164,7 @@ const EventCard: React.FC<EventCardProps> = ({
   const getCategoryLabel = (category: string) => {
     switch (category) {
       case 'pack-wide': return 'Pack-Wide';
+      case 'meeting': return 'Meeting';
       case 'den': return 'Den Event';
       case 'camping': return 'Camping';
       case 'overnight': return 'Overnight';
@@ -307,6 +310,11 @@ const EventCard: React.FC<EventCardProps> = ({
             <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getCategoryColor(event.category)}`}>
               {getCategoryLabel(event.category)}
             </span>
+            {event.category === 'meeting' && event.denTags.length > 0 && (
+              <span className="px-2 py-1 bg-yellow-50 text-yellow-800 text-xs rounded-full border border-yellow-300">
+                {event.denTags.join(' & ')} Den Meeting
+              </span>
+            )}
             {event.isOvernight && (
               <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full border border-purple-200">
                 Overnight

@@ -110,6 +110,14 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     description: 'Pack resources and documents'
   },
   {
+    name: 'Dues',
+    href: '/dues',
+    icon: CreditCard,
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    category: 'public',
+    description: 'National and Pack dues information'
+  },
+  {
     name: 'Feedback',
     href: '/feedback',
     icon: MessageSquare,

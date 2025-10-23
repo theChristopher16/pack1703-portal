@@ -25,6 +25,7 @@ interface Event {
   capacity?: number | null; // Primary field from Firestore (matches Firestore interface)
   maxParticipants?: number; // Legacy field for compatibility
   currentParticipants?: number;
+  rsvpClosed?: boolean; // Whether RSVPs are closed
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -94,6 +95,30 @@ const AdminEvents: React.FC = () => {
         setEvents(events.filter(e => e.id !== eventId));
       } catch (error) {
         console.error('Error deleting event:', error);
+      }
+    }
+  };
+
+  const handleCloseRSVP = async (eventId: string, currentlyClosed: boolean) => {
+    const action = currentlyClosed ? 'reopen' : 'close';
+    const confirmMessage = currentlyClosed 
+      ? 'Are you sure you want to reopen RSVPs for this event?' 
+      : 'Are you sure you want to close RSVPs for this event? No one will be able to RSVP.';
+    
+    if (window.confirm(confirmMessage)) {
+      try {
+        const result = await adminService.closeRSVP(eventId, !currentlyClosed);
+        if (result.success) {
+          // Refresh events list to show updated status
+          await fetchEvents();
+          addNotification('success', 'RSVP Status Updated', 
+            currentlyClosed ? 'RSVPs have been reopened for this event.' : 'RSVPs have been closed for this event.');
+        } else {
+          addNotification('error', 'Failed to Update', result.error || 'Failed to update RSVP status.');
+        }
+      } catch (error) {
+        console.error('Error closing/opening RSVPs:', error);
+        addNotification('error', 'Error', 'Failed to update RSVP status. Please try again.');
       }
     }
   };
@@ -353,21 +378,38 @@ const AdminEvents: React.FC = () => {
                     <span className="text-gray-600">🔒</span>
                     <span className="text-gray-700 capitalize">{event.visibility}</span>
                   </div>
+                  {event.rsvpClosed && (
+                    <div className="flex items-center gap-3 p-2 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <span className="text-yellow-600">🚫</span>
+                      <span className="text-yellow-700 font-medium">RSVPs Closed</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Event Actions */}
               <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200">
-                <div className="flex gap-3">
+                <div className="flex gap-3 flex-wrap">
                   <button
                     onClick={() => handleEditEvent(event)}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-soft"
+                    className="flex-1 min-w-[100px] bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-soft"
                   >
                     ✏️ Edit
                   </button>
                   <button
+                    onClick={() => handleCloseRSVP(event.id, event.rsvpClosed || false)}
+                    className={`flex-1 min-w-[100px] ${
+                      event.rsvpClosed 
+                        ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800' 
+                        : 'bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800'
+                    } text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-soft`}
+                    title={event.rsvpClosed ? 'Reopen RSVPs' : 'Close RSVPs'}
+                  >
+                    {event.rsvpClosed ? '✅ Reopen' : '🚫 Close'}
+                  </button>
+                  <button
                     onClick={() => handleDeleteEvent(event.id)}
-                    className="flex-1 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-soft"
+                    className="flex-1 min-w-[100px] bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-soft"
                   >
                     🗑️ Delete
                   </button>

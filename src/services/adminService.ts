@@ -28,6 +28,7 @@ export const adminFunctions = {
   createEvent: httpsCallable(functions, 'adminCreateEvent'),
   updateEvent: httpsCallable(functions, 'adminUpdateEvent'),
   deleteEvent: httpsCallable(functions, 'adminDeleteEvent'),
+  closeRSVP: httpsCallable(functions, 'adminCloseRSVP'),
   
   // User management
   updateUser: httpsCallable(functions, 'adminUpdateUser'),
@@ -365,6 +366,29 @@ export class AdminService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await this.logAction('delete', 'event', eventId, 'Event', { reason }, false, errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  async closeRSVP(eventId: string, closed: boolean = true): Promise<{ success: boolean; error?: string; previousState?: boolean; newState?: boolean }> {
+    try {
+      const result = await adminFunctions.closeRSVP({ eventId, closed });
+      const data = result.data as any;
+
+      if (data.success) {
+        await this.logAction('update', 'event', eventId, 'Event RSVP Status', { rsvpClosed: closed });
+        return { 
+          success: true, 
+          previousState: data.previousState,
+          newState: data.newState 
+        };
+      } else {
+        await this.logAction('update', 'event', eventId, 'Event RSVP Status', { rsvpClosed: closed }, false, data.error);
+        return { success: false, error: data.error };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      await this.logAction('update', 'event', eventId, 'Event RSVP Status', { rsvpClosed: closed }, false, errorMessage);
       return { success: false, error: errorMessage };
     }
   }

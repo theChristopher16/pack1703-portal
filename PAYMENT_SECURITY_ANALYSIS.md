@@ -174,3 +174,6 @@ The frontend only handles:
 - Calling your secure Cloud Functions
 
 This is exactly how a secure payment system should be architected! 🛡️
+
+
+

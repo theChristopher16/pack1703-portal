@@ -381,6 +381,7 @@ If you didn't expect this invitation, please ignore this email.
     const priorityColor = announcement.priority === 'high' ? '#ff4444' : 
                          announcement.priority === 'medium' ? '#ff8800' : '#4CAF50';
     const priorityText = announcement.priority?.toUpperCase() || 'GENERAL';
+    const formattedContent = this.formatAnnouncementContent(announcement.content || announcement.body || '');
     
     return `
       <!DOCTYPE html>
@@ -410,7 +411,7 @@ If you didn't expect this invitation, please ignore this email.
             <div class="priority-badge">${priorityText}</div>
             
             <div style="margin: 20px 0; padding: 15px; background: white; border-radius: 8px; border-left: 4px solid ${priorityColor};">
-              ${announcement.content.replace(/\n/g, '<br>')}
+              ${formattedContent}
             </div>
             
             ${announcement.category ? `<p><strong>Category:</strong> ${announcement.category}</p>` : ''}
@@ -429,6 +430,49 @@ If you didn't expect this invitation, please ignore this email.
       </body>
       </html>
     `;
+  }
+
+  private formatAnnouncementContent(content: string): string {
+    if (!content) return '';
+    
+    // Convert line breaks to HTML
+    let formatted = content.replace(/\n/g, '<br>');
+    
+    // Convert bullet points (• or - or *) to proper HTML lists
+    // Handle different bullet styles
+    formatted = formatted.replace(/(?:^|<br>)(\s*)(?:•|[-*])\s+(.+?)(?=<br>|$)/gm, '<br>$1• $2');
+    
+    // Convert multiple consecutive bullet points into proper lists
+    const lines = formatted.split('<br>');
+    const processedLines: string[] = [];
+    let inList = false;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const isBulletPoint = /^\s*•\s+/.test(line);
+      
+      if (isBulletPoint) {
+        if (!inList) {
+          processedLines.push('<ul style="margin: 8px 0; padding-left: 20px;">');
+          inList = true;
+        }
+        const listItem = line.replace(/^\s*•\s+/, '').trim();
+        processedLines.push(`<li style="margin: 4px 0;">${listItem}</li>`);
+      } else {
+        if (inList) {
+          processedLines.push('</ul>');
+          inList = false;
+        }
+        processedLines.push(line);
+      }
+    }
+    
+    // Close any remaining list
+    if (inList) {
+      processedLines.push('</ul>');
+    }
+    
+    return processedLines.join('<br>');
   }
 
   private generateAnnouncementEmailText(announcement: any): string {

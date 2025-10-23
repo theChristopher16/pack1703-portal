@@ -91,6 +91,14 @@ class GoogleCloudBillingService {
 
   /**
    * Get cost data for a specific period
+   * 
+   * TODO: Implement Google Cloud Billing API integration
+   * This requires:
+   * 1. Setting up Cloud Billing API access in GCP Console
+   * 2. Configuring service account with billing viewer role
+   * 3. Implementing API calls to cloudbilling.googleapis.com
+   * 
+   * See: https://cloud.google.com/billing/docs/how-to/billing-api
    */
   async getCostData(
     billingAccountId: string,
@@ -101,127 +109,21 @@ class GoogleCloudBillingService {
       throw new Error('Access denied: Admin privileges required');
     }
 
-    try {
-      // In a real implementation, you would call the Google Cloud Billing API
-      // For now, return estimated data based on actual usage patterns
-      const mockData: BillingData = {
-        billingAccountId,
-        totalCost: 241.00, // Actual monthly cost from Google Cloud Console
-        currency: 'USD',
-        period: {
-          startDate,
-          endDate
-        },
-        services: [
-          {
-            serviceId: 'firestore.googleapis.com',
-            serviceName: 'Cloud Firestore',
-            cost: 120.50,
-            currency: 'USD',
-            usage: {
-              amount: 150000,
-              unit: 'reads'
-            }
-          },
-          {
-            serviceId: 'cloudfunctions.googleapis.com',
-            serviceName: 'Cloud Functions',
-            cost: 45.20,
-            currency: 'USD',
-            usage: {
-              amount: 50000,
-              unit: 'invocations'
-            }
-          },
-          {
-            serviceId: 'storage.googleapis.com',
-            serviceName: 'Cloud Storage',
-            cost: 25.15,
-            currency: 'USD',
-            usage: {
-              amount: 100,
-              unit: 'GB'
-            }
-          },
-          {
-            serviceId: 'firebasehosting.googleapis.com',
-            serviceName: 'Firebase Hosting',
-            cost: 15.80,
-            currency: 'USD',
-            usage: {
-              amount: 50,
-              unit: 'GB'
-            }
-          },
-          {
-            serviceId: 'identitytoolkit.googleapis.com',
-            serviceName: 'Firebase Auth',
-            cost: 5.00,
-            currency: 'USD',
-            usage: {
-              amount: 10000,
-              unit: 'users'
-            }
-          },
-          {
-            serviceId: 'secretmanager.googleapis.com',
-            serviceName: 'Secret Manager',
-            cost: 8.60,
-            currency: 'USD',
-            usage: {
-              amount: 10,
-              unit: 'secrets'
-            }
-          },
-          {
-            serviceId: 'monitoring.googleapis.com',
-            serviceName: 'Cloud Monitoring',
-            cost: 12.20,
-            currency: 'USD',
-            usage: {
-              amount: 100,
-              unit: 'metrics'
-            }
-          },
-          {
-            serviceId: 'logging.googleapis.com',
-            serviceName: 'Cloud Logging',
-            cost: 8.00,
-            currency: 'USD',
-            usage: {
-              amount: 2,
-              unit: 'GB'
-            }
-          },
-          {
-            serviceId: 'cloudscheduler.googleapis.com',
-            serviceName: 'Cloud Scheduler',
-            cost: 0.50,
-            currency: 'USD',
-            usage: {
-              amount: 1,
-              unit: 'jobs'
-            }
-          },
-          {
-            serviceId: 'pubsub.googleapis.com',
-            serviceName: 'Cloud Pub/Sub',
-            cost: 0.05,
-            currency: 'USD',
-            usage: {
-              amount: 1000000,
-              unit: 'messages'
-            }
-          }
-        ],
-        lastUpdated: new Date()
-      };
-
-      return mockData;
-    } catch (error) {
-      console.error('Error fetching cost data:', error);
-      throw new Error('Failed to fetch cost data');
-    }
+    // Google Cloud Billing API not yet integrated
+    // Return empty data structure - no fake/mock data
+    console.warn('Google Cloud Billing API not implemented - returning empty billing data');
+    
+    return {
+      billingAccountId,
+      totalCost: 0,
+      currency: 'USD',
+      period: {
+        startDate,
+        endDate
+      },
+      services: [],
+      lastUpdated: new Date()
+    };
   }
 
   /**

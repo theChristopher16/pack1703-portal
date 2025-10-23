@@ -7,6 +7,7 @@ import { AnnouncementCard, AnnouncementFeed } from '../components/Announcements'
 import { Announcement } from '../types/firestore';
 import { DenService } from '../services/denService';
 import { DEN_INFO, ALL_DENS, INDIVIDUAL_DENS, DEN_TYPES } from '../constants/dens';
+import { formatAnnouncementContent } from '../utils/announcementFormatter';
 
 interface AdminAnnouncement {
   id: string;
@@ -399,9 +400,13 @@ const UnifiedAnnouncementsPage: React.FC = () => {
                           {announcement.category}
                         </span>
                       </div>
-                      <p className="text-gray-600 mb-2">
-                        {(announcement as any).content || announcement.body}
-                      </p>
+                      <div 
+                        className="text-gray-600 mb-2"
+                        style={{ whiteSpace: 'pre-wrap' }}
+                        dangerouslySetInnerHTML={{ 
+                          __html: formatAnnouncementContent((announcement as any).content || announcement.body).html 
+                        }}
+                      />
                       <div className="flex items-center text-sm text-gray-500">
                         <Clock className="h-4 w-4 mr-1" />
                         <span>Created {(announcement.createdAt as any).toDate ? (announcement.createdAt as any).toDate().toLocaleDateString() : new Date(announcement.createdAt as any).toLocaleDateString()}</span>

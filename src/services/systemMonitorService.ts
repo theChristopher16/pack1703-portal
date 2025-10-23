@@ -346,30 +346,34 @@ class SystemMonitorService {
   }
 
   private getDefaultMetrics(): SystemMetrics {
+    // Return minimal default values when real data is unavailable
+    // All user/content statistics are zero - no fake data
+    console.warn('Using default metrics - real system data unavailable');
+    
     return {
-      activeUsers: 105,
-      totalUsers: 150,
-      newUsersThisMonth: 15,
-      totalEvents: 24,
-      totalLocations: 12,
-      totalAnnouncements: 8,
-      totalMessages: 1250,
+      activeUsers: 0,
+      totalUsers: 0,
+      newUsersThisMonth: 0,
+      totalEvents: 0,
+      totalLocations: 0,
+      totalAnnouncements: 0,
+      totalMessages: 0,
       totalRSVPs: 0,
-      messagesThisMonth: 180,
+      messagesThisMonth: 0,
       eventsThisMonth: 0,
       rsvpsThisMonth: 0,
-      storageUsed: 50,
-      storageLimit: 5120,
-      storagePercentage: 0.98,
-      averageResponseTime: 45,
-      uptimePercentage: 99.9,
-      errorRate: 0.1,
-      estimatedMonthlyCost: 12.50,
+      storageUsed: 0,
+      storageLimit: 5120, // Firebase default free tier limit in MB
+      storagePercentage: 0,
+      averageResponseTime: 0,
+      uptimePercentage: 100,
+      errorRate: 0,
+      estimatedMonthlyCost: 0,
       costBreakdown: {
-        firestore: 8.20,
-        storage: 1.30,
-        hosting: 0.26,
-        functions: 2.74
+        firestore: 0,
+        storage: 0,
+        hosting: 0,
+        functions: 0
       },
       firebaseStatus: 'operational',
       lastUpdated: new Date()

@@ -523,6 +523,8 @@ This email was sent because your account was approved for the Pack 1703 Portal.
   }
 
   private generateAnnouncementEmailHTML(announcement: any): string {
+    const formattedContent = this.formatAnnouncementContent(announcement.content || announcement.body || '');
+    
     return `
 <!DOCTYPE html>
 <html>
@@ -553,7 +555,7 @@ This email was sent because your account was approved for the Pack 1703 Portal.
                             ${announcement.title}
                         </h2>
                         <div style="font:400 16px/1.6 Inter,system-ui,sans-serif;color:#4C6F7A;margin:20px 0;">
-                            ${announcement.content || announcement.body || ''}
+                            ${formattedContent}
                         </div>
                         <div style="margin:32px 0 24px 0;">
                             <a href="https://pack1703-portal.web.app/announcements" 
@@ -587,6 +589,49 @@ This email was sent because your account was approved for the Pack 1703 Portal.
 </body>
 </html>
     `.trim();
+  }
+
+  private formatAnnouncementContent(content: string): string {
+    if (!content) return '';
+    
+    // Convert line breaks to HTML
+    let formatted = content.replace(/\n/g, '<br>');
+    
+    // Convert bullet points (• or - or *) to proper HTML lists
+    // Handle different bullet styles
+    formatted = formatted.replace(/(?:^|<br>)(\s*)(?:•|[-*])\s+(.+?)(?=<br>|$)/gm, '<br>$1• $2');
+    
+    // Convert multiple consecutive bullet points into proper lists
+    const lines = formatted.split('<br>');
+    const processedLines: string[] = [];
+    let inList = false;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const isBulletPoint = /^\s*•\s+/.test(line);
+      
+      if (isBulletPoint) {
+        if (!inList) {
+          processedLines.push('<ul style="margin: 8px 0; padding-left: 20px;">');
+          inList = true;
+        }
+        const listItem = line.replace(/^\s*•\s+/, '').trim();
+        processedLines.push(`<li style="margin: 4px 0;">${listItem}</li>`);
+      } else {
+        if (inList) {
+          processedLines.push('</ul>');
+          inList = false;
+        }
+        processedLines.push(line);
+      }
+    }
+    
+    // Close any remaining list
+    if (inList) {
+      processedLines.push('</ul>');
+    }
+    
+    return processedLines.join('<br>');
   }
 
   private generateAnnouncementEmailText(announcement: any): string {

@@ -38,6 +38,7 @@ export interface Event {
   packingList: string[]; // Keys into /lists or inline strings
   attachments: EventAttachment[];
   rsvpEnabled: boolean;
+  rsvpClosed?: boolean; // Whether RSVPs are closed (manually or automatically when full)
   capacity: number | null;
   visibility: EventVisibility;
   denTags: string[]; // e.g., ["Wolf", "Bear"]

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { Megaphone, Edit, Trash2, Plus, Search, Pin, Calendar, Link, FileText } from 'lucide-react';
 import { firestoreService } from '../services/firestore';
+import { formatAnnouncementContent } from '../utils/announcementFormatter';
 import { DEN_INFO, ALL_DENS, INDIVIDUAL_DENS, DEN_TYPES } from '../constants/dens';
 
 interface Announcement {
@@ -319,7 +320,13 @@ const AdminAnnouncements: React.FC = () => {
 
                 <div className="space-y-3">
                   <div className="p-2 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-700 line-clamp-3">{announcement.body}</p>
+                    <div 
+                      className="text-sm text-gray-700 line-clamp-3"
+                      style={{ whiteSpace: 'pre-wrap' }}
+                      dangerouslySetInnerHTML={{ 
+                        __html: formatAnnouncementContent(announcement.body).html 
+                      }}
+                    />
                   </div>
 
                   <div className="flex gap-2">

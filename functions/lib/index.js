@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.squareWebhook = exports.refundTenantPayment = exports.createTenantPayment = exports.squareOAuthCallback = exports.squareConnectStart = exports.uploadSensorData = exports.uploadCameraImage = exports.fixUSSStewartLocation = exports.updateRSVP = exports.resendPasswordSetupLink = exports.completePasswordSetup = exports.verifyPasswordSetupToken = exports.resetPasswordWithToken = exports.verifyPasswordResetToken = exports.sendPasswordReset = exports.publicICSFeed = exports.icsFeed = exports.sendSMS = exports.sendAnnouncementSMS = exports.sendAnnouncementEmails = exports.createAnnouncementWithEmails = exports.createTestAnnouncement = exports.helloWorld = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.getUserRSVPs = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
-exports.completeRSVPPayment = exports.adminUpdatePaymentStatus = exports.createRSVPPayment = void 0;
+exports.refundTenantPayment = exports.createTenantPayment = exports.squareOAuthCallback = exports.squareConnectStart = exports.uploadSensorData = exports.uploadCameraImage = exports.fixUSSStewartLocation = exports.updateRSVP = exports.resendPasswordSetupLink = exports.completePasswordSetup = exports.verifyPasswordSetupToken = exports.resetPasswordWithToken = exports.verifyPasswordResetToken = exports.sendPasswordReset = exports.publicICSFeed = exports.icsFeed = exports.sendSMS = exports.sendAnnouncementSMS = exports.sendAnnouncementEmails = exports.createAnnouncementWithEmails = exports.createTestAnnouncement = exports.helloWorld = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.getUserRSVPs = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminCloseRSVP = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
+exports.completeRSVPPayment = exports.adminUpdatePaymentStatus = exports.createRSVPPayment = exports.squareWebhook = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 const squareup_1 = require("squareup");
@@ -278,6 +278,60 @@ exports.adminDeleteEvent = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('internal', 'Failed to delete event');
     }
 });
+// Admin close RSVP function - allows admins to manually close RSVPs for an event
+exports.adminCloseRSVP = functions.https.onCall(async (data, context) => {
+    var _a;
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        // Check if user has admin privileges
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError('permission-denied', 'User not found');
+        }
+        const userData = userDoc.data();
+        const hasAdminRole = (userData === null || userData === void 0 ? void 0 : userData.role) === 'super_admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'admin' || (userData === null || userData === void 0 ? void 0 : userData.role) === 'den_leader';
+        const hasLegacyPermissions = (userData === null || userData === void 0 ? void 0 : userData.isAdmin) || (userData === null || userData === void 0 ? void 0 : userData.isDenLeader) || (userData === null || userData === void 0 ? void 0 : userData.isCubmaster);
+        const hasEventManagementPermission = (_a = userData === null || userData === void 0 ? void 0 : userData.permissions) === null || _a === void 0 ? void 0 : _a.includes('event_management');
+        if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
+            throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to close RSVPs');
+        }
+        // Validate required fields
+        if (!data.eventId) {
+            throw new functions.https.HttpsError('invalid-argument', 'Event ID is required');
+        }
+        // Get event reference
+        const eventRef = db.collection('events').doc(data.eventId);
+        const eventDoc = await eventRef.get();
+        if (!eventDoc.exists) {
+            throw new functions.https.HttpsError('not-found', 'Event not found');
+        }
+        const eventData = eventDoc.data();
+        const currentlyClosed = (eventData === null || eventData === void 0 ? void 0 : eventData.rsvpClosed) || false;
+        // Determine if we're closing or opening RSVPs
+        const shouldClose = data.closed !== undefined ? data.closed : true;
+        // Update the event
+        await eventRef.update({
+            rsvpClosed: shouldClose,
+            updatedAt: getTimestamp()
+        });
+        return {
+            success: true,
+            message: shouldClose ? 'RSVPs closed successfully' : 'RSVPs reopened successfully',
+            previousState: currentlyClosed,
+            newState: shouldClose
+        };
+    }
+    catch (error) {
+        console.error('Error closing/opening RSVPs:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to update RSVP status');
+    }
+});
 // CRITICAL: Admin create event function
 exports.adminCreateEvent = functions.https.onCall(async (data, context) => {
     var _a;
@@ -347,6 +401,10 @@ exports.submitRSVP = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('not-found', 'Event not found');
         }
         const eventData = eventDoc.data();
+        // Check if RSVPs are closed
+        if ((eventData === null || eventData === void 0 ? void 0 : eventData.rsvpClosed) === true) {
+            throw new functions.https.HttpsError('failed-precondition', 'RSVPs for this event are closed.');
+        }
         // Check if event requires payment
         const paymentRequired = (eventData === null || eventData === void 0 ? void 0 : eventData.paymentRequired) || false;
         const paymentAmount = (eventData === null || eventData === void 0 ? void 0 : eventData.paymentAmount) || 0;
@@ -394,10 +452,18 @@ exports.submitRSVP = functions.https.onCall(async (data, context) => {
         if (!paymentRequired || (paymentRequired && rsvpData.paymentStatus === 'completed')) {
             newRSVPCount += data.attendees.length;
         }
-        batch.update(eventRef, {
+        // Check if event should be auto-closed when it reaches capacity
+        const shouldAutoClose = maxCapacity && newRSVPCount >= maxCapacity;
+        const eventUpdate = {
             currentRSVPs: newRSVPCount,
             updatedAt: getTimestamp()
-        });
+        };
+        // Auto-close RSVPs if capacity is reached
+        if (shouldAutoClose && !(eventData === null || eventData === void 0 ? void 0 : eventData.rsvpClosed)) {
+            eventUpdate.rsvpClosed = true;
+            console.log(`Auto-closing RSVPs for event ${data.eventId} - capacity reached (${newRSVPCount}/${maxCapacity})`);
+        }
+        batch.update(eventRef, eventUpdate);
         // Update or create event statistics
         const eventStatsRef = db.collection('eventStats').doc(data.eventId);
         const eventStatsDoc = await eventStatsRef.get();
@@ -727,7 +793,7 @@ exports.getRSVPData = functions.https.onCall(async (data, context) => {
             .get();
         const rsvpsData = [];
         rsvpsQuery.docs.forEach(doc => {
-            var _a, _b;
+            var _a, _b, _c;
             const data = doc.data();
             rsvpsData.push({
                 id: doc.id,
@@ -741,8 +807,16 @@ exports.getRSVPData = functions.https.onCall(async (data, context) => {
                 dietaryRestrictions: data.dietaryRestrictions,
                 specialNeeds: data.specialNeeds,
                 notes: data.notes,
-                submittedAt: ((_a = data.submittedAt) === null || _a === void 0 ? void 0 : _a.toDate) ? data.submittedAt.toDate().toISOString() : data.submittedAt,
-                createdAt: ((_b = data.createdAt) === null || _b === void 0 ? void 0 : _b.toDate) ? data.createdAt.toDate().toISOString() : data.createdAt
+                // Payment-related fields
+                paymentRequired: data.paymentRequired || false,
+                paymentAmount: data.paymentAmount || 0,
+                paymentCurrency: data.paymentCurrency || 'USD',
+                paymentStatus: data.paymentStatus || 'not_required',
+                paymentMethod: data.paymentMethod || null,
+                paymentNotes: data.paymentNotes || null,
+                paidAt: ((_a = data.paidAt) === null || _a === void 0 ? void 0 : _a.toDate) ? data.paidAt.toDate().toISOString() : data.paidAt,
+                submittedAt: ((_b = data.submittedAt) === null || _b === void 0 ? void 0 : _b.toDate) ? data.submittedAt.toDate().toISOString() : data.submittedAt,
+                createdAt: ((_c = data.createdAt) === null || _c === void 0 ? void 0 : _c.toDate) ? data.createdAt.toDate().toISOString() : data.createdAt
             });
         });
         // Sort by submittedAt in descending order (most recent first)

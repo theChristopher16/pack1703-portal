@@ -1,9 +1,17 @@
 #!/usr/bin/env node
 
 /**
+ * ⚠️ DEVELOPMENT ONLY - DO NOT USE IN PRODUCTION ⚠️
+ * 
  * Import Seed Data Script for Pack 1703 Portal
  * 
- * This script imports sample data into Firestore for development and testing.
+ * This script imports SAMPLE/FAKE data into Firestore for development and testing ONLY.
+ * 
+ * ⚠️ WARNING: Running this script will populate your database with fake data!
+ * - Events, locations, announcements, and volunteer needs will be FAKE
+ * - Use only in development/testing environments
+ * - Production portal should NEVER run this script
+ * - All data should be entered through the portal UI in production
  * 
  * Prerequisites:
  * 1. Firebase project must be upgraded to Blaze plan
@@ -12,7 +20,7 @@
  * 4. Must be run from the project root directory
  * 
  * Usage:
- * node import-seed-data.js
+ * node dev-scripts/import-seed-data.js
  */
 
 const admin = require('firebase-admin');

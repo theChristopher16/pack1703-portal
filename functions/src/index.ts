@@ -336,6 +336,70 @@ export const adminDeleteEvent = functions.https.onCall(async (data: any, context
   }
 });
 
+// Admin close RSVP function - allows admins to manually close RSVPs for an event
+export const adminCloseRSVP = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    const hasAdminRole = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'den_leader';
+    const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
+    const hasEventManagementPermission = userData?.permissions?.includes('event_management');
+
+    if (!hasAdminRole && !hasLegacyPermissions && !hasEventManagementPermission) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions to close RSVPs');
+    }
+
+    // Validate required fields
+    if (!data.eventId) {
+      throw new functions.https.HttpsError('invalid-argument', 'Event ID is required');
+    }
+
+    // Get event reference
+    const eventRef = db.collection('events').doc(data.eventId);
+    const eventDoc = await eventRef.get();
+    
+    if (!eventDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Event not found');
+    }
+
+    const eventData = eventDoc.data();
+    const currentlyClosed = eventData?.rsvpClosed || false;
+    
+    // Determine if we're closing or opening RSVPs
+    const shouldClose = data.closed !== undefined ? data.closed : true;
+    
+    // Update the event
+    await eventRef.update({
+      rsvpClosed: shouldClose,
+      updatedAt: getTimestamp()
+    });
+
+    return {
+      success: true,
+      message: shouldClose ? 'RSVPs closed successfully' : 'RSVPs reopened successfully',
+      previousState: currentlyClosed,
+      newState: shouldClose
+    };
+
+  } catch (error) {
+    console.error('Error closing/opening RSVPs:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to update RSVP status');
+  }
+});
+
 // CRITICAL: Admin create event function
 export const adminCreateEvent = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   try {
@@ -424,6 +488,12 @@ export const submitRSVP = functions.https.onCall(async (data: any, context: func
 
     const eventData = eventDoc.data();
     
+    // Check if RSVPs are closed
+    if (eventData?.rsvpClosed === true) {
+      throw new functions.https.HttpsError('failed-precondition', 
+        'RSVPs for this event are closed.');
+    }
+    
     // Check if event requires payment
     const paymentRequired = eventData?.paymentRequired || false;
     const paymentAmount = eventData?.paymentAmount || 0;
@@ -478,10 +548,22 @@ export const submitRSVP = functions.https.onCall(async (data: any, context: func
     if (!paymentRequired || (paymentRequired && rsvpData.paymentStatus === 'completed')) {
       newRSVPCount += data.attendees.length;
     }
-    batch.update(eventRef, {
+    
+    // Check if event should be auto-closed when it reaches capacity
+    const shouldAutoClose = maxCapacity && newRSVPCount >= maxCapacity;
+    
+    const eventUpdate: any = {
       currentRSVPs: newRSVPCount,
       updatedAt: getTimestamp()
-    });
+    };
+    
+    // Auto-close RSVPs if capacity is reached
+    if (shouldAutoClose && !eventData?.rsvpClosed) {
+      eventUpdate.rsvpClosed = true;
+      console.log(`Auto-closing RSVPs for event ${data.eventId} - capacity reached (${newRSVPCount}/${maxCapacity})`);
+    }
+    
+    batch.update(eventRef, eventUpdate);
 
     // Update or create event statistics
     const eventStatsRef = db.collection('eventStats').doc(data.eventId);

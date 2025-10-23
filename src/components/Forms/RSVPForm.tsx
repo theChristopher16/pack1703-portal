@@ -21,6 +21,7 @@ interface RSVPFormProps {
   maxCapacity?: number;
   currentRSVPs?: number;
   rsvpCountLoading?: boolean;
+  rsvpClosed?: boolean; // Whether RSVPs are closed for this event
   onSuccess?: (data: RSVPData) => void;
   onError?: (error: string) => void;
   className?: string;
@@ -74,6 +75,7 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
   maxCapacity,
   currentRSVPs = 0,
   rsvpCountLoading = false,
+  rsvpClosed = false,
   onSuccess,
   onError,
   className = '',
@@ -670,6 +672,19 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
       setIsSubmitting(false);
     }
   };
+
+  // If RSVPs are closed, show message instead of form
+  if (rsvpClosed) {
+    return (
+      <div className={`bg-yellow-50 border border-yellow-200 rounded-2xl p-6 text-center ${className}`}>
+        <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-yellow-700 mb-2">RSVPs Closed</h3>
+        <p className="text-yellow-600">
+          RSVPs for this event are now closed. Please contact the event organizer if you have questions.
+        </p>
+      </div>
+    );
+  }
 
   if (isAtCapacity) {
     return (

@@ -1,3 +1,20 @@
+/**
+ * ⚠️ DEVELOPMENT ONLY - DO NOT USE IN PRODUCTION ⚠️
+ * 
+ * Seed Analytics Data Script for Pack 1703 Portal
+ * 
+ * This script generates FAKE analytics data for development and testing ONLY.
+ * 
+ * ⚠️ WARNING: Running this script will populate your analytics collection with fake data!
+ * - Page views, feature usage, and session data will be FABRICATED
+ * - Use only in development/testing environments
+ * - Production portal should NEVER run this script
+ * - Real analytics should be collected from actual user interactions
+ * 
+ * Usage:
+ * node dev-scripts/seed-analytics-data.js
+ */
+
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, addDoc, serverTimestamp } = require('firebase/firestore');
 

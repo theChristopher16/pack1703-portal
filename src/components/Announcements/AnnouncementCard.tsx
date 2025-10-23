@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pin, Clock, FileText, Image, Link, Share2, MessageSquare, Eye } from 'lucide-react';
 import { Announcement } from '../../types/firestore';
+import { formatAnnouncementContent } from '../../utils/announcementFormatter';
 
 interface AnnouncementCardProps {
   announcement: Announcement;
@@ -132,14 +133,22 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
       <div className="mb-4">
         {isExpanded ? (
           <div className="prose prose-sm max-w-none">
-            <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
-              {announcement.body}
-            </p>
+            <div 
+              className="text-gray-600 leading-relaxed"
+              style={{ whiteSpace: 'pre-wrap' }}
+              dangerouslySetInnerHTML={{ 
+                __html: formatAnnouncementContent(announcement.body).html 
+              }}
+            />
           </div>
         ) : (
-          <p className="text-gray-600 leading-relaxed line-clamp-3">
-            {announcement.body}
-          </p>
+          <div 
+            className="text-gray-600 leading-relaxed line-clamp-3"
+            style={{ whiteSpace: 'pre-wrap' }}
+            dangerouslySetInnerHTML={{ 
+              __html: formatAnnouncementContent(announcement.body).html 
+            }}
+          />
         )}
       </div>
 

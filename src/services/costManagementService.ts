@@ -790,30 +790,16 @@ class CostManagementService {
         }
       });
 
-      // If no real data found, create some sample data to demonstrate the feature
-      const hasRealData = querySnapshot.size > 0;
-      if (!hasRealData) {
-        console.log('No real API usage data found, creating sample data for demonstration');
-        // Create sample data based on typical usage patterns
-        stats.googleMaps = { requests: 45, cost: 0.225, status: 'active' };
-        stats.openWeather = { requests: 28, cost: 0.028, status: 'active' };
-        stats.phoneValidation = { requests: 12, cost: 0.012, status: 'active' };
-        stats.tenor = { requests: 15, cost: 0.015, status: 'active' };
-        stats.emailService = { requests: 25, cost: 0.25, status: 'active' };
+      // Return real data only - no sample/fallback data
+      if (querySnapshot.size === 0) {
+        console.log('No API usage data found in cost-tracking collection');
       }
 
       return stats;
     } catch (error) {
       console.error('Error fetching real API usage stats:', error);
-      // Return sample data on error to show the feature works
-      return {
-        googleMaps: { requests: 45, cost: 0.225, status: 'active' },
-        openWeather: { requests: 28, cost: 0.028, status: 'active' },
-        phoneValidation: { requests: 12, cost: 0.012, status: 'active' },
-        tenor: { requests: 15, cost: 0.015, status: 'active' },
-        ieeeXplore: { requests: 3, cost: 0.15, status: 'active' },
-        emailService: { requests: 25, cost: 0.25, status: 'active' }
-      };
+      // Return empty stats on error - no fake data
+      return {};
     }
   }
 

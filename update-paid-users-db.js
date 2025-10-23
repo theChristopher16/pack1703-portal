@@ -226,3 +226,6 @@ console.log('Make sure you have the correct Firebase configuration and event ID.
 console.log('');
 
 updatePaymentStatus();
+
+
+

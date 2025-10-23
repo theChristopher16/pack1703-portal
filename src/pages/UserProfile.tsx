@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import AccountLinking from '../components/Admin/AccountLinking';
 import UserProfileManager from '../components/Profile/UserProfileManager';
+import ProfileSetupWizard from '../components/Profile/ProfileSetupWizard';
 import UserRSVPManager from '../components/Profile/UserRSVPManager';
 import UserVolunteerManager from '../components/Profile/UserVolunteerManager';
 
@@ -233,6 +234,12 @@ const UserProfile: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
+      {/* Profile Setup Wizard - shown when user has no scouts configured */}
+      {currentUser && (!currentUser.profile?.scouts || (currentUser.profile?.scouts || []).length === 0) && (
+        <div className="mb-8">
+          <ProfileSetupWizard user={currentUser as unknown as AppUser} onComplete={() => { /* AdminContext will refresh user */ }} />
+        </div>
+      )}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
         <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>

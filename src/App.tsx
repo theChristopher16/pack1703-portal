@@ -25,6 +25,7 @@ import FeedbackPage from './pages/FeedbackPage';
 import DataAuditPage from './pages/DataAuditPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
+import DuesInformation from './pages/DuesInformation';
 import AnalyticsDashboard from './components/Analytics/AnalyticsDashboard';
 import AnalyticsTest from './components/Analytics/AnalyticsTest';
 import UserInteractionDashboard from './components/Analytics/UserInteractionDashboard';
@@ -143,6 +144,7 @@ function App() {
                     <Route path="/locations" element={<Layout><LocationsPage /></Layout>} />
                     <Route path="/announcements" element={<Layout><UnifiedAnnouncementsPage /></Layout>} />
                     <Route path="/resources" element={<Layout><ResourcesPage /></Layout>} />
+                    <Route path="/dues" element={<Layout><DuesInformation /></Layout>} />
                     <Route path="/volunteer" element={<Layout><VolunteerPage /></Layout>} />
                     <Route path="/ecology" element={<Layout><EcologyPage /></Layout>} />
                     <Route path="/privacy" element={<Layout><PrivacyPolicyPage /></Layout>} />

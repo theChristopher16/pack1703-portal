@@ -66,6 +66,7 @@ interface Attendee {
   age: number;
   den?: string;
   isAdult: boolean;
+  attending?: boolean;
 }
 
 const RSVPForm: React.FC<RSVPFormProps> = ({
@@ -106,7 +107,7 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
     familyName: '',
     email: '',
     phone: '',
-    attendees: [{ name: '', age: 0, den: '', isAdult: false }],
+    attendees: [{ name: '', age: 0, den: '', isAdult: false, attending: true }],
     dietaryRestrictions: '',
     specialNeeds: '',
     notes: ''
@@ -118,6 +119,9 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
       const user = authService.getCurrentUser();
       if (user) {
         setCurrentUserProfile(user);
+        // Auto-populate attendees with family members and default attending=true
+        const auto = buildAutoAttendees(user).map(att => ({ ...att, attending: true }));
+        setFormData(prev => ({ ...prev, attendees: auto.length ? auto : prev.attendees }));
       }
     } else {
       setCurrentUserProfile(null);
@@ -285,10 +289,13 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
     }
 
     // Attendees validation
-    if (!formData.attendees || formData.attendees.length === 0) {
+    if (!formData.attendees || formData.attendees.filter(a => a.attending !== false).length === 0) {
       newErrors.attendees = 'At least one attendee is required';
     } else {
       formData.attendees.forEach((attendee, index) => {
+        if (attendee.attending === false) {
+          return;
+        }
         if (!attendee.name?.trim()) {
           newErrors[`attendee_${index}_name`] = 'Attendee name is required';
         }
@@ -299,8 +306,11 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
     }
 
     // Capacity check
-    if (maxCapacity && formData.attendees && currentRSVPs + formData.attendees.length > maxCapacity) {
+    if (maxCapacity && formData.attendees) {
+      const attendingCount = formData.attendees.filter(a => a.attending !== false).length;
+      if (currentRSVPs + attendingCount > maxCapacity) {
       newErrors.capacity = `Event is at capacity. Only ${remainingSpots} spots remaining.`;
+      }
     }
 
     setErrors(newErrors);
@@ -325,7 +335,7 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
           familyName: formData.familyName,
           email: formData.email,
           phone: formData.phone,
-          attendees: formData.attendees,
+          attendees: (formData.attendees || []).filter(a => a.attending !== false).map(({ attending, ...rest }) => rest),
           dietaryRestrictions: formData.dietaryRestrictions,
           specialNeeds: formData.specialNeeds,
           notes: formData.notes
@@ -364,13 +374,14 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
       // Prepare submission data with security metadata
       const submissionData = {
         ...formData,
+        attendees: (formData.attendees || []).filter(a => a.attending !== false).map(({ attending, ...rest }) => rest),
         eventId,
         ...securityMeta
       };
 
       // Validate and sanitize with enhanced security
       const validationResult = await formValidator.validateRSVPForm(
-        submissionData, 
+        { ...submissionData, attendees: (submissionData.attendees || []).filter((a: any) => a.attending !== false).map(({ attending, ...rest }: any) => rest) }, 
         securityMeta.ipHash
       );
 
@@ -881,6 +892,17 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
 
           {formData.attendees?.map((attendee, index) => (
             <div key={index} className="p-4 bg-gray-50 rounded-xl space-y-4">
+              <div>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={attendee.attending !== false}
+                    onChange={(e) => updateAttendee(index, 'attending' as any, e.target.checked)}
+                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
+                  />
+                  <span className="text-sm text-gray-900">Attending</span>
+                </label>
+              </div>
               <div className="flex items-center justify-between">
                 <h5 className="font-medium text-gray-900">Attendee {index + 1}</h5>
                 {formData.attendees && formData.attendees.length > 1 && (

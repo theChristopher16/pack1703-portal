@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, Clock, Users, Tent, MountainSnow, Heart, Share2, Download, ExternalLink, Edit, Trash2, FileText, DollarSign, CheckCircle, AlertCircle, Clock as ClockIcon } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Tent, MountainSnow, Heart, Share2, Download, ExternalLink, Edit, Trash2, Archive, FileText, DollarSign, CheckCircle, AlertCircle, Clock as ClockIcon } from 'lucide-react';
 import WeatherForecastComponent from '../Weather/WeatherForecast';
 import EventReportExport from './EventReportExport';
 import { useAdmin } from '../../contexts/AdminContext';
@@ -17,7 +17,7 @@ interface Event {
     address: string;
     coordinates?: { lat: number; lng: number };
   };
-  category: 'pack-wide' | 'den' | 'camping' | 'overnight' | 'service' | 'elective';
+  category: 'pack' | 'den' | 'campout' | 'overnight' | 'service' | 'meeting' | 'elective';
   denTags: string[];
   maxCapacity: number;
   currentRSVPs: number;
@@ -64,6 +64,7 @@ interface EventCardProps {
   onViewRSVPs?: (event: Event) => void;
   onViewPayments?: (event: Event) => void;
   onDelete?: (eventId: string) => void;
+  onArchive?: (eventId: string, event: Event) => void;
   isAuthenticated?: boolean;
   isAdmin?: boolean;
   isDeleting?: boolean;
@@ -85,6 +86,7 @@ const EventCard: React.FC<EventCardProps> = ({
   onViewRSVPs,
   onViewPayments,
   onDelete,
+  onArchive,
   isAuthenticated = true, 
   isAdmin = false,
   isDeleting = false,
@@ -793,6 +795,22 @@ const EventCard: React.FC<EventCardProps> = ({
                   <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">{isDeleting ? 'Deleting...' : 'Delete'}</span>
                   <span className="sm:hidden">{isDeleting ? 'Deleting' : 'Delete'}</span>
+                </button>
+              )}
+
+              {/* Admin Archive Button */}
+              {isAdmin && onArchive && (
+                <button
+                  onClick={() => {
+                    // This will be handled by the parent component
+                    onArchive(event.id, event);
+                  }}
+                  className="flex items-center justify-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-amber-600 hover:text-amber-700 transition-colors duration-200 p-2 rounded-md hover:bg-amber-50"
+                  title="Archive Event (Admin Only)"
+                >
+                  <Archive className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Archive</span>
+                  <span className="sm:hidden">Archive</span>
                 </button>
               )}
             </div>

@@ -14,6 +14,7 @@ import AuthGuard from './components/Auth/AuthGuard';
 // Pages
 import HomePage from './pages/HomePage';
 import EventsPage from './pages/EventsPage';
+import ArchivedEventsPage from './pages/ArchivedEventsPage';
 import LocationsPage from './pages/LocationsPage';
 import UnifiedAnnouncementsPage from './pages/UnifiedAnnouncementsPage';
 import ResourcesPage from './pages/ResourcesPage';
@@ -138,6 +139,7 @@ function App() {
                     {/* Public Routes */}
                     <Route path="/" element={<Layout><HomePage /></Layout>} />
                     <Route path="/events" element={<Layout><EventsPage /></Layout>} />
+                    <Route path="/events/archived" element={<Layout><ArchivedEventsPage /></Layout>} />
                     <Route path="/events/:eventId" element={<Layout><EventDetailPage /></Layout>} />
                     <Route path="/test-navigation" element={<TestNavigation />} />
                     <Route path="/auth-debug" element={<AuthDebugPage />} />

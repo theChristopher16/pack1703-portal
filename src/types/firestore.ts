@@ -57,6 +57,12 @@ export interface Event {
   // Elective Event specific fields
   isElective?: boolean; // Flag to mark as elective event
   electiveOptions?: ElectiveEventOptions; // Optional configuration for elective events
+  
+  // Archive specific fields
+  isArchived?: boolean; // Whether the event is archived
+  archivedAt?: Timestamp; // When the event was archived
+  archivedBy?: string; // User ID who archived the event
+  scoutingYear?: string; // Scouting year for organization (e.g., "2024-2025")
 }
 
 export interface ElectiveEventOptions {

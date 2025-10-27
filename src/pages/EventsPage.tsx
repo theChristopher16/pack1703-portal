@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, List, Filter, Download, Share2, Plus, Edit, Trash2 } from 'lucide-react';
+import { Calendar, List, Filter, Download, Share2, Plus, Edit, Trash2, Archive } from 'lucide-react';
 // Removed unused imports - RSVP counting now uses Cloud Functions
 import EventCard from '../components/Events/EventCard';
 import EventCalendar from '../components/Events/EventCalendar';
@@ -12,6 +12,7 @@ import { useAdmin } from '../contexts/AdminContext';
 import { adminService } from '../services/adminService';
 import { authService } from '../services/authService';
 import { LocationSelector } from '../components/Locations';
+import { archiveEvent, unarchiveEvent, getCurrentScoutingYear, extractScoutingYearFromEvent, shouldAutoArchive } from '../services/archivedEventsService';
 // import { analytics } from '../services/analytics';
 
 interface Event {
@@ -25,7 +26,7 @@ interface Event {
     address: string;
     coordinates?: { lat: number; lng: number };
   } | string; // Can be object or string for form data
-  category: 'pack-wide' | 'den' | 'camping' | 'overnight' | 'service' | 'elective';
+  category: 'pack' | 'den' | 'campout' | 'overnight' | 'service' | 'meeting' | 'elective';
   denTags: string[];
   maxCapacity: number;
   currentRSVPs: number;
@@ -46,6 +47,12 @@ interface Event {
   locationId?: string;
   startDate?: string;
   endDate?: string;
+  
+  // Archive-specific fields
+  isArchived?: boolean;
+  archivedAt?: any;
+  archivedBy?: string;
+  scoutingYear?: string;
   
   // Payment specific fields
   paymentRequired?: boolean; // Whether payment is required for this event
@@ -259,7 +266,7 @@ const EventsPage: React.FC = () => {
 
     // Apply My Den Meetings filter
     if (showMyDenMeetingsOnly) {
-      const userDens = (adminState.currentUser?.profile as any)?.dens || ((adminState.currentUser?.profile as any)?.den ? [(adminState.currentUser?.profile as any)?.den] : []);
+      const userDens = ((adminState.currentUser as any)?.profile as any)?.dens || (((adminState.currentUser as any)?.profile as any)?.den ? [((adminState.currentUser as any)?.profile as any)?.den] : []);
       if (userDens.length > 0) {
         filtered = filtered.filter(event => event.category === 'meeting' && event.denTags.some(tag => userDens.includes(tag)));
       } else {
@@ -774,6 +781,134 @@ const EventsPage: React.FC = () => {
     }
   };
 
+  // Handler for archiving events
+  const handleArchiveEvent = async (eventId: string, event: Event) => {
+    try {
+      addNotification('info', 'Archiving Event', 'Please wait while we archive the event...');
+      
+      // Get current user ID
+      const currentUser = adminState.currentUser;
+      if (!currentUser) {
+        addNotification('error', 'Authentication Required', 'You must be logged in to archive events.');
+        return;
+      }
+      
+      // Extract scouting year from event
+      const scoutingYear = extractScoutingYearFromEvent(event);
+      
+      // Archive the event
+      await archiveEvent({
+        eventId,
+        userId: currentUser.uid,
+        scoutingYear
+      });
+      
+      // Update local state to mark event as archived
+      setEvents(prevEvents => 
+        prevEvents.map(e => 
+          e.id === eventId 
+            ? { ...e, isArchived: true, scoutingYear } 
+            : e
+        )
+      );
+      
+      addNotification('success', 'Event Archived', 'The event has been moved to the archive.');
+    } catch (error) {
+      console.error('Error archiving event:', error);
+      addNotification('error', 'Archive Failed', `Failed to archive event: ${error instanceof Error ? error.message : 'Unknown error'}.`);
+    }
+  };
+
+  // Handler for unarchiving events
+  const handleUnarchiveEvent = async (eventId: string) => {
+    try {
+      addNotification('info', 'Unarchiving Event', 'Please wait while we restore the event...');
+      
+      // Unarchive the event
+      await unarchiveEvent(eventId);
+      
+      // Update local state to mark event as unarchived
+      setEvents(prevEvents => 
+        prevEvents.map(e => 
+          e.id === eventId 
+            ? { ...e, isArchived: false } 
+            : e
+        )
+      );
+      
+      addNotification('success', 'Event Restored', 'The event has been restored from the archive.');
+    } catch (error) {
+      console.error('Error unarchiving event:', error);
+      addNotification('error', 'Unarchive Failed', `Failed to restore event: ${error instanceof Error ? error.message : 'Unknown error'}.`);
+    }
+  };
+
+  // Auto-archive events that started more than 1 day ago
+  useEffect(() => {
+    const autoArchiveEvents = async () => {
+      if (!isAdmin) return; // Only admins can auto-archive
+      
+      const currentUser = adminState.currentUser;
+      if (!currentUser) return;
+      
+      // Check each event and auto-archive if needed
+      for (const event of events) {
+        if (event.isArchived) continue; // Already archived
+        
+        // Check if event should be archived (started more than 1 day ago)
+        let shouldArchive = false;
+        try {
+          // Try to get the start date - could be in different formats
+          let startDate: Date | null = null;
+          
+          if (event.startDate) {
+            startDate = typeof event.startDate === 'string' ? new Date(event.startDate) : new Date(event.startDate as any);
+          } else if (event.date) {
+            // Some events might only have a date string
+            startDate = new Date(event.date);
+          }
+          
+          if (startDate && !isNaN(startDate.getTime())) {
+            const now = new Date();
+            const daysSinceStart = (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+            shouldArchive = daysSinceStart > 1;
+          }
+        } catch (error) {
+          console.error(`Error checking auto-archive for event ${event.id}:`, error);
+        }
+        
+        if (shouldArchive) {
+          try {
+            const scoutingYear = extractScoutingYearFromEvent(event);
+            await archiveEvent({
+              eventId: event.id,
+              userId: currentUser.uid,
+              scoutingYear
+            });
+            
+            // Update local state
+            setEvents(prevEvents => 
+              prevEvents.map(e => 
+                e.id === event.id 
+                  ? { ...e, isArchived: true, scoutingYear } 
+                  : e
+              )
+            );
+            
+            console.log(`Auto-archived event: ${event.title}`);
+          } catch (error) {
+            console.error(`Error auto-archiving event ${event.id}:`, error);
+          }
+        }
+      }
+    };
+    
+    // Run auto-archive check after events are loaded
+    if (events.length > 0) {
+      autoArchiveEvents();
+    }
+  }, [events, isAdmin, adminState.currentUser]);
+
   const handleSaveEvent = async (eventData: Partial<Event>) => {
     try {
       setIsSubmitting(true);
@@ -1240,6 +1375,15 @@ const EventsPage: React.FC = () => {
               <Share2 className="w-4 h-4 inline mr-1.5" />
               Share
             </button>
+
+            {/* View Archived Events Button */}
+            <button
+              onClick={() => navigate('/events/archived')}
+              className="px-3 py-2 bg-white/80 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 hover:text-amber-700 transition-all duration-200 text-sm flex items-center gap-1.5"
+            >
+              <Archive className="w-4 h-4" />
+              Archived
+            </button>
           </div>
         </div>
 
@@ -1295,6 +1439,7 @@ const EventsPage: React.FC = () => {
                           onShare={handleShare}
                           onViewRSVPs={isAdmin ? handleViewRSVPs : undefined}
                           onViewPayments={isAdmin ? handleViewPayments : undefined}
+                          onArchive={isAdmin ? (eventId, eventData) => handleArchiveEvent(eventId, eventData as Event) : undefined}
                           isAdmin={isAdmin}
                           isDeleting={deletingEventId === event.id}
                           rsvpCountLoading={rsvpCountsLoading[event.id] || false}
@@ -1566,7 +1711,7 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
     }
   }, [event, mode]);
 
-  const categories = ['Meeting', 'Competition', 'Outdoor', 'Service', 'Social', 'Training', 'Elective'];
+  const categories = ['Pack', 'Den', 'Campout', 'Overnight', 'Service', 'Meeting', 'Elective'];
   const visibilityOptions = [
     { value: 'public', label: 'Public', description: 'Visible to everyone' },
     { value: 'link-only', label: 'Link Only', description: 'Only accessible via direct link' },
@@ -1652,7 +1797,7 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
         title: formData.title,
         description: formData.description,
         location: formData.location,
-        category: formData.category as 'pack-wide' | 'den' | 'camping' | 'overnight' | 'service' | 'elective',
+        category: formData.category as 'pack' | 'den' | 'campout' | 'overnight' | 'service' | 'meeting' | 'elective',
         visibility: formData.visibility,
         isActive: formData.isActive,
         locationId: locationId || formData.location,

@@ -152,8 +152,11 @@ const ResourcesPage: React.FC = () => {
     });
   };
 
-  // Check if user can manage resources
+  // Check if user can manage resources (approve/reject resources from parents)
   const canManageResources = state.currentUser && resourceService.canManageResources(state.currentUser);
+  
+  // Allow all authenticated users to add resources (parents will require approval)
+  const canAddResources = !!state.currentUser;
   
   // Debug logging
   console.log('🔍 ResourcesPage Debug:', {
@@ -353,25 +356,29 @@ const ResourcesPage: React.FC = () => {
           )}
           
           {/* Action Buttons */}
-          {canManageResources && activeTab === 'resources' && (
+          {activeTab === 'resources' && (
             <div className="flex justify-center gap-4 flex-wrap mb-8">
-              <button
-                onClick={() => {
-                  setReviewingResourceId(undefined);
-                  setShowSubmissionsModal(true);
-                }}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                <Eye className="h-5 w-5" />
-                Review Submissions
-              </button>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                <Plus className="h-5 w-5" />
-                Add New Resource
-              </button>
+              {canManageResources && (
+                <button
+                  onClick={() => {
+                    setReviewingResourceId(undefined);
+                    setShowSubmissionsModal(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  <Eye className="h-5 w-5" />
+                  Review Submissions
+                </button>
+              )}
+              {canAddResources && (
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add New Resource
+                </button>
+              )}
             </div>
           )}
         </div>

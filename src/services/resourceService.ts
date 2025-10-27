@@ -36,6 +36,10 @@ export interface Resource {
   likeCount?: number;
   isLikedByCurrentUser?: boolean; // Client-side only field
   allowSubmissions?: boolean; // Allow parents to submit completed forms
+  approvalStatus?: 'pending' | 'approved' | 'rejected'; // For parent-submitted resources
+  approvedBy?: string;
+  approvedByName?: string;
+  approvedAt?: Date;
 }
 
 export interface ResourceSubmission {
@@ -205,17 +209,14 @@ class ResourceService {
     console.log('🔍 createResource called:', { resourceData, hasFile: !!file, fileName: file?.name });
     
     const user = currentUser || this.currentUser;
-    if (!this.canManageResources(user)) {
-      console.log('🚫 User cannot manage resources');
-      throw new Error('Only den leaders and up can create resources');
+    
+    // Allow parents to create resources, but they'll need approval
+    if (!user || !user.uid) {
+      console.log('🚫 No authenticated user');
+      throw new Error('User must be authenticated');
     }
 
     try {
-      if (!user) {
-        console.log('🚫 No authenticated user');
-        throw new Error('User must be authenticated');
-      }
-
       let fileUrl: string | undefined;
       let fileName: string | undefined;
       let fileSize: number | undefined;
@@ -244,6 +245,11 @@ class ResourceService {
         fileSize = file.size;
       }
 
+      // Check if user is admin/den leader - auto-approve
+      // If parent, set as pending approval
+      const isAdmin = this.canManageResources(user);
+      const approvalStatus = isAdmin ? 'approved' : 'pending';
+
       const newResource: any = {
         ...resourceData,
         createdBy: user.uid,
@@ -252,8 +258,16 @@ class ResourceService {
         lastUpdated: serverTimestamp(),
         downloadCount: 0,
         likeCount: 0,
-        isActive: true,
+        isActive: isAdmin, // Only active immediately if admin
+        approvalStatus: approvalStatus,
       };
+
+      // If admin approved, set approval fields
+      if (isAdmin && approvalStatus === 'approved') {
+        newResource.approvedBy = user.uid;
+        newResource.approvedByName = user.displayName || user.email || 'Unknown';
+        newResource.approvedAt = serverTimestamp();
+      }
 
       // Only add file-related fields if a file was uploaded
       if (file) {
@@ -570,6 +584,14 @@ class ResourceService {
         return resources;
       }
 
+      // Filter resources based on approval status and user role
+      const isAdmin = this.canManageResources(user);
+      const filteredResources = isAdmin 
+        ? resources // Admins see all resources
+        : resources.filter(r => 
+            !r.approvalStatus || r.approvalStatus === 'approved'
+          ); // Parents only see approved resources
+
       // Get all liked resource IDs for current user
       const likesQuery = query(
         collection(db, 'user-resource-likes'),
@@ -581,7 +603,7 @@ class ResourceService {
       );
 
       // Add isLikedByCurrentUser flag to each resource
-      return resources.map(resource => ({
+      return filteredResources.map(resource => ({
         ...resource,
         isLikedByCurrentUser: likedResourceIds.has(resource.id)
       }));
@@ -833,6 +855,77 @@ class ResourceService {
       }
     } catch (error) {
       console.error('Error reviewing submission:', error);
+      throw error;
+    }
+  }
+
+  // Approve/reject a resource submitted by a parent
+  async reviewResource(resourceId: string, status: 'approved' | 'rejected', reviewNotes?: string): Promise<void> {
+    const user = this.currentUser;
+    
+    if (!this.canManageResources(user)) {
+      throw new Error('Only den leaders and up can review resources');
+    }
+
+    if (!user) {
+      throw new Error('User must be authenticated');
+    }
+
+    try {
+      const resourceRef = doc(db, 'resources', resourceId);
+      const resourceDoc = await getDoc(resourceRef);
+      
+      if (!resourceDoc.exists()) {
+        throw new Error('Resource not found');
+      }
+
+      const updateData: any = {
+        approvalStatus: status,
+        approvedBy: user.uid,
+        approvedByName: user.displayName || user.email || 'Unknown',
+        approvedAt: serverTimestamp(),
+      };
+
+      if (status === 'approved') {
+        updateData.isActive = true;
+      }
+
+      if (reviewNotes) {
+        updateData.reviewNotes = reviewNotes;
+      }
+
+      await updateDoc(resourceRef, updateData);
+      console.log(`✅ Resource ${resourceId} ${status}`);
+    } catch (error) {
+      console.error('Error reviewing resource:', error);
+      throw error;
+    }
+  }
+
+  // Get pending resources (for admin review)
+  async getPendingResources(): Promise<Resource[]> {
+    const user = this.currentUser;
+    
+    if (!this.canManageResources(user)) {
+      throw new Error('Only den leaders and up can view pending resources');
+    }
+
+    try {
+      const q = query(
+        collection(db, 'resources'),
+        where('approvalStatus', '==', 'pending'),
+        orderBy('createdAt', 'desc')
+      );
+      
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        lastUpdated: doc.data().lastUpdated?.toDate() || new Date(),
+      })) as Resource[];
+    } catch (error) {
+      console.error('Error getting pending resources:', error);
       throw error;
     }
   }

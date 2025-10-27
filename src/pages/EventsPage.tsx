@@ -411,11 +411,16 @@ const EventsPage: React.FC = () => {
             paymentRequired: firebaseEvent.paymentRequired || false,
             paymentAmount: firebaseEvent.paymentAmount || undefined,
             paymentCurrency: firebaseEvent.paymentCurrency || 'USD',
-            paymentDescription: firebaseEvent.paymentDescription || undefined
+            paymentDescription: firebaseEvent.paymentDescription || undefined,
+            // Archive fields
+            isArchived: firebaseEvent.isArchived || false,
+            archivedAt: firebaseEvent.archivedAt,
+            archivedBy: firebaseEvent.archivedBy,
+            scoutingYear: firebaseEvent.scoutingYear
           };
           
           return transformedEvent;
-        });
+        }).filter(event => !event.isArchived); // Filter out archived events
         
         // Set events immediately for fast rendering
         setEvents(transformedEvents);

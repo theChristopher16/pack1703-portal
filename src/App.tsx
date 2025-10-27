@@ -18,6 +18,7 @@ import ArchivedEventsPage from './pages/ArchivedEventsPage';
 import LocationsPage from './pages/LocationsPage';
 import UnifiedAnnouncementsPage from './pages/UnifiedAnnouncementsPage';
 import ResourcesPage from './pages/ResourcesPage';
+import InventoryPage from './pages/InventoryPage';
 import VolunteerPage from './pages/VolunteerPage';
 import PasswordResetPage from './pages/PasswordResetPage';
 import PasswordSetupPage from './pages/PasswordSetupPage';
@@ -146,6 +147,7 @@ function App() {
                     <Route path="/locations" element={<Layout><LocationsPage /></Layout>} />
                     <Route path="/announcements" element={<Layout><UnifiedAnnouncementsPage /></Layout>} />
                     <Route path="/resources" element={<Layout><ResourcesPage /></Layout>} />
+                    <Route path="/resources/inventory" element={<Layout><InventoryPage /></Layout>} />
                     <Route path="/dues" element={<Layout><DuesInformation /></Layout>} />
                     <Route path="/volunteer" element={<Layout><VolunteerPage /></Layout>} />
                     <Route path="/ecology" element={<Layout><EcologyPage /></Layout>} />

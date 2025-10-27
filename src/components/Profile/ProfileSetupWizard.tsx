@@ -64,7 +64,15 @@ const ProfileSetupWizard: React.FC<ProfileSetupWizardProps> = ({ user, onComplet
         lastName: family.lastName,
         phone: family.phone,
         parentNames: family.parentNames,
-        scouts: scouts.map(s => ({ name: s.name, age: s.age, den: s.den, isAdult: false }))
+        scouts: scouts.map(s => ({ 
+          id: `scout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name: s.name, 
+          age: s.age, 
+          scoutRank: s.den,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }))
       });
       setSuccess('Profile saved successfully');
       setTimeout(() => {

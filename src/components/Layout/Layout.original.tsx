@@ -283,9 +283,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-fog via-forest-50/30 to-solar-50/30 flex flex-col">
-      {/* Solarpunk Brand Header */}
-      <header className="bg-white/95 backdrop-blur-md shadow-card border-b border-forest-200/50 sticky top-0 z-50">
+    <div className="min-h-screen bg-fog flex flex-col">
+      {/* Brand Header */}
+      <header className="bg-white/90 backdrop-blur-md shadow-card border-b border-cloud sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo/Brand */}
@@ -293,16 +293,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               onClick={() => handleNavigation('/')}
               className="flex items-center space-x-3 hover:opacity-80 transition-opacity duration-200 cursor-pointer"
             >
-              <div className="w-10 h-10 bg-gradient-solarpunk rounded-2xl flex items-center justify-center shadow-glow">
-                <span className="text-white" style={{ fontSize: '24px' }}>🌱</span>
+              <div className="w-10 h-10 bg-gradient-brand rounded-brand flex items-center justify-center shadow-card">
+                <span className="text-white" style={{ fontSize: '24px' }}>🏕️</span>
               </div>
               <div className="block min-w-0 flex-shrink">
-                <h1 className="text-lg sm:text-xl font-solarpunk-display font-bold text-forest-600 truncate max-w-48 sm:max-w-64 md:max-w-none">
+                <h1 className="text-lg sm:text-xl font-display font-bold text-ink truncate max-w-48 sm:max-w-64 md:max-w-none">
                   <span className="hidden sm:inline">{packName || 'Cub Scout Pack 1703'}</span>
                   <span className="sm:hidden">Pack 1703</span>
                 </h1>
-                <p className="text-xs text-ocean-600 truncate max-w-48 sm:max-w-64 md:max-w-none">
-                  <span className="hidden sm:inline">Solarpunk Portal</span>
+                <p className="text-xs text-teal-600 truncate max-w-48 sm:max-w-64 md:max-w-none">
+                  <span className="hidden sm:inline">Families Portal</span>
                   <span className="sm:hidden">Portal</span>
                 </p>
               </div>
@@ -321,8 +321,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     }}
                     className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
                       isActive(item.href)
-                        ? 'bg-gradient-forest text-white shadow-glow'
-                        : 'bg-white/95 backdrop-blur-sm border border-forest-200 text-forest-700 hover:bg-gradient-to-r hover:from-forest-50 hover:to-ocean-50 hover:border-forest-300 hover:text-forest-800'
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg'
+                        : 'bg-white/90 backdrop-blur-sm border border-gray-200 text-gray-700 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 hover:border-emerald-200 hover:text-emerald-700'
                     }`}
                   >
                     <div className="flex items-center justify-center space-x-2">
@@ -351,7 +351,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     className={`px-3 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
                       isActive(item.href)
                         ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg'
-                        : 'bg-white/95 backdrop-blur-sm border border-gray-200 text-gray-800 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 hover:border-emerald-200 hover:text-emerald-800'
+                        : 'bg-white/90 backdrop-blur-sm border border-gray-200 text-gray-700 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 hover:border-emerald-200 hover:text-emerald-700'
                     }`}
                   >
                     <div className="flex items-center justify-center space-x-2">
@@ -615,20 +615,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {children}
       </main>
 
-      {/* Solarpunk Footer */}
-      <footer className="solarpunk-footer">
+      {/* Footer */}
+      <footer className="bg-gradient-to-r from-primary-50 to-secondary-50 border-t border-gray-200/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Contact Info */}
             <div>
-              <h3 className="text-lg font-solarpunk-display font-semibold text-forest-600 mb-4">Contact Us</h3>
+              <h3 className="text-lg font-display font-semibold footer-heading mb-4">Contact Us</h3>
               <div className="space-y-2">
-                <p className="text-forest-600 font-medium">{packName}</p>
-                <p className="text-forest-600">Houston, TX</p>
-                <p className="text-forest-600">
+                <p className="footer-text font-medium">{packName}</p>
+                <p className="footer-text">Houston, TX</p>
+                <p className="footer-text">
                   Email: <a 
                     href="mailto:cubmaster@sfpack1703.com" 
-                    className="text-ocean-600 hover:text-ocean-700 font-medium transition-colors duration-200"
+                    className="footer-link"
                   >
                     cubmaster@sfpack1703.com
                   </a>
@@ -638,13 +638,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Quick Links */}
             <div>
-              <h3 className="text-lg font-solarpunk-display font-semibold text-forest-600 mb-4">Quick Links</h3>
+              <h3 className="text-lg font-display font-semibold footer-heading mb-4">Quick Links</h3>
               <div className="space-y-2">
                 {mainToolbarItems.map((item) => (
                   <button
                     key={item.name}
                     onClick={() => handleNavigation(item.href)}
-                    className="block text-ocean-600 hover:text-ocean-700 font-medium text-left transition-colors duration-200"
+                    className="block footer-link text-left"
                   >
                     {item.name}
                   </button>
@@ -654,23 +654,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Resources */}
             <div>
-              <h3 className="text-lg font-solarpunk-display font-semibold text-forest-600 mb-4">Resources</h3>
+              <h3 className="text-lg font-display font-semibold footer-heading mb-4">Resources</h3>
               <div className="space-y-2">
                 <button
                   onClick={() => handleNavigation('/resources')}
-                  className="block text-ocean-600 hover:text-ocean-700 font-medium text-left transition-colors duration-200"
+                  className="block footer-link text-left"
                 >
                   Pack Resources
                 </button>
                 <button
                   onClick={() => handleNavigation('/feedback')}
-                  className="block text-ocean-600 hover:text-ocean-700 font-medium text-left transition-colors duration-200"
+                  className="block footer-link text-left"
                 >
                   Feedback
                 </button>
                 <button
                   onClick={() => handleNavigation('/privacy')}
-                  className="block text-ocean-600 hover:text-ocean-700 font-medium text-left transition-colors duration-200"
+                  className="block footer-link text-left"
                 >
                   Privacy Policy
                 </button>
@@ -678,33 +678,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
           </div>
 
-          {/* Social Links */}
-          <div className="solarpunk-footer-social">
-            <a href="mailto:cubmaster@sfpack1703.com" className="solarpunk-social-link" title="Email">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-              </svg>
-            </a>
-            <a href="https://www.facebook.com/groups/sfpack1703" target="_blank" rel="noopener noreferrer" className="solarpunk-social-link" title="Facebook">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-              </svg>
-            </a>
-            <a href="https://www.instagram.com/sfpack1703" target="_blank" rel="noopener noreferrer" className="solarpunk-social-link" title="Instagram">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 6.62 5.367 11.987 11.988 11.987 6.62 0 11.987-5.367 11.987-11.987C24.014 5.367 18.637.001 12.017.001zM8.449 16.988c-1.297 0-2.448-.49-3.323-1.297C4.198 14.895 3.708 13.744 3.708 12.447s.49-2.448 1.297-3.323c.875-.807 2.026-1.297 3.323-1.297s2.448.49 3.323 1.297c.807.875 1.297 2.026 1.297 3.323s-.49 2.448-1.297 3.323c-.875.807-2.026 1.297-3.323 1.297zm7.83-9.281c-.49 0-.875-.385-.875-.875s.385-.875.875-.875.875.385.875.875-.385.875-.875.875z"/>
-              </svg>
-            </a>
-            <a href="https://www.scouting.org" target="_blank" rel="noopener noreferrer" className="solarpunk-social-link" title="Scouting America">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
-            </a>
-          </div>
-
-          <div className="mt-8 pt-8 border-t border-forest-200 text-center">
-            <p className="text-forest-500">&copy; 2024 {packName}. All rights reserved.</p>
+          <div className="mt-8 pt-8 border-t border-gray-200 text-center">
+            <p className="footer-copyright">&copy; 2024 {packName}. All rights reserved.</p>
           </div>
         </div>
       </footer>

@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Solarpunk Design System */
+@import './styles/solarpunk-design.css';
+
 /* Hide scrollbars for mobile-friendly horizontal scrolling */
 .scrollbar-hide {
   -ms-overflow-style: none;  /* Internet Explorer 10+ */

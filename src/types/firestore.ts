@@ -418,3 +418,25 @@ export interface RSVPPaymentData {
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
+
+// ============================================================================
+// INVENTORY
+// ============================================================================
+
+export type ItemCondition = 'excellent' | 'good' | 'fair' | 'poor' | 'needs_repair';
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  quantity: number;
+  condition: ItemCondition;
+  description: string;
+  notes?: string;
+  imageUrl?: string; // URL to item image
+  estimatedValue?: number; // Estimated value in cents
+  lastChecked: Timestamp;
+  checkedBy: string; // User ID who last checked the item
+  location?: string; // Where the item is stored
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}

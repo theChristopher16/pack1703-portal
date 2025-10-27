@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   FileText, 
   Download, 
@@ -13,7 +14,8 @@ import {
   EyeOff,
   Heart,
   Upload,
-  Eye
+  Eye,
+  Package
 } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import { Resource, ResourceSubmission, resourceService } from '../services/resourceService';
@@ -22,6 +24,7 @@ import { ResourceManagementModal, SubmissionReviewModal } from '../components/Re
 // Resource interface is now imported from resourceService
 
 const ResourcesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -38,7 +41,7 @@ const ResourcesPage: React.FC = () => {
   const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
   const [reviewingResourceId, setReviewingResourceId] = useState<string | undefined>(undefined);
   
-  const { state } = useAdmin();
+  const { state, hasRole } = useAdmin();
 
   // Load resources from Firebase
   useEffect(() => {
@@ -319,27 +322,38 @@ const ResourcesPage: React.FC = () => {
           </p>
           
           {/* Add Resource Button */}
-          {canManageResources && (
-            <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-4 flex-wrap">
+            {(hasRole('super-admin') || hasRole('content-admin') || hasRole('parent')) && (
               <button
-                onClick={() => {
-                  setReviewingResourceId(undefined);
-                  setShowSubmissionsModal(true);
-                }}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                onClick={() => navigate('/resources/inventory')}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-forest-600 to-ocean-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 shadow-lg hover:shadow-xl"
               >
-                <Eye className="h-5 w-5" />
-                Review Submissions
+                <Package className="h-5 w-5" />
+                Pack Inventory
               </button>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                <Plus className="h-5 w-5" />
-                Add New Resource
-              </button>
-            </div>
-          )}
+            )}
+            {canManageResources && (
+              <>
+                <button
+                  onClick={() => {
+                    setReviewingResourceId(undefined);
+                    setShowSubmissionsModal(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  <Eye className="h-5 w-5" />
+                  Review Submissions
+                </button>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add New Resource
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {loading ? (

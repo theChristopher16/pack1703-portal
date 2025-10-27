@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mail, Lock, Eye, EyeOff, Shield, UserPlus, Key } from 'lucide-react';
+import { X, Mail, Lock, Eye, EyeOff, Shield, UserPlus, Key, Calendar, MapPin, Users, Leaf, Sun, Mountain, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../services/authService';
 import SocialLogin from './SocialLogin';
@@ -132,63 +132,120 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
           />
           
           {/* Modal */}
-          <div className="relative w-full max-w-lg transform overflow-hidden rounded-brand bg-white shadow-card transition-all">
+          <div className="relative w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white/95 backdrop-blur-md shadow-glow transition-all">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-cloud">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-brand rounded-brand flex items-center justify-center shadow-card">
-                <span className="text-white text-xl">🏕️</span>
+          <div className="flex items-center justify-between p-8 border-b border-forest-200/50 bg-gradient-to-r from-forest-50/50 to-ocean-50/50">
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-gradient-solarpunk rounded-2xl flex items-center justify-center shadow-glow">
+                <span className="text-white text-2xl">🌱</span>
               </div>
               <div>
-                <h2 className="text-xl font-display font-bold text-ink">Welcome Back!</h2>
-                <p className="text-sm text-teal-700">Pack 1703 Scout Families Portal</p>
+                <h2 className="text-2xl font-solarpunk-display font-bold text-forest-600">Welcome to Pack 1703!</h2>
+                <p className="text-sm text-ocean-600">Solarpunk Scout Families Portal</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-md hover:bg-fog transition-colors duration-200"
+              className="p-3 rounded-xl hover:bg-forest-100/50 transition-colors duration-200"
             >
-              <X className="w-5 h-5 text-teal-500" />
+              <X className="w-6 h-6 text-forest-600" />
             </button>
           </div>
 
           {/* Content */}
-          <div className="p-6">
-            {/* Welcome Message */}
-            <div className="mb-6 text-center">
-              <p className="text-teal-700 text-sm leading-relaxed">
-                Access events, announcements, RSVPs, and connect with your scout family community.
-              </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+            {/* Left Side - Benefits */}
+            <div className="p-8 bg-gradient-to-br from-forest-50/30 to-ocean-50/30">
+              <div className="mb-8">
+                <h3 className="text-xl font-solarpunk-display font-bold text-forest-600 mb-4">
+                  Join Our Solarpunk Adventure
+                </h3>
+                <p className="text-forest-600 leading-relaxed mb-6">
+                  Experience the future of scouting where sustainable technology meets outdoor adventure. 
+                  Connect with your scout family and create lasting memories.
+                </p>
+              </div>
+
+              {/* Benefits Grid */}
+              <div className="space-y-4">
+                <div className="flex items-start space-x-4 p-4 bg-white/60 backdrop-blur-sm rounded-xl border border-forest-200/30">
+                  <div className="w-12 h-12 bg-gradient-to-br from-forest-400 to-forest-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Calendar className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-solarpunk-display font-semibold text-forest-700 mb-1">Adventure Events</h4>
+                    <p className="text-sm text-forest-600">Camping trips, eco-projects, and outdoor adventures that build character and environmental awareness.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-4 p-4 bg-white/60 backdrop-blur-sm rounded-xl border border-forest-200/30">
+                  <div className="w-12 h-12 bg-gradient-to-br from-ocean-400 to-ocean-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-solarpunk-display font-semibold text-forest-700 mb-1">Community Connection</h4>
+                    <p className="text-sm text-forest-600">Connect with fellow scout families, share experiences, and build lifelong friendships.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-4 p-4 bg-white/60 backdrop-blur-sm rounded-xl border border-forest-200/30">
+                  <div className="w-12 h-12 bg-gradient-to-br from-solar-400 to-solar-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Leaf className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-solarpunk-display font-semibold text-forest-700 mb-1">Eco-Conscious Learning</h4>
+                    <p className="text-sm text-forest-600">Learn about sustainability, renewable energy, and environmental stewardship through hands-on projects.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-4 p-4 bg-white/60 backdrop-blur-sm rounded-xl border border-forest-200/30">
+                  <div className="w-12 h-12 bg-gradient-to-br from-terracotta-400 to-terracotta-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Heart className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-solarpunk-display font-semibold text-forest-700 mb-1">Character Building</h4>
+                    <p className="text-sm text-forest-600">Develop leadership skills, responsibility, and values that will guide your scout throughout life.</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
+            {/* Right Side - Login Form */}
+            <div className="p-8">
+
             {/* Social Login */}
-            <SocialLogin
-              onSuccess={handleSocialLoginSuccess}
-              onError={handleSocialLoginError}
-              showEmailOption={false}
-              className="mb-6"
-            />
+            <div className="mb-6">
+              <h4 className="text-lg font-solarpunk-display font-semibold text-forest-600 mb-4 text-center">
+                Sign In to Continue
+              </h4>
+              <SocialLogin
+                onSuccess={handleSocialLoginSuccess}
+                onError={handleSocialLoginError}
+                showEmailOption={false}
+                className="mb-6"
+              />
+            </div>
 
             {/* Divider */}
             <div className="relative mb-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-cloud" />
+                <div className="w-full border-t border-forest-200/50" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-teal-500">or</span>
+                <span className="px-3 bg-white text-forest-500 font-medium">or continue with email</span>
               </div>
             </div>
 
             {/* Email/Password Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {/* Email Field */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-teal-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-solarpunk-display font-semibold text-forest-700 mb-2">
                   Email Address
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-teal-400" />
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-forest-400" />
                   </div>
                   <input
                     id="email"
@@ -198,7 +255,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
                     required
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-cloud rounded-md focus:ring-2 focus:ring-moss/20 focus:border-moss transition-colors duration-200"
+                    className="block w-full pl-12 pr-4 py-4 border border-forest-200 rounded-xl focus:ring-2 focus:ring-forest-400/20 focus:border-forest-400 transition-all duration-200 bg-white/80 backdrop-blur-sm"
                     placeholder="Enter your email"
                   />
                 </div>
@@ -206,12 +263,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
 
               {/* Password Field */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-teal-700 mb-2">
+                <label htmlFor="password" className="block text-sm font-solarpunk-display font-semibold text-forest-700 mb-2">
                   Password
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-teal-400" />
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-forest-400" />
                   </div>
                   <input
                     id="password"
@@ -221,18 +278,18 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
                     required
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-12 py-3 border border-cloud rounded-md focus:ring-2 focus:ring-moss/20 focus:border-moss transition-colors duration-200"
+                    className="block w-full pl-12 pr-14 py-4 border border-forest-200 rounded-xl focus:ring-2 focus:ring-forest-400/20 focus:border-forest-400 transition-all duration-200 bg-white/80 backdrop-blur-sm"
                     placeholder="Enter your password"
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-teal-400 hover:text-teal-600" />
+                      <EyeOff className="h-5 w-5 text-forest-400 hover:text-forest-600 transition-colors duration-200" />
                     ) : (
-                      <Eye className="h-5 w-5 text-teal-400 hover:text-teal-600" />
+                      <Eye className="h-5 w-5 text-forest-400 hover:text-forest-600 transition-colors duration-200" />
                     )}
                   </button>
                 </div>
@@ -243,7 +300,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
                 <button
                   type="button"
                   onClick={handleOpenResetPassword}
-                  className="text-sm text-moss hover:text-moss-600 font-medium transition-colors duration-200"
+                  className="text-sm text-ocean-600 hover:text-ocean-700 font-medium transition-colors duration-200"
                 >
                   Forgot your password?
                 </button>
@@ -251,8 +308,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
 
               {/* Error Message */}
               {error && (
-                <div className="p-3 bg-teal/10 border border-teal/20 rounded-xl">
-                  <p className="text-sm text-teal">{error}</p>
+                <div className="p-4 bg-solar-50 border border-solar-200 rounded-xl">
+                  <p className="text-sm text-solar-800 font-medium">{error}</p>
                 </div>
               )}
 
@@ -260,17 +317,17 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-moss hover:bg-moss-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moss disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                className="w-full solarpunk-btn-primary py-4 text-lg font-semibold"
               >
                 {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="flex items-center justify-center space-x-3">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     <span>Signing In...</span>
                   </div>
                 ) : (
-                  <div className="flex items-center space-x-2">
-                    <Shield className="w-4 h-4" />
-                    <span>Sign In</span>
+                  <div className="flex items-center justify-center space-x-3">
+                    <Shield className="w-5 h-5" />
+                    <span>Sign In to Pack 1703</span>
                   </div>
                 )}
               </button>
@@ -278,20 +335,22 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
 
             {/* Reset Password Form */}
             {showResetPassword && (
-              <div className="mt-6 p-4 bg-fog rounded-brand border border-cloud">
-                <div className="flex items-center space-x-2 mb-4">
-                  <Key className="w-5 h-5 text-moss" />
-                  <h3 className="text-lg font-semibold text-ink">Reset Password</h3>
+              <div className="mt-8 p-6 bg-gradient-to-br from-ocean-50/50 to-sky-50/50 rounded-2xl border border-ocean-200/50">
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="w-10 h-10 bg-gradient-to-br from-ocean-400 to-ocean-600 rounded-xl flex items-center justify-center">
+                    <Key className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-lg font-solarpunk-display font-semibold text-forest-700">Reset Password</h3>
                 </div>
                 
-                <form onSubmit={handleResetPassword} className="space-y-4">
+                <form onSubmit={handleResetPassword} className="space-y-5">
                   <div>
-                    <label htmlFor="resetEmail" className="block text-sm font-medium text-teal-700 mb-2">
+                    <label htmlFor="resetEmail" className="block text-sm font-solarpunk-display font-semibold text-forest-700 mb-2">
                       Email Address
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail className="h-5 w-5 text-teal-400" />
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-forest-400" />
                       </div>
                       <input
                         id="resetEmail"
@@ -301,7 +360,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
                         required
                         value={resetEmail}
                         onChange={(e) => setResetEmail(e.target.value)}
-                        className="block w-full pl-10 pr-3 py-3 border border-cloud rounded-md focus:ring-2 focus:ring-moss/20 focus:border-moss transition-colors duration-200"
+                        className="block w-full pl-12 pr-4 py-4 border border-forest-200 rounded-xl focus:ring-2 focus:ring-forest-400/20 focus:border-forest-400 transition-all duration-200 bg-white/80 backdrop-blur-sm"
                         placeholder="Enter your email address"
                       />
                     </div>
@@ -309,15 +368,15 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
 
                   {/* Reset Message */}
                   {resetMessage && (
-                    <div className={`p-3 rounded-xl ${
+                    <div className={`p-4 rounded-xl ${
                       resetMessage.includes('sent') 
-                        ? 'bg-moss/10 border border-moss/20' 
-                        : 'bg-teal/10 border border-teal/20'
+                        ? 'bg-ocean-50 border border-ocean-200' 
+                        : 'bg-solar-50 border border-solar-200'
                     }`}>
-                      <p className={`text-sm ${
+                      <p className={`text-sm font-medium ${
                         resetMessage.includes('sent') 
-                          ? 'text-moss' 
-                          : 'text-teal'
+                          ? 'text-ocean-800' 
+                          : 'text-solar-800'
                       }`}>
                         {resetMessage}
                       </p>
@@ -328,22 +387,25 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
                     <button
                       type="button"
                       onClick={handleBackToLogin}
-                      className="flex-1 py-2 px-4 border border-cloud rounded-md text-sm font-medium text-teal bg-white hover:bg-fog focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moss transition-colors duration-200"
+                      className="flex-1 py-3 px-4 border border-forest-200 text-forest-600 hover:bg-forest-50 rounded-xl transition-colors duration-200 font-medium"
                     >
                       Back to Login
                     </button>
                     <button
                       type="submit"
                       disabled={resetLoading}
-                      className="flex-1 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-moss hover:bg-moss-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moss disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                      className="flex-1 solarpunk-btn-solar py-3"
                     >
                       {resetLoading ? (
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center justify-center space-x-2">
                           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                           <span>Sending...</span>
                         </div>
                       ) : (
-                        'Send Reset Email'
+                        <div className="flex items-center justify-center space-x-2">
+                          <Mail className="w-4 h-4" />
+                          <span>Send Reset Email</span>
+                        </div>
                       )}
                     </button>
                   </div>
@@ -352,27 +414,28 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
             )}
 
             {/* Footer */}
-            <div className="mt-6 text-center">
-              <p className="text-xs text-teal-600 mb-4">
+            <div className="mt-8 text-center">
+              <p className="text-xs text-forest-500 mb-4">
                 By signing in, you agree to our{' '}
-                <a href="#" onClick={(e)=>{e.preventDefault(); navigate('/privacy');}} className="text-moss hover:text-moss-600 font-medium">
+                <a href="#" onClick={(e)=>{e.preventDefault(); navigate('/privacy');}} className="text-ocean-600 hover:text-ocean-700 font-medium transition-colors duration-200">
                   Privacy Policy
                 </a>{' '}
                 and{' '}
-                <a href="#" onClick={(e)=>{e.preventDefault(); navigate('/terms');}} className="text-moss hover:text-moss-600 font-medium">
+                <a href="#" onClick={(e)=>{e.preventDefault(); navigate('/terms');}} className="text-ocean-600 hover:text-ocean-700 font-medium transition-colors duration-200">
                   Terms of Service
                 </a>
               </p>
               
               {/* Account Request Link */}
-              <div className="border-t border-cloud pt-4">
-                <p className="text-sm text-teal-700 mb-3">
+              <div className="border-t border-forest-200/50 pt-4">
+                <p className="text-sm text-forest-600 mb-3">
                   Don't have an account?
                 </p>
-                <p className="text-xs text-teal-600 text-center">
+                <p className="text-xs text-forest-500 text-center">
                   Contact pack leadership to request account access
                 </p>
               </div>
+            </div>
             </div>
           </div>
         </div>        </div>

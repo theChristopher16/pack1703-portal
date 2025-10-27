@@ -24,7 +24,7 @@ interface Event {
     address: string;
     coordinates?: { lat: number; lng: number };
   };
-  category: 'pack-wide' | 'den' | 'camping' | 'overnight' | 'service' | 'elective';
+  category: 'pack' | 'den' | 'campout' | 'overnight' | 'service' | 'meeting' | 'elective';
   denTags: string[];
   maxCapacity: number;
   currentRSVPs: number;

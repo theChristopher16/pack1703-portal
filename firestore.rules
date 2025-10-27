@@ -752,6 +752,30 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // INVENTORY - Admin, super admin, content admin, and parent roles only
+    // ============================================================================
+    
+    // Inventory items - admins, super admins, content admins, and parents can read and write
+    match /inventory/{itemId} {
+      allow read: if isAuthenticated() && (
+        request.auth.token.get('role', '') in ['super_admin', 'content_admin', 'parent'] ||
+        isAdmin()
+      );
+      allow write: if isAuthenticated() && (
+        request.auth.token.get('role', '') in ['super_admin', 'content_admin', 'parent'] ||
+        isAdmin()
+      );
+    }
+    
+    // Allow aggregation queries on inventory collection
+    match /inventory {
+      allow read: if isAuthenticated() && (
+        request.auth.token.get('role', '') in ['super_admin', 'content_admin', 'parent'] ||
+        isAdmin()
+      );
+    }
+
+    // ============================================================================
     // TEST COLLECTIONS (for monitoring and testing)
     // ============================================================================
     

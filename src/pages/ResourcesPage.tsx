@@ -25,6 +25,7 @@ import { ResourceManagementModal, SubmissionReviewModal } from '../components/Re
 
 const ResourcesPage: React.FC = () => {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'resources' | 'inventory'>('resources');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -42,6 +43,8 @@ const ResourcesPage: React.FC = () => {
   const [reviewingResourceId, setReviewingResourceId] = useState<string | undefined>(undefined);
   
   const { state, hasRole } = useAdmin();
+  
+  const canManageInventory = hasRole('super-admin') || hasRole('content-admin') || hasRole('parent');
 
   // Load resources from Firebase
   useEffect(() => {
@@ -321,45 +324,73 @@ const ResourcesPage: React.FC = () => {
             medical forms, policies, and helpful guides for families.
           </p>
           
-          {/* Add Resource Button */}
-          <div className="flex justify-center gap-4 flex-wrap">
-            {(hasRole('super-admin') || hasRole('content-admin') || hasRole('parent')) && (
+          {/* Tab Navigation */}
+          {canManageInventory && (
+            <div className="flex justify-center gap-2 mb-8">
               <button
-                onClick={() => navigate('/resources/inventory')}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-forest-600 to-ocean-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                onClick={() => setActiveTab('resources')}
+                className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl transition-all duration-200 ${
+                  activeTab === 'resources'
+                    ? 'bg-gradient-to-r from-primary-600 to-secondary-600 text-white shadow-lg'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+                }`}
+              >
+                <FileText className="h-5 w-5" />
+                Forms & Docs
+              </button>
+              <button
+                onClick={() => setActiveTab('inventory')}
+                className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl transition-all duration-200 ${
+                  activeTab === 'inventory'
+                    ? 'bg-gradient-to-r from-forest-600 to-ocean-600 text-white shadow-lg'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+                }`}
               >
                 <Package className="h-5 w-5" />
                 Pack Inventory
               </button>
-            )}
-            {canManageResources && (
-              <>
-                <button
-                  onClick={() => {
-                    setReviewingResourceId(undefined);
-                    setShowSubmissionsModal(true);
-                  }}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  <Eye className="h-5 w-5" />
-                  Review Submissions
-                </button>
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  <Plus className="h-5 w-5" />
-                  Add New Resource
-                </button>
-              </>
-            )}
-          </div>
+            </div>
+          )}
+          
+          {/* Action Buttons */}
+          {canManageResources && activeTab === 'resources' && (
+            <div className="flex justify-center gap-4 flex-wrap mb-8">
+              <button
+                onClick={() => {
+                  setReviewingResourceId(undefined);
+                  setShowSubmissionsModal(true);
+                }}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                <Eye className="h-5 w-5" />
+                Review Submissions
+              </button>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                <Plus className="h-5 w-5" />
+                Add New Resource
+              </button>
+            </div>
+          )}
         </div>
 
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading resources...</p>
+          </div>
+        ) : activeTab === 'inventory' && canManageInventory ? (
+          // Redirect to inventory page
+          <div className="text-center py-12">
+            <button
+              onClick={() => navigate('/resources/inventory')}
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-forest-600 to-ocean-600 text-white text-lg font-semibold rounded-xl hover:shadow-lg transition-all duration-200"
+            >
+              <Package className="h-6 w-6" />
+              Go to Pack Inventory
+            </button>
           </div>
         ) : (
           <>

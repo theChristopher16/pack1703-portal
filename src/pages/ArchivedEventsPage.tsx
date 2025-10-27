@@ -169,13 +169,14 @@ const ArchivedEventsPage: React.FC = () => {
                 {expandedYears.has(year) && (
                   <div className="px-6 pb-6 space-y-4">
                     {archivedEventsByYear[year].map((event) => (
-                      <div
+                      <button
                         key={event.id}
-                        className="bg-white rounded-xl p-6 border border-forest-100 hover:border-forest-200 hover:shadow-md transition-all"
+                        onClick={() => navigate(`/events/${event.id}`)}
+                        className="w-full text-left bg-white rounded-xl p-6 border border-forest-100 hover:border-forest-300 hover:shadow-lg hover:bg-forest-50/20 transition-all cursor-pointer"
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-forest-800 mb-2">
+                            <h3 className="text-lg font-semibold text-forest-800 mb-2 group-hover:text-forest-900">
                               {event.title}
                             </h3>
                             <div className="flex flex-wrap items-center gap-3 text-sm text-forest-600">
@@ -207,7 +208,13 @@ const ArchivedEventsPage: React.FC = () => {
                             {event.description}
                           </p>
                         )}
-                      </div>
+                        
+                        <div className="mt-4 flex items-center justify-end">
+                          <span className="text-sm text-forest-500 hover:text-forest-700 font-medium">
+                            View Details →
+                          </span>
+                        </div>
+                      </button>
                     ))}
                   </div>
                 )}

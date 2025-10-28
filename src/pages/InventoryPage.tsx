@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, Edit, ArrowLeft, Package, DollarSign, Image as ImageIcon } from 'lucide-react';
+import { Plus, Trash2, Edit, ArrowLeft, Package, DollarSign, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import { InventoryItem, ItemCondition } from '../types/firestore';
 import { Timestamp, collection, query, getDocs, addDoc, updateDoc, deleteDoc, doc, orderBy } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { googleSheetsSyncService } from '../services/googleSheetsSyncService';
 
 const InventoryPage: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const InventoryPage: React.FC = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   
   const canManageInventory = hasRole('super-admin') || hasRole('content-admin') || hasRole('parent');
   
@@ -113,6 +115,31 @@ const InventoryPage: React.FC = () => {
       addNotification('error', 'Delete Failed', 'Could not delete the item.');
     } finally {
       setDeletingItemId(null);
+    }
+  };
+
+  const handleSyncFromGoogleSheet = async () => {
+    if (!window.confirm('This will sync all items from the Google Sheet to your inventory. Existing items may be updated. Continue?')) {
+      return;
+    }
+    
+    try {
+      setIsSyncing(true);
+      const result = await googleSheetsSyncService.syncInventory();
+      
+      addNotification(
+        'success', 
+        'Sync Complete', 
+        `Successfully synced ${result.success} items from Google Sheet. ${result.errors} errors.`
+      );
+      
+      // Reload inventory
+      await loadInventory();
+    } catch (error: any) {
+      console.error('Error syncing from Google Sheet:', error);
+      addNotification('error', 'Sync Failed', error.message || 'Could not sync from Google Sheet.');
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -216,13 +243,23 @@ const InventoryPage: React.FC = () => {
             </div>
             
             {canManageInventory && (
-              <button
-                onClick={handleCreate}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-forest-600 to-ocean-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-105"
-              >
-                <Plus className="w-5 h-5" />
-                Add Item
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleSyncFromGoogleSheet}
+                  disabled={isSyncing}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-white text-forest-600 font-semibold rounded-xl hover:shadow-lg transition-all duration-200 border-2 border-forest-300 hover:border-forest-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} />
+                  {isSyncing ? 'Syncing...' : 'Sync from Google Sheet'}
+                </button>
+                <button
+                  onClick={handleCreate}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-forest-600 to-ocean-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-105"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Item
+                </button>
+              </div>
             )}
           </div>
         </div>

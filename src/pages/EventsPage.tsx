@@ -1211,8 +1211,8 @@ const EventsPage: React.FC = () => {
   // Removed loading animation for faster page transitions
 
   return (
-    <div className="min-h-screen bg-fog pt-20 pb-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-fog pt-20 pb-12 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         {/* Page Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-display font-bold text-ink mb-4">
@@ -1251,8 +1251,8 @@ const EventsPage: React.FC = () => {
         )}
 
         {/* View Toggle and Actions */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 mb-8">
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 mb-8 overflow-x-auto">
+          <div className="flex items-center space-x-4 flex-wrap">
             {/* View Mode Toggle */}
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
@@ -1295,7 +1295,7 @@ const EventsPage: React.FC = () => {
           {/* My Den Meetings Toggle */}
           <button
             onClick={() => setShowMyDenMeetingsOnly(!showMyDenMeetingsOnly)}
-            className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
+            className={`px-4 py-2 rounded-lg transition-colors duration-200 whitespace-nowrap ${
               showMyDenMeetingsOnly
                 ? 'bg-yellow-500 text-white'
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
@@ -1306,7 +1306,7 @@ const EventsPage: React.FC = () => {
 
             {/* Admin Controls */}
             {isAdmin && (
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white/50 backdrop-blur-sm rounded-lg p-2 border border-gray-200/50">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white/50 backdrop-blur-sm rounded-lg p-2 border border-gray-200/50 min-w-0">
                 {/* Admin Search */}
                 <div className="relative flex-1">
                   <input
@@ -1353,12 +1353,12 @@ const EventsPage: React.FC = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 flex-wrap">
             {/* Admin Create Button */}
             {isAdmin && (
               <button
                 onClick={handleCreateEvent}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" />
                 Create Event
@@ -1367,7 +1367,7 @@ const EventsPage: React.FC = () => {
 
             <button
               onClick={generateICSFeed}
-              className="px-3 py-2 bg-white/80 border border-gray-200 text-gray-600 rounded-lg hover:bg-white hover:text-gray-800 transition-all duration-200 text-sm"
+              className="px-3 py-2 bg-white/80 border border-gray-200 text-gray-600 rounded-lg hover:bg-white hover:text-gray-800 transition-all duration-200 text-sm whitespace-nowrap"
             >
               <Download className="w-4 h-4 inline mr-1.5" />
               ICS Feed
@@ -1375,7 +1375,7 @@ const EventsPage: React.FC = () => {
             
             <button
               onClick={shareCalendar}
-              className="px-3 py-2 bg-white/80 border border-gray-200 text-gray-600 rounded-lg hover:bg-white hover:text-gray-800 transition-all duration-200 text-sm"
+              className="px-3 py-2 bg-white/80 border border-gray-200 text-gray-600 rounded-lg hover:bg-white hover:text-gray-800 transition-all duration-200 text-sm whitespace-nowrap"
             >
               <Share2 className="w-4 h-4 inline mr-1.5" />
               Share
@@ -1384,7 +1384,7 @@ const EventsPage: React.FC = () => {
             {/* View Archived Events Button */}
             <button
               onClick={() => navigate('/events/archived')}
-              className="px-3 py-2 bg-white/80 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 hover:text-amber-700 transition-all duration-200 text-sm flex items-center gap-1.5"
+              className="px-3 py-2 bg-white/80 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 hover:text-amber-700 transition-all duration-200 text-sm flex items-center gap-1.5 whitespace-nowrap"
             >
               <Archive className="w-4 h-4" />
               Archived

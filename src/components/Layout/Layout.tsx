@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, ChevronDown, Settings, LogOut } from 'lucide-react';
+import { Menu, X, Settings, LogOut } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { useAdmin } from '../../contexts/AdminContext';
 import { UserRole } from '../../services/authService';
@@ -16,7 +16,6 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -69,23 +68,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   // Handle navigation with error recovery
   const handleNavigation = (href: string) => {
-    // console.log('Attempting navigation to:', href);
+    // Close mobile menu if open
+    setIsMobileMenuOpen(false);
     
-    // Close dropdown if open
-    setIsDropdownOpen(false);
-    
-    // Add a small delay to ensure dropdown closes before navigation
-    setTimeout(() => {
-      // Force navigation even if there are issues
-      try {
-        // console.log('Executing navigation to:', href);
-        navigate(prefixPath(href));
-      } catch (error) {
-        console.error('Navigation error, forcing redirect:', error);
-        // Fallback to window.location if React Router fails
-        window.location.href = prefixPath(href);
-      }
-    }, 100);
+    // Force navigation even if there are issues
+    try {
+      navigate(prefixPath(href));
+    } catch (error) {
+      console.error('Navigation error, forcing redirect:', error);
+      // Fallback to window.location if React Router fails
+      window.location.href = prefixPath(href);
+    }
   };
 
   
@@ -308,219 +301,41 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
             </button>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-1">
-              {mainToolbarItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.name}
-                    onClick={() => {
-                      // console.log('Main toolbar navigation clicked:', item.href);
-                      handleNavigation(item.href);
-                    }}
-                    className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
-                      isActive(item.href)
-                        ? 'bg-gradient-forest text-white shadow-glow'
-                        : 'bg-white/95 backdrop-blur-sm border border-forest-200 text-forest-700 hover:bg-gradient-to-r hover:from-forest-50 hover:to-ocean-50 hover:border-forest-300 hover:text-forest-800'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center space-x-2">
-                      <Icon className="w-4 h-4" />
-                      <span className="text-sm font-semibold">{item.name}</span>
-                    </div>
-                    
-                    {/* Hover Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-teal-500/20 -translate-x-full group-hover:translate-x-0 transition-transform duration-500 rounded-xl"></div>
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* Medium Screen Navigation (shorter names) */}
-            <nav className="hidden md:flex lg:hidden items-center space-x-1">
-              {mainToolbarItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.name}
-                    onClick={() => {
-                      // console.log('Medium toolbar navigation clicked:', item.href);
-                      handleNavigation(item.href);
-                    }}
-                    className={`px-3 py-2 rounded-xl font-medium transition-all duration-300 group relative overflow-hidden ${
-                      isActive(item.href)
-                        ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg'
-                        : 'bg-white/95 backdrop-blur-sm border border-gray-200 text-gray-800 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 hover:border-emerald-200 hover:text-emerald-800'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center space-x-2">
-                      <Icon className="w-4 h-4" />
-                      <span className="text-sm">{item.name}</span>
-                    </div>
-                    
-                    {/* Hover Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-teal-500/20 -translate-x-full group-hover:translate-x-0 transition-transform duration-500 rounded-xl"></div>
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* More Dropdown for Additional Navigation Items */}
-            <div className="hidden md:flex items-center">
-              <div className="relative">
-                <button 
-                  onClick={() => {
-                    console.log('More button clicked, current state:', isDropdownOpen);
-                    setIsDropdownOpen(!isDropdownOpen);
-                  }}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-xl font-medium nav-text-inactive hover:nav-text-active hover:bg-primary-50/50 transition-all duration-300"
-                >
-                  <span className="text-sm">More</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-                
-                {/* Enhanced Dropdown Menu with Organized Groups */}
-                {isDropdownOpen && (
-                  <div 
-                    className="absolute top-full right-0 mt-2 w-80 bg-white/95 backdrop-blur-md rounded-2xl shadow-soft border border-white/50 z-50 max-h-96 overflow-y-auto"
-                    onMouseLeave={() => {
-                      console.log('Mouse left dropdown, closing');
-                      setIsDropdownOpen(false);
-                    }}
-                  >
-                    <div className="py-2 max-h-96 overflow-y-auto">
-                      {/* Navigation Groups */}
-                      {navigationGroups.map((group, groupIndex) => (
-                        <div key={group.name} className="mb-2">
-                          {/* Group Header */}
-                          <div className="px-4 py-2 border-b border-gray-300 bg-gray-200/90">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-lg">{group.icon}</span>
-                              <span className="text-xs font-bold text-gray-800 uppercase tracking-wide select-none">
-                                {group.name}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          {/* Group Items */}
-                          <div className="py-1">
-                            {group.items.map((item) => {
-                              const Icon = item.icon;
-                              return (
-                                <button
-                                  key={item.name}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleNavigation(item.href);
-                                    setIsDropdownOpen(false);
-                                  }}
-                                  className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg cursor-pointer ${
-                                    isActive(item.href)
-                                      ? 'text-primary-600 bg-primary-100 border border-primary-200 shadow-sm'
-                                      : 'text-gray-700 hover:text-primary-600 hover:bg-primary-50 hover:shadow-sm hover:border hover:border-primary-100'
-                                  }`}
-                                >
-                                  <Icon className="w-4 h-4 flex-shrink-0" />
-                                  <span className="truncate">{item.name}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {/* Logout Button (only when logged in) */}
-                      {currentUser && (
-                        <div className="border-t border-gray-200 mt-2 pt-2">
-                          <button
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              try {
-                                const { authService } = await import('../../services/authService');
-                                await authService.signOut();
-                                setIsDropdownOpen(false);
-                                console.log('User logged out successfully');
-                              } catch (error) {
-                                console.error('Error logging out:', error);
-                              }
-                            }}
-                            className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 hover:shadow-sm hover:border hover:border-red-100"
-                          >
-                            <LogOut className="w-4 h-4" />
-                            <span>Logout</span>
-                          </button>
-                        </div>
-                      )}
-                      
-                      {/* Login/Admin Link */}
-                      <div className="border-t border-gray-200 mt-2 pt-2">
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Mobile menu button */}
-            <div className="md:hidden">
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 rounded-xl nav-text-inactive hover:nav-text-active hover:bg-primary-50/50 transition-all duration-300 border border-gray-300"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="w-6 h-6" />
-                ) : (
-                  <Menu className="w-6 h-6" />
-                )}
-              </button>
-            </div>
+            {/* Hamburger Menu Button - All Screen Sizes */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 rounded-xl bg-white/95 backdrop-blur-sm border border-forest-200 text-forest-700 hover:bg-gradient-to-r hover:from-forest-50 hover:to-ocean-50 hover:border-forest-300 hover:text-forest-800 transition-all duration-300"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Mobile Navigation Menu - Full Screen Overlay */}
+        {/* Hamburger Menu - All Screen Sizes */}
         {isMobileMenuOpen && (
           <>
             {/* Backdrop - Covers everything */}
             <div 
-              style={{ 
-                position: 'fixed',
-                top: '0',
-                left: '0',
-                right: '0',
-                bottom: '0',
-                width: '100vw',
-                height: '100vh',
-                zIndex: 99998,
-                backgroundColor: 'rgba(0,0,0,0.5)'
-              }}
+              className="fixed inset-0 bg-black/50 z-40"
               onClick={() => setIsMobileMenuOpen(false)}
             />
-            {/* Mobile Menu Content */}
+            {/* Menu Content - Slide in from right */}
             <div 
-              style={{ 
-                position: 'fixed',
-                top: '64px',
-                left: '0',
-                right: '0',
-                bottom: '0',
-                width: '100vw',
-                height: 'calc(100vh - 64px - 60px)',
-                maxHeight: 'calc(100vh - 64px - 60px)',
-                zIndex: 99999,
-                backgroundColor: 'white',
-                color: 'black',
-                padding: '16px',
-                paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
-                overflow: 'auto',
-                boxSizing: 'border-box'
+              className="fixed top-16 right-0 bottom-0 w-full sm:w-96 bg-white shadow-2xl z-50 overflow-y-auto"
+              style={{
+                maxHeight: 'calc(100vh - 64px)',
+                paddingBottom: 'calc(16px + env(safe-area-inset-bottom))'
               }}
             >
+              <div className="p-4 sm:p-6">
               <div className="space-y-4">
-                {/* Navigation Groups */}
-                {mobileNavigationGroups.map((group, groupIndex) => (
+                {/* Navigation Groups - Show all groups */}
+                {navigationGroups.map((group, groupIndex) => (
                   <div key={group.name} className="border border-gray-200 rounded-lg overflow-hidden">
                     {/* Group Header */}
                     <div className="bg-gray-100 px-4 py-3 border-b border-gray-200">
@@ -545,8 +360,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             }}
                             className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 border-b border-gray-100 last:border-b-0 ${
                               isActive(item.href)
-                                ? 'text-blue-600 bg-blue-50'
-                                : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                                ? 'text-primary-600 bg-primary-50 border-l-4 border-primary-600'
+                                : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                             }`}
                           >
                             <Icon className="w-4 h-4 flex-shrink-0" />
@@ -600,10 +415,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 {/* Close Button */}
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-lg transition-all duration-200"
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-lg transition-all duration-200 mt-4"
                 >
                   Close Menu
                 </button>
+              </div>
               </div>
             </div>
           </>

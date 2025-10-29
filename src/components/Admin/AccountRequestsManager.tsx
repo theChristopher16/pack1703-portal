@@ -10,18 +10,21 @@ import {
   Shield,
   AlertCircle,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Download
 } from 'lucide-react';
 import { accountRequestService, AccountRequest } from '../../services/accountRequestService';
 import { useAdmin } from '../../contexts/AdminContext';
 import { collection, query, where, orderBy, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db } from '../../firebase/config';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const AccountRequestsManager: React.FC = () => {
   const { addNotification } = useAdmin();
   const [requests, setRequests] = useState<AccountRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasLoaded = useRef(false);
   const unsubscribeRef = useRef<Unsubscribe | null>(null);
@@ -139,6 +142,32 @@ const AccountRequestsManager: React.FC = () => {
     }
   };
 
+  const handleImportGoogleUsers = async () => {
+    if (!window.confirm('This will create account requests for all Google sign-in users who don\'t have requests. Continue?')) {
+      return;
+    }
+
+    try {
+      setIsImporting(true);
+      const functions = getFunctions();
+      const createRequests = httpsCallable(functions, 'createRequestsForExistingGoogleUsers');
+      
+      const result = await createRequests({});
+      const data = result.data as any;
+      
+      if (data.success) {
+        addNotification('success', 'Import Complete', data.message || `Processed ${data.results?.processed || 0} users. Created ${data.results?.created || 0} new requests.`);
+      } else {
+        addNotification('error', 'Import Failed', data.message || 'Failed to import Google users');
+      }
+    } catch (error: any) {
+      console.error('Error importing Google users:', error);
+      addNotification('error', 'Import Failed', error.message || 'Failed to import Google users. Check console for details.');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
@@ -190,22 +219,34 @@ const AccountRequestsManager: React.FC = () => {
           </div>
         </div>
         
-        <button
-          onClick={() => {
-            // Force a refresh by temporarily disabling and re-enabling the listener
-            if (unsubscribeRef.current) {
-              unsubscribeRef.current();
-              unsubscribeRef.current = null;
-            }
-            // The useEffect will automatically restart the listener
-            window.location.reload();
-          }}
-          className="flex items-center gap-2 px-6 py-3 bg-white/90 backdrop-blur-sm text-gray-700 hover:text-gray-900 hover:bg-white rounded-xl transition-all duration-200 border border-gray-200/50 font-medium"
-          disabled={isLoading}
-        >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleImportGoogleUsers}
+            disabled={isImporting}
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 rounded-xl transition-all duration-200 font-medium shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Import Google sign-in users who don't have account requests"
+          >
+            <Download className={`w-4 h-4 ${isImporting ? 'animate-spin' : ''}`} />
+            {isImporting ? 'Importing...' : 'Import Google Users'}
+          </button>
+          
+          <button
+            onClick={() => {
+              // Force a refresh by temporarily disabling and re-enabling the listener
+              if (unsubscribeRef.current) {
+                unsubscribeRef.current();
+                unsubscribeRef.current = null;
+              }
+              // The useEffect will automatically restart the listener
+              window.location.reload();
+            }}
+            className="flex items-center gap-2 px-6 py-3 bg-white/90 backdrop-blur-sm text-gray-700 hover:text-gray-900 hover:bg-white rounded-xl transition-all duration-200 border border-gray-200/50 font-medium"
+            disabled={isLoading}
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Error Message */}

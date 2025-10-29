@@ -1467,10 +1467,46 @@ export const submitAccountRequest = functions.https.onCall(async (data: any, con
         medicalInfo: data.reason
       };
       
-      await emailService.sendUserApprovalNotification(userData);
-      console.log('User approval notification email sent to cubmaster');
-    } catch (emailError) {
+      const emailSent = await emailService.sendUserApprovalNotification(userData);
+      console.log('User approval notification email sent to cubmaster:', emailSent);
+      
+      // Log email success in adminActions for tracking
+      await db.collection('adminActions').add({
+        action: 'account_request_email_sent',
+        entityType: 'account_request',
+        entityId: requestRef.id,
+        entityName: data.displayName,
+        details: {
+          email: data.email,
+          emailSent: emailSent
+        },
+        timestamp: getTimestamp(),
+        success: emailSent
+      });
+    } catch (emailError: any) {
       console.error('Failed to send user approval notification email:', emailError);
+      functions.logger.error('Email send failure', {
+        error: emailError.message,
+        stack: emailError.stack,
+        requestId: requestRef.id,
+        email: data.email
+      });
+      
+      // Log email failure in adminActions for monitoring
+      await db.collection('adminActions').add({
+        action: 'account_request_email_failed',
+        entityType: 'account_request',
+        entityId: requestRef.id,
+        entityName: data.displayName,
+        details: {
+          email: data.email,
+          error: emailError.message || 'Unknown error',
+          errorCode: emailError.code
+        },
+        timestamp: getTimestamp(),
+        success: false
+      });
+      
       // Don't fail the request submission if email fails
     }
 
@@ -1799,10 +1835,48 @@ export const approveAccountRequest = functions.https.onCall(async (data: any, co
         setupToken: setupToken
       };
       
-      await emailService.sendWelcomeEmail(userData);
-      console.log('Welcome email sent successfully');
-    } catch (emailError) {
-      console.error('Failed to send user approval notification:', emailError);
+      const emailSent = await emailService.sendWelcomeEmail(userData);
+      console.log('Welcome email sent successfully:', emailSent);
+      
+      // Log email success
+      await db.collection('adminActions').add({
+        action: 'welcome_email_sent',
+        entityType: 'user',
+        entityId: firebaseAuthUser.uid,
+        entityName: requestData.displayName,
+        details: {
+          email: requestData.email,
+          emailSent: emailSent,
+          setupToken: setupToken
+        },
+        timestamp: getTimestamp(),
+        success: emailSent
+      });
+    } catch (emailError: any) {
+      console.error('Failed to send welcome email:', emailError);
+      functions.logger.error('Welcome email send failure', {
+        error: emailError.message,
+        stack: emailError.stack,
+        userId: firebaseAuthUser.uid,
+        email: requestData.email
+      });
+      
+      // Log email failure for monitoring
+      await db.collection('adminActions').add({
+        action: 'welcome_email_failed',
+        entityType: 'user',
+        entityId: firebaseAuthUser.uid,
+        entityName: requestData.displayName,
+        details: {
+          email: requestData.email,
+          error: emailError.message || 'Unknown error',
+          errorCode: emailError.code,
+          setupToken: setupToken // Include token so it can be resent
+        },
+        timestamp: getTimestamp(),
+        success: false
+      });
+      
       // Don't fail the approval if email fails
     }
 
@@ -4978,6 +5052,232 @@ export const completeRSVPPayment = functions.https.onCall(async (data: any, cont
       throw error;
     }
     throw new functions.https.HttpsError('internal', 'Failed to complete payment');
+  }
+});
+
+// Helper function to create account request for a Google user
+async function createAccountRequestForGoogleUser(user: admin.auth.UserRecord, db: FirebaseFirestore.Firestore): Promise<string | null> {
+  // Check if user already has an account request
+  const existingRequestQuery = await db.collection('accountRequests')
+    .where('email', '==', user.email)
+    .get();
+  
+  if (!existingRequestQuery.empty) {
+    console.log('Account request already exists for:', user.email);
+    return existingRequestQuery.docs[0].id;
+  }
+  
+  // Check if user already exists in users collection (already approved)
+  const existingUserQuery = await db.collection('users')
+    .where('email', '==', user.email)
+    .get();
+  
+  if (!existingUserQuery.empty) {
+    console.log('User already approved:', user.email);
+    return null;
+  }
+  
+  // Extract name from displayName
+  const nameParts = (user.displayName || '').split(' ');
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.slice(1).join(' ') || '';
+  
+  // Create account request automatically
+  const requestData = {
+    email: user.email || '',
+    displayName: user.displayName || '',
+    firstName: firstName,
+    lastName: lastName,
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    scoutRank: '',
+    den: '',
+    emergencyContact: '',
+    emergencyPhone: '',
+    medicalInfo: '',
+    dietaryRestrictions: '',
+    specialNeeds: '',
+    reason: 'Google sign-in - account request auto-created',
+    status: 'pending',
+    submittedAt: getTimestamp(),
+    createdAt: getTimestamp(),
+    updatedAt: getTimestamp(),
+    linkedUserId: user.uid,
+    source: 'google_signin_auto',
+    authProvider: 'google',
+    photoURL: user.photoURL || '',
+    notes: `Automatically created from Google sign-in. User authenticated on ${new Date().toISOString()}`
+  };
+  
+  const requestRef = await db.collection('accountRequests').add(requestData);
+  console.log('Auto-created account request for Google user:', user.email, requestRef.id);
+  
+  // Send email notification to cubmaster
+  try {
+    const { emailService } = await import('./emailService');
+    const userData = {
+      uid: user.uid,
+      email: user.email || '',
+      displayName: user.displayName || '',
+      phone: '',
+      address: '',
+      emergencyContact: '',
+      medicalInfo: 'Google sign-in user'
+    };
+    
+    await emailService.sendUserApprovalNotification(userData);
+    console.log('Notification email sent for auto-created request');
+  } catch (emailError: any) {
+    console.error('Failed to send notification email for auto-created request:', emailError);
+  }
+  
+  return requestRef.id;
+}
+
+// Callable function to create account requests for existing Google users who don't have requests
+export const createRequestsForExistingGoogleUsers = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Check if user has admin privileges
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User not found');
+    }
+
+    const userData = userDoc.data();
+    const hasAdminRole = userData?.role === 'super_admin' || userData?.role === 'admin' || userData?.role === 'den_leader';
+    const hasLegacyPermissions = userData?.isAdmin || userData?.isDenLeader || userData?.isCubmaster;
+    const hasUserManagementPermission = userData?.permissions?.includes('user_management') || userData?.permissions?.includes('system_admin');
+    
+    if (!hasAdminRole && !hasLegacyPermissions && !hasUserManagementPermission) {
+      throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions');
+    }
+
+    console.log('Finding Google users without account requests...');
+    
+    // Get all Firebase Auth users
+    let allUsers: admin.auth.UserRecord[] = [];
+    let nextPageToken: string | undefined;
+    
+    do {
+      const listUsersResult = await admin.auth().listUsers(1000, nextPageToken);
+      allUsers = allUsers.concat(listUsersResult.users);
+      nextPageToken = listUsersResult.pageToken;
+    } while (nextPageToken);
+    
+    // Filter to Google users only
+    const googleUsers = allUsers.filter(user => 
+      user.providerData.some(provider => provider.providerId === 'google.com')
+    );
+    
+    console.log(`Found ${googleUsers.length} Google Auth users`);
+    
+    const results = {
+      processed: 0,
+      created: 0,
+      alreadyExists: 0,
+      alreadyApproved: 0,
+      errors: [] as any[]
+    };
+    
+    // Create account requests for each Google user
+    for (const user of googleUsers) {
+      try {
+        results.processed++;
+        const requestId = await createAccountRequestForGoogleUser(user, db);
+        
+        if (requestId) {
+          results.created++;
+          console.log(`Created request ${requestId} for ${user.email}`);
+        } else {
+          // Check why it wasn't created
+          const existingRequest = await db.collection('accountRequests')
+            .where('email', '==', user.email)
+            .get();
+          const existingUser = await db.collection('users')
+            .where('email', '==', user.email)
+            .get();
+          
+          if (!existingRequest.empty) {
+            results.alreadyExists++;
+          } else if (!existingUser.empty) {
+            results.alreadyApproved++;
+          }
+        }
+      } catch (error: any) {
+        results.errors.push({
+          email: user.email,
+          error: error.message
+        });
+        console.error(`Error processing ${user.email}:`, error);
+      }
+    }
+    
+    return {
+      success: true,
+      message: `Processed ${results.processed} Google users. Created ${results.created} new requests.`,
+      results
+    };
+    
+  } catch (error: any) {
+    console.error('Error creating requests for Google users:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to create requests');
+  }
+});
+
+// Firebase Auth Trigger: Auto-create account requests for Google sign-in users
+// This ensures all Google sign-in users have account requests that appear in the approval list
+export const onCreateGoogleAuthUser = functions.auth.user().onCreate(async (user) => {
+  try {
+    // Only process Google sign-in users
+    const isGoogleUser = user.providerData.some(provider => provider.providerId === 'google.com');
+    
+    if (!isGoogleUser) {
+      console.log('Skipping non-Google auth user:', user.uid);
+      return;
+    }
+    
+    console.log('Processing new Google sign-in user:', user.email, user.uid);
+    
+    // Use the helper function to create the account request
+    const requestId = await createAccountRequestForGoogleUser(user, db);
+    
+    if (requestId) {
+      // Log the action
+      await db.collection('adminActions').add({
+        action: 'google_signin_auto_request_created',
+        entityType: 'account_request',
+        entityId: requestId,
+        entityName: user.displayName || user.email || '',
+        details: {
+          email: user.email,
+          userId: user.uid,
+          source: 'google_signin_auto'
+        },
+        timestamp: getTimestamp(),
+        success: true
+      });
+    }
+    
+  } catch (error: any) {
+    console.error('Error in onCreateGoogleAuthUser:', error);
+    functions.logger.error('Google Auth trigger error', {
+      error: error.message,
+      stack: error.stack,
+      userId: user.uid,
+      email: user.email
+    });
+    // Don't throw - we don't want to block user creation
   }
 });
 

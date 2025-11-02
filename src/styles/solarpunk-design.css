@@ -103,6 +103,15 @@
   z-index: 1;
 }
 
+.solarpunk-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, rgba(7, 29, 17, 0.65) 0%, rgba(9, 47, 26, 0.55) 45%, rgba(10, 68, 34, 0.6) 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
 .solarpunk-hero-content {
   position: relative;
   z-index: 10;
@@ -110,28 +119,36 @@
   color: white;
   max-width: 1200px;
   padding: 2rem;
+  backdrop-filter: blur(6px);
+  background: rgba(12, 36, 20, 0.45);
+  border-radius: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 24px 60px rgba(6, 24, 14, 0.35);
 }
 
 .solarpunk-hero-title {
-  font-size: clamp(3rem, 8vw, 8rem);
+  font-size: clamp(3rem, 8vw, 6.5rem);
   font-weight: 800;
-  line-height: 0.9;
+  line-height: 1;
   margin-bottom: 2rem;
-  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  background: linear-gradient(135deg, #ffffff 0%, #F4D03F 50%, #ffffff 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #F7FBF4;
+  -webkit-text-fill-color: #F7FBF4;
+  background: none;
+  text-shadow: 0 10px 32px rgba(0, 0, 0, 0.45), 0 4px 14px rgba(0, 0, 0, 0.35);
+  filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.35));
 }
 
 .solarpunk-hero-subtitle {
-  font-size: clamp(1.25rem, 3vw, 2rem);
+  font-size: clamp(1.25rem, 3vw, 1.875rem);
   font-weight: 500;
   margin-bottom: 3rem;
-  opacity: 0.9;
-  max-width: 800px;
+  color: rgba(247, 251, 244, 0.92);
+  max-width: 62ch;
   margin-left: auto;
   margin-right: auto;
+  letter-spacing: 0.01em;
+  line-height: 1.7;
+  text-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
 }
 
 .solarpunk-hero-cta {
@@ -459,25 +476,54 @@
 }
 
 .solarpunk-section-title {
-  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
   font-weight: 800;
   text-align: center;
   margin-bottom: 3rem;
-  background: var(--gradient-forest);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--forest-green);
+  letter-spacing: -0.015em;
+  text-shadow: 0 10px 28px rgba(0, 0, 0, 0.1);
 }
 
 .solarpunk-section-subtitle {
-  font-size: clamp(1.125rem, 2.5vw, 1.5rem);
+  font-size: clamp(1.125rem, 2.5vw, 1.375rem);
   text-align: center;
-  color: var(--ink-medium);
+  color: rgba(26, 29, 26, 0.84);
   margin-bottom: 4rem;
-  max-width: 800px;
+  max-width: 68ch;
   margin-left: auto;
   margin-right: auto;
   line-height: 1.6;
+}
+
+/* Improve readability of gradient-highlighted text while keeping styling */
+.solarpunk-text-gradient {
+  background: var(--gradient-nature);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.35));
+}
+
+/* Ensure button labels remain legible on busy backgrounds */
+.solarpunk-btn-primary,
+.solarpunk-btn-secondary,
+.solarpunk-btn-solar {
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+}
+
+.solarpunk-btn-primary span,
+.solarpunk-btn-secondary span,
+.solarpunk-btn-solar span {
+  letter-spacing: inherit;
+}
+
+/* Improve card body copy contrast */
+.solarpunk-card p,
+.solarpunk-story-card p {
+  color: rgba(26, 45, 29, 0.88);
+  line-height: 1.65;
 }
 
 /* ========================================

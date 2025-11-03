@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { authService } from '../services/authService';
 import { firestoreService } from '../services/firestore';
+import NotificationSettings from '../components/Admin/NotificationSettings';
 import { 
   User, 
   Settings, 
@@ -293,56 +294,7 @@ const AdminSettings: React.FC = () => {
 
         {/* Notifications Tab */}
         {activeTab === 'notifications' && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Notification Preferences</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="text-sm font-medium text-gray-900">Email Notifications</label>
-                  <p className="text-sm text-gray-500">Receive notifications via email</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={settings.notifications.email}
-                  onChange={(e) => setSettings(prev => ({
-                    ...prev,
-                    notifications: { ...prev.notifications, email: e.target.checked }
-                  }))}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="text-sm font-medium text-gray-900">Push Notifications</label>
-                  <p className="text-sm text-gray-500">Receive push notifications</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={settings.notifications.push}
-                  onChange={(e) => setSettings(prev => ({
-                    ...prev,
-                    notifications: { ...prev.notifications, push: e.target.checked }
-                  }))}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-              </div>
-              <div className="flex items-center justify-between opacity-60">
-                <div>
-                  <label className="text-sm font-medium text-gray-900">SMS Notifications</label>
-                  <p className="text-sm text-gray-500">Receive notifications via SMS</p>
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 mt-1">
-                    Coming Soon
-                  </span>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={false}
-                  disabled={true}
-                  className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
-                />
-              </div>
-            </div>
-          </div>
+          <NotificationSettings />
         )}
 
         {/* Security Tab */}

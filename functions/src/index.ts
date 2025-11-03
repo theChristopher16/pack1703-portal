@@ -5289,3 +5289,17 @@ export {
   syncCharlestonWrapData, 
   manualSyncCharlestonWrap 
 } from './charlestonWrapService';
+
+// ============================================================================
+// Admin Notification System - Firestore Triggers
+// ============================================================================
+
+export {
+  onRSVPCreate,
+  onMessageCreate,
+  onAccountRequestCreate,
+  onFeedbackCreate,
+  onResourceSubmissionCreate,
+  onVolunteerSignupCreate,
+  onRSVPPaymentComplete
+} from './adminNotificationTriggers';

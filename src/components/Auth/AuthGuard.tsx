@@ -418,14 +418,13 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                 </p>
                 <button 
                   onClick={() => setShowAccountRequestModal(true)}
-                  className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-teal-600 font-bold text-lg rounded-xl shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-teal-700 transition-all duration-200 hover:scale-105 transform"
+                  className="force-white-text inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-teal-600 font-bold text-lg rounded-xl shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-teal-700 transition-all duration-200 hover:scale-105 transform"
                   style={{ 
-                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                    color: '#ffffff !important'
+                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
                   }}
                 >
-                  <UserPlus className="w-6 h-6" style={{ color: '#ffffff', stroke: '#ffffff' }} />
-                  <span style={{ color: '#ffffff !important' }}>Request Account Access</span>
+                  <UserPlus className="w-6 h-6" />
+                  Request Account Access
                 </button>
               </div>
             </div>

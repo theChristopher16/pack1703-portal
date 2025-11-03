@@ -1287,6 +1287,17 @@ button[class*="text-teal"] {
   color: #4B9C9C !important;
 }
 
+/* Force white text on specific buttons - override the global inherit */
+.force-white-text,
+.force-white-text *,
+.force-white-text span,
+.force-white-text svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
 /* ========================================
    CRITICAL FIX: Homepage component color overrides
    ======================================== */

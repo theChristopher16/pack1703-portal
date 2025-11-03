@@ -413,7 +413,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
               {/* Account Request Section */}
               <div className="text-center mt-8">
-                <p className="text-gray-700 mb-4 font-medium">
+                <p className="text-white mb-4 font-medium text-lg">
                   New to Pack 1703? Request account access to join our scouting community
                 </p>
                 <button 

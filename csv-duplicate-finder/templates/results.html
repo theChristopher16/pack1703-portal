@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duplicate Finder Results</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body { 
+            padding-top: 50px; 
+            background-color: #f8f9fa;
+        }
+        .container { 
+            max-width: 90%; 
+        }
+        .table-container { 
+            max-height: 400px; 
+            overflow-y: auto; 
+            margin-bottom: 20px; 
+            border: 1px solid #dee2e6;
+            background: white;
+            border-radius: 5px;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+        }
+        th, td { 
+            padding: 8px; 
+            text-align: left; 
+            border-bottom: 1px solid #dee2e6; 
+        }
+        th { 
+            background-color: #f8f9fa;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        h1, h2 {
+            color: #343a40;
+        }
+        .results-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4 text-center">CSV Processing Results</h1>
+
+        <div class="results-card">
+            <h2 class="mt-2">Original Data</h2>
+            <div class="table-container">
+                {{ original_data | safe }}
+            </div>
+        </div>
+
+        {% if has_duplicates %}
+            <div class="results-card">
+                <h2 class="mt-2">Duplicate Rows Found</h2>
+                <div class="table-container">
+                    {{ duplicate_data | safe }}
+                </div>
+                <div class="mt-3">
+                    <a href="/download_duplicates" class="btn btn-success">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                            <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                        </svg>
+                        Download Duplicates CSV
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <div class="results-card">
+                <div class="alert alert-info" role="alert">
+                    <strong>Great news!</strong> No duplicate rows found in your CSV file.
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="text-center mt-4">
+            <a href="/" class="btn btn-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-upload" viewBox="0 0 16 16">
+                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                    <path d="M7.646 4.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V14.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                </svg>
+                Upload Another CSV
+            </a>
+        </div>
+    </div>
+</body>
+</html>
+

@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAdmin } from '../../contexts/AdminContext';
 import SocialLogin from './SocialLogin';
 import AccountRequestModal from './AccountRequestModal';
-import { UserPlus, Key } from 'lucide-react';
+import { UserPlus, Key, ChevronDown } from 'lucide-react';
 import { authService, SocialProvider } from '../../services/authService';
 
 interface AuthGuardProps {
@@ -17,6 +17,39 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const { currentUser } = state;
   const [showAccountRequestModal, setShowAccountRequestModal] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
+  const [activeCarouselSlide, setActiveCarouselSlide] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  // Track scroll position to update active carousel dot
+  useEffect(() => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    const handleScroll = () => {
+      const cardWidth = 320; // w-80 = 320px
+      const gap = 32; // gap-8 = 32px
+      const scrollLeft = carousel.scrollLeft;
+      const slideIndex = Math.round(scrollLeft / (cardWidth + gap));
+      setActiveCarouselSlide(slideIndex);
+    };
+
+    carousel.addEventListener('scroll', handleScroll);
+    return () => carousel.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Handle carousel navigation
+  const scrollToCarouselSlide = (index: number) => {
+    if (carouselRef.current) {
+      const cardWidth = 320; // 80 (w-80) * 4 = 320px
+      const gap = 32; // gap-8 = 32px
+      const scrollPosition = index * (cardWidth + gap);
+      carouselRef.current.scrollTo({
+        left: scrollPosition,
+        behavior: 'smooth'
+      });
+      setActiveCarouselSlide(index);
+    }
+  };
 
   // If user is trying to access admin routes without admin privileges
   if (currentUser && location.pathname.startsWith('/admin') && (currentUser.role as any) !== 'admin') {
@@ -88,6 +121,12 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                   </div>
                 </button>
               </div>
+
+              {/* Scroll Indicator */}
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
+                <span className="text-sm font-solarpunk-display font-medium text-forest-700 opacity-80">Scroll to explore</span>
+                <ChevronDown className="w-8 h-8 text-forest-600 opacity-60" />
+              </div>
               
               {/* Benefits List */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
@@ -139,7 +178,11 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
               {/* Carousel Container */}
               <div className="relative">
                 {/* Carousel Track */}
-                <div className="flex gap-8 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <div 
+                  ref={carouselRef}
+                  className="flex gap-8 overflow-x-auto snap-x snap-mandatory pb-4 carousel-container"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
                   {/* Event Card 1 */}
                   <div className="flex-shrink-0 w-80 snap-center">
                     <div className="bg-white rounded-3xl shadow-xl border border-forest-200/30 overflow-hidden hover:shadow-2xl transition-all duration-300 hover:scale-105">
@@ -235,10 +278,18 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
                 {/* Navigation Dots */}
                 <div className="flex justify-center gap-2 mt-8">
-                  <div className="w-3 h-3 bg-forest-400 rounded-full"></div>
-                  <div className="w-3 h-3 bg-forest-200 rounded-full"></div>
-                  <div className="w-3 h-3 bg-forest-200 rounded-full"></div>
-                  <div className="w-3 h-3 bg-forest-200 rounded-full"></div>
+                  {[0, 1, 2, 3].map((index) => (
+                    <button
+                      key={index}
+                      onClick={() => scrollToCarouselSlide(index)}
+                      className={`w-3 h-3 rounded-full transition-all duration-300 hover:scale-125 ${
+                        activeCarouselSlide === index 
+                          ? 'bg-forest-400 w-8' 
+                          : 'bg-forest-200 hover:bg-forest-300'
+                      }`}
+                      aria-label={`Go to event ${index + 1}`}
+                    />
+                  ))}
                 </div>
 
                 {/* View All Events Button */}

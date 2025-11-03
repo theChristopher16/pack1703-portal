@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Duplicate Finder</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body { 
+            padding-top: 50px; 
+            background-color: #f8f9fa;
+        }
+        .container { 
+            max-width: 600px; 
+        }
+        .upload-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #343a40;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4 text-center">Upload CSV to Find Duplicates</h1>
+        <div class="upload-card">
+            <form action="/upload" method="post" enctype="multipart/form-data" class="p-4">
+                <div class="form-group">
+                    <label for="file">Choose CSV File:</label>
+                    <input type="file" class="form-control-file" id="file" name="file" accept=".csv" required>
+                    <small class="form-text text-muted">Maximum file size: 16MB</small>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Upload and Process</button>
+            </form>
+        </div>
+        <div class="mt-4 text-center">
+            <small class="text-muted">This tool identifies duplicate rows based on all columns in your CSV file.</small>
+        </div>
+    </div>
+</body>
+</html>
+

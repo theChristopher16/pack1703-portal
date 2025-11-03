@@ -14,6 +14,56 @@
   display: none;  /* Safari and Chrome */
 }
 
+/* Enhanced carousel container styling with improved cross-browser scrollbar hiding */
+.carousel-container {
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  scroll-snap-type: x mandatory; /* Enhanced snap scrolling */
+  scroll-behavior: smooth; /* Smooth scroll animation */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+  overflow-x: auto; /* Enable horizontal scrolling */
+  overflow-y: hidden; /* Hide vertical overflow */
+}
+
+/* Comprehensive scrollbar hiding for WebKit browsers (Safari, Chrome, Edge) */
+.carousel-container::-webkit-scrollbar {
+  display: none; /* Primary method */
+  width: 0 !important; /* Force width to 0 */
+  height: 0 !important; /* Force height to 0 */
+  background: transparent; /* Make background transparent */
+  -webkit-appearance: none; /* Remove default appearance */
+}
+
+.carousel-container::-webkit-scrollbar-track {
+  display: none; /* Hide track */
+  background: transparent; /* Transparent background */
+}
+
+.carousel-container::-webkit-scrollbar-thumb {
+  display: none; /* Hide thumb */
+  background: transparent; /* Transparent background */
+}
+
+/* Additional Firefox scrollbar hiding */
+@-moz-document url-prefix() {
+  .carousel-container {
+    scrollbar-width: none;
+    overflow: -moz-scrollbars-none;
+  }
+}
+
+/* IE 10+ scrollbar hiding */
+.carousel-container {
+  -ms-overflow-style: none;
+}
+
+/* Edge scrollbar hiding */
+@supports (-ms-overflow-style: none) {
+  .carousel-container {
+    -ms-overflow-style: none;
+  }
+}
+
 /* Import Jost Font (Futura alternative) */
 @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');

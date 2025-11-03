@@ -108,6 +108,12 @@ service cloud.firestore {
     allow read: if isAdmin();
   }
   
+  // Fundraising data - read by authenticated users, write by Cloud Functions only
+  match /fundraising/{document=**} {
+    allow read: if isAuthenticated();
+    allow write: if false; // Only Cloud Functions can write
+  }
+  
   // Allow aggregation queries on locations collection for admins
   match /locations {
     allow read: if isAdmin();

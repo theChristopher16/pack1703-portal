@@ -268,6 +268,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
           permissions: user.permissions as unknown as AdminPermission[],
           lastLogin: user.lastLoginAt || new Date(),
           isActive: user.isActive,
+          status: user.status,
         };
         
         console.log('AdminContext: Mapped user role:', user.role, '->', adminUser.role);

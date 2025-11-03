@@ -3,8 +3,8 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAdmin } from '../../contexts/AdminContext';
 import SocialLogin from './SocialLogin';
 import AccountRequestModal from './AccountRequestModal';
-import { UserPlus, Key, ChevronDown } from 'lucide-react';
-import { authService, SocialProvider } from '../../services/authService';
+import { UserPlus, ChevronDown } from 'lucide-react';
+import { authService } from '../../services/authService';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -16,7 +16,6 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const navigate = useNavigate();
   const { currentUser } = state;
   const [showAccountRequestModal, setShowAccountRequestModal] = useState(false);
-  const [showResetPassword, setShowResetPassword] = useState(false);
   const [activeCarouselSlide, setActiveCarouselSlide] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -54,6 +53,83 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   // If user is trying to access admin routes without admin privileges
   if (currentUser && location.pathname.startsWith('/admin') && (currentUser.role as any) !== 'admin') {
     return <Navigate to="/" replace />;
+  }
+
+  // If user is authenticated but not approved, show pending approval page
+  if (currentUser && currentUser.status === 'pending') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-fog via-forest-50/30 to-solar-50/30 flex items-center justify-center px-4">
+        <div className="max-w-2xl w-full bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 text-center">
+          <div className="mb-6">
+            <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Account Pending Approval</h1>
+            <p className="text-lg text-gray-600">
+              Your account has been created successfully and is awaiting approval from pack leadership.
+            </p>
+          </div>
+          <div className="bg-blue-50 rounded-lg p-6 mb-6">
+            <p className="text-gray-700 mb-4">
+              You'll receive an email notification once your account has been reviewed and approved by our pack administrators.
+              This typically takes 24-48 hours.
+            </p>
+            <p className="text-sm text-gray-600">
+              If you have any questions, please contact the pack leadership at{' '}
+              <a href="mailto:cubmaster@sfpack1703.com" className="text-blue-600 hover:underline">
+                cubmaster@sfpack1703.com
+              </a>
+            </p>
+          </div>
+          <button
+            onClick={() => authService.signOut()}
+            className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is denied, show access denied page
+  if (currentUser && currentUser.status === 'denied') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-fog via-forest-50/30 to-solar-50/30 flex items-center justify-center px-4">
+        <div className="max-w-2xl w-full bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 text-center">
+          <div className="mb-6">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Access Denied</h1>
+            <p className="text-lg text-gray-600">
+              Your account request has been denied by pack leadership.
+            </p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-6 mb-6">
+            <p className="text-gray-700 mb-4">
+              If you believe this is an error or would like more information, please contact pack leadership.
+            </p>
+            <p className="text-sm text-gray-600">
+              Contact:{' '}
+              <a href="mailto:cubmaster@sfpack1703.com" className="text-blue-600 hover:underline">
+                cubmaster@sfpack1703.com
+              </a>
+            </p>
+          </div>
+          <button
+            onClick={() => authService.signOut()}
+            className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // If no user is authenticated, show enhanced login page

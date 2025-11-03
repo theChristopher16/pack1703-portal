@@ -301,9 +301,9 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     
-    // Locations - public read, admin write
+    // Locations - authenticated users can read, admin/super-admin can write
     match /locations/{locationId} {
-      allow read: if true;
+      allow read: if isAuthenticated();
       allow create: if isAdmin() &&
                       isValidString(request.resource.data.name, 100) &&
                       isValidString(request.resource.data.address, 500);

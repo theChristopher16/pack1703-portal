@@ -60,9 +60,9 @@ service cloud.firestore {
                       (resource.data.maxParticipants == null || resource.data.maxParticipants > 0);
     }
 
-    // Locations - Public read, admin write
+    // Locations - Authenticated users can read, admin write
     match /locations/{locationId} {
-      allow read: if true;
+      allow read: if isAuthenticated();
       allow write: if isAdmin() &&
                       isValidString(resource.data.name, 200) &&
                       isValidString(resource.data.address, 300) &&

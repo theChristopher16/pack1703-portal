@@ -77,12 +77,18 @@ class CharlestonWrapService {
         // Extract campaign
         const campaign = this.extractText($, 'Fall 2025');
         // Extract sales data
-        const totalRetailText = this.extractText($, 'Total Current Retail');
+        const totalRetailText = this.extractText($, 'Total Retail Dollars Sold:');
         const totalRetail = this.parseMoneyValue(totalRetailText);
-        const totalItemsText = this.extractText($, 'Total Items Sold');
+        const totalItemsText = this.extractText($, 'Total Items Sold:');
         const totalItemsSold = parseInt(totalItemsText.replace(/\D/g, '')) || 0;
-        const totalProfitText = this.extractText($, 'Total Combined Profit Earned');
+        const totalProfitText = this.extractText($, 'Total Profit Dollars:');
         const totalProfit = this.parseMoneyValue(totalProfitText);
+        const totalEnrolledText = this.extractText($, 'Total Enrolled:');
+        const totalEnrolled = parseInt(totalEnrolledText.replace(/\D/g, '')) || 0;
+        const totalParticipantsText = this.extractText($, 'Total Participants:');
+        const totalParticipants = parseInt(totalParticipantsText.replace(/\D/g, '')) || 0;
+        const participationRateText = this.extractText($, 'Participation Rate:');
+        const participationRate = parseFloat(participationRateText.replace(/[^0-9.]/g, '')) || 0;
         // Extract sale end date and calculate days remaining
         const saleEndText = this.extractText($, 'Sale Ends');
         const daysRemainingText = this.extractText($, 'Days');
@@ -100,6 +106,10 @@ class CharlestonWrapService {
         const chairpersonName = this.extractText($, 'Chairperson:');
         const chairpersonPhone = this.extractText($, 'Chairperson Phone:');
         const chairpersonEmail = this.extractText($, 'Chairperson Email:');
+        // Extract direct shopping link
+        const directLinkInput = $('input[value*="registercw.com"]');
+        const directShoppingLink = directLinkInput.val() ||
+            `https://registercw.com/gateway?organizationMidasId=${customerNumber}`;
         return {
             customerNumber,
             organizationName,
@@ -107,6 +117,9 @@ class CharlestonWrapService {
             totalRetail,
             totalItemsSold,
             totalProfit,
+            totalEnrolled,
+            totalParticipants,
+            participationRate,
             daysRemaining,
             saleEndDate: saleEndText,
             fundraisingGoal,
@@ -120,6 +133,28 @@ class CharlestonWrapService {
                 name: chairpersonName,
                 phone: chairpersonPhone,
                 email: chairpersonEmail,
+            },
+            tools: {
+                directShoppingLink,
+                qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(directShoppingLink)}`,
+                participantInviteTracker: 'Participant Invite Tracker',
+                marketingGuide: 'Marketing Guide & Templates',
+                reports: 'Reports',
+                campaignDates: 'Campaign Dates & Shipping Info',
+                paperworkBox: 'The Paperwork Box & Resources',
+                customPrizeTickets: 'Custom Prize Drawing Tickets',
+            },
+            promoTools: {
+                emailBank: 'Email Bank',
+                socialMediaBank: 'Social Media Bank',
+                challenge24Hour: '24-Hour Challenge',
+                finalCountdownChallenge: 'Final Countdown Challenge',
+            },
+            communications: {
+                saveDatesAnnouncement: 'Save the Dates Announcement',
+                kickoffAnnouncement: 'Kick-off Announcement',
+                reminders: 'Reminders',
+                finalReminders: 'Final Reminders',
             },
             lastUpdated: admin.firestore.Timestamp.now(),
         };

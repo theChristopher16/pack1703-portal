@@ -10,6 +10,7 @@ export interface AdminUser {
   permissions: AdminPermission[];
   lastLogin: Date;
   isActive: boolean;
+  status?: 'pending' | 'approved' | 'denied';
   preferences?: {
     emailNotifications?: boolean;
     pushNotifications?: boolean;

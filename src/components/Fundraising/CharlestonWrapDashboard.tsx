@@ -18,6 +18,7 @@ import {
   FundraisingProgress,
 } from '../../services/fundraisingService';
 import { useAdmin } from '../../contexts/AdminContext';
+import { FundraisingToolkit } from './FundraisingToolkit';
 
 export const CharlestonWrapDashboard: React.FC = () => {
   const { state } = useAdmin();
@@ -244,7 +245,7 @@ export const CharlestonWrapDashboard: React.FC = () => {
       )}
 
       {/* Contact Information Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Sales Rep Card */}
         <ContactCard
           title="Sales Representative"
@@ -263,6 +264,9 @@ export const CharlestonWrapDashboard: React.FC = () => {
           icon={<Users className="w-6 h-6 text-green-600" />}
         />
       </div>
+
+      {/* Fundraising Toolkit */}
+      <FundraisingToolkit data={fundraisingData} />
     </div>
   );
 };

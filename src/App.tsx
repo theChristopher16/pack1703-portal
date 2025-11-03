@@ -145,19 +145,19 @@ function App() {
                   <Routes>
                     {/* Public Routes */}
                     <Route path="/" element={<Layout><HomePage /></Layout>} />
-                    <Route path="/events" element={<Layout><EventsPage /></Layout>} />
-                    <Route path="/events/archived" element={<Layout><ArchivedEventsPage /></Layout>} />
-                    <Route path="/events/:eventId" element={<Layout><EventDetailPage /></Layout>} />
+                    <Route path="/events" element={<Layout><AuthenticatedOnly><EventsPage /></AuthenticatedOnly></Layout>} />
+                    <Route path="/events/archived" element={<Layout><AuthenticatedOnly><ArchivedEventsPage /></AuthenticatedOnly></Layout>} />
+                    <Route path="/events/:eventId" element={<Layout><AuthenticatedOnly><EventDetailPage /></AuthenticatedOnly></Layout>} />
                     <Route path="/test-navigation" element={<TestNavigation />} />
                     <Route path="/auth-debug" element={<AuthDebugPage />} />
-                    <Route path="/locations" element={<Layout><LocationsPage /></Layout>} />
-                    <Route path="/announcements" element={<Layout><UnifiedAnnouncementsPage /></Layout>} />
-                    <Route path="/resources" element={<Layout><ResourcesPage /></Layout>} />
-                    <Route path="/resources/inventory" element={<Layout><InventoryPage /></Layout>} />
-                    <Route path="/dues" element={<Layout><DuesInformation /></Layout>} />
-                    <Route path="/volunteer" element={<Layout><VolunteerPage /></Layout>} />
+                    <Route path="/locations" element={<Layout><AuthenticatedOnly><LocationsPage /></AuthenticatedOnly></Layout>} />
+                    <Route path="/announcements" element={<Layout><AuthenticatedOnly><UnifiedAnnouncementsPage /></AuthenticatedOnly></Layout>} />
+                    <Route path="/resources" element={<Layout><AuthenticatedOnly><ResourcesPage /></AuthenticatedOnly></Layout>} />
+                    <Route path="/resources/inventory" element={<Layout><AuthenticatedOnly><InventoryPage /></AuthenticatedOnly></Layout>} />
+                    <Route path="/dues" element={<Layout><AuthenticatedOnly><DuesInformation /></AuthenticatedOnly></Layout>} />
+                    <Route path="/volunteer" element={<Layout><AuthenticatedOnly><VolunteerPage /></AuthenticatedOnly></Layout>} />
                     <Route path="/ecology" element={<Layout><EcologyPage /></Layout>} />
-                    <Route path="/fundraising" element={<Layout><FundraisingPage /></Layout>} />
+                    <Route path="/fundraising" element={<Layout><AuthenticatedOnly><FundraisingPage /></AuthenticatedOnly></Layout>} />
                     <Route path="/privacy" element={<Layout><PrivacyPolicyPage /></Layout>} />
                     <Route path="/terms" element={<Layout><TermsOfServicePage /></Layout>} />
                     

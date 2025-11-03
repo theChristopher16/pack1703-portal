@@ -30,6 +30,9 @@ export interface CharlestonWrapData {
   totalRetail: number;
   totalItemsSold: number;
   totalProfit: number;
+  totalEnrolled: number;
+  totalParticipants: number;
+  participationRate: number;
   daysRemaining: number;
   saleEndDate: string;
   fundraisingGoal: number;
@@ -43,6 +46,28 @@ export interface CharlestonWrapData {
     name: string;
     phone: string;
     email: string;
+  };
+  tools: {
+    directShoppingLink: string;
+    qrCodeUrl?: string;
+    participantInviteTracker?: string;
+    marketingGuide?: string;
+    reports?: string;
+    campaignDates?: string;
+    paperworkBox?: string;
+    customPrizeTickets?: string;
+  };
+  promoTools: {
+    emailBank?: string;
+    socialMediaBank?: string;
+    challenge24Hour?: string;
+    finalCountdownChallenge?: string;
+  };
+  communications: {
+    saveDatesAnnouncement?: string;
+    kickoffAnnouncement?: string;
+    reminders?: string;
+    finalReminders?: string;
   };
   lastUpdated: Timestamp;
 }

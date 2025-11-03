@@ -199,11 +199,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
               </div>
 
               {/* Enhanced Scroll Indicator */}
-              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 animate-bounce cursor-pointer group"
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce cursor-pointer group"
                    onClick={() => document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' })}>
-                <span className="text-sm font-solarpunk-display font-semibold text-forest-700 opacity-80 group-hover:opacity-100 transition-opacity duration-300">
-                  Scroll to explore
-                </span>
                 <div className="relative flex items-center justify-center">
                   {/* Pulsing background circle */}
                   <div className="absolute w-12 h-12 bg-forest-400/20 rounded-full animate-ping"></div>

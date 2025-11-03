@@ -103,7 +103,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     {
       name: 'Main',
       items: allNavItems.filter(item => 
-        ['Home', 'Events', 'Announcements', 'Locations', 'Volunteer', 'Ecology', 'Campaign'].includes(item.name)
+        ['Home', 'Events', 'Announcements', 'Locations', 'Volunteer', 'Ecology', 'Fundraising'].includes(item.name)
       )
     },
     {

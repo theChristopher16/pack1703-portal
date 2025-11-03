@@ -157,7 +157,7 @@ function App() {
                     <Route path="/dues" element={<Layout><DuesInformation /></Layout>} />
                     <Route path="/volunteer" element={<Layout><VolunteerPage /></Layout>} />
                     <Route path="/ecology" element={<Layout><EcologyPage /></Layout>} />
-                    <Route path="/campaign" element={<Layout><FundraisingPage /></Layout>} />
+                    <Route path="/fundraising" element={<Layout><FundraisingPage /></Layout>} />
                     <Route path="/privacy" element={<Layout><PrivacyPolicyPage /></Layout>} />
                     <Route path="/terms" element={<Layout><TermsOfServicePage /></Layout>} />
                     

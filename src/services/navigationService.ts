@@ -86,8 +86,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     description: 'Environmental monitoring and education'
   },
   {
-    name: 'Campaign',
-    href: '/campaign',
+    name: 'Fundraising',
+    href: '/fundraising',
     icon: Target,
     roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',

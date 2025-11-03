@@ -15,6 +15,7 @@ interface RSVPData {
     age: number;
     den?: string;
     isAdult: boolean;
+    daysAttending?: string[]; // Array of date strings (YYYY-MM-DD) for multi-day events
   }>;
   dietaryRestrictions?: string;
   specialNeeds?: string;
@@ -73,12 +74,45 @@ const EventReportExport: React.FC<EventReportExportProps> = ({ event, rsvps, onC
   };
 
   const generateCSV = () => {
-    const csvHeaders = [
+    // Check if this is a multi-day event
+    const isMultiDay = rsvps.some(rsvp => 
+      rsvp.attendees.some(attendee => 
+        attendee.daysAttending && attendee.daysAttending.length > 0
+      )
+    );
+    
+    // Get all event days
+    const allDays = new Set<string>();
+    if (isMultiDay) {
+      rsvps.forEach(rsvp => {
+        rsvp.attendees.forEach(attendee => {
+          (attendee.daysAttending || []).forEach(day => allDays.add(day));
+        });
+      });
+    }
+    const eventDays = Array.from(allDays).sort();
+    
+    // Build headers with per-day columns
+    const baseHeaders = [
       'Family Name',
       'Email',
       'Phone',
-      'Attendee Count',
-      'Attendees',
+      'Attendee Name',
+      'Age',
+      'Den',
+      'Is Adult'
+    ];
+    
+    const dayHeaders = eventDays.map(day => {
+      const dayDate = new Date(day + 'T12:00:00');
+      return dayDate.toLocaleDateString('en-US', { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    });
+    
+    const endHeaders = [
       'Payment Status',
       'Payment Amount',
       'Payment Method',
@@ -87,23 +121,41 @@ const EventReportExport: React.FC<EventReportExportProps> = ({ event, rsvps, onC
       'Notes',
       'RSVP Submitted'
     ];
-
-    const csvRows = rsvps.map(rsvp => [
-      rsvp.familyName,
-      rsvp.email,
-      rsvp.phone || '',
-      rsvp.attendees.length.toString(),
-      rsvp.attendees.map(a => `${a.name} (${a.age}, ${a.den || 'N/A'})`).join('; '),
-      rsvp.paymentStatus === 'completed' ? 'Paid' : 
-      rsvp.paymentStatus === 'pending' ? 'Payment Pending' : 
-      rsvp.paymentStatus === 'failed' ? 'Payment Failed' : 'N/A',
-      rsvp.paymentAmount ? `$${(rsvp.paymentAmount / 100).toFixed(2)}` : 'N/A',
-      rsvp.paymentMethod || 'N/A',
-      rsvp.dietaryRestrictions || '',
-      rsvp.specialNeeds || '',
-      rsvp.notes || '',
-      new Date(rsvp.submittedAt).toLocaleDateString('en-US')
-    ]);
+    
+    const csvHeaders = isMultiDay 
+      ? [...baseHeaders, ...dayHeaders, ...endHeaders]
+      : [...baseHeaders, 'Attending', ...endHeaders];
+    
+    // Build rows with one row per attendee
+    const csvRows: string[][] = [];
+    rsvps.forEach(rsvp => {
+      rsvp.attendees.forEach((attendee, index) => {
+        const daysAttending = attendee.daysAttending || [];
+        const dayColumns = eventDays.map(day => daysAttending.includes(day) ? 'Yes' : 'No');
+        
+        const row = [
+          rsvp.familyName,
+          rsvp.email,
+          rsvp.phone || '',
+          attendee.name,
+          attendee.age.toString(),
+          attendee.den || 'N/A',
+          attendee.isAdult ? 'Yes' : 'No',
+          ...(isMultiDay ? dayColumns : ['Yes']),
+          // Only include payment/notes on first attendee row
+          index === 0 ? (rsvp.paymentStatus === 'completed' ? 'Paid' : 
+                         rsvp.paymentStatus === 'pending' ? 'Payment Pending' : 
+                         rsvp.paymentStatus === 'failed' ? 'Payment Failed' : 'N/A') : '',
+          index === 0 ? (rsvp.paymentAmount ? `$${(rsvp.paymentAmount / 100).toFixed(2)}` : 'N/A') : '',
+          index === 0 ? (rsvp.paymentMethod || 'N/A') : '',
+          index === 0 ? (rsvp.dietaryRestrictions || '') : '',
+          index === 0 ? (rsvp.specialNeeds || '') : '',
+          index === 0 ? (rsvp.notes || '') : '',
+          index === 0 ? new Date(rsvp.submittedAt).toLocaleDateString('en-US') : ''
+        ];
+        csvRows.push(row);
+      });
+    });
 
     const csvContent = [csvHeaders, ...csvRows]
       .map(row => row.map(field => `"${field}"`).join(','))
@@ -113,6 +165,29 @@ const EventReportExport: React.FC<EventReportExportProps> = ({ event, rsvps, onC
   };
 
   const generatePDF = () => {
+    // Check if this is a multi-day event
+    const isMultiDay = rsvps.some(rsvp => 
+      rsvp.attendees.some(attendee => 
+        attendee.daysAttending && attendee.daysAttending.length > 0
+      )
+    );
+    
+    // Get all event days and calculate per-day counts
+    const allDays = new Set<string>();
+    const dayAttendance: { [date: string]: number } = {};
+    
+    if (isMultiDay) {
+      rsvps.forEach(rsvp => {
+        rsvp.attendees.forEach(attendee => {
+          (attendee.daysAttending || []).forEach(day => {
+            allDays.add(day);
+            dayAttendance[day] = (dayAttendance[day] || 0) + 1;
+          });
+        });
+      });
+    }
+    const eventDays = Array.from(allDays).sort();
+    
     // Create a simple HTML-based PDF content
     const htmlContent = `
       <!DOCTYPE html>
@@ -124,9 +199,11 @@ const EventReportExport: React.FC<EventReportExportProps> = ({ event, rsvps, onC
           .header { text-align: center; margin-bottom: 30px; }
           .event-info { background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
           .summary { background: #e8f4fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #f2f2f2; }
+          .daily-attendance { background: #f0f9ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+          .day-count { display: inline-block; background: white; padding: 8px 12px; margin: 5px; border-radius: 6px; border: 1px solid #93c5fd; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+          th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+          th { background-color: #f2f2f2; font-weight: bold; }
           .needs-section { margin-top: 20px; }
           .needs-item { background: #fff3cd; padding: 10px; margin: 5px 0; border-radius: 4px; }
         </style>
@@ -156,29 +233,64 @@ const EventReportExport: React.FC<EventReportExportProps> = ({ event, rsvps, onC
           <p><strong>Total Revenue:</strong> $${(rsvps.filter(rsvp => rsvp.paymentStatus === 'completed').reduce((sum, rsvp) => sum + (rsvp.paymentAmount || 0), 0) / 100).toFixed(2)}</p>
         </div>
         
+        ${isMultiDay ? `
+        <div class="daily-attendance">
+          <h3>Daily Attendance Breakdown</h3>
+          ${eventDays.map(day => {
+            const dayDate = new Date(day + 'T12:00:00');
+            const dayLabel = dayDate.toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              month: 'long', 
+              day: 'numeric' 
+            });
+            return `<div class="day-count"><strong>${dayLabel}:</strong> ${dayAttendance[day]} attendees</div>`;
+          }).join('')}
+        </div>
+        ` : ''}
+        
         <h3>Participant Details</h3>
         <table>
           <thead>
             <tr>
               <th>Family</th>
-              <th>Attendees</th>
-              <th>Payment Status</th>
-              <th>Payment Amount</th>
+              <th>Attendee</th>
+              <th>Age</th>
+              <th>Den</th>
+              ${isMultiDay ? eventDays.map(day => {
+                const dayDate = new Date(day + 'T12:00:00');
+                const dayLabel = dayDate.toLocaleDateString('en-US', { 
+                  weekday: 'short', 
+                  month: 'numeric', 
+                  day: 'numeric' 
+                });
+                return `<th>${dayLabel}</th>`;
+              }).join('') : '<th>Attending</th>'}
+              <th>Payment</th>
               <th>Contact</th>
             </tr>
           </thead>
           <tbody>
-            ${rsvps.map(rsvp => `
-              <tr>
-                <td>${rsvp.familyName}</td>
-                <td>${rsvp.attendees.map(a => `${a.name} (${a.age}, ${a.den || 'N/A'})`).join('<br/>')}</td>
-                <td>${rsvp.paymentStatus === 'completed' ? '✅ Paid' : 
-                    rsvp.paymentStatus === 'pending' ? '⏳ Payment Pending' : 
-                    rsvp.paymentStatus === 'failed' ? '❌ Payment Failed' : 'N/A'}</td>
-                <td>${rsvp.paymentAmount ? `$${(rsvp.paymentAmount / 100).toFixed(2)}` : 'N/A'}</td>
-                <td>${rsvp.email}${rsvp.phone ? `<br/>${rsvp.phone}` : ''}</td>
-              </tr>
-            `).join('')}
+            ${rsvps.flatMap(rsvp => 
+              rsvp.attendees.map((attendee, index) => {
+                const daysAttending = attendee.daysAttending || [];
+                const dayColumns = isMultiDay 
+                  ? eventDays.map(day => daysAttending.includes(day) ? '✓' : '—').join('</td><td>')
+                  : '✓';
+                
+                return `
+                  <tr>
+                    <td>${index === 0 ? rsvp.familyName : ''}</td>
+                    <td>${attendee.name}</td>
+                    <td>${attendee.age}</td>
+                    <td>${attendee.den || 'N/A'}</td>
+                    <td>${dayColumns}</td>
+                    <td>${index === 0 ? (rsvp.paymentStatus === 'completed' ? '✅ Paid' : 
+                         rsvp.paymentStatus === 'pending' ? '⏳ Pending' : 
+                         rsvp.paymentStatus === 'failed' ? '❌ Failed' : 'N/A') : ''}</td>
+                    <td>${index === 0 ? (rsvp.email + (rsvp.phone ? `<br/>${rsvp.phone}` : '')) : ''}</td>
+                  </tr>`;
+              })
+            ).join('')}
           </tbody>
         </table>
         

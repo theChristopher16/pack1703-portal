@@ -1,6 +1,24 @@
-import { db, functions } from '../firebase';
-import { doc, getDoc, onSnapshot, Timestamp } from 'firebase/firestore';
+import { db, functions } from '../firebase/config';
+import { 
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  Timestamp,
+  serverTimestamp
+} from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
+
+// ============================================================================
+// Charleston Wrap Integration Types & Service
+// ============================================================================
 
 /**
  * Charleston Wrap Fundraiser Data Interface
@@ -40,20 +58,61 @@ export interface FundraisingProgress {
   daysPercentageComplete: number;
 }
 
+// ============================================================================
+// Generic Fundraising Types (for AdminFundraising)
+// ============================================================================
+
+export interface FundraisingCampaign {
+  id: string;
+  name: string;
+  description: string;
+  goal: number;
+  currentAmount: number;
+  startDate: Timestamp;
+  endDate: Timestamp;
+  status: 'active' | 'completed' | 'upcoming' | 'paused';
+  type: 'popcorn' | 'camping' | 'general' | 'event' | 'donation';
+  participants?: number;
+  maxParticipants?: number;
+  isActive: boolean;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface FundraisingDonation {
+  id: string;
+  campaignId: string;
+  donorName: string;
+  amount: number;
+  date: Timestamp;
+  notes?: string;
+  anonymous: boolean;
+}
+
+// ============================================================================
+// Fundraising Service Class
+// ============================================================================
+
 /**
  * Fundraising Service
- * Handles all fundraising data operations
+ * Handles both Charleston Wrap integration and generic fundraising campaigns
  */
 export class FundraisingService {
-  private static readonly COLLECTION = 'fundraising';
-  private static readonly CURRENT_DOC = 'current';
+  private static readonly CW_COLLECTION = 'fundraising';
+  private static readonly CW_DOC = 'current';
+  private static readonly CAMPAIGNS_COLLECTION = 'fundraisingCampaigns';
+  private static readonly DONATIONS_COLLECTION = 'fundraisingDonations';
+
+  // ============================================================================
+  // Charleston Wrap Methods
+  // ============================================================================
 
   /**
-   * Get current fundraising data
+   * Get current Charleston Wrap fundraising data
    */
   static async getCurrentFundraising(): Promise<CharlestonWrapData | null> {
     try {
-      const docRef = doc(db, this.COLLECTION, this.CURRENT_DOC);
+      const docRef = doc(db, this.CW_COLLECTION, this.CW_DOC);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
@@ -68,12 +127,12 @@ export class FundraisingService {
   }
 
   /**
-   * Subscribe to fundraising data updates
+   * Subscribe to Charleston Wrap fundraising data updates
    */
   static subscribeFundraising(
     callback: (data: CharlestonWrapData | null) => void
   ): () => void {
-    const docRef = doc(db, this.COLLECTION, this.CURRENT_DOC);
+    const docRef = doc(db, this.CW_COLLECTION, this.CW_DOC);
 
     return onSnapshot(
       docRef,
@@ -103,7 +162,6 @@ export class FundraisingService {
     const isGoalMet = data.totalProfit >= data.fundraisingGoal;
 
     // Simple projection based on current pace
-    // Assumes total campaign is 30 days
     const totalCampaignDays = 30;
     const daysElapsed = totalCampaignDays - data.daysRemaining;
     const daysPercentageComplete = daysElapsed > 0
@@ -126,7 +184,7 @@ export class FundraisingService {
   }
 
   /**
-   * Manually trigger data sync (admin only)
+   * Manually trigger Charleston Wrap data sync (admin only)
    */
   static async manualSync(): Promise<{
     success: boolean;
@@ -142,6 +200,110 @@ export class FundraisingService {
       throw error;
     }
   }
+
+  // ============================================================================
+  // Generic Campaign Methods (for AdminFundraising)
+  // ============================================================================
+
+  /**
+   * Get all fundraising campaigns
+   */
+  static async getCampaigns(): Promise<FundraisingCampaign[]> {
+    try {
+      const q = query(
+        collection(db, this.CAMPAIGNS_COLLECTION),
+        orderBy('createdAt', 'desc')
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FundraisingCampaign));
+    } catch (error) {
+      console.error('Error getting campaigns:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get single campaign
+   */
+  static async getCampaign(id: string): Promise<FundraisingCampaign | null> {
+    try {
+      const docRef = doc(db, this.CAMPAIGNS_COLLECTION, id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as FundraisingCampaign;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting campaign:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Create new campaign
+   */
+  static async createCampaign(data: Partial<FundraisingCampaign>): Promise<string> {
+    try {
+      const docRef = await addDoc(collection(db, this.CAMPAIGNS_COLLECTION), {
+        ...data,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error('Error creating campaign:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update campaign
+   */
+  static async updateCampaign(id: string, data: Partial<FundraisingCampaign>): Promise<void> {
+    try {
+      const docRef = doc(db, this.CAMPAIGNS_COLLECTION, id);
+      await updateDoc(docRef, {
+        ...data,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error updating campaign:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete campaign
+   */
+  static async deleteCampaign(id: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, this.CAMPAIGNS_COLLECTION, id));
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all donations
+   */
+  static async getDonations(): Promise<FundraisingDonation[]> {
+    try {
+      const q = query(
+        collection(db, this.DONATIONS_COLLECTION),
+        orderBy('date', 'desc')
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FundraisingDonation));
+    } catch (error) {
+      console.error('Error getting donations:', error);
+      return [];
+    }
+  }
+
+  // ============================================================================
+  // Utility Methods
+  // ============================================================================
 
   /**
    * Format currency
@@ -183,3 +345,13 @@ export class FundraisingService {
     return 'low';
   }
 }
+
+// Export singleton instance for AdminFundraising compatibility
+export const fundraisingService = {
+  getCampaigns: () => FundraisingService.getCampaigns(),
+  getCampaign: (id: string) => FundraisingService.getCampaign(id),
+  createCampaign: (data: Partial<FundraisingCampaign>) => FundraisingService.createCampaign(data),
+  updateCampaign: (id: string, data: Partial<FundraisingCampaign>) => FundraisingService.updateCampaign(id, data),
+  deleteCampaign: (id: string) => FundraisingService.deleteCampaign(id),
+  getDonations: () => FundraisingService.getDonations(),
+};

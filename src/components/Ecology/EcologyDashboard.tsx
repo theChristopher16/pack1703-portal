@@ -291,65 +291,63 @@ const EcologyDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-emerald-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-fog via-forest-50/30 to-solar-50/30 p-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="bg-gradient-to-r from-white/95 to-green-50/50 backdrop-blur-sm rounded-3xl border border-green-100 shadow-lg p-8">
+        {/* Header - Solarpunk Style */}
+        <div className="mb-8 animate-solarpunk-fade-in">
+          <div className="solarpunk-card">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 flex items-center mb-3">
-                <div className="p-3 bg-green-100 rounded-2xl mr-4 shadow-lg">
-                  <Leaf className="w-10 h-10 text-green-600" />
+              <h1 className="text-4xl sm:text-5xl font-solarpunk-display font-bold text-forest-800 flex items-center mb-4">
+                <div className="p-3 bg-gradient-to-br from-forest-400 to-ocean-400 rounded-2xl mr-4 shadow-glow">
+                  <Leaf className="w-10 h-10 text-white" />
                 </div>
-                Ecology Dashboard
+                <span className="solarpunk-text-gradient">Ecology Dashboard</span>
               </h1>
-              <p className="text-xl text-gray-700 mb-2">🌱 Real-time environmental monitoring for Pack 1703</p>
-              <p className="text-lg text-gray-600 flex items-center mb-6">
+              <p className="text-xl font-solarpunk-body text-forest-600 mb-2">🌱 Real-time environmental monitoring for Pack 1703</p>
+              <p className="text-lg font-solarpunk-body text-ocean-600 flex items-center mb-6">
                 📍 {ecologyData.location}
               </p>
               
-              {/* Control Buttons Below Location */}
+              {/* Control Buttons - Solarpunk Style */}
               <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4">
                 <button
                   onClick={() => setIsLiveMode(!isLiveMode)}
-                  className={`flex items-center justify-center px-6 py-3 rounded-2xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl w-full sm:w-auto ${
-                    isLiveMode 
-                      ? 'bg-gradient-to-r from-green-400 to-green-600 text-white border border-green-300 hover:from-green-500 hover:to-green-700' 
-                      : 'bg-gradient-to-r from-gray-400 to-gray-600 text-white border border-gray-300 hover:from-gray-500 hover:to-gray-700'
+                  className={`solarpunk-btn-primary w-full sm:w-auto ${
+                    !isLiveMode && 'opacity-60'
                   }`}
                 >
-                  {isLiveMode ? <Pause className="w-5 h-5 mr-2" /> : <Play className="w-5 h-5 mr-2" />}
-                  {isLiveMode ? 'Live' : 'Paused'}
+                  {isLiveMode ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                  {isLiveMode ? 'Live Mode' : 'Paused'}
                 </button>
                 <button
                   onClick={() => fetchRealData()}
-                  className="flex items-center justify-center px-6 py-3 rounded-2xl font-bold text-lg bg-gradient-to-r from-blue-400 to-blue-600 text-white border border-blue-300 hover:from-blue-500 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl w-full sm:w-auto"
+                  className="solarpunk-btn-secondary w-full sm:w-auto"
                 >
-                  <RefreshCw className="w-5 h-5 mr-2" />
-                  Refresh
+                  <RefreshCw className="w-5 h-5" />
+                  Refresh Data
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Live Status */}
+        {/* Live Status - Solarpunk Style */}
         {isLiveMode && (
-          <div className="mb-6 flex items-center justify-center">
-            <div className="flex items-center bg-green-100 text-green-800 px-4 py-2 rounded-full border border-green-200">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
-              <span className="font-medium">Live Data • Last updated: {formatTime(ecologyData.lastUpdated)}</span>
+          <div className="mb-6 flex items-center justify-center animate-solarpunk-fade-in">
+            <div className="flex items-center bg-gradient-to-r from-forest-100 to-ocean-100 text-forest-700 px-6 py-3 rounded-full border border-forest-200/50 shadow-md">
+              <div className="w-2 h-2 bg-forest-500 rounded-full animate-pulse mr-3 shadow-glow"></div>
+              <span className="font-solarpunk-body font-semibold">Live Data • Last updated: {formatTime(ecologyData.lastUpdated)}</span>
             </div>
           </div>
         )}
 
-        {/* Camera Section */}
-        <div className="mb-8">
-          <div className="bg-gradient-to-br from-white/95 to-indigo-50/50 backdrop-blur-sm rounded-3xl border border-indigo-100 shadow-lg p-6 hover:shadow-xl transition-all duration-300">
+        {/* Camera Section - Solarpunk Style */}
+        <div className="mb-8 animate-solarpunk-slide-up">
+          <div className="solarpunk-card hover:scale-[1.01] transition-transform duration-300">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900 flex items-center">
-                <div className="p-3 bg-indigo-100 rounded-2xl mr-4 shadow-lg">
-                  <Camera className="w-8 h-8 text-indigo-600" />
+              <h3 className="text-2xl font-solarpunk-display font-bold text-forest-800 flex items-center">
+                <div className="p-3 bg-gradient-to-br from-ocean-400 to-sky-400 rounded-2xl mr-4 shadow-glow">
+                  <Camera className="w-8 h-8 text-white" />
                 </div>
                 📸 Garden Camera Feed
               </h3>
@@ -531,9 +529,9 @@ const EcologyDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Sensor Cards */}
+        {/* Sensor Cards - Solarpunk Style */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {sensorCards.map(({ key, label, icon: Icon, color, iconBg, iconColor }) => {
+          {sensorCards.map(({ key, label, icon: Icon }, index) => {
             const currentReading = getCurrentReading(ecologyData.sensors[key as keyof SensorData]);
             
             // Skip rendering if no data available
@@ -545,46 +543,56 @@ const EcologyDashboard: React.FC = () => {
             const StatusIcon = getStatusIcon(key, currentReading.value);
 
             return (
-              <div key={key} className={`bg-white/95 backdrop-blur-sm rounded-3xl border shadow-lg p-6 hover:shadow-xl transition-all duration-300 ${color} group`}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center">
-                    <div className={`p-3 ${iconBg} rounded-xl mr-4 group-hover:scale-110 transition-transform duration-300`}>
-                      <Icon className={`w-6 h-6 ${iconColor}`} />
+              <div 
+                key={key} 
+                className="solarpunk-story-card group animate-solarpunk-slide-up"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="p-3 bg-gradient-to-br from-forest-400 to-ocean-400 rounded-xl mr-4 shadow-glow group-hover:scale-110 transition-transform duration-300">
+                        <Icon className="w-6 h-6 text-white" />
+                      </div>
+                      <h3 className="text-lg font-solarpunk-display font-bold text-forest-800">{label}</h3>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900">{label}</h3>
+                    <div className={`${statusColor} p-2 rounded-lg bg-white/50 shadow-sm`}>
+                      {StatusIcon}
+                    </div>
                   </div>
-                  <div className={`${statusColor} p-2 rounded-lg bg-white/50`}>
-                    {StatusIcon}
+                  <div className="text-4xl font-solarpunk-display font-bold text-forest-700 mb-2 group-hover:scale-105 transition-transform duration-300">
+                    {formatValue(currentReading.value, currentReading.unit)}
                   </div>
-                </div>
-                <div className="text-4xl font-bold text-gray-900 mb-2 group-hover:scale-105 transition-transform duration-300">
-                  {formatValue(currentReading.value, currentReading.unit)}
-                </div>
-                {(currentReading.unit === '°C' || currentReading.unit === 'hPa') && (
-                  <div className="text-sm text-gray-500 font-medium">
-                    {formatValueWithBothUnits(currentReading.value, currentReading.unit)}
+                  {(currentReading.unit === '°C' || currentReading.unit === 'hPa') && (
+                    <div className="text-sm text-ocean-600 font-solarpunk-body font-medium">
+                      {formatValueWithBothUnits(currentReading.value, currentReading.unit)}
+                    </div>
+                  )}
+                  <div className="text-sm text-forest-600 font-solarpunk-body font-medium mt-2">
+                    📅 {formatTime(currentReading.timestamp)}
                   </div>
-                )}
-                <div className="text-sm text-gray-600 font-medium">
-                  📅 {formatTime(currentReading.timestamp)}
-                </div>
-                <div className="mt-3 text-xs text-gray-500">
-                  {isLiveMode ? '🟢 Live' : '⏸️ Paused'}
+                  <div className="mt-3 text-xs font-solarpunk-body font-semibold">
+                    {isLiveMode ? (
+                      <span className="text-forest-600">🟢 Live</span>
+                    ) : (
+                      <span className="text-gray-500">⏸️ Paused</span>
+                    )}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Charts Section */}
+        {/* Charts Section - Solarpunk Style */}
         <div className="space-y-8 mb-8">
           {/* Row 1: Temperature and Humidity */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Temperature Chart */}
-            <div className="bg-gradient-to-br from-white/95 to-red-50/50 backdrop-blur-sm rounded-3xl border border-red-100 shadow-lg p-6 hover:shadow-xl transition-all duration-300">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <div className="p-2 bg-red-100 rounded-xl mr-3">
-                  <Thermometer className="w-6 h-6 text-red-600" />
+            <div className="solarpunk-card hover:scale-[1.01] transition-transform duration-300 animate-solarpunk-slide-up">
+              <h3 className="text-xl font-solarpunk-display font-bold text-forest-800 mb-4 flex items-center">
+                <div className="p-2 bg-gradient-to-br from-terracotta-400 to-solar-400 rounded-xl mr-3 shadow-glow">
+                  <Thermometer className="w-6 h-6 text-white" />
                 </div>
                 Temperature Trends
               </h3>
@@ -621,10 +629,10 @@ const EcologyDashboard: React.FC = () => {
             </div>
 
             {/* Humidity Chart */}
-            <div className="bg-gradient-to-br from-white/95 to-blue-50/50 backdrop-blur-sm rounded-3xl border border-blue-100 shadow-lg p-6 hover:shadow-xl transition-all duration-300">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <div className="p-2 bg-blue-100 rounded-xl mr-3">
-                  <Droplets className="w-6 h-6 text-blue-600" />
+            <div className="solarpunk-card hover:scale-[1.01] transition-transform duration-300 animate-solarpunk-slide-up" style={{ animationDelay: '100ms' }}>
+              <h3 className="text-xl font-solarpunk-display font-bold text-forest-800 mb-4 flex items-center">
+                <div className="p-2 bg-gradient-to-br from-ocean-400 to-sky-400 rounded-xl mr-3 shadow-glow">
+                  <Droplets className="w-6 h-6 text-white" />
                 </div>
                 Humidity Trends
               </h3>
@@ -670,10 +678,10 @@ const EcologyDashboard: React.FC = () => {
           {/* Row 2: Pressure and Air Quality */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Pressure Chart */}
-            <div className="bg-gradient-to-br from-white/95 to-purple-50/50 backdrop-blur-sm rounded-3xl border border-purple-100 shadow-lg p-6 hover:shadow-xl transition-all duration-300">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <div className="p-2 bg-purple-100 rounded-xl mr-3">
-                  <Gauge className="w-6 h-6 text-purple-600" />
+            <div className="solarpunk-card hover:scale-[1.01] transition-transform duration-300 animate-solarpunk-slide-up" style={{ animationDelay: '200ms' }}>
+              <h3 className="text-xl font-solarpunk-display font-bold text-forest-800 mb-4 flex items-center">
+                <div className="p-2 bg-gradient-to-br from-forest-400 to-solar-400 rounded-xl mr-3 shadow-glow">
+                  <Gauge className="w-6 h-6 text-white" />
                 </div>
                 Atmospheric Pressure
               </h3>
@@ -710,10 +718,10 @@ const EcologyDashboard: React.FC = () => {
             </div>
 
             {/* Air Quality Chart */}
-            <div className="bg-gradient-to-br from-white/95 to-green-50/50 backdrop-blur-sm rounded-3xl border border-green-100 shadow-lg p-6 hover:shadow-xl transition-all duration-300">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <div className="p-2 bg-green-100 rounded-xl mr-3">
-                  <Wind className="w-6 h-6 text-green-600" />
+            <div className="solarpunk-card hover:scale-[1.01] transition-transform duration-300 animate-solarpunk-slide-up" style={{ animationDelay: '300ms' }}>
+              <h3 className="text-xl font-solarpunk-display font-bold text-forest-800 mb-4 flex items-center">
+                <div className="p-2 bg-gradient-to-br from-forest-400 to-ocean-400 rounded-xl mr-3 shadow-glow">
+                  <Wind className="w-6 h-6 text-white" />
                 </div>
                 Air Quality Index
               </h3>

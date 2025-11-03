@@ -11,9 +11,15 @@ import LocationEditModal from '../components/Locations/LocationEditModal';
 import AppleLocationMap from '../components/Locations/AppleLocationMap';
 import { useAdmin } from '../contexts/AdminContext';
 import { offlineCacheService } from '../services/offlineCacheService';
+import { useUserInteraction } from '../hooks/useUserInteraction';
 
 const LocationsPage: React.FC = () => {
   const { state: adminState, hasRole } = useAdmin();
+  const { trackUserAction } = useUserInteraction({
+    componentName: 'LocationsPage',
+    componentPath: '/locations',
+    trackComponentView: true
+  });
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);

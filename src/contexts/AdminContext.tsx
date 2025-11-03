@@ -233,7 +233,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
       dispatch({ type: 'SET_LOADING', payload: false });
     }, 1000); // Reduced to 1 second for faster response
     
-    const unsubscribe = authService.onAuthStateChanged((user) => {
+    const unsubscribe = authService.onAuthStateChanged(async (user) => {
       console.log('AdminContext: Auth state changed:', user ? `User ${user.email}` : 'No user');
       
       // Clear the loading timeout since we got a response

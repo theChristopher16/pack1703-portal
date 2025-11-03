@@ -26,7 +26,7 @@
   
 body {
     font-family: 'Jost', system-ui, -apple-system, sans-serif;
-    background: linear-gradient(135deg, #FAFAFA 0%, #F0F8F0 50%, #E8F5E8 100%);
+    background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 50%, #F0F0F0 100%);
     min-height: 100vh;
     color: #2E2E2E !important;
   }
@@ -324,7 +324,7 @@ body {
   }
   
   ::-webkit-scrollbar-track {
-    background: #F0F8F0;
+    background: #F5F5F5;
     border-radius: 4px;
   }
   
@@ -368,15 +368,15 @@ body {
 @layer components {
   /* Enhanced Button Styles */
   .btn-primary {
-    @apply bg-gradient-to-r from-primary-400 to-primary-500 hover:from-primary-500 hover:to-primary-600 text-white font-semibold py-3 px-6 rounded-xl shadow-glow-primary hover:shadow-glow-primary/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105;
+    @apply bg-gradient-to-r from-primary-400 to-primary-500 hover:from-primary-500 hover:to-primary-600 text-white font-semibold py-3 px-6 rounded-xl shadow-glow-primary hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:scale-105;
   }
   
   .btn-secondary {
-    @apply bg-gradient-to-r from-secondary-400 to-secondary-500 hover:from-secondary-500 hover:to-secondary-600 text-white font-semibold py-3 px-6 rounded-xl shadow-glow-secondary hover:shadow-glow-secondary/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105;
+    @apply bg-gradient-to-r from-secondary-400 to-secondary-500 hover:from-secondary-500 hover:to-secondary-600 text-white font-semibold py-3 px-6 rounded-xl shadow-glow-secondary hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:scale-105;
   }
   
   .btn-accent {
-    @apply bg-gradient-to-r from-accent-400 to-accent-500 hover:from-accent-500 hover:to-accent-600 text-white font-semibold py-3 px-6 rounded-xl shadow-glow-accent hover:shadow-glow-accent/80 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105;
+    @apply bg-gradient-to-r from-accent-400 to-accent-500 hover:from-accent-500 hover:to-accent-600 text-white font-semibold py-3 px-6 rounded-xl shadow-glow-accent hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:scale-105;
   }
   
   .btn-outline {

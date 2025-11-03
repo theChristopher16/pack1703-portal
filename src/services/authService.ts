@@ -342,6 +342,7 @@ export interface AppUser {
   updatedAt: Date;
   lastLoginAt?: Date;
   authProvider?: SocialProvider;
+  lastPasswordChange?: Date;
   
   // Enhanced profile with social login data
   profile?: {
@@ -640,7 +641,8 @@ class AuthService {
       updatedAt: userData.updatedAt?.toDate ? userData.updatedAt.toDate() : userData.updatedAt,
       lastLoginAt: userData.lastLoginAt?.toDate ? userData.lastLoginAt.toDate() : userData.lastLoginAt,
       authProvider: userData.authProvider,
-      profile: userData.profile
+      profile: userData.profile,
+      lastPasswordChange: userData.lastPasswordChange?.toDate ? userData.lastPasswordChange.toDate() : userData.lastPasswordChange
     };
   }
 
@@ -2065,6 +2067,84 @@ class AuthService {
     } catch (error) {
       console.error('Error unlinking account:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Sync profile photos from Firebase Auth to Firestore for all users
+   * Useful for updating existing users who signed in before photo sync was added
+   */
+  async syncAllUserPhotos(): Promise<{ updated: number; skipped: number; errors: number }> {
+    try {
+      console.log('🔄 Starting photo sync for all users...');
+      const usersSnapshot = await getDocs(collection(db, 'users'));
+      
+      let updated = 0;
+      let skipped = 0;
+      let errors = 0;
+
+      for (const userDoc of usersSnapshot.docs) {
+        try {
+          const userId = userDoc.id;
+          const userData = userDoc.data();
+          
+          // Skip if user already has a photoURL
+          if (userData.photoURL) {
+            skipped++;
+            continue;
+          }
+
+          // Try to get photo from their social data
+          const socialPhoto = userData.profile?.socialData?.google?.picture ||
+                            userData.profile?.socialData?.apple?.picture ||
+                            userData.profile?.socialData?.facebook?.picture;
+
+          if (socialPhoto) {
+            await updateDoc(doc(db, 'users', userId), {
+              photoURL: socialPhoto,
+              updatedAt: serverTimestamp()
+            });
+            console.log(`✅ Updated photo for user: ${userData.email}`);
+            updated++;
+          } else {
+            skipped++;
+          }
+        } catch (err) {
+          console.error(`❌ Error syncing photo for user ${userDoc.id}:`, err);
+          errors++;
+        }
+      }
+
+      console.log(`✅ Photo sync complete: ${updated} updated, ${skipped} skipped, ${errors} errors`);
+      return { updated, skipped, errors };
+    } catch (error) {
+      console.error('❌ Error syncing user photos:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Refresh a specific user's photo from their current Firebase Auth data
+   * Call this when a user logs in to ensure their photo is up-to-date
+   */
+  async refreshUserPhoto(userId: string): Promise<void> {
+    try {
+      const firebaseUser = this.auth.currentUser;
+      
+      if (!firebaseUser || firebaseUser.uid !== userId) {
+        console.warn('Cannot refresh photo: user not currently authenticated');
+        return;
+      }
+
+      if (firebaseUser.photoURL) {
+        await updateDoc(doc(db, 'users', userId), {
+          photoURL: firebaseUser.photoURL,
+          updatedAt: serverTimestamp()
+        });
+        console.log(`✅ Refreshed photo for user: ${firebaseUser.email}`);
+      }
+    } catch (error) {
+      console.error('Error refreshing user photo:', error);
     }
   }
 }

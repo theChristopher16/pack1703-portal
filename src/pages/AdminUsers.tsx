@@ -20,7 +20,10 @@ import {
   ChevronDown,
   ChevronRight,
   ArrowLeft,
-  Home
+  Home,
+  List,
+  Grid,
+  RefreshCw
 } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import { authService, AppUser, UserRole, ROLE_PERMISSIONS } from '../services/authService';
@@ -53,6 +56,8 @@ const AdminUsers: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
   const [isUpdating, setIsUpdating] = useState(false);
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [isSyncingPhotos, setIsSyncingPhotos] = useState(false);
   
   // Cache for users data
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
@@ -192,6 +197,27 @@ const AdminUsers: React.FC = () => {
     filterUsers();
   }, [filterUsers]);
 
+  const handleSyncPhotos = async () => {
+    try {
+      setIsSyncingPhotos(true);
+      const result = await authService.syncAllUserPhotos();
+      
+      addNotification(
+        'success',
+        'Photo Sync Complete',
+        `Updated: ${result.updated} users, Skipped: ${result.skipped}, Errors: ${result.errors}`
+      );
+      
+      // Reload users to show updated photos
+      await loadUsers(true);
+    } catch (err) {
+      console.error('Error syncing photos:', err);
+      addNotification('error', 'Sync Failed', 'Failed to sync profile photos');
+    } finally {
+      setIsSyncingPhotos(false);
+    }
+  };
+
   const handleEditUser = (user: UserWithChildren) => {
     setSelectedUser(user);
     setEditForm({
@@ -298,9 +324,9 @@ const AdminUsers: React.FC = () => {
   const getRoleIcon = (role: UserRole) => {
     switch (role) {
       case UserRole.SUPER_ADMIN: return <Crown className="w-4 h-4 text-yellow-600" />;
-      case UserRole.ADMIN: return <Shield className="w-4 h-4 text-red-600" />;
-      case UserRole.DEN_LEADER: return <Users className="w-4 h-4 text-green-600" />;
-      case UserRole.PARENT: return <Star className="w-4 h-4 text-purple-600" />;
+      case UserRole.ADMIN: return <Shield className="w-4 h-4 text-blue-600" />;
+      case UserRole.DEN_LEADER: return <Users className="w-4 h-4 text-indigo-600" />;
+      case UserRole.PARENT: return <Star className="w-4 h-4 text-slate-600" />;
       default: return <User className="w-4 h-4 text-gray-600" />;
     }
   };
@@ -308,145 +334,219 @@ const AdminUsers: React.FC = () => {
   const getRoleBadgeColor = (role: UserRole) => {
     switch (role) {
       case UserRole.SUPER_ADMIN: return 'bg-yellow-100 text-yellow-800';
-      case UserRole.ADMIN: return 'bg-red-100 text-red-800';
-      case UserRole.DEN_LEADER: return 'bg-green-100 text-green-800';
-      case UserRole.PARENT: return 'bg-purple-100 text-purple-800';
+      case UserRole.ADMIN: return 'bg-blue-100 text-blue-800';
+      case UserRole.DEN_LEADER: return 'bg-indigo-100 text-indigo-800';
+      case UserRole.PARENT: return 'bg-slate-100 text-slate-700';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const renderUserCard = (user: UserWithChildren, level: number = 0) => {
-    const isExpanded = expandedUsers.has(user.uid);
-    const hasChildren = user.children && user.children.length > 0;
-
-    return (
-      <div key={user.uid} className="mb-4">
-        <div 
-          className={`bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 ${
-            level > 0 ? 'ml-8' : ''
-          }`}
-        >
-          <div className="p-6">
-            <div className="flex flex-col sm:flex-row sm:items-start space-y-4 sm:space-y-0 sm:space-x-4">
-              {/* Profile Photo */}
-              <div className="relative flex-shrink-0">
-                <div className="w-16 h-16 rounded-full overflow-hidden border-4 border-yellow-400">
-                  {user.photoURL ? (
-                    <img 
-                      src={user.photoURL} 
-                      alt={user.displayName || 'User'} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-bold text-lg">
-                      {user.displayName?.charAt(0) || user.email.charAt(0).toUpperCase()}
-                    </div>
-                  )}
+  // Compact table row rendering
+  const renderTableRow = (user: UserWithChildren) => (
+    <tr key={user.uid} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+      {/* Avatar & Name */}
+      <td className="px-4 py-3">
+        <div className="flex items-center space-x-3">
+          <div className="relative flex-shrink-0">
+            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-yellow-400">
+              {user.photoURL ? (
+                <img src={user.photoURL} alt={user.displayName || 'User'} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">
+                  {user.displayName?.charAt(0) || user.email.charAt(0).toUpperCase()}
                 </div>
-                {user.isActive ? (
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white"></div>
-                ) : (
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gray-400 rounded-full border-2 border-white"></div>
-                )}
-              </div>
-
-              {/* User Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-col space-y-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 flex flex-wrap items-center gap-2">
-                      <span className="truncate">{user.displayName || 'Unnamed User'}</span>
-                      <div className="flex items-center space-x-2 flex-shrink-0">
-                        {getRoleIcon(user.role)}
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleBadgeColor(user.role)}`}>
-                          {user.role.replace('_', ' ')}
-                        </span>
-                      </div>
-                    </h3>
-                    
-                    {user.profile?.nickname && (
-                      <p className="text-sm text-gray-600 italic">"{user.profile.nickname}"</p>
-                    )}
-                    
-                    <div className="mt-2 space-y-1">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Mail className="w-4 h-4 mr-2 flex-shrink-0" />
-                        <span className="truncate">{user.email}</span>
-                      </div>
-                      
-                      {user.profile?.phone && (
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Phone className="w-4 h-4 mr-2 flex-shrink-0" />
-                          <span className="truncate">{user.profile.phone}</span>
-                        </div>
-                      )}
-                      
-                      {user.profile?.den && (
-                        <div className="flex items-center text-sm text-gray-600">
-                          <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
-                          <span className="font-medium text-primary-600">{user.profile.den}</span>
-                          {user.profile.scoutRank && (
-                            <span className="ml-2 text-gray-500">• {user.profile.scoutRank}</span>
-                          )}
-                        </div>
-                      )}
-                      
-                      {/* Email Preferences */}
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Mail className="w-4 h-4 mr-2 flex-shrink-0" />
-                        <span className="text-xs px-2 py-1 bg-blue-100 rounded-full">
-                          📧 {(user.preferences?.emailNotifications !== false) ? 'Email ON' : 'Email OFF'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions - Moved below user info on mobile */}
-                  <div className="flex items-center justify-end sm:justify-start space-x-2">
-                    {hasChildren && (
-                      <button
-                        onClick={() => toggleUserExpansion(user.uid)}
-                        className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                        title="Toggle children"
-                      >
-                        {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                      </button>
-                    )}
-                    
-                    <button
-                      onClick={() => handleEditUser(user)}
-                      className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                      title="Edit user"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        setSelectedUser(user);
-                        setShowDeleteModal(true);
-                      }}
-                      className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                      title="Delete user"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
+            {user.isActive && (
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border border-white"></div>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-medium text-gray-900 truncate">{user.displayName || 'Unnamed User'}</div>
+            {user.profile?.nickname && (
+              <div className="text-xs text-gray-500 italic truncate">"{user.profile.nickname}"</div>
+            )}
           </div>
         </div>
+      </td>
 
-        {/* Children */}
-        {hasChildren && isExpanded && (
-          <div className="mt-2">
-            {user.children!.map(child => renderUserCard(child, level + 1))}
+      {/* Role */}
+      <td className="px-4 py-3">
+        <div className="flex items-center space-x-1">
+          {getRoleIcon(user.role)}
+          <span className={`px-2 py-0.5 text-xs font-medium rounded-full whitespace-nowrap ${getRoleBadgeColor(user.role)}`}>
+            {user.role.replace('_', ' ')}
+          </span>
+        </div>
+      </td>
+
+      {/* Contact */}
+      <td className="px-4 py-3">
+        <div className="space-y-1">
+          <div className="flex items-center text-sm" style={{ color: '#4B5563' }}>
+            <Mail className="w-3 h-3 mr-1.5 flex-shrink-0" style={{ color: '#4B5563' }} />
+            <span className="truncate max-w-[200px]" style={{ color: '#4B5563' }}>{user.email}</span>
+          </div>
+          {user.profile?.phone && (
+            <div className="flex items-center text-sm" style={{ color: '#4B5563' }}>
+              <Phone className="w-3 h-3 mr-1.5 flex-shrink-0" style={{ color: '#4B5563' }} />
+              <span className="truncate" style={{ color: '#4B5563' }}>{user.profile.phone}</span>
+            </div>
+          )}
+        </div>
+      </td>
+
+      {/* Den/Rank */}
+      <td className="px-4 py-3">
+        {user.profile?.den && (
+          <div className="flex items-center text-sm">
+            <MapPin className="w-3 h-3 mr-1.5 flex-shrink-0" style={{ color: '#2563EB' }} />
+            <span className="font-medium" style={{ color: '#2563EB' }}>{user.profile.den}</span>
+            {user.profile.scoutRank && (
+              <span className="ml-1 text-xs" style={{ color: '#6B7280' }}>• {user.profile.scoutRank}</span>
+            )}
           </div>
         )}
+      </td>
+
+      {/* Notifications */}
+      <td className="px-4 py-3 text-center">
+        <span className={`text-xs px-2 py-0.5 rounded-full ${
+          user.preferences?.emailNotifications !== false ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+        }`}>
+          {user.preferences?.emailNotifications !== false ? '📧 ON' : '📧 OFF'}
+        </span>
+      </td>
+
+      {/* Actions */}
+      <td className="px-4 py-3">
+        <div className="flex items-center justify-end space-x-1">
+          <button
+            onClick={() => handleEditUser(user)}
+            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            title="Edit user"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => {
+              setSelectedUser(user);
+              setShowDeleteModal(true);
+            }}
+            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+            title="Delete user"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+
+  // Compact square card rendering for grid view
+  const renderUserCard = (user: UserWithChildren) => (
+    <div 
+      key={user.uid} 
+      className="admin-user-card bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-200 overflow-hidden group"
+    >
+      {/* Header with Avatar */}
+      <div className="admin-user-card-header p-4 flex flex-col items-center" style={{ background: 'linear-gradient(to bottom right, #F9FAFB, #F3F4F6)' }}>
+        <div className="relative mb-3">
+          <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-yellow-400 shadow-md">
+            {user.photoURL ? (
+              <img src={user.photoURL} alt={user.displayName || 'User'} className="w-full h-full object-cover" />
+            ) : (
+              <div className="admin-user-avatar-initial w-full h-full flex items-center justify-center text-white font-bold text-2xl" style={{ background: 'linear-gradient(to bottom right, #3B82F6, #4F46E5)' }}>
+                {user.displayName?.charAt(0) || user.email.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
+          {/* Status Indicator */}
+          <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white ${
+            user.isActive ? 'bg-green-500' : 'bg-gray-400'
+          }`}></div>
+        </div>
+        
+        {/* Name */}
+        <h3 className="font-semibold text-gray-900 text-center text-sm line-clamp-1 w-full px-1">
+          {user.displayName || 'Unnamed User'}
+        </h3>
+        
+        {/* Nickname */}
+        {user.profile?.nickname && (
+          <p className="text-xs text-gray-500 italic text-center line-clamp-1 w-full px-1">
+            "{user.profile.nickname}"
+          </p>
+        )}
+        
+        {/* Role Badge */}
+        <div className="flex items-center space-x-1 mt-2">
+          {getRoleIcon(user.role)}
+          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getRoleBadgeColor(user.role)}`}>
+            {user.role.replace('_', ' ')}
+          </span>
+        </div>
       </div>
-    );
-  };
+
+      {/* Body with compact info */}
+      <div className="p-4 space-y-2">
+        {/* Email */}
+        <div className="flex items-start text-xs" style={{ color: '#4B5563' }}>
+          <Mail className="w-3 h-3 mr-1.5 mt-0.5 flex-shrink-0" style={{ color: '#4B5563' }} />
+          <span className="truncate" style={{ color: '#4B5563' }}>{user.email}</span>
+        </div>
+        
+        {/* Phone */}
+        {user.profile?.phone && (
+          <div className="flex items-center text-xs" style={{ color: '#4B5563' }}>
+            <Phone className="w-3 h-3 mr-1.5 flex-shrink-0" style={{ color: '#4B5563' }} />
+            <span className="truncate" style={{ color: '#4B5563' }}>{user.profile.phone}</span>
+          </div>
+        )}
+        
+        {/* Den/Rank */}
+        {user.profile?.den && (
+          <div className="flex items-center text-xs">
+            <MapPin className="w-3 h-3 mr-1.5 flex-shrink-0" style={{ color: '#2563EB' }} />
+            <span className="font-medium truncate" style={{ color: '#2563EB' }}>
+              {user.profile.den}
+              {user.profile.scoutRank && <span className="ml-1" style={{ color: '#6B7280' }}>• {user.profile.scoutRank}</span>}
+            </span>
+          </div>
+        )}
+        
+        {/* Email Preferences */}
+        <div className="flex justify-center pt-1">
+          <span className={`text-xs px-2 py-0.5 rounded-full ${
+            user.preferences?.emailNotifications !== false ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+          }`}>
+            {user.preferences?.emailNotifications !== false ? '📧 ON' : '📧 OFF'}
+          </span>
+        </div>
+      </div>
+
+      {/* Footer with Actions */}
+      <div className="admin-user-card-footer border-t border-gray-100 px-4 py-2 flex items-center justify-center space-x-3" style={{ backgroundColor: '#F9FAFB' }}>
+        <button
+          onClick={() => handleEditUser(user)}
+          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+          title="Edit user"
+        >
+          <Edit className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => {
+            setSelectedUser(user);
+            setShowDeleteModal(true);
+          }}
+          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+          title="Delete user"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
 
   if (!state.isAuthenticated) {
     return (
@@ -533,9 +633,9 @@ const AdminUsers: React.FC = () => {
           </div>
         </div>
 
-        {/* Filters and Search */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-soft mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Filters and Search - Mobile Optimized */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/50 shadow-soft mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
@@ -586,10 +686,10 @@ const AdminUsers: React.FC = () => {
                 });
                 setShowUserModal(true);
               }}
-              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-500 to-secondary-600 text-white rounded-lg hover:from-primary-600 hover:to-secondary-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-gradient-to-r from-primary-500 to-secondary-600 text-white rounded-lg hover:from-primary-600 hover:to-secondary-700 transition-all duration-200 shadow-lg hover:shadow-xl sm:col-span-2 lg:col-span-1"
             >
               <UserPlus className="w-4 h-4 mr-2" />
-              Add User
+              <span className="text-sm sm:text-base">Add User</span>
             </button>
           </div>
         </div>
@@ -624,11 +724,54 @@ const AdminUsers: React.FC = () => {
         {activeTab === 'users' ? (
           <>
             {/* Users List */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft">
-          <h2 className="text-2xl font-display font-semibold text-gray-800 mb-6 flex items-center">
-            <span className="w-2 h-8 bg-gradient-to-b from-primary-500 to-secondary-500 rounded-full mr-4"></span>
-            Pack Members ({filteredUsers.length})
-          </h2>
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 sm:p-6 lg:p-8 border border-white/50 shadow-soft">
+          {/* Header - Mobile Optimized */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h2 className="text-xl sm:text-2xl font-display font-semibold text-gray-800 flex items-center">
+              <span className="w-2 h-6 sm:h-8 bg-gradient-to-b from-primary-500 to-secondary-500 rounded-full mr-3 sm:mr-4"></span>
+              Pack Members ({filteredUsers.length})
+            </h2>
+            
+            {/* Actions - Mobile Optimized */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
+              {/* Sync Photos Button - Icon only on mobile */}
+              <button
+                onClick={handleSyncPhotos}
+                disabled={isSyncingPhotos}
+                className="px-2 sm:px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 sm:gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Sync Google profile photos for all users"
+              >
+                <RefreshCw className={`w-4 h-4 ${isSyncingPhotos ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{isSyncingPhotos ? 'Syncing...' : 'Sync Photos'}</span>
+              </button>
+              
+              {/* View Toggle */}
+              <div className="flex items-center gap-1 sm:gap-2 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('cards')}
+                  className={`px-2 sm:px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'cards'
+                      ? 'bg-white text-primary-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="Card View"
+                >
+                  <Grid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`px-2 sm:px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'table'
+                      ? 'bg-white text-primary-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="Table View"
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
 
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -646,8 +789,53 @@ const AdminUsers: React.FC = () => {
               <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
               <p className="text-gray-600">Try adjusting your search or filters</p>
             </div>
+          ) : viewMode === 'table' ? (
+            /* Table View - Compact */
+            <>
+              {/* Mobile Notice */}
+              <div className="block sm:hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-700 flex items-center gap-2">
+                  <span>💡</span>
+                  <span>Scroll horizontally to see all columns, or switch to Card View for better mobile experience</span>
+                </p>
+              </div>
+              
+              {/* Table with horizontal scroll */}
+              <div className="overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+                <div className="inline-block min-w-full align-middle">
+                  <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Member
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Contact
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Den/Rank
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredUsers.map(user => renderTableRow(user))}
+                  </tbody>
+                </table>
+                </div>
+              </div>
+            </>
           ) : (
-            <div className="space-y-4">
+            /* Card View - Compact Grid */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredUsers.map(user => renderUserCard(user))}
             </div>
           )}

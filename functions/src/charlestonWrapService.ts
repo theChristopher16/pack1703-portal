@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import puppeteer from 'puppeteer';
 import * as cheerio from 'cheerio';
@@ -219,7 +219,7 @@ export class CharlestonWrapService {
  */
 export const syncCharlestonWrapData = functions.pubsub
   .schedule('every 1 hours')
-  .onRun(async (context) => {
+  .onRun(async (context: functions.EventContext) => {
     try {
       functions.logger.info('Starting Charleston Wrap data sync');
 
@@ -249,9 +249,9 @@ export const syncCharlestonWrapData = functions.pubsub
  * Can be called via HTTP for testing
  */
 export const manualSyncCharlestonWrap = functions.https.onCall(
-  async (data, context) => {
+  async (data: any, context: functions.https.CallableContext) => {
     // Verify user is authenticated and has admin role
-    if (!context.auth || !context.auth.token.admin) {
+    if (!context.auth || !(context.auth.token as any).admin) {
       throw new functions.https.HttpsError(
         'permission-denied',
         'Only admins can manually sync Charleston Wrap data'

@@ -31,6 +31,9 @@ const HomePage: React.FC = () => {
   });
 
   useEffect(() => {
+    // Ensure page starts at the top
+    window.scrollTo(0, 0);
+    
     // Remove artificial loading delays for better performance
     setIsLoading(false);
     setContentLoaded(true);
@@ -263,26 +266,53 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-fog via-forest-50/30 to-solar-50/30">
-      {/* Solarpunk Hero Section */}
-      <section className="solarpunk-hero">
-        <div className="solarpunk-hero-content">
-          <div className={`inline-flex items-center px-6 py-3 bg-solar/20 backdrop-blur-sm text-ink rounded-full text-sm font-medium mb-8 border border-solar/40 ${animationsTriggered ? "animate-solarpunk-fade-in" : ""}`}>
-            <span className="text-2xl mr-3">🌱</span>
-            Welcome to the Solarpunk Future of Scouting
+      {/* Dynamic Accent Bar */}
+      <div className="h-2 bg-gradient-to-r from-sky-400 via-solar-400 to-forest-400 animate-pulse"></div>
+      
+      {/* Full-Width Hero Section */}
+      <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
+        {/* Thematic Background Illustration */}
+        <div className="absolute inset-0 bg-gradient-to-br from-sky-100/50 via-forest-50/30 to-solar-50/30">
+          {/* Mountain Silhouettes */}
+          <div className="absolute bottom-0 left-0 w-full h-64 bg-gradient-to-t from-forest-200/20 to-transparent">
+            <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-forest-300/10 to-transparent"></div>
+            <div className="absolute bottom-0 right-0 w-1/2 h-40 bg-gradient-to-t from-forest-400/10 to-transparent"></div>
           </div>
           
-          <h1 className={`solarpunk-hero-title ${animationsTriggered ? "animate-solarpunk-slide-up" : ""}`}>
-            <span className="solarpunk-text-gradient">Explore the Future</span>
-            <br />
-            <span className="text-white">of Scouting</span>
+          {/* Solar Panel Silhouettes */}
+          <div className="absolute top-1/4 right-1/4 w-32 h-16 bg-gradient-to-br from-solar-200/20 to-solar-300/20 rounded-lg transform rotate-12"></div>
+          <div className="absolute top-1/3 right-1/3 w-24 h-12 bg-gradient-to-br from-solar-200/15 to-solar-300/15 rounded-lg transform -rotate-6"></div>
+          
+          {/* Tree Silhouettes */}
+          <div className="absolute bottom-1/4 left-1/4 w-8 h-16 bg-gradient-to-t from-forest-400/20 to-transparent rounded-full"></div>
+          <div className="absolute bottom-1/3 left-1/3 w-6 h-12 bg-gradient-to-t from-forest-500/15 to-transparent rounded-full"></div>
+          <div className="absolute bottom-1/5 right-1/5 w-10 h-20 bg-gradient-to-t from-forest-300/20 to-transparent rounded-full"></div>
+          
+          {/* Subtle Texture Overlay */}
+          <div className="absolute inset-0 opacity-5" style={{
+            backgroundImage: `radial-gradient(circle at 20% 80%, rgba(45, 80, 22, 0.1) 0%, transparent 50%),
+                            radial-gradient(circle at 80% 20%, rgba(244, 208, 63, 0.1) 0%, transparent 50%),
+                            radial-gradient(circle at 40% 40%, rgba(93, 173, 226, 0.1) 0%, transparent 50%)`
+          }}></div>
+        </div>
+        
+        {/* Hero Content */}
+        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          {/* Main Headline */}
+          <h1 className={`text-6xl sm:text-7xl lg:text-8xl font-solarpunk-display font-black text-forest-800 mb-6 leading-tight ${animationsTriggered ? "animate-solarpunk-slide-up" : ""}`}>
+            <span className="block">Welcome to</span>
+            <span className="block bg-gradient-to-r from-forest-600 via-ocean-600 to-solar-600 bg-clip-text text-transparent">
+              Pack 1703
+            </span>
           </h1>
           
-          <p className={`solarpunk-hero-subtitle ${animationsTriggered ? "animate-solarpunk-slide-up" : ""}`} style={{ animationDelay: '200ms' }}>
-            Where sustainable technology meets outdoor adventure, creating the next generation of 
-            <span className="text-solar-400 font-semibold"> eco-conscious leaders</span>.
+          {/* Sub-headline */}
+          <p className={`text-xl sm:text-2xl lg:text-3xl font-solarpunk-display font-medium text-forest-700 mb-12 max-w-4xl mx-auto leading-relaxed ${animationsTriggered ? "animate-solarpunk-fade-in" : ""}`} style={{ animationDelay: '200ms' }}>
+            Where nature meets technology and every adventure creates lasting memories
           </p>
           
-          <div className={`flex flex-col sm:flex-row gap-6 justify-center items-center ${animationsTriggered ? "animate-solarpunk-slide-up" : ""}`} 
+          {/* Hero Buttons */}
+          <div className={`flex flex-col sm:flex-row gap-6 justify-center items-center mb-16 ${animationsTriggered ? "animate-solarpunk-slide-up" : ""}`} 
                style={{ animationDelay: '400ms' }}>
             {heroButtons.length >= 2 ? (
               <>
@@ -343,55 +373,106 @@ const HomePage: React.FC = () => {
               </>
             )}
           </div>
+          
+          {/* Benefits Grid */}
+          <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto ${animationsTriggered ? "animate-solarpunk-fade-in" : ""}`} style={{ animationDelay: '600ms' }}>
+            <div className="flex items-center gap-4 p-6 bg-white/60 backdrop-blur-sm rounded-2xl border border-forest-200/30 hover:bg-white/80 transition-all duration-300">
+              <div className="w-12 h-12 bg-gradient-to-br from-forest-400 to-forest-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xl">👥</span>
+              </div>
+              <div className="text-left">
+                <h3 className="font-solarpunk-display font-semibold text-forest-700 mb-1">Connect with Families</h3>
+                <p className="text-sm text-forest-600">Build lasting friendships</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4 p-6 bg-white/60 backdrop-blur-sm rounded-2xl border border-forest-200/30 hover:bg-white/80 transition-all duration-300">
+              <div className="w-12 h-12 bg-gradient-to-br from-ocean-400 to-ocean-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xl">🏕️</span>
+              </div>
+              <div className="text-left">
+                <h3 className="font-solarpunk-display font-semibold text-forest-700 mb-1">Discover Adventures</h3>
+                <p className="text-sm text-forest-600">Outdoor experiences await</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4 p-6 bg-white/60 backdrop-blur-sm rounded-2xl border border-forest-200/30 hover:bg-white/80 transition-all duration-300">
+              <div className="w-12 h-12 bg-gradient-to-br from-solar-400 to-solar-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xl">🌱</span>
+              </div>
+              <div className="text-left">
+                <h3 className="font-solarpunk-display font-semibold text-forest-700 mb-1">Grow Together</h3>
+                <p className="text-sm text-forest-600">Build character & skills</p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Segmented Controls Section */}
+      {/* Quick Access Cards Section */}
       <section className="solarpunk-section">
         <div className={`text-center mb-12 ${animationsTriggered ? "animate-solarpunk-fade-in" : ""}`}>
           <h2 className="solarpunk-section-title">
-            <span className="solarpunk-text-gradient">Explore Your Adventure</span>
+            <span className="solarpunk-text-gradient">Your Portal Awaits</span>
           </h2>
           <p className="solarpunk-section-subtitle">
-            Discover events, locations, and resources tailored to your scouting journey
+            Everything you need for an amazing scouting experience
           </p>
         </div>
 
-        {/* Segmented Control */}
-        <div className={`max-w-4xl mx-auto ${animationsTriggered ? "animate-solarpunk-slide-up" : ""}`} 
-             style={{ animationDelay: '200ms' }}>
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2 border border-white/20">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              <Link
-                to="/events"
-                className="solarpunk-segmented-btn solarpunk-segmented-btn-active"
-                onClick={() => trackUserAction('segmented_control', 'events')}
-              >
-                <Calendar className="w-5 h-5" />
-                <span>Events</span>
-                <span className="text-xs opacity-75">Adventures & Activities</span>
-              </Link>
-              
-              <Link
-                to="/locations"
-                className="solarpunk-segmented-btn"
-                onClick={() => trackUserAction('segmented_control', 'locations')}
-              >
-                <MapPin className="w-5 h-5" />
-                <span>Locations</span>
-                <span className="text-xs opacity-75">Places to Explore</span>
-              </Link>
-              
-              <Link
-                to="/resources"
-                className="solarpunk-segmented-btn"
-                onClick={() => trackUserAction('segmented_control', 'resources')}
-              >
-                <FileText className="w-5 h-5" />
-                <span>Resources</span>
-                <span className="text-xs opacity-75">Tools & Guides</span>
-              </Link>
-            </div>
+        {/* Quick Access Grid */}
+        <div className={`max-w-6xl mx-auto ${animationsTriggered ? "animate-solarpunk-slide-up" : ""}`}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Link
+              to="/events"
+              className="solarpunk-story-card group"
+              onClick={() => trackUserAction('quick_access', 'events')}
+            >
+              <div className="solarpunk-story-image">
+                <div className="w-full h-48 bg-gradient-to-br from-forest-400 to-ocean-400 rounded-t-2xl flex items-center justify-center">
+                  <span className="text-6xl">📅</span>
+                </div>
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-solarpunk-display font-bold text-forest-800 mb-3">Events</h3>
+                <p className="text-forest-600 mb-4">Upcoming adventures, camping trips, and pack activities</p>
+                <span className="text-sm text-ocean-600 font-medium group-hover:text-ocean-700">Explore Events →</span>
+              </div>
+            </Link>
+            
+            <Link
+              to="/locations"
+              className="solarpunk-story-card group"
+              onClick={() => trackUserAction('quick_access', 'locations')}
+            >
+              <div className="solarpunk-story-image">
+                <div className="w-full h-48 bg-gradient-to-br from-ocean-400 to-sky-400 rounded-t-2xl flex items-center justify-center">
+                  <span className="text-6xl">📍</span>
+                </div>
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-solarpunk-display font-bold text-forest-800 mb-3">Locations</h3>
+                <p className="text-forest-600 mb-4">Meeting places, hiking trails, and adventure destinations</p>
+                <span className="text-sm text-ocean-600 font-medium group-hover:text-ocean-700">Find Locations →</span>
+              </div>
+            </Link>
+            
+            <Link
+              to="/resources"
+              className="solarpunk-story-card group"
+              onClick={() => trackUserAction('quick_access', 'resources')}
+            >
+              <div className="solarpunk-story-image">
+                <div className="w-full h-48 bg-gradient-to-br from-solar-400 to-yellow-400 rounded-t-2xl flex items-center justify-center">
+                  <span className="text-6xl">📚</span>
+                </div>
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-solarpunk-display font-bold text-forest-800 mb-3">Resources</h3>
+                <p className="text-forest-600 mb-4">Guides, forms, and helpful documents for scout families</p>
+                <span className="text-sm text-ocean-600 font-medium group-hover:text-ocean-700">View Resources →</span>
+              </div>
+            </Link>
           </div>
         </div>
       </section>

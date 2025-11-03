@@ -15,6 +15,7 @@ import { useAdmin } from '../contexts/AdminContext';
 import { feedbackService } from '../services/feedbackService';
 import { FeedbackSubmission } from '../types/feedback';
 import { FeedbackResponsesList, FeedbackResponseForm } from '../components/Feedback/FeedbackResponseComponents';
+import { useUserInteraction } from '../hooks/useUserInteraction';
 
 const FeedbackPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'submit' | 'history' | 'admin'>('submit');
@@ -22,6 +23,11 @@ const FeedbackPage: React.FC = () => {
   // Use AdminContext instead of direct auth service
   const { state: adminState } = useAdmin();
   const user = adminState.currentUser;
+  const { trackUserAction } = useUserInteraction({
+    componentName: 'FeedbackPage',
+    componentPath: '/feedback',
+    trackComponentView: true
+  });
   
   // Redirect to submit tab if user is not logged in and tries to access history
   useEffect(() => {

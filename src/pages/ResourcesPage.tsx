@@ -20,11 +20,17 @@ import {
 import { useAdmin } from '../contexts/AdminContext';
 import { Resource, ResourceSubmission, resourceService } from '../services/resourceService';
 import { ResourceManagementModal, SubmissionReviewModal } from '../components/Resources';
+import { useUserInteraction } from '../hooks/useUserInteraction';
 
 // Resource interface is now imported from resourceService
 
 const ResourcesPage: React.FC = () => {
   const navigate = useNavigate();
+  const { trackUserAction } = useUserInteraction({
+    componentName: 'ResourcesPage',
+    componentPath: '/resources',
+    trackComponentView: true
+  });
   const [activeTab, setActiveTab] = useState<'resources' | 'inventory'>('resources');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');

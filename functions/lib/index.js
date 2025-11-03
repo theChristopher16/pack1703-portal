@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.refundTenantPayment = exports.createTenantPayment = exports.squareOAuthCallback = exports.squareConnectStart = exports.uploadSensorData = exports.uploadCameraImage = exports.fixUSSStewartLocation = exports.updateRSVP = exports.resendPasswordSetupLink = exports.completePasswordSetup = exports.verifyPasswordSetupToken = exports.resetPasswordWithToken = exports.verifyPasswordResetToken = exports.sendPasswordReset = exports.publicICSFeed = exports.icsFeed = exports.sendSMS = exports.sendAnnouncementSMS = exports.sendAnnouncementEmails = exports.createAnnouncementWithEmails = exports.createTestAnnouncement = exports.helloWorld = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.getUserRSVPs = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminCloseRSVP = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
-exports.onCreateGoogleAuthUser = exports.createRequestsForExistingGoogleUsers = exports.completeRSVPPayment = exports.adminUpdatePaymentStatus = exports.createRSVPPayment = exports.squareWebhook = void 0;
+exports.manualSyncCharlestonWrap = exports.syncCharlestonWrapData = exports.onCreateGoogleAuthUser = exports.createRequestsForExistingGoogleUsers = exports.completeRSVPPayment = exports.adminUpdatePaymentStatus = exports.createRSVPPayment = exports.squareWebhook = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 const squareup_1 = require("squareup");
@@ -4422,4 +4422,10 @@ exports.onCreateGoogleAuthUser = functions.auth.user().onCreate(async (user) => 
         // Don't throw - we don't want to block user creation
     }
 });
+// ============================================================================
+// Charleston Wrap Fundraising Integration
+// ============================================================================
+var charlestonWrapService_1 = require("./charlestonWrapService");
+Object.defineProperty(exports, "syncCharlestonWrapData", { enumerable: true, get: function () { return charlestonWrapService_1.syncCharlestonWrapData; } });
+Object.defineProperty(exports, "manualSyncCharlestonWrap", { enumerable: true, get: function () { return charlestonWrapService_1.manualSyncCharlestonWrap; } });
 //# sourceMappingURL=index.js.map

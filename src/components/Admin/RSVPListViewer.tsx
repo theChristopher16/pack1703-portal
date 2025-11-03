@@ -17,6 +17,7 @@ interface RSVPData {
     age: number;
     den?: string;
     isAdult: boolean;
+    daysAttending?: string[]; // Array of date strings (YYYY-MM-DD) for multi-day events
   }>;
   dietaryRestrictions?: string;
   specialNeeds?: string;
@@ -150,25 +151,77 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
   };
 
   const exportRSVPs = () => {
-    const csvData = [
-      ['Family Name', 'Email', 'Phone', 'Attendee Count', 'Attendees', 'Payment Status', 'Payment Amount', 'Payment Method', 'Dietary Restrictions', 'Special Needs', 'Notes', 'Submitted At'],
-      ...rsvps.map(rsvp => [
-        rsvp.familyName,
-        rsvp.email,
-        rsvp.phone || '',
-        rsvp.attendees.length.toString(),
-        rsvp.attendees.map(a => `${a.name} (${a.age}, ${a.den || 'No Den'})`).join('; '),
-        rsvp.paymentStatus || 'N/A',
-        rsvp.paymentAmount ? `$${(rsvp.paymentAmount / 100).toFixed(2)}` : 'N/A',
-        rsvp.paymentMethod || 'N/A',
-        rsvp.dietaryRestrictions || '',
-        rsvp.specialNeeds || '',
-        rsvp.notes || '',
-        formatDate(rsvp.submittedAt)
-      ])
+    const isMultiDay = isMultiDayEvent();
+    const dayAttendance = isMultiDay ? getPerDayAttendance() : {};
+    const eventDays = Object.keys(dayAttendance).sort();
+    
+    // Build headers with per-day columns for multi-day events
+    const baseHeaders = [
+      'Family Name', 
+      'Email', 
+      'Phone', 
+      'Attendee Name',
+      'Age',
+      'Den',
+      'Is Adult'
     ];
+    
+    const dayHeaders = eventDays.map(day => {
+      const dayDate = new Date(day + 'T12:00:00');
+      return dayDate.toLocaleDateString('en-US', { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    });
+    
+    const endHeaders = [
+      'Payment Status',
+      'Payment Amount',
+      'Payment Method',
+      'Dietary Restrictions',
+      'Special Needs',
+      'Notes',
+      'Submitted At'
+    ];
+    
+    const csvHeaders = isMultiDay 
+      ? [...baseHeaders, ...dayHeaders, ...endHeaders]
+      : [...baseHeaders, 'Attending', ...endHeaders];
+    
+    // Build rows with one row per attendee
+    const csvRows: string[][] = [];
+    rsvps.forEach(rsvp => {
+      rsvp.attendees.forEach((attendee, index) => {
+        const daysAttending = attendee.daysAttending || [];
+        const dayColumns = eventDays.map(day => daysAttending.includes(day) ? 'Yes' : 'No');
+        
+        const row = [
+          rsvp.familyName,
+          rsvp.email,
+          rsvp.phone || '',
+          attendee.name,
+          attendee.age.toString(),
+          attendee.den || 'No Den',
+          attendee.isAdult ? 'Yes' : 'No',
+          ...(isMultiDay ? dayColumns : ['Yes']),
+          // Only include payment/notes on first attendee row
+          index === 0 ? (rsvp.paymentStatus || 'N/A') : '',
+          index === 0 ? (rsvp.paymentAmount ? `$${(rsvp.paymentAmount / 100).toFixed(2)}` : 'N/A') : '',
+          index === 0 ? (rsvp.paymentMethod || 'N/A') : '',
+          index === 0 ? (rsvp.dietaryRestrictions || '') : '',
+          index === 0 ? (rsvp.specialNeeds || '') : '',
+          index === 0 ? (rsvp.notes || '') : '',
+          index === 0 ? formatDate(rsvp.submittedAt) : ''
+        ];
+        csvRows.push(row);
+      });
+    });
 
-    const csvContent = csvData.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const csvContent = [csvHeaders, ...csvRows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+    
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -193,6 +246,31 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
     });
     
     return denCounts;
+  };
+
+  // Get per-day attendance counts for multi-day events
+  const getPerDayAttendance = () => {
+    const dayAttendance: { [date: string]: number } = {};
+    
+    rsvps.forEach(rsvp => {
+      rsvp.attendees.forEach(attendee => {
+        const daysAttending = attendee.daysAttending || [];
+        daysAttending.forEach(day => {
+          dayAttendance[day] = (dayAttendance[day] || 0) + 1;
+        });
+      });
+    });
+    
+    return dayAttendance;
+  };
+
+  // Check if this is a multi-day event
+  const isMultiDayEvent = () => {
+    return rsvps.some(rsvp => 
+      rsvp.attendees.some(attendee => 
+        attendee.daysAttending && attendee.daysAttending.length > 0
+      )
+    );
   };
 
   const handleDeleteRSVP = async (rsvpId: string) => {
@@ -288,7 +366,7 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
 
         {/* Stats - Compact horizontal layout */}
         <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex-shrink-0">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mb-3">
             <div className="text-center flex-1">
               <div className="text-lg font-bold text-primary-600">{rsvps.length}</div>
               <div className="text-xs text-gray-600">RSVPs</div>
@@ -304,6 +382,31 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
               <div className="text-xs text-gray-600">Dens</div>
             </div>
           </div>
+          
+          {/* Per-Day Attendance for Multi-Day Events */}
+          {isMultiDayEvent() && (
+            <div className="border-t border-gray-300 pt-3">
+              <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">Daily Attendance</h4>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(getPerDayAttendance())
+                  .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+                  .map(([date, count]) => {
+                    const dayDate = new Date(date + 'T12:00:00');
+                    const dayLabel = dayDate.toLocaleDateString('en-US', { 
+                      weekday: 'short', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    });
+                    return (
+                      <div key={date} className="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-lg border border-gray-200">
+                        <span className="text-xs font-medium text-gray-700">{dayLabel}</span>
+                        <span className="text-sm font-bold text-blue-600">{count}</span>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Error State - More compact */}
@@ -402,25 +505,55 @@ const RSVPListViewer: React.FC<RSVPListViewerProps> = ({
                   <div className="mb-3">
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Attendees</h4>
                     <div className="grid grid-cols-1 gap-1.5">
-                      {rsvp.attendees.map((attendee, index) => (
-                        <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
-                          <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                            attendee.isAdult ? 'bg-blue-500' : 'bg-green-500'
-                          }`}></div>
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm font-medium text-gray-900">{attendee.name}</span>
-                            <span className="text-xs text-gray-600 ml-2">
-                              Age {attendee.age}
-                              {attendee.den && ` • ${attendee.den}`}
-                            </span>
+                      {rsvp.attendees.map((attendee, index) => {
+                        const daysAttending = attendee.daysAttending || [];
+                        const isMultiDay = daysAttending.length > 0;
+                        
+                        return (
+                          <div key={index} className="p-2 bg-gray-50 rounded-lg space-y-1.5">
+                            <div className="flex items-center space-x-2">
+                              <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                                attendee.isAdult ? 'bg-blue-500' : 'bg-green-500'
+                              }`}></div>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm font-medium text-gray-900">{attendee.name}</span>
+                                <span className="text-xs text-gray-600 ml-2">
+                                  Age {attendee.age}
+                                  {attendee.den && ` • ${attendee.den}`}
+                                </span>
+                              </div>
+                              {attendee.isAdult && (
+                                <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                                  Adult
+                                </span>
+                              )}
+                            </div>
+                            {isMultiDay && (
+                              <div className="ml-3.5 mt-1">
+                                <div className="text-xs text-gray-500 mb-1">Days Attending:</div>
+                                <div className="flex flex-wrap gap-1">
+                                  {daysAttending.map((day) => {
+                                    const dayDate = new Date(day + 'T12:00:00');
+                                    const dayLabel = dayDate.toLocaleDateString('en-US', { 
+                                      weekday: 'short', 
+                                      month: 'short', 
+                                      day: 'numeric' 
+                                    });
+                                    return (
+                                      <span
+                                        key={day}
+                                        className="inline-block px-1.5 py-0.5 bg-primary-100 text-primary-700 rounded text-xs"
+                                      >
+                                        {dayLabel}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          {attendee.isAdult && (
-                            <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                              Adult
-                            </span>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 

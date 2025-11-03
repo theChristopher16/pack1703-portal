@@ -279,6 +279,32 @@ const EventDetailPage: React.FC = () => {
       }
 
       const rsvps = (result.rsvps || []) as Array<any>;
+      // Check if event is multi-day
+      const isMultiDay = event?.startDate && event?.endDate;
+      let eventDays: string[] = [];
+      if (isMultiDay) {
+        try {
+          const startDateValue = event.startDate?.toDate ? event.startDate.toDate() : (event.startDate instanceof Date ? event.startDate : (typeof event.startDate === 'string' ? new Date(event.startDate) : new Date()));
+          const endDateValue = event.endDate?.toDate ? event.endDate.toDate() : (event.endDate instanceof Date ? event.endDate : (typeof event.endDate === 'string' ? new Date(event.endDate) : new Date()));
+          const start = startDateValue;
+          const end = endDateValue;
+          const currentDate = new Date(start);
+          currentDate.setHours(0, 0, 0, 0);
+          const endDateOnly = new Date(end);
+          endDateOnly.setHours(0, 0, 0, 0);
+          
+          while (currentDate <= endDateOnly) {
+            const year = currentDate.getFullYear();
+            const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+            const day = String(currentDate.getDate()).padStart(2, '0');
+            eventDays.push(`${year}-${month}-${day}`);
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+        } catch (e) {
+          console.warn('Error calculating event days for export:', e);
+        }
+      }
+      
       // Flatten per attendee rows with key info
       const rows: Array<string[]> = [];
       const header = [
@@ -289,6 +315,10 @@ const EventDetailPage: React.FC = () => {
         'Is Adult',
         'Age',
         'Den',
+        ...(isMultiDay && eventDays.length > 1 ? eventDays.map(day => {
+          const d = new Date(day + 'T12:00:00');
+          return `Attending ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        }) : ['Attending']),
         'Dietary Restrictions',
         'Special Needs',
         'Notes',
@@ -318,6 +348,7 @@ const EventDetailPage: React.FC = () => {
             '',
             '',
             '',
+            ...(isMultiDay && eventDays.length > 1 ? eventDays.map(() => '') : ['']),
             r.dietaryRestrictions || '',
             r.specialNeeds || '',
             r.notes || '',
@@ -325,6 +356,7 @@ const EventDetailPage: React.FC = () => {
           ]);
         } else {
           attendees.forEach((a: any) => {
+            const daysAttending = a?.daysAttending || [];
             rows.push([
               r.familyName || '',
               r.email || r.userEmail || '',
@@ -333,6 +365,9 @@ const EventDetailPage: React.FC = () => {
               a?.isAdult ? 'Yes' : 'No',
               a?.age != null ? String(a.age) : '',
               a?.den || '',
+              ...(isMultiDay && eventDays.length > 1 
+                ? eventDays.map(day => daysAttending.includes(day) ? 'Yes' : 'No')
+                : [a?.attending !== false ? 'Yes' : 'No']),
               r.dietaryRestrictions || '',
               r.specialNeeds || '',
               r.notes || '',
@@ -652,6 +687,8 @@ const EventDetailPage: React.FC = () => {
                 eventId={event?.id || ''}
                 eventTitle={event?.title || ''}
                 eventDate={event?.startDate ? formatDate(event.startDate) : ''}
+                startDate={event?.startDate}
+                endDate={event?.endDate || event?.startDate}
                 maxCapacity={event?.capacity || undefined}
                 currentRSVPs={rsvpCount}
                 rsvpCountLoading={rsvpCountLoading}

@@ -10,16 +10,19 @@ import {
   Phone,
   Mail,
   Clock,
+  Users,
 } from 'lucide-react';
 import {
   FundraisingService,
   CharlestonWrapData,
   FundraisingProgress,
 } from '../../services/fundraisingService';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAdmin } from '../../contexts/AdminContext';
 
 export const CharlestonWrapDashboard: React.FC = () => {
-  const { currentUser, userRole } = useAuth();
+  const { state } = useAdmin();
+  const currentUser = state.currentUser;
+  const userRole = state.currentUser?.role;
   const [fundraisingData, setFundraisingData] = useState<CharlestonWrapData | null>(null);
   const [progress, setProgress] = useState<FundraisingProgress | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,7 +43,8 @@ export const CharlestonWrapDashboard: React.FC = () => {
   }, []);
 
   const handleManualSync = async () => {
-    if (!userRole?.includes('admin')) {
+    const isAdmin = userRole === 'root' || userRole === 'super-admin' || userRole === 'content-admin';
+    if (!isAdmin) {
       setError('Only admins can manually sync fundraising data');
       return;
     }
@@ -88,7 +92,7 @@ export const CharlestonWrapDashboard: React.FC = () => {
                 There is no active fundraising campaign at this time. Data will appear
                 here when a campaign is running.
               </p>
-              {userRole?.includes('admin') && (
+              {(userRole === 'root' || userRole === 'super-admin' || userRole === 'content-admin') && (
                 <button
                   onClick={handleManualSync}
                   disabled={syncing}
@@ -117,7 +121,7 @@ export const CharlestonWrapDashboard: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">
             {fundraisingData.organizationName}
           </h1>
-          {userRole?.includes('admin') && (
+          {(userRole === 'root' || userRole === 'super-admin' || userRole === 'content-admin') && (
             <button
               onClick={handleManualSync}
               disabled={syncing}

@@ -18,6 +18,8 @@ interface RSVPFormProps {
   eventId: string;
   eventTitle: string;
   eventDate: string;
+  startDate?: Date | any; // Firestore Timestamp or Date
+  endDate?: Date | any; // Firestore Timestamp or Date
   maxCapacity?: number;
   currentRSVPs?: number;
   rsvpCountLoading?: boolean;
@@ -67,12 +69,15 @@ interface Attendee {
   den?: string;
   isAdult: boolean;
   attending?: boolean;
+  daysAttending?: string[]; // Array of date strings (YYYY-MM-DD) for multi-day events
 }
 
 const RSVPForm: React.FC<RSVPFormProps> = ({
   eventId,
   eventTitle,
   eventDate,
+  startDate,
+  endDate,
   maxCapacity,
   currentRSVPs = 0,
   rsvpCountLoading = false,
@@ -101,13 +106,67 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
   // Check if user is authenticated
   const isAuthenticated = !!state.currentUser;
 
+  // Helper function to convert Firestore Timestamp or Date to Date object
+  const parseDate = (dateValue: any): Date | null => {
+    if (!dateValue) return null;
+    if (dateValue instanceof Date) return dateValue;
+    if (dateValue?.toDate && typeof dateValue.toDate === 'function') {
+      return dateValue.toDate();
+    }
+    if (typeof dateValue === 'string') {
+      const parsed = new Date(dateValue);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+    if (dateValue?.seconds) {
+      return new Date(dateValue.seconds * 1000);
+    }
+    return null;
+  };
+
+  // Helper function to get event days (array of date strings in YYYY-MM-DD format)
+  const getEventDays = (): string[] => {
+    const start = parseDate(startDate);
+    const end = parseDate(endDate);
+    
+    if (!start || !end) return [];
+    
+    const days: string[] = [];
+    const currentDate = new Date(start);
+    
+    // Reset time to midnight for date comparison
+    currentDate.setHours(0, 0, 0, 0);
+    const endDateOnly = new Date(end);
+    endDateOnly.setHours(0, 0, 0, 0);
+    
+    while (currentDate <= endDateOnly) {
+      const year = currentDate.getFullYear();
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const day = String(currentDate.getDate()).padStart(2, '0');
+      days.push(`${year}-${month}-${day}`);
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return days;
+  };
+
+  // Check if event is multi-day
+  const eventDays = getEventDays();
+  const isMultiDayEvent = eventDays.length > 1;
+
   // Form state
   const [formData, setFormData] = useState<Partial<RSVPData>>({
     eventId,
     familyName: '',
     email: '',
     phone: '',
-    attendees: [{ name: '', age: 0, den: '', isAdult: false, attending: true }],
+    attendees: [{ 
+      name: '', 
+      age: 0, 
+      den: '', 
+      isAdult: false, 
+      attending: true,
+      daysAttending: isMultiDayEvent ? [...eventDays] : undefined
+    }],
     dietaryRestrictions: '',
     specialNeeds: '',
     notes: ''
@@ -120,13 +179,18 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
       if (user) {
         setCurrentUserProfile(user);
         // Auto-populate attendees with family members and default attending=true
-        const auto = buildAutoAttendees(user).map(att => ({ ...att, attending: true }));
+        // For multi-day events, initialize with all days selected
+        const auto = buildAutoAttendees(user).map(att => ({ 
+          ...att, 
+          attending: true,
+          daysAttending: isMultiDayEvent ? [...eventDays] : undefined
+        }));
         setFormData(prev => ({ ...prev, attendees: auto.length ? auto : prev.attendees }));
       }
     } else {
       setCurrentUserProfile(null);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isMultiDayEvent, eventDays.join(',')]);
 
   // Effect to check for existing RSVP when component loads
   useEffect(() => {
@@ -145,12 +209,21 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
           if (existingEventRSVP) {
             setExistingRSVP(existingEventRSVP);
             // Pre-populate form with existing RSVP data
+            // For multi-day events, ensure attendees have daysAttending if not present
+            const attendees = existingEventRSVP.attendees || [{ name: '', age: 0, den: '', isAdult: false }];
+            const attendeesWithDays = isMultiDayEvent
+              ? attendees.map((att: any) => ({
+                  ...att,
+                  daysAttending: att.daysAttending || (att.attending !== false ? [...eventDays] : [])
+                }))
+              : attendees;
+            
             setFormData({
               eventId,
               familyName: existingEventRSVP.familyName,
               email: existingEventRSVP.email,
               phone: existingEventRSVP.phone || '',
-              attendees: existingEventRSVP.attendees || [{ name: '', age: 0, den: '', isAdult: false }],
+              attendees: attendeesWithDays,
               dietaryRestrictions: existingEventRSVP.dietaryRestrictions || '',
               specialNeeds: existingEventRSVP.specialNeeds || '',
               notes: existingEventRSVP.notes || ''
@@ -165,7 +238,7 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
     };
 
     checkExistingRSVP();
-  }, [isAuthenticated, eventId]);
+  }, [isAuthenticated, eventId, isMultiDayEvent, eventDays.join(',')]);
 
   // Effect to populate form with user profile data when profile is loaded (only if no existing RSVP)
   useEffect(() => {
@@ -302,6 +375,10 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
         if (!attendee.age || attendee.age < 0 || attendee.age > 120) {
           newErrors[`attendee_${index}_age`] = 'Please enter a valid age';
         }
+        // For multi-day events, validate that at least one day is selected
+        if (isMultiDayEvent && (!attendee.daysAttending || attendee.daysAttending.length === 0)) {
+          newErrors[`attendee_${index}_days`] = 'Please select at least one day for this attendee';
+        }
       });
     }
 
@@ -335,7 +412,10 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
           familyName: formData.familyName,
           email: formData.email,
           phone: formData.phone,
-          attendees: (formData.attendees || []).filter(a => a.attending !== false).map(({ attending, ...rest }) => rest),
+          attendees: (formData.attendees || []).filter(a => a.attending !== false).map(({ attending, ...rest }) => ({
+            ...rest,
+            daysAttending: rest.daysAttending // Preserve daysAttending for multi-day events
+          })),
           dietaryRestrictions: formData.dietaryRestrictions,
           specialNeeds: formData.specialNeeds,
           notes: formData.notes
@@ -374,7 +454,10 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
       // Prepare submission data with security metadata
       const submissionData = {
         ...formData,
-        attendees: (formData.attendees || []).filter(a => a.attending !== false).map(({ attending, ...rest }) => rest),
+        attendees: (formData.attendees || []).filter(a => a.attending !== false).map(({ attending, ...rest }) => ({
+          ...rest,
+          daysAttending: rest.daysAttending // Preserve daysAttending for multi-day events
+        })),
         eventId,
         ...securityMeta
       };
@@ -507,7 +590,14 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
   const addAttendee = () => {
     setFormData(prev => ({
       ...prev,
-      attendees: [...(prev.attendees || []), { name: '', age: 0, den: '', isAdult: false }]
+      attendees: [...(prev.attendees || []), { 
+        name: '', 
+        age: 0, 
+        den: '', 
+        isAdult: false,
+        attending: true,
+        daysAttending: isMultiDayEvent ? [...eventDays] : undefined
+      }]
     }));
   };
 
@@ -528,6 +618,29 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
       attendees: prev.attendees?.map((attendee, i) => 
         i === index ? { ...attendee, [field]: value } : attendee
       ) || []
+    }));
+  };
+
+  // Toggle day attendance for an attendee
+  const toggleDayAttendance = (attendeeIndex: number, day: string) => {
+    setFormData(prev => ({
+      ...prev,
+      attendees: prev.attendees?.map((attendee, i) => {
+        if (i !== attendeeIndex) return attendee;
+        
+        const currentDays = attendee.daysAttending || [];
+        const isDaySelected = currentDays.includes(day);
+        const newDays = isDaySelected
+          ? currentDays.filter(d => d !== day)
+          : [...currentDays, day];
+        
+        return {
+          ...attendee,
+          daysAttending: newDays,
+          // If all days are deselected, mark as not attending
+          attending: newDays.length > 0 ? true : false
+        };
+      }) || []
     }));
   };
 
@@ -897,7 +1010,15 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
                   <input
                     type="checkbox"
                     checked={attendee.attending !== false}
-                    onChange={(e) => updateAttendee(index, 'attending' as any, e.target.checked)}
+                    onChange={(e) => {
+                      const isChecked = e.target.checked;
+                      updateAttendee(index, 'attending' as any, isChecked);
+                      // For multi-day events, if unchecking attending, clear all days
+                      // If checking attending, select all days by default
+                      if (isMultiDayEvent) {
+                        updateAttendee(index, 'daysAttending' as any, isChecked ? [...eventDays] : []);
+                      }
+                    }}
                     className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                   />
                   <span className="text-sm text-gray-900">Attending</span>
@@ -915,6 +1036,53 @@ const RSVPForm: React.FC<RSVPFormProps> = ({
                   </button>
                 )}
               </div>
+
+              {/* Multi-day event day selection */}
+              {isMultiDayEvent && attendee.attending !== false && (
+                <div className="p-3 bg-white rounded-lg border border-gray-200">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Select Days Attending *
+                  </label>
+                  <p className="text-xs text-gray-500 mb-3">
+                    This helps us plan food and activities. Please select which days {attendee.name || 'this attendee'} will be attending.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {eventDays.map((day) => {
+                      const isSelected = attendee.daysAttending?.includes(day) || false;
+                      const dayDate = new Date(day + 'T12:00:00');
+                      const dayLabel = dayDate.toLocaleDateString('en-US', { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric' 
+                      });
+                      
+                      return (
+                        <label
+                          key={day}
+                          className={`flex items-center space-x-2 p-2 rounded-lg border-2 cursor-pointer transition-all ${
+                            isSelected
+                              ? 'border-primary-500 bg-primary-50'
+                              : 'border-gray-200 bg-white hover:border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleDayAttendance(index, day)}
+                            className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
+                          />
+                          <span className={`text-sm ${isSelected ? 'text-primary-700 font-medium' : 'text-gray-700'}`}>
+                            {dayLabel}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {errors[`attendee_${index}_days`] && (
+                    <p className="mt-1 text-xs text-red-600">{errors[`attendee_${index}_days`]}</p>
+                  )}
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>

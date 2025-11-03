@@ -12,9 +12,11 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // Updated to include all authenticated user roles
-      return isAuthenticated() && 
-             request.auth.token.get('role', '') in ['admin', 'super_admin', 'den_leader', 'parent'];
+      // Check both token and user document for admin status
+      return isAuthenticated() && (
+        request.auth.token.get('role', '') in ['admin', 'super_admin', 'super-admin', 'den_leader', 'root'] ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin', 'super-admin', 'den_leader', 'root', 'content-admin']
+      );
     }
     
     function isSuperAdmin() {
@@ -841,17 +843,62 @@ service cloud.firestore {
     // USER INTERACTION TRACKING
     // ============================================================================
     
-    // User interactions - users can only access their own data
-    match /userInteractions/{interactionId} {
-      allow read, write: if isAuthenticated() && 
-        resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && 
-        request.resource.data.userId == request.auth.uid;
+    // User interactions - Collection-level access
+    // Super-admins can read all interaction data for analytics
+    // All authenticated users can write their own interactions
+    match /userInteractions {
+      allow read: if isAuthenticated() && (
+        request.auth.token.get('role', '') in ['super_admin', 'super-admin', 'root'] ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['super_admin', 'super-admin', 'root']
+      );
+      allow write: if false; // Only allow create on individual documents
     }
     
-    // Allow aggregation queries on user interactions for admins
-    match /userInteractions {
-      allow read: if isAdmin();
+    // User interactions - Individual document access
+    match /userInteractions/{interactionId} {
+      // Users can create their own interaction records
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can read/update/delete their own interactions
+      allow read, update, delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+
+    // ============================================================================
+    // FUNDRAISING MANAGEMENT
+    // ============================================================================
+    
+    // Fundraising campaigns - Individual document access
+    match /fundraising-campaigns/{campaignId} {
+      // Anyone authenticated can read campaigns
+      allow read: if isAuthenticated();
+      
+      // Only admins and den leaders can create/update/delete campaigns
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Fundraising campaigns - Collection access
+    match /fundraising-campaigns {
+      allow list: if isAuthenticated();
+    }
+    
+    // Fundraising donations - Individual document access
+    match /fundraising-donations/{donationId} {
+      // Anyone authenticated can read donations
+      allow read: if isAuthenticated();
+      
+      // Only admins and den leaders can create/update donations
+      allow create, update: if isAdmin();
+      
+      // Only admins can delete donations
+      allow delete: if isAdmin();
+    }
+    
+    // Fundraising donations - Collection access
+    match /fundraising-donations {
+      allow list: if isAuthenticated();
     }
 
     // ============================================================================

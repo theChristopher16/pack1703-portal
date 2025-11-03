@@ -13,6 +13,7 @@ import { adminService } from '../services/adminService';
 import { authService } from '../services/authService';
 import { LocationSelector } from '../components/Locations';
 import { archiveEvent, unarchiveEvent, getCurrentScoutingYear, extractScoutingYearFromEvent, shouldAutoArchive } from '../services/archivedEventsService';
+import { useUserInteraction } from '../hooks/useUserInteraction';
 // import { analytics } from '../services/analytics';
 
 interface Event {
@@ -98,6 +99,11 @@ const DEBOUNCE_DELAY = 300; // Debounce filter changes
 
 const EventsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { trackUserAction } = useUserInteraction({
+    componentName: 'EventsPage',
+    componentPath: '/events',
+    trackComponentView: true
+  });
   const { state: adminState, hasRole, addNotification } = useAdmin();
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [events, setEvents] = useState<Event[]>([]);

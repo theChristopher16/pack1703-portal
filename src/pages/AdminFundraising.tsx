@@ -19,36 +19,21 @@ import {
   AlertCircle,
   Clock
 } from 'lucide-react';
-import { firestoreService } from '../services/firestore';
+import { Timestamp } from 'firebase/firestore';
+import { 
+  fundraisingService, 
+  FundraisingCampaign, 
+  FundraisingDonation 
+} from '../services/fundraisingService';
+import { CampaignModal } from '../components/Fundraising';
 
-interface FundraisingCampaign {
-  id: string;
-  name: string;
-  description: string;
-  goal: number;
-  currentAmount: number;
-  startDate: string;
-  endDate: string;
-  status: 'active' | 'completed' | 'upcoming' | 'paused';
-  type: 'popcorn' | 'camping' | 'general' | 'event' | 'donation';
-  participants: number;
-  maxParticipants?: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface FundraisingDonation {
-  id: string;
-  campaignId: string;
-  donorName: string;
-  amount: number;
-  message?: string;
-  isAnonymous: boolean;
-  paymentMethod: 'cash' | 'check' | 'online' | 'card';
-  status: 'pending' | 'completed' | 'failed';
-  createdAt: string;
-}
+// Helper function to convert Timestamp or string to Date
+const toDate = (timestamp: string | Timestamp): Date => {
+  if (timestamp instanceof Timestamp) {
+    return timestamp.toDate();
+  }
+  return new Date(timestamp);
+};
 
 const AdminFundraising: React.FC = () => {
   const { addNotification } = useAdmin();
@@ -68,15 +53,16 @@ const AdminFundraising: React.FC = () => {
     const fetchFundraisingData = async () => {
       try {
         setLoading(true);
-        // TODO: Add fundraising service methods to firestoreService
-        // const campaignsData = await firestoreService.getFundraisingCampaigns();
-        // const donationsData = await firestoreService.getFundraisingDonations();
+        const [campaignsData, donationsData] = await Promise.all([
+          fundraisingService.getCampaigns(),
+          fundraisingService.getDonations()
+        ]);
         
-        // For now, set empty arrays until service methods are implemented
-        setCampaigns([]);
-        setDonations([]);
+        setCampaigns(campaignsData);
+        setDonations(donationsData);
       } catch (error) {
         console.error('Error fetching fundraising data:', error);
+        addNotification('error', 'Error', 'Failed to load fundraising data');
         setCampaigns([]);
         setDonations([]);
       } finally {
@@ -85,7 +71,7 @@ const AdminFundraising: React.FC = () => {
     };
     
     fetchFundraisingData();
-  }, []);
+  }, [addNotification]);
 
   const handleCreateCampaign = () => {
     setModalMode('create');
@@ -100,13 +86,49 @@ const AdminFundraising: React.FC = () => {
   };
 
   const handleDeleteCampaign = async (campaignId: string) => {
-    if (window.confirm('Are you sure you want to delete this fundraising campaign?')) {
+    if (window.confirm('Are you sure you want to delete this fundraising campaign? This will also delete all associated donations.')) {
       try {
+        await fundraisingService.deleteCampaign(campaignId);
         setCampaigns(prev => prev.filter(c => c.id !== campaignId));
+        setDonations(prev => prev.filter(d => d.campaignId !== campaignId));
         addNotification('success', 'Campaign Deleted', 'Fundraising campaign has been successfully deleted.');
       } catch (error) {
+        console.error('Error deleting campaign:', error);
         addNotification('error', 'Delete Failed', 'Failed to delete campaign. Please try again.');
       }
+    }
+  };
+
+  const handleSaveCampaign = async (campaignData: Partial<FundraisingCampaign>) => {
+    try {
+      if (modalMode === 'create') {
+        const campaignId = await fundraisingService.createCampaign(campaignData as any);
+        
+        // Fetch the newly created campaign
+        const newCampaign = await fundraisingService.getCampaign(campaignId);
+        if (newCampaign) {
+          setCampaigns(prev => [newCampaign, ...prev]);
+        }
+        
+        addNotification('success', 'Campaign Created', 'Fundraising campaign has been successfully created.');
+      } else if (selectedCampaign) {
+        await fundraisingService.updateCampaign(selectedCampaign.id, campaignData);
+        
+        // Fetch the updated campaign
+        const updatedCampaign = await fundraisingService.getCampaign(selectedCampaign.id);
+        if (updatedCampaign) {
+          setCampaigns(prev => prev.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
+        }
+        
+        addNotification('success', 'Campaign Updated', 'Fundraising campaign has been successfully updated.');
+      }
+      
+      setIsModalOpen(false);
+      setSelectedCampaign(null);
+    } catch (error: any) {
+      console.error('Error saving campaign:', error);
+      addNotification('error', 'Save Failed', error.message || 'Failed to save campaign. Please try again.');
+      throw error; // Re-throw to let modal handle the error
     }
   };
 
@@ -363,12 +385,12 @@ const AdminFundraising: React.FC = () => {
                     </div>
 
                     <div className="space-y-3 text-sm mb-4">
-                      <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
-                        <Calendar className="h-4 w-4 text-blue-600" />
-                        <span className="text-gray-700">
-                          {new Date(campaign.startDate).toLocaleDateString()} - {new Date(campaign.endDate).toLocaleDateString()}
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
+                      <Calendar className="h-4 w-4 text-blue-600" />
+                      <span className="text-gray-700">
+                        {toDate(campaign.startDate).toLocaleDateString()} - {toDate(campaign.endDate).toLocaleDateString()}
+                      </span>
+                    </div>
                       <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg">
                         <Users className="h-4 w-4 text-green-600" />
                         <span className="text-gray-700">
@@ -443,7 +465,7 @@ const AdminFundraising: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">
-                        {donation.isAnonymous ? 'Anonymous Donor' : donation.donorName}
+                        {donation.anonymous ? 'Anonymous Donor' : donation.donorName}
                       </p>
                       <p className="text-sm text-gray-600">
                         {campaigns.find(c => c.id === donation.campaignId)?.name}
@@ -453,7 +475,7 @@ const AdminFundraising: React.FC = () => {
                   <div className="text-right">
                     <p className="font-bold text-green-600">${donation.amount.toLocaleString()}</p>
                     <p className="text-xs text-gray-500">
-                      {new Date(donation.createdAt).toLocaleDateString()}
+                      {toDate(donation.date).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -500,34 +522,17 @@ const AdminFundraising: React.FC = () => {
         )}
       </div>
 
-      {/* Campaign Modal - Placeholder for now */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/50 shadow-soft">
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                {modalMode === 'create' ? 'Create New Campaign' : 'Edit Campaign'}
-              </h2>
-              <p className="text-gray-600 mb-6">
-                Campaign creation/editing form will be implemented here.
-              </p>
-              <div className="flex gap-3 justify-end">
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 shadow-soft"
-                >
-                  {modalMode === 'create' ? 'Create Campaign' : 'Save Changes'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Campaign Modal */}
+      <CampaignModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedCampaign(null);
+        }}
+        onSave={handleSaveCampaign}
+        mode={modalMode}
+        campaign={selectedCampaign}
+      />
     </div>
   );
 };

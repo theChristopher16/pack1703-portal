@@ -5281,3 +5281,11 @@ export const onCreateGoogleAuthUser = functions.auth.user().onCreate(async (user
   }
 });
 
+// ============================================================================
+// Charleston Wrap Fundraising Integration
+// ============================================================================
+
+export { 
+  syncCharlestonWrapData, 
+  manualSyncCharlestonWrap 
+} from './charlestonWrapService';

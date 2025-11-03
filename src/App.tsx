@@ -28,6 +28,7 @@ import DataAuditPage from './pages/DataAuditPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import DuesInformation from './pages/DuesInformation';
+import FundraisingPage from './pages/FundraisingPage';
 import AnalyticsDashboard from './components/Analytics/AnalyticsDashboard';
 import AnalyticsTest from './components/Analytics/AnalyticsTest';
 import UserInteractionDashboard from './components/Analytics/UserInteractionDashboard';
@@ -59,6 +60,11 @@ import { AdminProvider } from './contexts/AdminContext';
 
 function App() {
   useEffect(() => {
+    // Disable browser scroll restoration to prevent automatic scrolling on page load
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    
     // Force cache invalidation on app load
     console.log('🚀 App: Starting with cache invalidation...');
     console.log('🚀 App: Current timestamp:', new Date().toISOString());
@@ -151,6 +157,7 @@ function App() {
                     <Route path="/dues" element={<Layout><DuesInformation /></Layout>} />
                     <Route path="/volunteer" element={<Layout><VolunteerPage /></Layout>} />
                     <Route path="/ecology" element={<Layout><EcologyPage /></Layout>} />
+                    <Route path="/campaign" element={<Layout><FundraisingPage /></Layout>} />
                     <Route path="/privacy" element={<Layout><PrivacyPolicyPage /></Layout>} />
                     <Route path="/terms" element={<Layout><TermsOfServicePage /></Layout>} />
                     

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Settings, LogOut } from 'lucide-react';
+import { Menu, X, Settings, LogOut, User } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { useAdmin } from '../../contexts/AdminContext';
 import { UserRole } from '../../services/authService';
@@ -50,6 +51,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       setUserRole(null);
     }
   }, [state.currentUser]);
+  
+  // Note: Password setup check removed from Layout to avoid blocking UI
+  // The check will be handled at the auth service level or in AuthGuard
 
   // REMOVED LOADING CHECK - This was causing page reloads
   // The AuthGuard already handles authentication, so we don't need to check again
@@ -82,193 +86,48 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   
-  // Separate navigation by category for better organization
-  const publicNav = getNavigationByCategory(userRole || UserRole.PARENT, 'public');
-  const authenticatedNav = getNavigationByCategory(userRole || UserRole.PARENT, 'authenticated');
-  const adminNav = getNavigationByCategory(userRole || UserRole.PARENT, 'admin');
-  const systemNav = getNavigationByCategory(userRole || UserRole.PARENT, 'system');
-  
-  
-  
-  // Combine all navigation items
-  const allNavItems = [...publicNav, ...authenticatedNav, ...adminNav, ...systemNav];
-  
-  // Create prioritized navigation for main toolbar (prioritize main content items)
-  const getMainToolbarItems = () => {
-    if (currentUser) {
-      // For authenticated users, prioritize main content items
-      const mainContentItems = publicNav.filter(item => 
-        ['Events', 'Announcements', 'Locations', 'Volunteer', 'Ecology'].includes(item.name)
-      );
-      const chatItem = authenticatedNav.find(item => item.name === 'Chat');
-      const profileItem = authenticatedNav.find(item => item.name === 'Profile');
-      const otherItems = publicNav.filter(item => 
-        !['Events', 'Announcements', 'Locations', 'Volunteer', 'Ecology', 'Home'].includes(item.name)
-      );
-      
-      // For super-admin users, include SOC Console
-      const superAdminItems = userRole === UserRole.SUPER_ADMIN ? [
-        ...systemNav.filter(item => ['SOC Console'].includes(item.name))
-      ] : [];
-      
-      return [
-        ...mainContentItems,
-        ...(chatItem ? [chatItem] : []),
-        ...(profileItem ? [profileItem] : [])
-      ].slice(0, 7); // Limit to 7 items for better desktop layout (Events, Announcements, Locations, Volunteer, Ecology, Chat, Profile)
-    } else {
-      // For anonymous users, show public items
-      return publicNav.slice(0, 4);
-    }
+  // Get all navigation items filtered by user role
+  const getUserNavigationItems = () => {
+    if (!userRole) return [];
+    return ALL_NAVIGATION_ITEMS.filter(item => item.roles.includes(userRole));
   };
-  
-  const mainToolbarItems = getMainToolbarItems();
+
+  const allNavItems = getUserNavigationItems();
   
   // Check if user has admin privileges
   const isAdmin = userRole ? isAdminOrAbove(userRole) : false;
   const isRootUser = userRole ? isRoot(userRole) : false;
 
-
-  // Organize navigation into logical groups for dropdown
-  const coreFeaturesItems = publicNav.filter(item => 
-    ['Events', 'Announcements', 'Locations', 'Volunteer'].includes(item.name)
-  );
-  
-  // ALWAYS include Ecology in Core Features (bypass role filtering)
-  const ecologyItem = ALL_NAVIGATION_ITEMS.find(item => item.name === 'Ecology');
-  if (ecologyItem) {
-    coreFeaturesItems.push(ecologyItem);
-  }
-  
+  // Create simple navigation groups based on available items
   const navigationGroups = [
     {
-      name: 'Core Features',
-      items: coreFeaturesItems,
-      icon: '🏠'
+      name: 'Main',
+      items: allNavItems.filter(item => 
+        ['Home', 'Events', 'Announcements', 'Locations', 'Volunteer', 'Ecology', 'Campaign'].includes(item.name)
+      )
     },
     {
-      name: 'Communication',
-      items: authenticatedNav.filter(item => 
-        item.href === '/chat' || item.href === '/feedback'
-      ),
-      icon: '💬'
+      name: 'My Account',
+      items: allNavItems.filter(item => 
+        ['Profile', 'Chat', 'Resources', 'Feedback'].includes(item.name)
+      )
     },
     {
-      name: 'Account',
-      items: authenticatedNav.filter(item => 
-        item.href === '/profile'
-      ),
-      icon: '👤'
+      name: 'Management',
+      items: allNavItems.filter(item => 
+        ['Analytics', 'User Management', 'Fundraising', 'Finances', 'Seasons', 'Lists'].includes(item.name)
+      )
     },
     {
-      name: 'Resources',
-      items: authenticatedNav.filter(item => 
-        item.href === '/resources' || item.href === '/data-audit'
-      ),
-      icon: '📚'
-    },
-    {
-      name: 'Analytics',
-      items: adminNav.filter(item => 
-        item.href === '/analytics' || item.href === '/analytics/test'
-      ),
-      icon: '📊'
-    },
-    {
-      name: 'Content Management',
-      items: adminNav.filter(item => 
-        item.href.includes('/events') || 
-        item.href.includes('/announcements') || 
-        item.href.includes('/locations')
-      ),
-      icon: '📝'
-    },
-    {
-      name: 'User Management',
-      items: adminNav.filter(item => 
-        item.href.includes('/users') || 
-        item.href.includes('/volunteer') ||
-        false
-      ),
-      icon: '👥'
-    },
-    {
-      name: 'Financial',
-      items: adminNav.filter(item => 
-        item.href.includes('/fundraising') || 
-        item.href.includes('/finances')
-      ),
-      icon: '💰'
-    },
-    {
-      name: 'Operations',
-      items: adminNav.filter(item => 
-        item.href.includes('/lists') || 
-        item.href.includes('/seasons') ||
-        item.href.includes('/chat')
-      ),
-      icon: '⚙️'
-    },
-    {
-      name: 'System Administration',
-      items: systemNav.filter(item => 
-        item.href.includes('/ai') || 
-        item.href.includes('/cost-management') ||
-        item.href.includes('/multi-tenant') ||
-        item.href.includes('/settings')
-      ),
-      icon: '🔧'
-    },
-    {
-      name: 'Monitoring',
-      items: systemNav.filter(item => 
-        item.href.includes('/soc') ||
-        item.href.includes('/database') ||
-        item.href.includes('/system') ||
-        item.href.includes('/security') ||
-        item.href.includes('/permissions') ||
-        item.href.includes('/api')
-      ),
-      icon: '📈'
+      name: 'System',
+      items: allNavItems.filter(item => 
+        ['Solyn AI', 'SOC Console', 'System Settings', 'System Monitor', 'Cost Management', 'User Interactions'].includes(item.name)
+      )
     }
-  ].filter(group => group.items.length > 0); // Only show groups with items
+  ].filter(group => group.items.length > 0);
 
-  // Debug: Log navigation groups for super-admin users
-  if (userRole === UserRole.SUPER_ADMIN) {
-    console.log('🔍 Super-Admin Navigation Groups Debug:', {
-      navigationGroups: navigationGroups.map(group => ({
-        name: group.name,
-        items: group.items.map(item => ({ name: item.name, href: item.href }))
-      })),
-      systemNavItems: systemNav.map(item => ({ name: item.name, href: item.href }))
-    });
-  }
-
-
-  // For mobile menu, ensure we always have content to show
-  // Force Ecology to always be in Core Features for mobile
-  const coreFeaturesGroup = navigationGroups.find(group => group.name === 'Core Features');
-  if (coreFeaturesGroup) {
-    // Ensure Ecology is in the Core Features group
-    const hasEcology = coreFeaturesGroup.items.some(item => item.name === 'Ecology');
-    if (!hasEcology) {
-      const ecologyItem = ALL_NAVIGATION_ITEMS.find(item => item.name === 'Ecology');
-      if (ecologyItem) {
-        coreFeaturesGroup.items.push(ecologyItem);
-      }
-    }
-  }
-  
-  const mobileNavigationGroups = navigationGroups.length > 0 ? navigationGroups : [
-    {
-      name: 'Navigation',
-      items: publicNav.filter(item => 
-        ['Events', 'Announcements', 'Locations', 'Volunteer', 'Ecology'].includes(item.name)
-      ),
-      icon: '🏠'
-    }
-  ];
-
+  // Get main toolbar items (first group)
+  const mainToolbarItems = navigationGroups.length > 0 ? navigationGroups[0].items : [];
 
   const isActive = (path: string) => {
     const prefixedPath = prefixPath(path);
@@ -278,7 +137,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-fog via-forest-50/30 to-solar-50/30 flex flex-col">
       {/* Solarpunk Brand Header */}
-      <header className="bg-white/95 backdrop-blur-md shadow-card border-b border-forest-200/50 sticky top-0 z-50">
+      <header className="bg-white/95 backdrop-blur-md shadow-card border-b border-forest-200/50 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo/Brand */}
@@ -303,8 +162,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Hamburger Menu Button - All Screen Sizes */}
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 rounded-xl bg-white/95 backdrop-blur-sm border border-forest-200 text-forest-700 hover:bg-gradient-to-r hover:from-forest-50 hover:to-ocean-50 hover:border-forest-300 hover:text-forest-800 transition-all duration-300"
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('Hamburger button clicked, toggling menu');
+                setIsMobileMenuOpen(!isMobileMenuOpen);
+              }}
+              className="p-2 rounded-xl bg-white/95 backdrop-blur-sm border border-forest-200 text-forest-700 hover:bg-gradient-to-r hover:from-forest-50 hover:to-ocean-50 hover:border-forest-300 hover:text-forest-800 transition-all duration-300 relative z-[102]"
               aria-label="Toggle menu"
             >
               {isMobileMenuOpen ? (
@@ -316,39 +179,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </div>
 
-        {/* Hamburger Menu - All Screen Sizes */}
-        {isMobileMenuOpen && (
+        {/* Hamburger Menu - Rendered via Portal */}
+        {isMobileMenuOpen && typeof document !== 'undefined' && createPortal(
           <>
-            {/* Backdrop - Covers everything */}
+            {/* Backdrop */}
             <div 
-              className="fixed inset-0 bg-black/50 z-40"
+              className="fixed inset-0 bg-black/50 z-[9998]"
               onClick={() => setIsMobileMenuOpen(false)}
             />
-            {/* Menu Content - Slide in from right */}
-            <div 
-              className="fixed top-16 right-0 bottom-0 w-full sm:w-96 bg-white shadow-2xl z-50 overflow-y-auto"
-              style={{
-                maxHeight: 'calc(100vh - 64px)',
-                paddingBottom: 'calc(16px + env(safe-area-inset-bottom))'
-              }}
-            >
-              <div className="p-4 sm:p-6">
-              <div className="space-y-4">
-                {/* Navigation Groups - Show all groups */}
+            
+            {/* Menu Panel - Solarpunk Style */}
+            <div className="fixed top-16 right-0 bottom-0 w-80 bg-gradient-to-br from-white/95 via-forest-50/50 to-solar-50/30 backdrop-blur-xl shadow-2xl border-l border-forest-200/50 z-[9999] overflow-y-auto animate-solarpunk-slide-up">
+              <div className="p-6">
                 {navigationGroups.map((group, groupIndex) => (
-                  <div key={group.name} className="border border-gray-200 rounded-lg overflow-hidden">
-                    {/* Group Header */}
-                    <div className="bg-gray-100 px-4 py-3 border-b border-gray-200">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-lg">{group.icon}</span>
-                        <span className="text-sm font-bold text-gray-800 uppercase tracking-wide">
-                          {group.name}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* Group Items */}
-                    <div className="bg-white">
+                  <div key={group.name} className="mb-6" style={{ animationDelay: `${groupIndex * 100}ms` }}>
+                    <h3 className="text-xs font-solarpunk-display font-bold text-forest-600 uppercase tracking-wider mb-3 px-3 flex items-center gap-2">
+                      <div className="w-1 h-4 bg-gradient-to-b from-forest-400 to-ocean-400 rounded-full"></div>
+                      {group.name}
+                    </h3>
+                    <div className="space-y-1">
                       {group.items.map((item) => {
                         const Icon = item.icon;
                         return (
@@ -358,14 +207,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                               handleNavigation(item.href);
                               setIsMobileMenuOpen(false);
                             }}
-                            className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-all duration-200 border-b border-gray-100 last:border-b-0 ${
+                            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 group ${
                               isActive(item.href)
-                                ? 'text-primary-600 bg-primary-50 border-l-4 border-primary-600'
-                                : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                                ? 'bg-gradient-to-r from-forest-100 to-ocean-100 text-forest-700 shadow-md border border-forest-200/50'
+                                : 'text-forest-600 hover:bg-white/80 hover:shadow-md hover:border hover:border-forest-200/30 hover:scale-[1.02]'
                             }`}
                           >
-                            <Icon className="w-4 h-4 flex-shrink-0" />
-                            <span className="truncate">{item.name}</span>
+                            <div className={`p-1.5 rounded-lg ${
+                              isActive(item.href)
+                                ? 'bg-gradient-to-br from-forest-400 to-ocean-400 text-white shadow-glow'
+                                : 'bg-forest-100 text-forest-600 group-hover:bg-gradient-to-br group-hover:from-forest-300 group-hover:to-ocean-300 group-hover:text-white'
+                            } transition-all duration-300`}>
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <span className="font-solarpunk-body">{item.name}</span>
                           </button>
                         );
                       })}
@@ -373,12 +228,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </div>
                 ))}
                 
-                {/* Account Section */}
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="bg-gray-100 px-4 py-3 border-b border-gray-200">
-                    <span className="text-sm font-bold text-gray-800 uppercase tracking-wide">Account</span>
+                {/* Account Section - Solarpunk Style */}
+                <div className="bg-white/60 backdrop-blur-sm border border-forest-200/50 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+                  <div className="bg-gradient-to-r from-forest-100 to-ocean-100 px-4 py-3 border-b border-forest-200/50">
+                    <span className="text-sm font-solarpunk-display font-bold text-forest-700 uppercase tracking-wide flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Account
+                    </span>
                   </div>
-                  <div className="bg-white">
+                  <div className="bg-white/80">
                     {currentUser ? (
                       <>
                         <button
@@ -391,9 +249,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                               console.error('Error logging out:', error);
                             }
                           }}
-                          className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200"
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-terracotta-600 hover:text-terracotta-700 hover:bg-terracotta-50/50 transition-all duration-200 group"
                         >
-                          <LogOut className="w-4 h-4" />
+                          <div className="p-1.5 rounded-lg bg-terracotta-100 text-terracotta-600 group-hover:bg-terracotta-200 transition-all duration-200">
+                            <LogOut className="w-4 h-4" />
+                          </div>
                           <span>Logout</span>
                         </button>
                       </>
@@ -403,31 +263,33 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           setIsLoginModalOpen(true);
                           setIsMobileMenuOpen(false);
                         }}
-                        className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200"
+                        className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-ocean-600 hover:text-ocean-700 hover:bg-ocean-50/50 transition-all duration-200 group"
                       >
-                        <Settings className="w-4 h-4" />
+                        <div className="p-1.5 rounded-lg bg-ocean-100 text-ocean-600 group-hover:bg-ocean-200 transition-all duration-200">
+                          <Settings className="w-4 h-4" />
+                        </div>
                         <span>Login</span>
                       </button>
                     )}
                   </div>
                 </div>
                 
-                {/* Close Button */}
+                {/* Close Button - Solarpunk Style */}
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-lg transition-all duration-200 mt-4"
+                  className="w-full mt-6 bg-gradient-to-r from-forest-100 to-ocean-100 hover:from-forest-200 hover:to-ocean-200 text-forest-700 font-solarpunk-display font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:shadow-lg border border-forest-200/50"
                 >
                   Close Menu
                 </button>
               </div>
-              </div>
             </div>
-          </>
+          </>,
+          document.body
         )}
       </header>
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main className="flex-1 relative z-0">
         {children}
       </main>
 

@@ -413,14 +413,15 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
               {/* Account Request Section */}
               <div className="text-center mt-8">
-                <p className="text-teal-700 mb-4">
+                <p className="text-gray-700 mb-4 font-medium">
                   New to Pack 1703? Request account access to join our scouting community
                 </p>
                 <button 
                   onClick={() => setShowAccountRequestModal(true)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-moss to-teal text-white font-semibold rounded-brand shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
+                  className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-teal-600 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-teal-700 transition-all duration-200 hover:scale-105 transform"
+                  style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)' }}
                 >
-                  <UserPlus className="w-5 h-5" />
+                  <UserPlus className="w-6 h-6" />
                   Request Account Access
                 </button>
               </div>

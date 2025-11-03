@@ -4,9 +4,9 @@
 
 ### Frontend (Hosting) - LIVE
 - **Status**: ✅ Deployed successfully to Firebase Hosting
-- **URL**: https://pack1703-portal.web.app/campaign
+- **URL**: https://pack1703-portal.web.app/fundraising
 - **What's Live**:
-  - Campaign page added to navigation (`/campaign`)
+  - Fundraising page added to navigation (`/fundraising`)
   - Charleston Wrap dashboard component
   - Real-time Firestore subscription setup
   - Beautiful progress visualizations
@@ -95,7 +95,7 @@ Then update `charlestonWrapService.ts` to use simple HTTP requests instead of br
 ## Current Status of Features
 
 ### ✅ Working Now
-1. **Campaign Page**: Users can navigate to `/campaign`
+1. **Fundraising Page**: Users can navigate to `/fundraising`
 2. **Dashboard UI**: Beautiful display ready (shows "No Active Fundraiser" until data syncs)
 3. **Real-time Updates**: Firestore subscription works
 4. **Firestore Structure**: Collection `fundraising/current` ready to receive data
@@ -178,9 +178,9 @@ firebase deploy --only firestore:rules
 ## What's Been Deployed So Far
 
 ✅ **GitHub**: All code committed and pushed  
-✅ **Hosting**: Frontend UI is live at https://pack1703-portal.web.app/campaign  
+✅ **Hosting**: Frontend UI is live at https://pack1703-portal.web.app/fundraising  
 ✅ **TypeScript**: All code compiles successfully  
-✅ **Build**: Production build complete (682.72 kB main bundle)  
+✅ **Build**: Production build complete (682.7 kB main bundle)  
 ⏳ **Functions**: Waiting for Node.js upgrade to deploy scraper  
 
 ## Files Created/Modified

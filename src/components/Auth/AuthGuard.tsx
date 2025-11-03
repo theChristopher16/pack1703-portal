@@ -122,10 +122,22 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                 </button>
               </div>
 
-              {/* Scroll Indicator */}
-              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
-                <span className="text-sm font-solarpunk-display font-medium text-forest-700 opacity-80">Scroll to explore</span>
-                <ChevronDown className="w-8 h-8 text-forest-600 opacity-60" />
+              {/* Enhanced Scroll Indicator */}
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 animate-bounce cursor-pointer group"
+                   onClick={() => document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' })}>
+                <span className="text-sm font-solarpunk-display font-semibold text-forest-700 opacity-80 group-hover:opacity-100 transition-opacity duration-300">
+                  Scroll to explore
+                </span>
+                <div className="relative flex items-center justify-center">
+                  {/* Pulsing background circle */}
+                  <div className="absolute w-12 h-12 bg-forest-400/20 rounded-full animate-ping"></div>
+                  {/* Main circle with gradient */}
+                  <div className="relative w-10 h-10 bg-gradient-to-br from-forest-400 to-ocean-500 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
+                    <ChevronDown className="w-6 h-6 text-white group-hover:translate-y-0.5 transition-transform duration-300" />
+                  </div>
+                </div>
+                {/* Progress line */}
+                <div className="w-0.5 h-12 bg-gradient-to-b from-forest-400/60 to-transparent rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-300"></div>
               </div>
               
               {/* Benefits List */}

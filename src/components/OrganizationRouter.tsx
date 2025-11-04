@@ -15,6 +15,7 @@ import UnifiedAnnouncementsPage from '../pages/UnifiedAnnouncementsPage';
 import LocationsPage from '../pages/LocationsPage';
 import ResourcesPage from '../pages/ResourcesPage';
 import UnifiedChat from '../components/Chat/UnifiedChat';
+import UserProfile from '../pages/UserProfile';
 import NotFoundPage from '../pages/NotFoundPage';
 import OrganizationHomePage from '../pages/OrganizationHomePage';
 
@@ -206,82 +207,77 @@ const OrganizationRouter: React.FC<OrganizationRouterProps> = ({ children }) => 
     );
   }
 
-  // Component mapping
-  const componentMap: Record<ComponentId, React.ReactNode> = {
-    chat: <Layout><AuthenticatedOnly><UnifiedChat /></AuthenticatedOnly></Layout>,
-    calendar: <Layout><AuthenticatedOnly><EventsPage /></AuthenticatedOnly></Layout>,
-    announcements: <Layout><AuthenticatedOnly><UnifiedAnnouncementsPage /></AuthenticatedOnly></Layout>,
-    locations: <Layout><AuthenticatedOnly><LocationsPage /></AuthenticatedOnly></Layout>,
-    resources: <Layout><AuthenticatedOnly><ResourcesPage /></AuthenticatedOnly></Layout>,
-    profile: <Navigate to="/profile" replace />, // Use existing profile route
-    products: <Layout><AuthenticatedOnly><StorefrontProductsPage /></AuthenticatedOnly></Layout>,
-    orders: <Layout><AuthenticatedOnly><StorefrontOrdersPage /></AuthenticatedOnly></Layout>,
-    cart: <Layout><AuthenticatedOnly><StorefrontCartPage /></AuthenticatedOnly></Layout>,
-    checkout: <Layout><AuthenticatedOnly><StorefrontCheckoutPage /></AuthenticatedOnly></Layout>,
-  };
-
   // Create branding from organization data
   const branding = organization.branding || createDefaultBranding(organization);
 
-  // If no component specified, show organization homepage
-  if (!componentSlug) {
-    if (organization.enabledComponents.length > 0) {
-      return (
-        <OrganizationProvider 
-          orgSlug={organization.slug}
-          organizationId={organization.id}
-          organizationName={organization.name}
-          branding={branding}
-        >
-          <Layout>
-            <OrganizationHomePage organization={organization} />
-          </Layout>
-        </OrganizationProvider>
-      );
+  // Component mapping - these will be rendered within OrganizationProvider
+  const getComponentJSX = (compId: ComponentId): React.ReactNode => {
+    switch (compId) {
+      case 'chat':
+        return <Layout><AuthenticatedOnly><UnifiedChat /></AuthenticatedOnly></Layout>;
+      case 'calendar':
+        return <Layout><AuthenticatedOnly><EventsPage /></AuthenticatedOnly></Layout>;
+      case 'announcements':
+        return <Layout><AuthenticatedOnly><UnifiedAnnouncementsPage /></AuthenticatedOnly></Layout>;
+      case 'locations':
+        return <Layout><AuthenticatedOnly><LocationsPage /></AuthenticatedOnly></Layout>;
+      case 'resources':
+        return <Layout><AuthenticatedOnly><ResourcesPage /></AuthenticatedOnly></Layout>;
+      case 'profile':
+        return <Layout><AuthenticatedOnly><UserProfile /></AuthenticatedOnly></Layout>;
+      case 'products':
+        return <Layout><AuthenticatedOnly><StorefrontProductsPage /></AuthenticatedOnly></Layout>;
+      case 'orders':
+        return <Layout><AuthenticatedOnly><StorefrontOrdersPage /></AuthenticatedOnly></Layout>;
+      case 'cart':
+        return <Layout><AuthenticatedOnly><StorefrontCartPage /></AuthenticatedOnly></Layout>;
+      case 'checkout':
+        return <Layout><AuthenticatedOnly><StorefrontCheckoutPage /></AuthenticatedOnly></Layout>;
+      default:
+        return null;
     }
-    return (
-      <OrganizationProvider 
-        orgSlug={organization.slug}
-        organizationId={organization.id}
-        organizationName={organization.name}
-        branding={branding}
-      >
-        <Layout>
-          <div className="min-h-screen bg-gradient-to-br from-fog via-forest-50/30 to-solar-50/30 py-12">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center">
-                <h1 className="text-4xl font-display font-bold text-ink mb-4">Welcome to {organization.name}</h1>
-                <p className="text-lg text-forest-600 mb-6">
-                  This organization doesn't have any components enabled yet.
-                </p>
-              </div>
-            </div>
-          </div>
-        </Layout>
-      </OrganizationProvider>
-    );
-  }
+  };
 
-  // Render the requested component
-  const Component = componentMap[componentSlug as ComponentId];
-  if (!Component) {
-    return (
-      <Layout>
-        <NotFoundPage />
-      </Layout>
-    );
-  }
-
-  return (
+  // Wrap everything in OrganizationProvider first
+  const wrappedContent = (
     <OrganizationProvider 
       orgSlug={organization.slug}
       organizationId={organization.id}
       organizationName={organization.name}
       branding={branding}
     >
-      {Component}
+      {!componentSlug ? (
+        // If no component specified, show organization homepage
+        organization.enabledComponents.length > 0 ? (
+          <Layout>
+            <OrganizationHomePage organization={organization} />
+          </Layout>
+        ) : (
+          <Layout>
+            <div className="min-h-screen bg-gradient-to-br from-fog via-forest-50/30 to-solar-50/30 py-12">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="text-center">
+                  <h1 className="text-4xl font-display font-bold text-ink mb-4">Welcome to {organization.name}</h1>
+                  <p className="text-lg text-forest-600 mb-6">
+                    This organization doesn't have any components enabled yet.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Layout>
+        )
+      ) : (
+        // Render the requested component
+        getComponentJSX(componentSlug as ComponentId) || (
+          <Layout>
+            <NotFoundPage />
+          </Layout>
+        )
+      )}
     </OrganizationProvider>
   );
+
+  return wrappedContent;
 };
 
 export default OrganizationRouter;

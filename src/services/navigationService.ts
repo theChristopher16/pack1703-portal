@@ -1,5 +1,5 @@
 import { UserRole } from '../services/authService';
-import { OrganizationType } from '../types/organization';
+import { OrganizationType, ComponentId } from '../types/organization';
 import { 
   Home, 
   Calendar, 
@@ -36,6 +36,9 @@ export interface NavigationItem {
   // Organization types that can access this feature
   // If undefined, available to all org types
   orgTypes?: OrganizationType[];
+  // Component ID required for this navigation item
+  // If undefined, item doesn't require a specific component
+  componentId?: ComponentId;
 }
 
 // Define all navigation items organized by role hierarchy
@@ -56,7 +59,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: Calendar,
     roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
-    description: 'Upcoming pack events and activities'
+    description: 'Upcoming pack events and activities',
+    componentId: 'calendar'
   },
   {
     name: 'Announcements',
@@ -64,7 +68,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: MessageSquare,
     roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
-    description: 'Pack news and updates'
+    description: 'Pack news and updates',
+    componentId: 'announcements'
   },
   {
     name: 'Locations',
@@ -72,7 +77,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: MapPin,
     roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
-    description: 'Meeting places and venues'
+    description: 'Meeting places and venues',
+    componentId: 'locations'
   },
   {
     name: 'Volunteer',
@@ -81,7 +87,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
     description: 'Volunteer opportunities',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT],
+    componentId: 'volunteer'
   },
   {
     name: 'Ecology',
@@ -90,7 +97,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
     description: 'Environmental monitoring and education',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT],
+    componentId: 'ecology'
   },
   {
     name: 'Fundraising',
@@ -99,7 +107,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
     description: 'Active fundraising campaign progress',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT],
+    componentId: 'fundraising'
   },
   {
     name: 'Profile',
@@ -107,7 +116,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: User,
     roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'authenticated',
-    description: 'Manage your profile and account settings'
+    description: 'Manage your profile and account settings',
+    componentId: 'profile'
   },
   {
     name: 'Chat',
@@ -115,7 +125,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: MessageCircle,
     roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'authenticated',
-    description: 'Pack communication hub'
+    description: 'Pack communication hub',
+    componentId: 'chat'
   },
   {
     name: 'Resources',
@@ -123,7 +134,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: FileText,
     roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'authenticated',
-    description: 'Pack resources and documents'
+    description: 'Pack resources and documents',
+    componentId: 'resources'
   },
   {
     name: 'Dues',
@@ -132,7 +144,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
     description: 'National and Pack dues information',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT],
+    componentId: 'dues'
   },
   {
     name: 'Feedback',
@@ -161,7 +174,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
     description: 'Usage analytics and insights',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT],
+    componentId: 'analytics'
   },
   {
     name: 'User Management',
@@ -170,7 +184,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
     description: 'Manage user accounts and roles',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT],
+    componentId: 'userManagement'
   },
   {
     name: 'Fundraising',
@@ -179,7 +194,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
     description: 'Fundraising campaigns and tracking',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT],
+    componentId: 'fundraising'
   },
   {
     name: 'Finances',
@@ -188,7 +204,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
     description: 'Financial tracking and reporting',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT],
+    componentId: 'finances'
   },
   {
     name: 'Seasons',
@@ -197,7 +214,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
     description: 'Manage scouting seasons',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT],
+    componentId: 'seasons'
   },
   {
     name: 'Lists',
@@ -206,7 +224,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
     description: 'Manage pack lists and inventories',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT],
+    componentId: 'lists'
   },
   {
     name: 'Cost Management',
@@ -344,4 +363,40 @@ export const filterNavigationByOrgType = (items: NavigationItem[], orgType?: Org
     // Check if current org type is in the allowed list
     return item.orgTypes.includes(currentOrgType);
   });
+};
+
+// Helper function to filter navigation items by enabled components
+export const filterNavigationByEnabledComponents = (
+  items: NavigationItem[], 
+  enabledComponents?: ComponentId[] | null
+): NavigationItem[] => {
+  return items.filter(item => {
+    // If item doesn't require a specific component, it's always available
+    if (!item.componentId) {
+      return true;
+    }
+    
+    // If no enabled components list provided, allow all (backward compatibility)
+    if (!enabledComponents || enabledComponents.length === 0) {
+      return true;
+    }
+    
+    // Check if the required component is enabled
+    return enabledComponents.includes(item.componentId);
+  });
+};
+
+// Helper function to filter navigation by both org type AND enabled components
+export const filterNavigationByOrg = (
+  items: NavigationItem[],
+  orgType?: OrganizationType | null,
+  enabledComponents?: ComponentId[] | null
+): NavigationItem[] => {
+  // First filter by org type
+  let filtered = filterNavigationByOrgType(items, orgType);
+  
+  // Then filter by enabled components
+  filtered = filterNavigationByEnabledComponents(filtered, enabledComponents);
+  
+  return filtered;
 };

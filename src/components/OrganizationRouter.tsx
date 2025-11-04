@@ -228,6 +228,7 @@ const OrganizationRouter: React.FC<OrganizationRouterProps> = ({ children }) => 
       organizationName={organization.name}
       branding={branding}
       orgType={organization.orgType}
+      enabledComponents={organization.enabledComponents}
     >
       {!componentSlug ? (
         // If no component specified, show organization homepage

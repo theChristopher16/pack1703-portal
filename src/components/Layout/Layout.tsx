@@ -7,7 +7,7 @@ import { useAnalytics } from '../../hooks/useAnalytics';
 import { useAdmin } from '../../contexts/AdminContext';
 import { useOrganization } from '../../contexts/OrganizationContext';
 import { UserRole } from '../../services/authService';
-import { getNavigationByCategory, isAdminOrAbove, isRoot, ALL_NAVIGATION_ITEMS, filterNavigationByOrgType } from '../../services/navigationService';
+import { getNavigationByCategory, isAdminOrAbove, isRoot, ALL_NAVIGATION_ITEMS, filterNavigationByOrg } from '../../services/navigationService';
 import OfflineBanner from './OfflineBanner';
 import PWAInstallPrompt from '../PWAInstallPrompt/PWAInstallPrompt';
 import BackToTop from '../BackToTop/BackToTop';
@@ -32,7 +32,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { state } = useAdmin();
   
   // Get organization context for path prefixing and branding
-  const { prefixPath: orgPrefixPath, branding, organizationName, isPack1703, orgType } = useOrganization();
+  const { prefixPath: orgPrefixPath, branding, organizationName, isPack1703, orgType, enabledComponents } = useOrganization();
   
   // Organization branding - use branding from context or fallback to Pack 1703 defaults
   const packName = branding?.displayName || organizationName || (isPack1703 ? 'Cub Scout Pack 1703' : 'Organization');
@@ -98,13 +98,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Check if we're on the organizations page (COPPSE platform, not Pack app)
   const isOrganizationsPage = location.pathname === '/organizations';
   
-  // Get all navigation items filtered by user role and organization type
+  // Get all navigation items filtered by user role, organization type, and enabled components
   const getUserNavigationItems = () => {
     if (!userRole) return [];
     // First filter by role
     const roleFilteredItems = ALL_NAVIGATION_ITEMS.filter(item => item.roles.includes(userRole));
-    // Then filter by organization type
-    return filterNavigationByOrgType(roleFilteredItems, orgType);
+    // Then filter by organization type AND enabled components
+    return filterNavigationByOrg(roleFilteredItems, orgType, enabledComponents);
   };
 
   const allNavItems = getUserNavigationItems();

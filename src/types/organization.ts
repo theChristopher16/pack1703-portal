@@ -55,6 +55,73 @@ export const BASE_COMPONENTS = {
   }
 } as const;
 
+// Pack-specific components
+export const PACK_COMPONENTS = {
+  analytics: {
+    id: 'analytics',
+    name: 'Analytics',
+    description: 'Usage analytics and insights',
+    icon: '📊',
+    category: 'pack'
+  },
+  userManagement: {
+    id: 'userManagement',
+    name: 'User Management',
+    description: 'Manage user accounts and roles',
+    icon: '👥',
+    category: 'pack'
+  },
+  finances: {
+    id: 'finances',
+    name: 'Finances',
+    description: 'Financial tracking and reporting',
+    icon: '💳',
+    category: 'pack'
+  },
+  seasons: {
+    id: 'seasons',
+    name: 'Seasons',
+    description: 'Manage scouting seasons',
+    icon: '🌱',
+    category: 'pack'
+  },
+  lists: {
+    id: 'lists',
+    name: 'Lists',
+    description: 'Manage pack lists and inventories',
+    icon: '📋',
+    category: 'pack'
+  },
+  volunteer: {
+    id: 'volunteer',
+    name: 'Volunteer',
+    description: 'Volunteer opportunities and management',
+    icon: '🤝',
+    category: 'pack'
+  },
+  ecology: {
+    id: 'ecology',
+    name: 'Ecology',
+    description: 'Environmental monitoring and education',
+    icon: '🌿',
+    category: 'pack'
+  },
+  fundraising: {
+    id: 'fundraising',
+    name: 'Fundraising',
+    description: 'Fundraising campaigns and tracking',
+    icon: '🎯',
+    category: 'pack'
+  },
+  dues: {
+    id: 'dues',
+    name: 'Dues',
+    description: 'National and Pack dues information',
+    icon: '💵',
+    category: 'pack'
+  }
+} as const;
+
 // Storefront-specific components
 export const STOREFRONT_COMPONENTS = {
   products: {
@@ -88,11 +155,12 @@ export const STOREFRONT_COMPONENTS = {
 } as const;
 
 // Component categories
-export type ComponentCategory = 'communication' | 'content' | 'user' | 'storefront';
+export type ComponentCategory = 'communication' | 'content' | 'user' | 'pack' | 'storefront';
 
 // All components organized by category
 export const ALL_COMPONENTS = {
   ...BASE_COMPONENTS,
+  ...PACK_COMPONENTS,
   ...STOREFRONT_COMPONENTS
 } as const;
 
@@ -111,6 +179,7 @@ export function getAvailableComponents(orgType: OrganizationType): ComponentId[]
     case OrganizationType.POST:
     case OrganizationType.COUNCIL:
     case OrganizationType.DISTRICT:
+      return [...base, ...Object.keys(PACK_COMPONENTS) as ComponentId[]];
     default:
       return base;
   }

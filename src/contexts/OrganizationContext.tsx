@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { OrganizationBranding } from '../types/organization';
+import { OrganizationBranding, OrganizationType } from '../types/organization';
 
 interface OrganizationContextType {
   orgSlug: string | null;
@@ -8,6 +8,7 @@ interface OrganizationContextType {
   prefixPath: (path: string) => string;
   organizationId: string | null;
   organizationName: string | null;
+  orgType: OrganizationType | null;
   branding: OrganizationBranding | null;
 }
 
@@ -17,6 +18,7 @@ const OrganizationContext = createContext<OrganizationContextType>({
   prefixPath: (path: string) => path,
   organizationId: null,
   organizationName: null,
+  orgType: null,
   branding: null,
 });
 
@@ -30,6 +32,7 @@ export const useOrganization = () => {
       prefixPath: (path: string) => path,
       organizationId: null,
       organizationName: null,
+      orgType: null,
       branding: null,
     };
   }
@@ -42,6 +45,7 @@ interface OrganizationProviderProps {
   organizationId?: string | null;
   organizationName?: string | null;
   branding?: OrganizationBranding | null;
+  orgType?: OrganizationType | null;
 }
 
 export const OrganizationProvider: React.FC<OrganizationProviderProps> = ({ 
@@ -49,7 +53,8 @@ export const OrganizationProvider: React.FC<OrganizationProviderProps> = ({
   orgSlug: providedSlug,
   organizationId: providedOrgId,
   organizationName: providedOrgName,
-  branding: providedBranding
+  branding: providedBranding,
+  orgType: providedOrgType
 }) => {
   const location = useLocation();
   const params = useParams<{ orgSlug?: string }>();
@@ -57,6 +62,7 @@ export const OrganizationProvider: React.FC<OrganizationProviderProps> = ({
   const [organizationId, setOrganizationId] = useState<string | null>(providedOrgId || null);
   const [organizationName, setOrganizationName] = useState<string | null>(providedOrgName || null);
   const [branding, setBranding] = useState<OrganizationBranding | null>(providedBranding || null);
+  const [orgType, setOrgType] = useState<OrganizationType | null>(providedOrgType || null);
 
   useEffect(() => {
     // Check if we're in an organization route
@@ -115,6 +121,7 @@ export const OrganizationProvider: React.FC<OrganizationProviderProps> = ({
       prefixPath,
       organizationId,
       organizationName,
+      orgType,
       branding
     }}>
       {children}

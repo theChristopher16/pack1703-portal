@@ -1,4 +1,5 @@
 import { UserRole } from '../services/authService';
+import { OrganizationType } from '../types/organization';
 import { 
   Home, 
   Calendar, 
@@ -32,6 +33,9 @@ export interface NavigationItem {
   roles: UserRole[];
   category: 'public' | 'authenticated' | 'admin' | 'system';
   description?: string;
+  // Organization types that can access this feature
+  // If undefined, available to all org types
+  orgTypes?: OrganizationType[];
 }
 
 // Define all navigation items organized by role hierarchy
@@ -76,7 +80,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: Users,
     roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
-    description: 'Volunteer opportunities'
+    description: 'Volunteer opportunities',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
   {
     name: 'Ecology',
@@ -84,7 +89,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: Leaf,
     roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
-    description: 'Environmental monitoring and education'
+    description: 'Environmental monitoring and education',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
   {
     name: 'Fundraising',
@@ -92,7 +98,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: Target,
     roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
-    description: 'Active fundraising campaign progress'
+    description: 'Active fundraising campaign progress',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
   {
     name: 'Profile',
@@ -124,7 +131,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: CreditCard,
     roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'public',
-    description: 'National and Pack dues information'
+    description: 'National and Pack dues information',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
   {
     name: 'Feedback',
@@ -152,7 +160,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: BarChart3,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
-    description: 'Usage analytics and insights'
+    description: 'Usage analytics and insights',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
   {
     name: 'User Management',
@@ -160,7 +169,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: UserPlus,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
-    description: 'Manage user accounts and roles'
+    description: 'Manage user accounts and roles',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
   {
     name: 'Fundraising',
@@ -168,7 +178,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: Target,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
-    description: 'Fundraising campaigns and tracking'
+    description: 'Fundraising campaigns and tracking',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
   {
     name: 'Finances',
@@ -176,7 +187,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: CreditCard,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
-    description: 'Financial tracking and reporting'
+    description: 'Financial tracking and reporting',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
   {
     name: 'Seasons',
@@ -184,7 +196,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: Sprout,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
-    description: 'Manage scouting seasons'
+    description: 'Manage scouting seasons',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
   {
     name: 'Lists',
@@ -192,7 +205,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: List,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'admin',
-    description: 'Manage pack lists and inventories'
+    description: 'Manage pack lists and inventories',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
   {
     name: 'Cost Management',
@@ -293,4 +307,41 @@ export const isAdminOrAbove = (role: UserRole): boolean => {
 // Helper function to check if user role is root
 export const isRoot = (role: UserRole): boolean => {
   return role === UserRole.SUPER_ADMIN;
+};
+
+// Helper function to get navigation items for a specific role and organization type
+export const getNavigationForRoleAndOrg = (role: UserRole, orgType?: OrganizationType | null): NavigationItem[] => {
+  return ALL_NAVIGATION_ITEMS.filter(item => {
+    // Check if user has the required role
+    if (!item.roles.includes(role)) {
+      return false;
+    }
+    
+    // If no orgTypes specified, item is available to all org types
+    if (!item.orgTypes) {
+      return true;
+    }
+    
+    // If orgType is not provided or null, default to PACK for backward compatibility
+    const currentOrgType = orgType || OrganizationType.PACK;
+    
+    // Check if current org type is in the allowed list
+    return item.orgTypes.includes(currentOrgType);
+  });
+};
+
+// Helper function to filter navigation items by organization type
+export const filterNavigationByOrgType = (items: NavigationItem[], orgType?: OrganizationType | null): NavigationItem[] => {
+  return items.filter(item => {
+    // If no orgTypes specified, item is available to all org types
+    if (!item.orgTypes) {
+      return true;
+    }
+    
+    // If orgType is not provided or null, default to PACK for backward compatibility
+    const currentOrgType = orgType || OrganizationType.PACK;
+    
+    // Check if current org type is in the allowed list
+    return item.orgTypes.includes(currentOrgType);
+  });
 };

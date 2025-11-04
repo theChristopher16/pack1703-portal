@@ -183,28 +183,10 @@ const OrganizationRouter: React.FC<OrganizationRouterProps> = ({ children }) => 
     );
   }
 
-  // Validate component access
+  // Validate component access - redirect if component is not enabled
   if (componentSlug && !organization.enabledComponents.includes(componentSlug as ComponentId)) {
-    return (
-      <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-fog via-forest-50/30 to-solar-50/30 py-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <h1 className="text-4xl font-display font-bold text-ink mb-4">Component Not Available</h1>
-              <p className="text-lg text-forest-600 mb-6">
-                The component "{componentSlug}" is not enabled for this organization.
-              </p>
-              <button
-                onClick={() => navigate(`/${orgSlug}`)}
-                className="solarpunk-btn-primary"
-              >
-                Back to {organization.name}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Layout>
-    );
+    // Component not enabled - redirect to organization homepage
+    return <Navigate to={`/${orgSlug}`} replace />;
   }
 
   // Create branding from organization data
@@ -245,6 +227,7 @@ const OrganizationRouter: React.FC<OrganizationRouterProps> = ({ children }) => 
       organizationId={organization.id}
       organizationName={organization.name}
       branding={branding}
+      orgType={organization.orgType}
     >
       {!componentSlug ? (
         // If no component specified, show organization homepage

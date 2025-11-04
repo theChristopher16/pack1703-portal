@@ -44,9 +44,11 @@ import AdminReminders from '../pages/AdminReminders';
 import AdminUsers from '../pages/AdminUsers';
 import SystemMonitor from '../components/Admin/SystemMonitor';
 
+import { OrganizationType } from '../types/organization';
+
 const PackRouter: React.FC = () => {
   return (
-    <OrganizationProvider orgSlug="pack1703">
+    <OrganizationProvider orgSlug="pack1703" orgType={OrganizationType.PACK}>
       <Routes>
         {/* Public Routes */}
         <Route path="" element={<Layout><HomePage /></Layout>} />

@@ -43,7 +43,9 @@ const OrganizationHomePage: React.FC<OrganizationHomePageProps> = ({ organizatio
   };
 
   const handleComponentClick = (componentId: ComponentId) => {
-    navigate(`/${organization.slug}/${componentId}`);
+    // Navigate to component using relative path (will be prefixed by useNavigate hook)
+    console.log('Navigating to component:', componentId);
+    navigate(`/${componentId}`);
   };
 
   // Group components by category

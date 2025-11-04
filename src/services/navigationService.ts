@@ -21,7 +21,8 @@ import {
   CreditCard,
   User,
   Leaf,
-  MousePointer
+  MousePointer,
+  Building2
 } from 'lucide-react';
 
 export interface NavigationItem {
@@ -203,6 +204,14 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
 
   // SUPER ADMIN LEVEL (system administrators only)
+  {
+    name: 'Organizations',
+    href: '/organizations',
+    icon: Building2,
+    roles: [UserRole.SUPER_ADMIN],
+    category: 'system',
+    description: 'Multi-tenant organization management'
+  },
   {
     name: 'Solyn AI',
     href: '/ai',

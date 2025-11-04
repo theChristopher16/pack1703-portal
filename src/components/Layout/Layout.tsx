@@ -94,6 +94,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const allNavItems = getUserNavigationItems();
   
+  // Deduplicate navigation items by name (prefer first occurrence)
+  const deduplicatedNavItems = Array.from(
+    allNavItems.reduce((map, item) => {
+      if (!map.has(item.name)) {
+        map.set(item.name, item);
+      }
+      return map;
+    }, new Map<string, typeof allNavItems[0]>()).values()
+  );
+  
   // Check if user has admin privileges
   const isAdmin = userRole ? isAdminOrAbove(userRole) : false;
   const isRootUser = userRole ? isRoot(userRole) : false;
@@ -102,26 +112,26 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigationGroups = [
     {
       name: 'Main',
-      items: allNavItems.filter(item => 
+      items: deduplicatedNavItems.filter(item => 
         ['Home', 'Events', 'Announcements', 'Locations', 'Volunteer', 'Ecology', 'Fundraising'].includes(item.name)
       )
     },
     {
       name: 'My Account',
-      items: allNavItems.filter(item => 
+      items: deduplicatedNavItems.filter(item => 
         ['Profile', 'Chat', 'Resources', 'Feedback'].includes(item.name)
       )
     },
     {
       name: 'Management',
-      items: allNavItems.filter(item => 
-        ['Analytics', 'User Management', 'Fundraising', 'Finances', 'Seasons', 'Lists'].includes(item.name)
+      items: deduplicatedNavItems.filter(item => 
+        ['Analytics', 'User Management', 'Finances', 'Seasons', 'Lists'].includes(item.name)
       )
     },
     {
       name: 'System',
-      items: allNavItems.filter(item => 
-        ['Solyn AI', 'SOC Console', 'System Settings', 'System Monitor', 'Cost Management', 'User Interactions'].includes(item.name)
+      items: deduplicatedNavItems.filter(item => 
+        ['Organizations', 'Solyn AI', 'SOC Console', 'System Settings', 'System Monitor', 'Cost Management', 'User Interactions'].includes(item.name)
       )
     }
   ].filter(group => group.items.length > 0);

@@ -56,6 +56,7 @@ import UserProfile from './pages/UserProfile';
 import AdminReminders from './pages/AdminReminders';
 import AdminUsers from './pages/AdminUsers';
 import SystemMonitor from './components/Admin/SystemMonitor';
+import OrganizationsPage from './pages/OrganizationsPage';
 import { AdminProvider } from './contexts/AdminContext';
 
 function App() {
@@ -184,6 +185,9 @@ function App() {
                     <Route path="/soc" element={<Layout><RootOnly><HackerTab /></RootOnly></Layout>} />
                     <Route path="/system" element={<Layout><RootOnly><SystemMonitor /></RootOnly></Layout>} />
                     <Route path="/root-setup" element={<RootAccountSetup />} />
+                    
+                    {/* Super Admin Routes */}
+                    <Route path="/organizations" element={<Layout><SuperUserOnly><OrganizationsPage /></SuperUserOnly></Layout>} />
                     
                     {/* User Profile Route */}
                     <Route path="/profile" element={<Layout><AuthenticatedOnly><UserProfile /></AuthenticatedOnly></Layout>} />

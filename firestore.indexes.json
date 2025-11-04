@@ -64,6 +64,15 @@
       ]
     },
     {
+      "collectionGroup": "events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "organizationId", "mode": "ASCENDING" },
+        { "fieldPath": "visibility", "mode": "ASCENDING" },
+        { "fieldPath": "startDate", "mode": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "chat-users",
       "queryScope": "COLLECTION",
       "fields": [

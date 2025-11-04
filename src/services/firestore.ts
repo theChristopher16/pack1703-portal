@@ -77,29 +77,45 @@ const EVENTS_CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
 // Firestore operations
 export const firestoreService = {
   // Events
-  async getEvents(): Promise<any[]> {
+  async getEvents(organizationId?: string | null): Promise<any[]> {
     return safeFirestoreCall(async () => {
       let events: any[] = [];
       
-      // Check cache first
-      if (eventsCache && (Date.now() - eventsCache.timestamp) < EVENTS_CACHE_DURATION) {
+      // Check cache first (but only if no organizationId filter)
+      if (!organizationId && eventsCache && (Date.now() - eventsCache.timestamp) < EVENTS_CACHE_DURATION) {
         console.log('📦 Using cached events data');
         events = eventsCache.data;
       } else {
         // Fetch fresh data from Firestore
         const eventsRef = collection(db, 'events');
-        // Use composite index for better performance: visibility + startDate
-        const q = query(
-          eventsRef, 
-          where('visibility', 'in', ['public', null]), // Filter at database level
-          orderBy('startDate')
-        );
+        
+        // Build query with optional organizationId filter
+        let q;
+        if (organizationId) {
+          // Filter by organizationId for multi-tenant organizations
+          q = query(
+            eventsRef,
+            where('organizationId', '==', organizationId),
+            where('visibility', 'in', ['public', null]),
+            orderBy('startDate')
+          );
+        } else {
+          // Pack 1703 or no organization - show all public events
+          q = query(
+            eventsRef, 
+            where('visibility', 'in', ['public', null]),
+            orderBy('startDate')
+          );
+        }
+        
         const snapshot = await getDocs(q);
         events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
         
-        // Update cache
-        eventsCache = { data: events, timestamp: Date.now() };
-        console.log('💾 Cached events data');
+        // Update cache only if no organizationId filter
+        if (!organizationId) {
+          eventsCache = { data: events, timestamp: Date.now() };
+          console.log('💾 Cached events data');
+        }
       }
       
       // Always enrich events with location coordinates (even cached data)
@@ -216,10 +232,25 @@ export const firestoreService = {
   },
 
   // Announcements
-  async getAnnouncements(): Promise<any[]> {
+  async getAnnouncements(organizationId?: string | null): Promise<any[]> {
     return safeFirestoreCall(async () => {
       const announcementsRef = collection(db, 'announcements');
-      const q = query(announcementsRef, orderBy('createdAt', 'desc'), limit(50));
+      
+      // Build query with optional organizationId filter
+      let q;
+      if (organizationId) {
+        // Filter by organizationId for multi-tenant organizations
+        q = query(
+          announcementsRef,
+          where('organizationId', '==', organizationId),
+          orderBy('createdAt', 'desc'),
+          limit(50)
+        );
+      } else {
+        // Pack 1703 or no organization - show all announcements
+        q = query(announcementsRef, orderBy('createdAt', 'desc'), limit(50));
+      }
+      
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     });

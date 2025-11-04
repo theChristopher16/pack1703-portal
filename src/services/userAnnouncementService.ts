@@ -191,11 +191,26 @@ class UserAnnouncementService {
   }
 
   // Get user-specific announcement data with pin status
-  async getAnnouncementsWithPinStatus(): Promise<any[]> {
+  async getAnnouncementsWithPinStatus(organizationId?: string | null): Promise<any[]> {
     try {
       // Get all announcements
       const announcementsRef = collection(db, 'announcements');
-      const announcementsQuery = query(announcementsRef, orderBy('createdAt', 'desc'), limit(50));
+      
+      // Build query with optional organizationId filter
+      let announcementsQuery;
+      if (organizationId) {
+        // Filter by organizationId for multi-tenant organizations
+        announcementsQuery = query(
+          announcementsRef,
+          where('organizationId', '==', organizationId),
+          orderBy('createdAt', 'desc'),
+          limit(50)
+        );
+      } else {
+        // Pack 1703 or no organization - show all announcements
+        announcementsQuery = query(announcementsRef, orderBy('createdAt', 'desc'), limit(50));
+      }
+      
       const announcementsSnapshot = await getDocs(announcementsQuery);
       const allAnnouncements = announcementsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from '../hooks/useNavigate';
+import { useOrganization } from '../contexts/OrganizationContext';
 import { Calendar, List, Filter, Download, Share2, Plus, Edit, Trash2, Archive } from 'lucide-react';
 // Removed unused imports - RSVP counting now uses Cloud Functions
 import EventCard from '../components/Events/EventCard';
@@ -99,6 +100,7 @@ const DEBOUNCE_DELAY = 300; // Debounce filter changes
 
 const EventsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { organizationId } = useOrganization();
   const { trackUserAction } = useUserInteraction({
     componentName: 'EventsPage',
     componentPath: '/events',
@@ -359,7 +361,7 @@ const EventsPage: React.FC = () => {
       
       try {
         // Load events first (with caching)
-        const firebaseEvents = await firestoreService.getEvents();
+        const firebaseEvents = await firestoreService.getEvents(organizationId);
         
         // Track successful data load
         console.log('Events loaded from database:', firebaseEvents.length);
@@ -980,7 +982,7 @@ const EventsPage: React.FC = () => {
           
           // Refresh events list
           const [firebaseEvents] = await Promise.all([
-            firestoreService.getEvents()
+            firestoreService.getEvents(organizationId)
           ]);
           
           const eventIds = firebaseEvents.map((event: any) => event.id);
@@ -1082,7 +1084,7 @@ const EventsPage: React.FC = () => {
           
           // Refresh events list
           const [firebaseEvents] = await Promise.all([
-            firestoreService.getEvents()
+            firestoreService.getEvents(organizationId)
           ]);
           
           const eventIds = firebaseEvents.map((event: any) => event.id);

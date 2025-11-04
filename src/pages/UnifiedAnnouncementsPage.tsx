@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
+import { useOrganization } from '../contexts/OrganizationContext';
 import { Bell, Pin, TrendingUp, MessageSquare, Clock, Calendar, Megaphone, Edit, Trash2, Plus, Search } from 'lucide-react';
 import { firestoreService } from '../services/firestore';
 import { userAnnouncementService } from '../services/userAnnouncementService';
@@ -34,6 +35,7 @@ interface AdminAnnouncement {
 
 const UnifiedAnnouncementsPage: React.FC = () => {
   const { state } = useAdmin();
+  const { organizationId } = useOrganization();
   const currentUser = state.currentUser;
   
   // Check if user can manage announcements (admin/moderator only)
@@ -107,7 +109,7 @@ const UnifiedAnnouncementsPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const fetchedAnnouncements = await userAnnouncementService.getAnnouncementsWithPinStatus();
+      const fetchedAnnouncements = await userAnnouncementService.getAnnouncementsWithPinStatus(organizationId);
       setAnnouncements(fetchedAnnouncements);
     } catch (err) {
       console.error('Failed to fetch announcements from Firebase:', err);
@@ -121,7 +123,7 @@ const UnifiedAnnouncementsPage: React.FC = () => {
   const fetchAdminAnnouncements = async () => {
     try {
       setLoading(true);
-      const announcementsData = await firestoreService.getAnnouncements();
+      const announcementsData = await firestoreService.getAnnouncements(organizationId);
       setAdminAnnouncements(announcementsData);
     } catch (error) {
       console.error('Error fetching announcements:', error);

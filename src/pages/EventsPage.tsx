@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../hooks/useNavigate';
 import { Calendar, List, Filter, Download, Share2, Plus, Edit, Trash2, Archive } from 'lucide-react';
 // Removed unused imports - RSVP counting now uses Cloud Functions
 import EventCard from '../components/Events/EventCard';

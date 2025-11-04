@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useNavigate } from '../hooks/useNavigate';
+import { useOrganization } from '../contexts/OrganizationContext';
 import { authService, SocialProvider, UserRole } from '../services/authService';
 import { inviteService, Invite } from '../services/inviteService';
 import SocialLogin from '../components/Auth/SocialLogin';
@@ -16,10 +18,14 @@ import {
 const JoinPage: React.FC = () => {
   const { inviteId } = useParams<{ inviteId: string }>();
   const navigate = useNavigate();
+  const { branding, organizationName, isPack1703 } = useOrganization();
   const [invite, setInvite] = useState<Invite | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(true);
+
+  // Use organization branding or fallback to Pack 1703 defaults
+  const orgName = branding?.displayName || organizationName || (isPack1703 ? 'Pack 1703' : 'Organization');
 
   useEffect(() => {
     validateInvite();
@@ -183,8 +189,8 @@ const JoinPage: React.FC = () => {
           <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
             <CheckCircle className="w-8 h-8 text-blue-600" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900">Join Pack 1703</h2>
-          <p className="text-gray-600 mt-2">You've been invited to join our Scout Pack</p>
+          <h2 className="text-3xl font-bold text-gray-900">Join {orgName}</h2>
+          <p className="text-gray-600 mt-2">You've been invited to join our {isPack1703 ? 'Scout Pack' : 'Organization'}</p>
         </div>
 
         {/* Invitation Details */}

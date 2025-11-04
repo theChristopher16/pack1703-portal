@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '../components/Link';
+import { useOrganization } from '../contexts/OrganizationContext';
 import { Calendar, MapPin, FileText, Users, ArrowRight, Compass, MessageSquare, Download, BarChart3, Shield, MessageCircle, CreditCard, UserPlus, Leaf, Sun, Mountain, Waves } from 'lucide-react';
 import { LoadingSpinner, SkeletonLoader } from '../components/Loading';
 import { dataAuditService } from '../services/dataAuditService';
@@ -22,6 +23,11 @@ const HomePage: React.FC = () => {
   const { state: adminState } = useAdmin();
   const currentUser = adminState.currentUser;
   const userRole = currentUser ? (currentUser.role as UserRole) : null;
+
+  // Get organization branding
+  const { branding, organizationName, isPack1703 } = useOrganization();
+  const orgName = branding?.displayName || organizationName || (isPack1703 ? 'Pack 1703' : 'Organization');
+  const shortName = branding?.shortName || orgName;
 
   // Initialize user interaction tracking for this page
   const { trackUserAction } = useUserInteraction({
@@ -302,7 +308,7 @@ const HomePage: React.FC = () => {
           <h1 className={`text-6xl sm:text-7xl lg:text-8xl font-solarpunk-display font-black text-forest-800 mb-6 leading-tight ${animationsTriggered ? "animate-solarpunk-slide-up" : ""}`}>
             <span className="block">Welcome to</span>
             <span className="block bg-gradient-to-r from-forest-600 via-ocean-600 to-solar-600 bg-clip-text text-transparent">
-              Pack 1703
+              {orgName}
             </span>
           </h1>
           
@@ -484,7 +490,7 @@ const HomePage: React.FC = () => {
             <span className="solarpunk-text-gradient">Pack Stories</span>
           </h2>
           <p className="solarpunk-section-subtitle">
-            Discover the adventures, achievements, and eco-projects that make Pack 1703 special
+            Discover the adventures, achievements, and eco-projects that make {orgName} special
           </p>
         </div>
 
@@ -562,7 +568,7 @@ const HomePage: React.FC = () => {
                   Community Garden Project
                 </h3>
                 <p className="text-forest-600 mb-4">
-                  Pack 1703 partnered with local community to create a sustainable garden, teaching kids about food systems and environmental stewardship.
+                  {orgName} partnered with local community to create a sustainable garden, teaching kids about food systems and environmental stewardship.
                 </p>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-ocean-600 font-medium">Read More →</span>
@@ -589,7 +595,7 @@ const HomePage: React.FC = () => {
       <section className="solarpunk-section">
         <div className={`text-center mb-12 ${animationsTriggered ? "animate-solarpunk-fade-in" : ""}`}>
           <h2 className="solarpunk-section-title">
-            <span className="solarpunk-text-gradient">Join Pack 1703</span>
+            <span className="solarpunk-text-gradient">Join {orgName}</span>
           </h2>
           <p className="solarpunk-section-subtitle">
             Ready to start your solarpunk scouting adventure? Register with our pack and pay your dues to get started!

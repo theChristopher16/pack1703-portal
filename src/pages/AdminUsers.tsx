@@ -28,7 +28,7 @@ import {
 import { useAdmin } from '../contexts/AdminContext';
 import { authService, AppUser, UserRole, ROLE_PERMISSIONS } from '../services/authService';
 import { adminService } from '../services/adminService';
-import { Link } from 'react-router-dom';
+import { Link } from '../components/Link';
 import AccountRequestsManager from '../components/Admin/AccountRequestsManager';
 
 interface UserWithChildren extends AppUser {

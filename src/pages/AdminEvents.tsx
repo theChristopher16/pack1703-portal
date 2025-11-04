@@ -7,7 +7,7 @@ import { authService } from '../services/authService';
 import { LocationSelector } from '../components/Locations';
 import { collection, query, orderBy, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { Link } from 'react-router-dom';
+import { Link } from '../components/Link';
 import { ArrowLeft, Home } from 'lucide-react';
 
 interface Event {

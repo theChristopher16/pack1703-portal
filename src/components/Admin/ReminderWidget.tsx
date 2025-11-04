@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, Clock, CheckCircle, AlertTriangle, Plus } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link } from '../../components/Link';
 import reminderService from '../../services/reminderService';
 import { ReminderStats } from '../../types/reminder';
 

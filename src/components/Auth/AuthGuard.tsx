@@ -36,19 +36,6 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     return () => carousel.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Redirect super admins to organizations page when accessing root path
-  useEffect(() => {
-    if (currentUser && location.pathname === '/') {
-      const isSuperAdmin = currentUser.role === 'super-admin' || 
-                          currentUser.role === 'root';
-      
-      if (isSuperAdmin) {
-        console.log('🔐 AuthGuard: Redirecting super admin to /organizations');
-        navigate('/organizations', { replace: true });
-      }
-    }
-  }, [currentUser, location.pathname, navigate]);
-
   // Handle carousel navigation
   const scrollToCarouselSlide = (index: number) => {
     if (carouselRef.current) {
@@ -63,21 +50,67 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     }
   };
 
-  // Check if super admin is accessing root path - redirect to organizations
-  // This must happen early, before other checks
-  if (currentUser && location.pathname === '/') {
-    const isSuperAdmin = currentUser.role === 'super-admin' || 
-                        currentUser.role === 'root';
-    
-    if (isSuperAdmin) {
-      return <Navigate to="/organizations" replace />;
-    }
-  }
+  // Track scroll position to update active carousel dot
+  useEffect(() => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
 
-  // If user is trying to access admin routes without admin privileges
-  if (currentUser && location.pathname.startsWith('/admin') && (currentUser.role as any) !== 'admin') {
-    return <Navigate to="/" replace />;
-  }
+    const handleScroll = () => {
+      const cardWidth = 320; // w-80 = 320px
+      const gap = 32; // gap-8 = 32px
+      const scrollLeft = carousel.scrollLeft;
+      const slideIndex = Math.round(scrollLeft / (cardWidth + gap));
+      setActiveCarouselSlide(slideIndex);
+    };
+
+    carousel.addEventListener('scroll', handleScroll);
+    return () => carousel.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Redirect logic for authenticated users
+  useEffect(() => {
+    if (!currentUser) return; // Don't redirect if not authenticated
+    
+    const isSuperAdmin = currentUser.role === 'super-admin' || currentUser.role === 'root';
+    const isOnOrganizationsPage = location.pathname === '/organizations';
+    const isOnPack1703Route = location.pathname.startsWith('/pack1703/');
+    const isOnOrganizationRoute = location.pathname.match(/^\/[^/]+(\/.*)?$/); // Matches /orgSlug or /orgSlug/component
+    
+    // Set sessionStorage flag when on Pack 1703 routes
+    if (isOnPack1703Route) {
+      sessionStorage.setItem('pack1703_access', 'true');
+    }
+    
+    // Don't redirect if already on a valid route (except /organizations check below)
+    if (isOnPack1703Route || (isOnOrganizationRoute && !isOnOrganizationsPage)) {
+      return;
+    }
+
+    // If regular user tries to access /organizations, redirect to Pack app
+    if (isOnOrganizationsPage && !isSuperAdmin) {
+      console.log('🔐 AuthGuard: Regular user trying to access /organizations, redirecting to Pack app');
+      navigate('/pack1703/', { replace: true });
+      return;
+    }
+
+    // Handle root path redirects
+    if (location.pathname === '/') {
+      // Check if user explicitly wants to access Pack app
+      const packParam = new URLSearchParams(location.search).get('pack');
+      const wantsPackApp = packParam === '1703' || sessionStorage.getItem('pack1703_access') === 'true';
+      
+      if (isSuperAdmin && !wantsPackApp) {
+        // Super admin goes to organizations page
+        console.log('🔐 AuthGuard: Redirecting super admin to /organizations');
+        navigate('/organizations', { replace: true });
+      } else {
+        // Regular users (and super admins who want Pack app) go to Pack app
+        console.log('🔐 AuthGuard: Redirecting user to Pack app');
+        sessionStorage.setItem('pack1703_access', 'true');
+        navigate('/pack1703/', { replace: true });
+      }
+    }
+  }, [currentUser, location.pathname, location.search, navigate]);
 
   // If user is authenticated but not approved, show pending approval page
   if (currentUser && currentUser.status === 'pending') {

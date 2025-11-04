@@ -38,6 +38,10 @@ app_check_enabled = true                  # Enable reCAPTCHA v3 in production
 notification_email  = "cubmaster@sfpack1703.com"
 cost_budget_amount  = 5.00               # USD per month
 
+# Billing Configuration (Optional)
+# Uncomment and set your billing account ID to grant billing permissions to Cloud Functions service account
+# billing_account_id = "011E25-695C11-DE734B"  # Your billing account ID (from: gcloud billing accounts list)
+
 # Secrets Configuration (sensitive data)
 secrets_config = {
   "recaptcha-v3-site-key" = {

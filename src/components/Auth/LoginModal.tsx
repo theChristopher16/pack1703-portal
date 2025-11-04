@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, Eye, EyeOff, Shield, UserPlus, Key, Calendar, MapPin, Users, Leaf, Sun, Mountain, Heart } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../../hooks/useNavigate';
 import { authService } from '../../services/authService';
 import SocialLogin from './SocialLogin';
 import { useRecaptcha } from '../../hooks/useRecaptcha';
+import { useOrganization } from '../../contexts/OrganizationContext';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface LoginModalProps {
 
 const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const navigate = useNavigate();
+  const { branding, organizationName, isPack1703 } = useOrganization();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -24,6 +26,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
+
+  // Use organization branding or fallback to Pack 1703 defaults
+  const orgName = branding?.displayName || organizationName || (isPack1703 ? 'Pack 1703' : 'Organization');
+  const welcomeText = branding?.shortName || orgName;
 
   // Initialize reCAPTCHA
   const { isLoaded: recaptchaLoaded, execute: executeRecaptcha } = useRecaptcha({
@@ -140,7 +146,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
                 <span className="text-white text-2xl">🌱</span>
               </div>
               <div>
-                <h2 className="text-2xl font-solarpunk-display font-bold text-forest-600">Welcome to Pack 1703!</h2>
+                <h2 className="text-2xl font-solarpunk-display font-bold text-forest-600">Welcome to {welcomeText}!</h2>
                 <p className="text-sm text-ocean-600">Solarpunk Scout Families Portal</p>
               </div>
             </div>
@@ -327,7 +333,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess }) =
                 ) : (
                   <div className="flex items-center justify-center space-x-3">
                     <Shield className="w-5 h-5" />
-                    <span>Sign In to Pack 1703</span>
+                    <span>Sign In to {orgName}</span>
                   </div>
                 )}
               </button>

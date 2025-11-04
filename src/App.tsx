@@ -57,6 +57,8 @@ import AdminReminders from './pages/AdminReminders';
 import AdminUsers from './pages/AdminUsers';
 import SystemMonitor from './components/Admin/SystemMonitor';
 import OrganizationsPage from './pages/OrganizationsPage';
+import OrganizationRouter from './components/OrganizationRouter';
+import PackRouter from './components/PackRouter';
 import { AdminProvider } from './contexts/AdminContext';
 
 function App() {
@@ -144,57 +146,17 @@ function App() {
               <Route path="/*" element={
                 <AuthGuard>
                   <Routes>
-                    {/* Public Routes */}
-                    <Route path="/" element={<Layout><HomePage /></Layout>} />
-                    <Route path="/events" element={<Layout><AuthenticatedOnly><EventsPage /></AuthenticatedOnly></Layout>} />
-                    <Route path="/events/archived" element={<Layout><AuthenticatedOnly><ArchivedEventsPage /></AuthenticatedOnly></Layout>} />
-                    <Route path="/events/:eventId" element={<Layout><AuthenticatedOnly><EventDetailPage /></AuthenticatedOnly></Layout>} />
-                    <Route path="/test-navigation" element={<TestNavigation />} />
-                    <Route path="/auth-debug" element={<AuthDebugPage />} />
-                    <Route path="/locations" element={<Layout><AuthenticatedOnly><LocationsPage /></AuthenticatedOnly></Layout>} />
-                    <Route path="/announcements" element={<Layout><AuthenticatedOnly><UnifiedAnnouncementsPage /></AuthenticatedOnly></Layout>} />
-                    <Route path="/resources" element={<Layout><AuthenticatedOnly><ResourcesPage /></AuthenticatedOnly></Layout>} />
-                    <Route path="/resources/inventory" element={<Layout><AuthenticatedOnly><InventoryPage /></AuthenticatedOnly></Layout>} />
-                    <Route path="/dues" element={<Layout><AuthenticatedOnly><DuesInformation /></AuthenticatedOnly></Layout>} />
-                    <Route path="/volunteer" element={<Layout><AuthenticatedOnly><VolunteerPage /></AuthenticatedOnly></Layout>} />
-                    <Route path="/ecology" element={<Layout><EcologyPage /></Layout>} />
-                    <Route path="/fundraising" element={<Layout><AuthenticatedOnly><FundraisingPage /></AuthenticatedOnly></Layout>} />
-                    <Route path="/privacy" element={<Layout><PrivacyPolicyPage /></Layout>} />
-                    <Route path="/terms" element={<Layout><TermsOfServicePage /></Layout>} />
-                    
-                    {/* Authenticated Routes */}
-                    <Route path="/chat" element={<Layout><AuthenticatedOnly><UnifiedChat /></AuthenticatedOnly></Layout>} />
-                    <Route path="/feedback" element={<Layout><AuthenticatedOnly><FeedbackPage /></AuthenticatedOnly></Layout>} />
-                    <Route path="/data-audit" element={<Layout><AuthenticatedOnly><DataAuditPage /></AuthenticatedOnly></Layout>} />
-                    
-                    {/* Admin Routes - Protected by role guards, no /admin prefix needed */}
-                    <Route path="/analytics" element={<Layout><AdminOnly><AnalyticsDashboard /></AdminOnly></Layout>} />
-                    <Route path="/analytics/test" element={<Layout><AdminOnly><AnalyticsTest /></AdminOnly></Layout>} />
-                    <Route path="/user-interactions" element={<Layout><SuperUserOnly><UserInteractionDashboard /></SuperUserOnly></Layout>} />
-                    <Route path="/users" element={<Layout><AdminOnly><AdminUsers /></AdminOnly></Layout>} />
-                    <Route path="/fundraising" element={<Layout><AdminOnly><AdminFundraising /></AdminOnly></Layout>} />
-                    <Route path="/finances" element={<Layout><AdminOnly><AdminFinances /></AdminOnly></Layout>} />
-                    <Route path="/seasons" element={<Layout><AdminOnly><AdminSeasons /></AdminOnly></Layout>} />
-                    <Route path="/lists" element={<Layout><AdminOnly><AdminLists /></AdminOnly></Layout>} />
-                    <Route path="/reminders" element={<Layout><AdminOnly><AdminReminders /></AdminOnly></Layout>} />
-                    <Route path="/cost-management" element={<Layout><AdminOnly><AdminCostManagement /></AdminOnly></Layout>} />
-                    
-                    {/* Root-only Routes */}
-                    {/* AI route removed - AI functionality disabled */}
-                    <Route path="/settings" element={<Layout><RootOnly><AdminSettings /></RootOnly></Layout>} />
-                    <Route path="/soc" element={<Layout><RootOnly><HackerTab /></RootOnly></Layout>} />
-                    <Route path="/system" element={<Layout><RootOnly><SystemMonitor /></RootOnly></Layout>} />
-                    <Route path="/root-setup" element={<RootAccountSetup />} />
-                    
-                    {/* Super Admin Routes */}
+                    {/* Super Admin Routes - Must come before other routes */}
                     <Route path="/organizations" element={<Layout><SuperUserOnly><OrganizationsPage /></SuperUserOnly></Layout>} />
                     
-                    {/* User Profile Route */}
-                    <Route path="/profile" element={<Layout><AuthenticatedOnly><UserProfile /></AuthenticatedOnly></Layout>} />
+                    {/* Pack 1703 Routes - All Pack app routes under /pack1703 */}
+                    <Route path="/pack1703/*" element={<PackRouter />} />
                     
-                    {/* Development/Test Routes */}
-                    <Route path="/forms-demo" element={<Layout><FormsDemoPage /></Layout>} />
-                    <Route path="/cloud-functions-test" element={<Layout><CloudFunctionsTestPage /></Layout>} />
+                    {/* Organization Router - Handles other org routes (must come after pack1703) */}
+                    <Route path="/:orgSlug/:componentSlug?" element={<OrganizationRouter />} />
+                    
+                    {/* Root route - Only redirect here if not Pack 1703 and not super admin */}
+                    <Route path="/" element={<Layout><HomePage /></Layout>} />
                     
                     <Route path="*" element={<Layout><NotFoundPage /></Layout>} />
                   </Routes>

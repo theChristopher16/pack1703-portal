@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../../hooks/useNavigate';
 import { authService, SocialProvider } from '../../services/authService';
 import { 
   Mail,

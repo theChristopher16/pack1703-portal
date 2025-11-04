@@ -23,7 +23,7 @@ import userInteractionService, { UserInteractionEvent } from '../../services/use
 import { useAdmin } from '../../contexts/AdminContext';
 import { SuperUserOnly } from '../Auth/RoleGuard';
 import { getFirestore, collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../../hooks/useNavigate';
 import { Lock } from 'lucide-react';
 
 interface InteractionAnalytics {

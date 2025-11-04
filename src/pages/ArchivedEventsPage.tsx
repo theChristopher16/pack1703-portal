@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../hooks/useNavigate';
 import { Archive, ArrowLeft, Calendar, MapPin, Users, FileText } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import { getArchivedEvents } from '../services/archivedEventsService';

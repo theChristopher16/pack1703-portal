@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { useNavigate } from '../../hooks/useNavigate';
 import { Menu, X, Settings, LogOut, User } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { useAdmin } from '../../contexts/AdminContext';
+import { useOrganization } from '../../contexts/OrganizationContext';
 import { UserRole } from '../../services/authService';
 import { getNavigationByCategory, isAdminOrAbove, isRoot, ALL_NAVIGATION_ITEMS } from '../../services/navigationService';
 import OfflineBanner from './OfflineBanner';
@@ -29,8 +31,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Get admin context for role-based navigation
   const { state } = useAdmin();
   
-  // Pack branding
-  const packName = 'Cub Scout Pack 1703';
+  // Get organization context for path prefixing and branding
+  const { prefixPath: orgPrefixPath, branding, organizationName, isPack1703 } = useOrganization();
+  
+  // Organization branding - use branding from context or fallback to Pack 1703 defaults
+  const packName = branding?.displayName || organizationName || (isPack1703 ? 'Cub Scout Pack 1703' : 'Organization');
+  const shortName = branding?.shortName || organizationName || (isPack1703 ? 'Pack 1703' : 'Org');
+  const contactEmail = branding?.email || (isPack1703 ? 'cubmaster@sfpack1703.com' : null);
+  const orgWebsite = branding?.website;
+  const socialLinks = branding?.socialLinks;
   
   // Track authentication changes from AdminContext
   useEffect(() => {
@@ -65,9 +74,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     // The AdminContext will automatically update the currentUser state
   };
 
-  // Return paths as-is (no tenant prefixing needed)
+  // Return paths with organization prefix if needed
   const prefixPath = (path: string) => {
-    return path;
+    return orgPrefixPath(path);
   };
 
   // Handle navigation with error recovery
@@ -85,6 +94,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   };
 
+  
+  // Check if we're on the organizations page (COPPSE platform, not Pack app)
+  const isOrganizationsPage = location.pathname === '/organizations';
   
   // Get all navigation items filtered by user role
   const getUserNavigationItems = () => {
@@ -160,8 +172,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
               <div className="block min-w-0 flex-shrink">
                 <h1 className="text-lg sm:text-xl font-solarpunk-display font-bold text-forest-600 truncate max-w-48 sm:max-w-64 md:max-w-none">
-                  <span className="hidden sm:inline">{packName || 'Cub Scout Pack 1703'}</span>
-                  <span className="sm:hidden">Pack 1703</span>
+                  <span className="hidden sm:inline">{packName}</span>
+                  <span className="sm:hidden">{shortName}</span>
                 </h1>
                 <p className="text-xs text-ocean-600 truncate max-w-48 sm:max-w-64 md:max-w-none">
                   <span className="hidden sm:inline">Solarpunk Portal</span>
@@ -170,27 +182,29 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
             </button>
 
-            {/* Hamburger Menu Button - All Screen Sizes */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log('Hamburger button clicked, toggling menu');
-                setIsMobileMenuOpen(!isMobileMenuOpen);
-              }}
-              className="p-2 rounded-xl bg-white/95 backdrop-blur-sm border border-forest-200 text-forest-700 hover:bg-gradient-to-r hover:from-forest-50 hover:to-ocean-50 hover:border-forest-300 hover:text-forest-800 transition-all duration-300 relative z-[102]"
-              aria-label="Toggle menu"
-            >
-              {isMobileMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
+            {/* Hamburger Menu Button - All Screen Sizes - Hidden on organizations page */}
+            {!isOrganizationsPage && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log('Hamburger button clicked, toggling menu');
+                  setIsMobileMenuOpen(!isMobileMenuOpen);
+                }}
+                className="p-2 rounded-xl bg-white/95 backdrop-blur-sm border border-forest-200 text-forest-700 hover:bg-gradient-to-r hover:from-forest-50 hover:to-ocean-50 hover:border-forest-300 hover:text-forest-800 transition-all duration-300 relative z-[102]"
+                aria-label="Toggle menu"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Menu className="w-6 h-6" />
+                )}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Hamburger Menu - Rendered via Portal */}
-        {isMobileMenuOpen && typeof document !== 'undefined' && createPortal(
+        {/* Hamburger Menu - Rendered via Portal - Hidden on organizations page */}
+        {!isOrganizationsPage && isMobileMenuOpen && typeof document !== 'undefined' && createPortal(
           <>
             {/* Backdrop */}
             <div 
@@ -312,15 +326,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <h3 className="text-lg font-solarpunk-display font-semibold text-forest-600 mb-4">Contact Us</h3>
               <div className="space-y-2">
                 <p className="text-forest-600 font-medium">{packName}</p>
-                <p className="text-forest-600">Houston, TX</p>
-                <p className="text-forest-600">
-                  Email: <a 
-                    href="mailto:cubmaster@sfpack1703.com" 
-                    className="text-ocean-600 hover:text-ocean-700 font-medium transition-colors duration-200"
-                  >
-                    cubmaster@sfpack1703.com
-                  </a>
-                </p>
+                {orgWebsite && (
+                  <p className="text-forest-600">
+                    Website: <a 
+                      href={orgWebsite}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-ocean-600 hover:text-ocean-700 font-medium transition-colors duration-200"
+                    >
+                      {orgWebsite}
+                    </a>
+                  </p>
+                )}
+                {contactEmail && (
+                  <p className="text-forest-600">
+                    Email: <a 
+                      href={`mailto:${contactEmail}`}
+                      className="text-ocean-600 hover:text-ocean-700 font-medium transition-colors duration-200"
+                    >
+                      {contactEmail}
+                    </a>
+                  </p>
+                )}
               </div>
             </div>
 
@@ -368,22 +395,64 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           {/* Social Links */}
           <div className="solarpunk-footer-social">
-            <a href="mailto:cubmaster@sfpack1703.com" className="solarpunk-social-link" title="Email">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-              </svg>
-            </a>
-            <a href="https://www.facebook.com/groups/sfpack1703" target="_blank" rel="noopener noreferrer" className="solarpunk-social-link" title="Facebook">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-              </svg>
-            </a>
-            <a href="https://www.instagram.com/sfpack1703" target="_blank" rel="noopener noreferrer" className="solarpunk-social-link" title="Instagram">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 6.62 5.367 11.987 11.988 11.987 6.62 0 11.987-5.367 11.987-11.987C24.014 5.367 18.637.001 12.017.001zM8.449 16.988c-1.297 0-2.448-.49-3.323-1.297C4.198 14.895 3.708 13.744 3.708 12.447s.49-2.448 1.297-3.323c.875-.807 2.026-1.297 3.323-1.297s2.448.49 3.323 1.297c.807.875 1.297 2.026 1.297 3.323s-.49 2.448-1.297 3.323c-.875.807-2.026 1.297-3.323 1.297zm7.83-9.281c-.49 0-.875-.385-.875-.875s.385-.875.875-.875.875.385.875.875-.385.875-.875.875z"/>
-              </svg>
-            </a>
+            {contactEmail && (
+              <a href={`mailto:${contactEmail}`} className="solarpunk-social-link" title="Email">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                </svg>
+              </a>
+            )}
+            {socialLinks?.facebook && (
+              <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="solarpunk-social-link" title="Facebook">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+              </a>
+            )}
+            {socialLinks?.instagram && (
+              <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="solarpunk-social-link" title="Instagram">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                </svg>
+              </a>
+            )}
+            {socialLinks?.twitter && (
+              <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="solarpunk-social-link" title="Twitter">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                </svg>
+              </a>
+            )}
+            {socialLinks?.youtube && (
+              <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer" className="solarpunk-social-link" title="YouTube">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+              </a>
+            )}
+            {/* Fallback to Pack 1703 social links if no branding */}
+            {isPack1703 && !socialLinks && (
+              <>
+                <a href="mailto:cubmaster@sfpack1703.com" className="solarpunk-social-link" title="Email">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                  </svg>
+                </a>
+                <a href="https://www.facebook.com/groups/sfpack1703" target="_blank" rel="noopener noreferrer" className="solarpunk-social-link" title="Facebook">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                </a>
+                <a href="https://www.instagram.com/sfpack1703" target="_blank" rel="noopener noreferrer" className="solarpunk-social-link" title="Instagram">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                  </svg>
+                </a>
+              </>
+            )}
+            {/* Always show Scouting America link */}
             <a href="https://www.scouting.org" target="_blank" rel="noopener noreferrer" className="solarpunk-social-link" title="Scouting America">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>

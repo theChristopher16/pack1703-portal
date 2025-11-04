@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../hooks/useNavigate';
 import { Plus, Trash2, Edit, ArrowLeft, Package, DollarSign, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import { InventoryItem, ItemCondition } from '../types/firestore';

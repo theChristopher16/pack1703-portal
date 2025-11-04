@@ -55,8 +55,8 @@ resource "google_project_service" "required_apis" {
     "secretmanager.googleapis.com",
     "monitoring.googleapis.com",
     "logging.googleapis.com",
-
-    "identitytoolkit.googleapis.com"
+    "identitytoolkit.googleapis.com",
+    "cloudbilling.googleapis.com"  # Cloud Billing API for organization billing tracking
   ])
 
   service            = each.key
@@ -196,6 +196,18 @@ module "secrets" {
   
   # Secrets configuration
   secrets = var.secrets_config
+  
+  depends_on = [google_project_service.required_apis]
+}
+
+# Billing Account IAM Permissions (Optional)
+# Grant Cloud Functions service account access to billing account
+# Only applies if billing_account_id is provided
+resource "google_billing_account_iam_member" "functions_billing_manager" {
+  count              = var.billing_account_id != null ? 1 : 0
+  billing_account_id = var.billing_account_id
+  role               = "roles/billing.admin"  # Note: billing.accountManager doesn't exist - use billing.admin
+  member             = "serviceAccount:${var.project_id}@appspot.gserviceaccount.com"
   
   depends_on = [google_project_service.required_apis]
 }

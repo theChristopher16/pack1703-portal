@@ -12,24 +12,46 @@ import {
   Users,
   Calendar,
   MapPin,
-  ExternalLink
+  ExternalLink,
+  Check,
+  Store,
+  Package
 } from 'lucide-react';
 import { useAdmin } from '../contexts/AdminContext';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useNavigate } from 'react-router-dom';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import {
+  OrganizationType,
+  ComponentId,
+  ALL_COMPONENTS,
+  getAvailableComponents,
+  getComponent,
+  getComponentsByCategory,
+  ORGANIZATION_TYPE_NAMES,
+  ORGANIZATION_TYPE_DESCRIPTIONS,
+  BASE_COMPONENTS,
+  STOREFRONT_COMPONENTS
+} from '../types/organization';
 
 interface Organization {
   id: string;
   name: string;
   slug: string;
   description?: string;
+  orgType: OrganizationType;
+  enabledComponents: ComponentId[];
   createdAt: Date;
   updatedAt: Date;
   isActive: boolean;
   memberCount?: number;
   eventCount?: number;
   locationCount?: number;
+  billingAccountId?: string;
+  billingAccountLabel?: string;
+  billingAccountCreatedAt?: Date;
+  billingAccountLinkedAt?: Date;
 }
 
 const OrganizationsPage: React.FC = () => {
@@ -50,8 +72,11 @@ const OrganizationsPage: React.FC = () => {
     name: '',
     slug: '',
     description: '',
+    orgType: OrganizationType.PACK as OrganizationType,
+    enabledComponents: [] as ComponentId[],
     isActive: true
   });
+  const [selectedComponents, setSelectedComponents] = useState<Set<ComponentId>>(new Set());
 
   // Check if user is super admin
   const isSuperAdmin = state.currentUser?.role === 'super-admin' || 
@@ -59,11 +84,12 @@ const OrganizationsPage: React.FC = () => {
 
   useEffect(() => {
     if (!isSuperAdmin) {
-      navigate('/');
+      // Redirect non-super-admins to Pack app homepage
+      navigate('/pack1703/', { replace: true });
       return;
     }
     loadOrganizations();
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, navigate]);
 
   useEffect(() => {
     if (searchTerm) {
@@ -95,12 +121,19 @@ const OrganizationsPage: React.FC = () => {
           name: data.name || '',
           slug: data.slug || '',
           description: data.description || '',
+          orgType: (data.orgType as OrganizationType) || OrganizationType.PACK,
+          enabledComponents: data.enabledComponents || [],
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
           isActive: data.isActive !== undefined ? data.isActive : true,
           memberCount: data.memberCount || 0,
           eventCount: data.eventCount || 0,
           locationCount: data.locationCount || 0,
+          billingAccountId: data.billingAccountId,
+          billingAccountLabel: data.billingAccountLabel,
+          billingAccountCreatedAt: data.billingAccountCreatedAt?.toDate(),
+          billingAccountLinkedAt: data.billingAccountLinkedAt?.toDate(),
+          // Note: branding is optional and will be created on-the-fly when accessing the org
         });
       });
 
@@ -127,8 +160,11 @@ const OrganizationsPage: React.FC = () => {
       name: '',
       slug: '',
       description: '',
+      orgType: OrganizationType.PACK,
+      enabledComponents: [],
       isActive: true
     });
+    setSelectedComponents(new Set());
     setSelectedOrg(null);
     setShowCreateModal(true);
   };
@@ -138,8 +174,11 @@ const OrganizationsPage: React.FC = () => {
       name: org.name,
       slug: org.slug,
       description: org.description || '',
+      orgType: org.orgType,
+      enabledComponents: org.enabledComponents,
       isActive: org.isActive
     });
+    setSelectedComponents(new Set(org.enabledComponents));
     setSelectedOrg(org);
     setShowEditModal(true);
   };
@@ -168,6 +207,8 @@ const OrganizationsPage: React.FC = () => {
           name: formData.name.trim(),
           slug: slug,
           description: formData.description.trim() || null,
+          orgType: formData.orgType,
+          enabledComponents: Array.from(selectedComponents),
           isActive: formData.isActive,
           updatedAt: new Date()
         });
@@ -175,10 +216,12 @@ const OrganizationsPage: React.FC = () => {
         addNotification('success', 'Organization updated successfully', 'The organization has been updated.');
       } else {
         // Create new organization
-        await addDoc(collection(db, 'organizations'), {
+        const orgRef = await addDoc(collection(db, 'organizations'), {
           name: formData.name.trim(),
           slug: slug,
           description: formData.description.trim() || null,
+          orgType: formData.orgType,
+          enabledComponents: Array.from(selectedComponents),
           isActive: formData.isActive,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -186,6 +229,22 @@ const OrganizationsPage: React.FC = () => {
           eventCount: 0,
           locationCount: 0
         });
+
+        // Create billing account for the new organization
+        try {
+          const functions = getFunctions();
+          const createBillingAccount = httpsCallable(functions, 'createOrganizationBillingAccount');
+          await createBillingAccount({
+            organizationId: orgRef.id,
+            organizationName: formData.name.trim(),
+            organizationSlug: slug
+          });
+          console.log('✅ Billing account created/linked for organization:', orgRef.id);
+        } catch (billingError: any) {
+          console.error('⚠️ Failed to create billing account (non-critical):', billingError);
+          // Don't fail organization creation if billing account creation fails
+          addNotification('warning', 'Organization created', 'Organization created successfully, but billing account setup failed. You can link a billing account later.');
+        }
         
         addNotification('success', 'Organization created successfully', 'The organization has been created.');
       }
@@ -225,11 +284,25 @@ const OrganizationsPage: React.FC = () => {
   };
 
   const handleNavigateToOrg = (orgSlug: string) => {
-    // Navigate to the organization's portal
-    // For now, we'll navigate to the pack1703 app with an organization context
-    // In the future, this could be dynamic based on organization slug
-    navigate(`/?org=${orgSlug}`);
+    // Navigate to the organization's homepage (not a specific component)
+    navigate(`/${orgSlug}`);
   };
+
+  const toggleComponent = (componentId: ComponentId) => {
+    const newSet = new Set(selectedComponents);
+    if (newSet.has(componentId)) {
+      newSet.delete(componentId);
+    } else {
+      newSet.add(componentId);
+    }
+    setSelectedComponents(newSet);
+  };
+
+  // Get available components for selected org type
+  const availableComponents = getAvailableComponents(formData.orgType);
+  const baseComponents = Object.keys(BASE_COMPONENTS) as ComponentId[];
+  const storefrontComponents = Object.keys(STOREFRONT_COMPONENTS) as ComponentId[];
+  const isStorefront = formData.orgType === OrganizationType.STOREFRONT;
 
   if (!isSuperAdmin) {
     return null;
@@ -291,6 +364,59 @@ const OrganizationsPage: React.FC = () => {
         ) : (
           /* Organizations Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Pack 1703 Card - Special Link to Existing App */}
+            <div className="solarpunk-card group hover:shadow-xl transition-all duration-300 border-2 border-forest-300">
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-display font-bold text-ink mb-1 flex items-center gap-2">
+                      <span className="text-2xl">🏕️</span>
+                      Pack 1703
+                    </h3>
+                    <p className="text-sm text-teal-600 font-mono">pack1703</p>
+                  </div>
+                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                    Active
+                  </span>
+                </div>
+                
+                <p className="text-forest-600 mb-4 text-sm">
+                  Cub Scout Pack 1703 - Main portal application
+                </p>
+
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="text-center">
+                    <Users className="w-5 h-5 text-teal-600 mx-auto mb-1" />
+                    <p className="text-2xl font-bold text-ink">-</p>
+                    <p className="text-xs text-forest-600">Members</p>
+                  </div>
+                  <div className="text-center">
+                    <Calendar className="w-5 h-5 text-teal-600 mx-auto mb-1" />
+                    <p className="text-2xl font-bold text-ink">-</p>
+                    <p className="text-xs text-forest-600">Events</p>
+                  </div>
+                  <div className="text-center">
+                    <MapPin className="w-5 h-5 text-teal-600 mx-auto mb-1" />
+                    <p className="text-2xl font-bold text-ink">-</p>
+                    <p className="text-xs text-forest-600">Locations</p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 pt-4 border-t border-teal-100">
+                  <button
+                    onClick={() => navigate('/pack1703/')}
+                    className="flex-1 solarpunk-btn-secondary text-sm py-2"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Open Portal
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Organization Cards */}
             {filteredOrganizations.length === 0 ? (
               <div className="col-span-full text-center py-20">
                 <Building2 className="w-16 h-16 text-teal-300 mx-auto mb-4" />
@@ -322,6 +448,9 @@ const OrganizationsPage: React.FC = () => {
                           {org.name}
                         </h3>
                         <p className="text-sm text-teal-600 font-mono">/{org.slug}</p>
+                        <p className="text-xs text-forest-500 mt-1">
+                          {ORGANIZATION_TYPE_NAMES[org.orgType]}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
                         {org.isActive ? (
@@ -338,10 +467,38 @@ const OrganizationsPage: React.FC = () => {
 
                     {/* Description */}
                     {org.description && (
-                      <p className="text-forest-600 mb-4 line-clamp-2">
+                      <p className="text-forest-600 mb-4 line-clamp-2 text-sm">
                         {org.description}
                       </p>
                     )}
+
+                    {/* Enabled Components */}
+                    <div className="mb-4">
+                      <p className="text-xs text-forest-500 mb-2 font-semibold">Enabled Components:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {org.enabledComponents.length > 0 ? (
+                          org.enabledComponents.slice(0, 6).map((compId) => {
+                            const comp = getComponent(compId);
+                            return (
+                              <span
+                                key={compId}
+                                className="px-2 py-1 bg-forest-50 text-forest-700 text-xs rounded-full border border-forest-200"
+                                title={comp.description}
+                              >
+                                {comp.icon} {comp.name}
+                              </span>
+                            );
+                          })
+                        ) : (
+                          <span className="text-xs text-forest-400 italic">No components enabled</span>
+                        )}
+                        {org.enabledComponents.length > 6 && (
+                          <span className="px-2 py-1 bg-teal-50 text-teal-700 text-xs rounded-full">
+                            +{org.enabledComponents.length - 6} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
                     {/* Stats */}
                     <div className="grid grid-cols-3 gap-4 mb-4">
@@ -413,6 +570,35 @@ const OrganizationsPage: React.FC = () => {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-ink mb-2">
+                  Organization Type *
+                </label>
+                <select
+                  value={formData.orgType}
+                  onChange={(e) => {
+                    const newType = e.target.value as OrganizationType;
+                    setFormData({ ...formData, orgType: newType });
+                    // Filter selected components to only those available for the new type
+                    const availableForNewType = getAvailableComponents(newType);
+                    const filtered = new Set(
+                      Array.from(selectedComponents).filter(comp => availableForNewType.includes(comp))
+                    );
+                    setSelectedComponents(filtered);
+                  }}
+                  className="w-full px-4 py-3 border border-teal-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                >
+                  {Object.values(OrganizationType).map((type) => (
+                    <option key={type} value={type}>
+                      {ORGANIZATION_TYPE_NAMES[type]}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-forest-600 mt-1">
+                  {ORGANIZATION_TYPE_DESCRIPTIONS[formData.orgType]}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-ink mb-2">
                   Organization Name *
                 </label>
                 <input
@@ -426,7 +612,7 @@ const OrganizationsPage: React.FC = () => {
                     });
                   }}
                   className="w-full px-4 py-3 border border-teal-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  placeholder="e.g., Pack 1703"
+                  placeholder="e.g., St Francis Spirit Store"
                 />
               </div>
 
@@ -471,6 +657,99 @@ const OrganizationsPage: React.FC = () => {
                   Active (organization is accessible)
                 </label>
               </div>
+
+              {/* Component Selection */}
+              <div className="border-t border-teal-100 pt-4">
+                <label className="block text-sm font-semibold text-ink mb-4">
+                  Select Components *
+                </label>
+                
+                {/* Base Components */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-forest-700 mb-3 flex items-center gap-2">
+                    <span className="w-1 h-4 bg-forest-400 rounded-full"></span>
+                    Base Components
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {baseComponents.map((compId) => {
+                      const comp = getComponent(compId);
+                      const isSelected = selectedComponents.has(compId);
+                      return (
+                        <button
+                          key={compId}
+                          type="button"
+                          onClick={() => toggleComponent(compId)}
+                          className={`p-3 rounded-xl border-2 transition-all duration-200 text-left ${
+                            isSelected
+                              ? 'border-forest-400 bg-forest-50'
+                              : 'border-teal-200 bg-white hover:border-teal-300 hover:bg-teal-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{comp.icon}</span>
+                              <div>
+                                <div className="font-semibold text-sm text-ink">{comp.name}</div>
+                                <div className="text-xs text-forest-600">{comp.description}</div>
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <Check className="w-5 h-5 text-forest-600" />
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Storefront Components */}
+                {isStorefront && (
+                  <div className="mb-6">
+                    <h4 className="text-sm font-semibold text-forest-700 mb-3 flex items-center gap-2">
+                      <Store className="w-4 h-4 text-solar-600" />
+                      Storefront Components
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {storefrontComponents.map((compId) => {
+                        const comp = getComponent(compId);
+                        const isSelected = selectedComponents.has(compId);
+                        return (
+                          <button
+                            key={compId}
+                            type="button"
+                            onClick={() => toggleComponent(compId)}
+                            className={`p-3 rounded-xl border-2 transition-all duration-200 text-left ${
+                              isSelected
+                                ? 'border-solar-400 bg-solar-50'
+                                : 'border-teal-200 bg-white hover:border-teal-300 hover:bg-teal-50'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">{comp.icon}</span>
+                                <div>
+                                  <div className="font-semibold text-sm text-ink">{comp.name}</div>
+                                  <div className="text-xs text-forest-600">{comp.description}</div>
+                                </div>
+                              </div>
+                              {isSelected && (
+                                <Check className="w-5 h-5 text-solar-600" />
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {selectedComponents.size === 0 && (
+                  <p className="text-sm text-forest-500 italic">
+                    Please select at least one component to enable for this organization.
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="p-6 border-t border-teal-100 flex items-center justify-end gap-3">
@@ -482,8 +761,8 @@ const OrganizationsPage: React.FC = () => {
               </button>
               <button
                 onClick={handleSave}
-                disabled={isSaving || !formData.name.trim()}
-                className="solarpunk-btn-primary flex items-center gap-2"
+                disabled={isSaving || !formData.name.trim() || selectedComponents.size === 0}
+                className="solarpunk-btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <>
@@ -519,6 +798,35 @@ const OrganizationsPage: React.FC = () => {
             </div>
             
             <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-ink mb-2">
+                  Organization Type *
+                </label>
+                <select
+                  value={formData.orgType}
+                  onChange={(e) => {
+                    const newType = e.target.value as OrganizationType;
+                    setFormData({ ...formData, orgType: newType });
+                    // Filter selected components to only those available for the new type
+                    const availableForNewType = getAvailableComponents(newType);
+                    const filtered = new Set(
+                      Array.from(selectedComponents).filter(comp => availableForNewType.includes(comp))
+                    );
+                    setSelectedComponents(filtered);
+                  }}
+                  className="w-full px-4 py-3 border border-teal-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                >
+                  {Object.values(OrganizationType).map((type) => (
+                    <option key={type} value={type}>
+                      {ORGANIZATION_TYPE_NAMES[type]}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-forest-600 mt-1">
+                  {ORGANIZATION_TYPE_DESCRIPTIONS[formData.orgType]}
+                </p>
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-ink mb-2">
                   Organization Name *
@@ -567,6 +875,99 @@ const OrganizationsPage: React.FC = () => {
                   Active (organization is accessible)
                 </label>
               </div>
+
+              {/* Component Selection */}
+              <div className="border-t border-teal-100 pt-4">
+                <label className="block text-sm font-semibold text-ink mb-4">
+                  Select Components *
+                </label>
+                
+                {/* Base Components */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-forest-700 mb-3 flex items-center gap-2">
+                    <span className="w-1 h-4 bg-forest-400 rounded-full"></span>
+                    Base Components
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {baseComponents.map((compId) => {
+                      const comp = getComponent(compId);
+                      const isSelected = selectedComponents.has(compId);
+                      return (
+                        <button
+                          key={compId}
+                          type="button"
+                          onClick={() => toggleComponent(compId)}
+                          className={`p-3 rounded-xl border-2 transition-all duration-200 text-left ${
+                            isSelected
+                              ? 'border-forest-400 bg-forest-50'
+                              : 'border-teal-200 bg-white hover:border-teal-300 hover:bg-teal-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{comp.icon}</span>
+                              <div>
+                                <div className="font-semibold text-sm text-ink">{comp.name}</div>
+                                <div className="text-xs text-forest-600">{comp.description}</div>
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <Check className="w-5 h-5 text-forest-600" />
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Storefront Components */}
+                {isStorefront && (
+                  <div className="mb-6">
+                    <h4 className="text-sm font-semibold text-forest-700 mb-3 flex items-center gap-2">
+                      <Store className="w-4 h-4 text-solar-600" />
+                      Storefront Components
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {storefrontComponents.map((compId) => {
+                        const comp = getComponent(compId);
+                        const isSelected = selectedComponents.has(compId);
+                        return (
+                          <button
+                            key={compId}
+                            type="button"
+                            onClick={() => toggleComponent(compId)}
+                            className={`p-3 rounded-xl border-2 transition-all duration-200 text-left ${
+                              isSelected
+                                ? 'border-solar-400 bg-solar-50'
+                                : 'border-teal-200 bg-white hover:border-teal-300 hover:bg-teal-50'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">{comp.icon}</span>
+                                <div>
+                                  <div className="font-semibold text-sm text-ink">{comp.name}</div>
+                                  <div className="text-xs text-forest-600">{comp.description}</div>
+                                </div>
+                              </div>
+                              {isSelected && (
+                                <Check className="w-5 h-5 text-solar-600" />
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {selectedComponents.size === 0 && (
+                  <p className="text-sm text-forest-500 italic">
+                    Please select at least one component to enable for this organization.
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="p-6 border-t border-teal-100 flex items-center justify-end gap-3">
@@ -578,8 +979,8 @@ const OrganizationsPage: React.FC = () => {
               </button>
               <button
                 onClick={handleSave}
-                disabled={isSaving || !formData.name.trim()}
-                className="solarpunk-btn-primary flex items-center gap-2"
+                disabled={isSaving || !formData.name.trim() || selectedComponents.size === 0}
+                className="solarpunk-btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <>

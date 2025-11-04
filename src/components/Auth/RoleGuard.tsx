@@ -1,5 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
+import { useOrganization } from '../../contexts/OrganizationContext';
 import { UserRole } from '../../services/authService';
 import { hasAccessToRoute, isAdminOrAbove, isRoot } from '../../services/navigationService';
 import { useAdmin } from '../../contexts/AdminContext';
@@ -38,15 +39,19 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
   // REMOVED LOADING CHECK - This was causing redirects
   // The AuthGuard already handles authentication, so we don't need to check again
   
+  // Prefix fallback path with organization slug if needed
+  const { prefixPath } = useOrganization();
+  const prefixedFallbackPath = prefixPath(fallbackPath);
+  
   // If no user is authenticated, redirect to home (which will show login)
   if (!currentUser || !userRole) {
     console.log('🔒 RoleGuard: No user or role, redirecting to home', { currentUser, userRole });
-    return <Navigate to="/" replace />;
+    return <Navigate to={prefixedFallbackPath} replace />;
   }
 
   // Check if user has access to the route
   if (route && !hasAccessToRoute(userRole, route)) {
-    return <Navigate to={fallbackPath} replace />;
+    return <Navigate to={prefixedFallbackPath} replace />;
   }
 
   // Check specific role requirements
@@ -55,9 +60,9 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
       requiredRole, 
       userRole, 
       currentUserRole: currentUser?.role,
-      fallbackPath 
+      fallbackPath: prefixedFallbackPath 
     });
-    return <Navigate to={fallbackPath} replace />;
+    return <Navigate to={prefixedFallbackPath} replace />;
   }
 
   if (requiredRoles && !requiredRoles.includes(userRole)) {
@@ -65,9 +70,9 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
       requiredRoles, 
       userRole, 
       currentUserRole: currentUser?.role,
-      fallbackPath 
+      fallbackPath: prefixedFallbackPath 
     });
-    return <Navigate to={fallbackPath} replace />;
+    return <Navigate to={prefixedFallbackPath} replace />;
   }
 
   return <>{children}</>;
@@ -80,6 +85,8 @@ export const AdminOnly: React.FC<{ children: React.ReactNode; fallbackPath?: str
 }) => {
   const { state } = useAdmin();
   const currentUser = state.currentUser;
+  const { prefixPath } = useOrganization();
+  const prefixedFallbackPath = prefixPath(fallbackPath);
   
   // Check if user has admin role (either 'super-admin', 'content-admin', or 'root')
   const isAdmin = currentUser?.role === 'super-admin' || currentUser?.role === 'content-admin' || currentUser?.role === 'root';
@@ -88,9 +95,9 @@ export const AdminOnly: React.FC<{ children: React.ReactNode; fallbackPath?: str
     console.log('🔒 AdminOnly: User is not admin, redirecting to home', { 
       currentUserRole: currentUser?.role,
       isAdmin,
-      fallbackPath 
+      fallbackPath: prefixedFallbackPath 
     });
-    return <Navigate to={fallbackPath} replace />;
+    return <Navigate to={prefixedFallbackPath} replace />;
   }
   
   return <>{children}</>;
@@ -99,14 +106,19 @@ export const AdminOnly: React.FC<{ children: React.ReactNode; fallbackPath?: str
 export const RootOnly: React.FC<{ children: React.ReactNode; fallbackPath?: string }> = ({ 
   children, 
   fallbackPath = '/' 
-}) => (
-  <RoleGuard 
-    requiredRole={UserRole.SUPER_ADMIN} 
-    fallbackPath={fallbackPath}
-  >
-    {children}
-  </RoleGuard>
-);
+}) => {
+  const { prefixPath } = useOrganization();
+  const prefixedFallbackPath = prefixPath(fallbackPath);
+  
+  return (
+    <RoleGuard 
+      requiredRole={UserRole.SUPER_ADMIN} 
+      fallbackPath={prefixedFallbackPath}
+    >
+      {children}
+    </RoleGuard>
+  );
+};
 
 export const SuperUserOnly: React.FC<{ children: React.ReactNode; fallbackPath?: string }> = ({ 
   children, 
@@ -114,6 +126,8 @@ export const SuperUserOnly: React.FC<{ children: React.ReactNode; fallbackPath?:
 }) => {
   const { state } = useAdmin();
   const currentUser = state.currentUser;
+  const { prefixPath } = useOrganization();
+  const prefixedFallbackPath = prefixPath(fallbackPath);
   
   // Check if user has super user role (super-admin or root)
   const isSuperUser = currentUser?.role === 'super-admin' || 
@@ -123,9 +137,9 @@ export const SuperUserOnly: React.FC<{ children: React.ReactNode; fallbackPath?:
     console.log('🔒 SuperUserOnly: User is not super user, redirecting to home', { 
       currentUserRole: currentUser?.role,
       isSuperUser,
-      fallbackPath 
+      fallbackPath: prefixedFallbackPath 
     });
-    return <Navigate to={fallbackPath} replace />;
+    return <Navigate to={prefixedFallbackPath} replace />;
   }
   
   return <>{children}</>;
@@ -134,13 +148,18 @@ export const SuperUserOnly: React.FC<{ children: React.ReactNode; fallbackPath?:
 export const AuthenticatedOnly: React.FC<{ children: React.ReactNode; fallbackPath?: string }> = ({ 
   children, 
   fallbackPath = '/' 
-}) => (
-  <RoleGuard 
-    requiredRoles={[UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT]} 
-    fallbackPath={fallbackPath}
-  >
-    {children}
-  </RoleGuard>
-);
+}) => {
+  const { prefixPath } = useOrganization();
+  const prefixedFallbackPath = prefixPath(fallbackPath);
+  
+  return (
+    <RoleGuard 
+      requiredRoles={[UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT]} 
+      fallbackPath={prefixedFallbackPath}
+    >
+      {children}
+    </RoleGuard>
+  );
+};
 
 export default RoleGuard;

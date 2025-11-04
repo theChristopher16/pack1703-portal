@@ -39,9 +39,9 @@ variable "domains" {
   default     = ["sfpack1703.com"]
 }
 
-# Quota Project Configuration
-variable "quota_project" {
-  description = "GCP Project ID for quota and billing"
+# Billing Configuration
+variable "billing_account_id" {
+  description = "GCP Billing Account ID (optional, for billing account IAM grants)"
   type        = string
   default     = null
 }

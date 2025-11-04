@@ -126,3 +126,5 @@ For full functionality, consider getting a second ESP32 board (without camera) d
 
 
 
+
+

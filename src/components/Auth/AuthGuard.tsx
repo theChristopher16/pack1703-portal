@@ -164,9 +164,6 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
           {/* Solarpunk Accent Bar */}
           <div className="h-2 bg-gradient-to-r from-sky-400 via-solar-400 to-forest-400 animate-pulse"></div>
           
-          {/* Solarpunk Accent Bar */}
-          <div className="h-2 bg-gradient-to-r from-sky-400 via-solar-400 to-forest-400 animate-pulse"></div>
-          
           {/* Full-Width Hero Section */}
           <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
             {/* Solarpunk Background Elements */}
@@ -378,7 +375,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                 {/* View All Button */}
                 <div className="text-center mt-12">
                   <button 
-                    onClick={() => handleNavigation('/events')}
+                    onClick={() => navigate('/events')}
                     className="solarpunk-btn-secondary group"
                   >
                     <span>View All Events</span>

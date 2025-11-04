@@ -109,11 +109,7 @@ const OrganizationsPage: React.FC = () => {
     } catch (err: any) {
       console.error('Error loading organizations:', err);
       setError(err.message || 'Failed to load organizations');
-      addNotification({
-        type: 'error',
-        message: 'Failed to load organizations',
-        duration: 5000
-      });
+      addNotification('error', 'Failed to load organizations', err.message || 'Failed to load organizations');
     } finally {
       setIsLoading(false);
     }
@@ -155,11 +151,7 @@ const OrganizationsPage: React.FC = () => {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      addNotification({
-        type: 'error',
-        message: 'Organization name is required',
-        duration: 5000
-      });
+      addNotification('error', 'Organization name is required', 'Please provide a name for the organization.');
       return;
     }
 
@@ -180,11 +172,7 @@ const OrganizationsPage: React.FC = () => {
           updatedAt: new Date()
         });
         
-        addNotification({
-          type: 'success',
-          message: 'Organization updated successfully',
-          duration: 5000
-        });
+        addNotification('success', 'Organization updated successfully', 'The organization has been updated.');
       } else {
         // Create new organization
         await addDoc(collection(db, 'organizations'), {
@@ -199,11 +187,7 @@ const OrganizationsPage: React.FC = () => {
           locationCount: 0
         });
         
-        addNotification({
-          type: 'success',
-          message: 'Organization created successfully',
-          duration: 5000
-        });
+        addNotification('success', 'Organization created successfully', 'The organization has been created.');
       }
 
       setShowCreateModal(false);
@@ -212,11 +196,7 @@ const OrganizationsPage: React.FC = () => {
     } catch (err: any) {
       console.error('Error saving organization:', err);
       setError(err.message || 'Failed to save organization');
-      addNotification({
-        type: 'error',
-        message: err.message || 'Failed to save organization',
-        duration: 5000
-      });
+      addNotification('error', 'Failed to save organization', err.message || 'Failed to save organization');
     } finally {
       setIsSaving(false);
     }
@@ -231,22 +211,14 @@ const OrganizationsPage: React.FC = () => {
 
       await deleteDoc(doc(db, 'organizations', selectedOrg.id));
       
-      addNotification({
-        type: 'success',
-        message: 'Organization deleted successfully',
-        duration: 5000
-      });
+      addNotification('success', 'Organization deleted successfully', 'The organization has been deleted.');
 
       setShowDeleteModal(false);
       await loadOrganizations();
     } catch (err: any) {
       console.error('Error deleting organization:', err);
       setError(err.message || 'Failed to delete organization');
-      addNotification({
-        type: 'error',
-        message: err.message || 'Failed to delete organization',
-        duration: 5000
-      });
+      addNotification('error', 'Failed to delete organization', err.message || 'Failed to delete organization');
     } finally {
       setIsSaving(false);
     }

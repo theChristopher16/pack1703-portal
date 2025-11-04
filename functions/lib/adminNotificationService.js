@@ -34,14 +34,15 @@ class AdminNotificationService {
         }
     }
     /**
-     * Get all admin and super admin users
+     * Get cubmaster email address for admin notifications
      */
     async getAdminUsers() {
-        const usersSnapshot = await this.db.collection('users')
-            .where('role', 'in', ['admin', 'super_admin', 'root', 'den_leader'])
-            .where('status', '==', 'approved')
-            .get();
-        return usersSnapshot.docs.map(doc => (Object.assign({ id: doc.id }, doc.data())));
+        // Admin notifications should only be sent to cubmaster@sfpack1703.com
+        return [{
+                email: 'cubmaster@sfpack1703.com',
+                displayName: 'Cubmaster',
+                emailNotifications: true
+            }];
     }
     /**
      * Send email notifications to admins

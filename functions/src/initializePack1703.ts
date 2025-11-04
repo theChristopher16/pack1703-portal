@@ -3,12 +3,12 @@
  * This is a one-time callable function for super admins
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 
 export const initializePack1703Org = functions.https.onCall(async (data, context) => {
   // Verify authentication
-  if (!context.auth) {
+  if (!context || !context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated to initialize Pack 1703');
   }
 

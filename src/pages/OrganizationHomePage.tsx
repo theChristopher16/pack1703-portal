@@ -11,7 +11,15 @@ import {
   Store,
   Package,
   ShoppingCart,
-  CreditCard
+  CreditCard,
+  BarChart3,
+  UserPlus,
+  DollarSign,
+  Sprout,
+  List,
+  Users,
+  Leaf,
+  Target
 } from 'lucide-react';
 
 interface OrganizationHomePageProps {
@@ -36,10 +44,21 @@ const OrganizationHomePage: React.FC<OrganizationHomePageProps> = ({ organizatio
     locations: <MapPin className="w-6 h-6" />,
     resources: <FolderOpen className="w-6 h-6" />,
     profile: <User className="w-6 h-6" />,
+    // Storefront components
     products: <Store className="w-6 h-6" />,
     orders: <Package className="w-6 h-6" />,
     cart: <ShoppingCart className="w-6 h-6" />,
     checkout: <CreditCard className="w-6 h-6" />,
+    // Pack components
+    analytics: <BarChart3 className="w-6 h-6" />,
+    userManagement: <UserPlus className="w-6 h-6" />,
+    finances: <DollarSign className="w-6 h-6" />,
+    seasons: <Sprout className="w-6 h-6" />,
+    lists: <List className="w-6 h-6" />,
+    volunteer: <Users className="w-6 h-6" />,
+    ecology: <Leaf className="w-6 h-6" />,
+    fundraising: <Target className="w-6 h-6" />,
+    dues: <DollarSign className="w-6 h-6" />,
   };
 
   const handleComponentClick = (componentId: ComponentId) => {

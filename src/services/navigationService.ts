@@ -371,17 +371,24 @@ export const filterNavigationByEnabledComponents = (
   enabledComponents?: ComponentId[] | null
 ): NavigationItem[] => {
   return items.filter(item => {
-    // If item doesn't require a specific component, it's always available
+    // If item doesn't require a specific component, it's always available (Home, etc.)
     if (!item.componentId) {
       return true;
     }
     
-    // If no enabled components list provided, allow all (backward compatibility)
-    if (!enabledComponents || enabledComponents.length === 0) {
+    // If enabledComponents is explicitly null or undefined (not set), allow all for backward compatibility
+    // This handles orgs that don't have the enabledComponents field yet
+    if (enabledComponents === null || enabledComponents === undefined) {
       return true;
     }
     
-    // Check if the required component is enabled
+    // If enabledComponents is an empty array, org has components system but nothing enabled
+    // Only show items that don't require a component
+    if (enabledComponents.length === 0) {
+      return false;
+    }
+    
+    // Check if the required component is in the enabled list
     return enabledComponents.includes(item.componentId);
   });
 };

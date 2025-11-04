@@ -364,58 +364,6 @@ const OrganizationsPage: React.FC = () => {
         ) : (
           /* Organizations Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Pack 1703 Card - Special Link to Existing App */}
-            <div className="solarpunk-card group hover:shadow-xl transition-all duration-300 border-2 border-forest-300">
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-display font-bold text-ink mb-1 flex items-center gap-2">
-                      <span className="text-2xl">🏕️</span>
-                      Pack 1703
-                    </h3>
-                    <p className="text-sm text-teal-600 font-mono">pack1703</p>
-                  </div>
-                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
-                    Active
-                  </span>
-                </div>
-                
-                <p className="text-forest-600 mb-4 text-sm">
-                  Cub Scout Pack 1703 - Main portal application
-                </p>
-
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-4 mb-4">
-                  <div className="text-center">
-                    <Users className="w-5 h-5 text-teal-600 mx-auto mb-1" />
-                    <p className="text-2xl font-bold text-ink">-</p>
-                    <p className="text-xs text-forest-600">Members</p>
-                  </div>
-                  <div className="text-center">
-                    <Calendar className="w-5 h-5 text-teal-600 mx-auto mb-1" />
-                    <p className="text-2xl font-bold text-ink">-</p>
-                    <p className="text-xs text-forest-600">Events</p>
-                  </div>
-                  <div className="text-center">
-                    <MapPin className="w-5 h-5 text-teal-600 mx-auto mb-1" />
-                    <p className="text-2xl font-bold text-ink">-</p>
-                    <p className="text-xs text-forest-600">Locations</p>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2 pt-4 border-t border-teal-100">
-                  <button
-                    onClick={() => navigate('/pack1703/')}
-                    className="flex-1 solarpunk-btn-secondary text-sm py-2"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Open Portal
-                  </button>
-                </div>
-              </div>
-            </div>
-
             {/* Organization Cards */}
             {filteredOrganizations.length === 0 ? (
               <div className="col-span-full text-center py-20">

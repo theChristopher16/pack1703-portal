@@ -153,7 +153,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: MessageSquare,
     roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'authenticated',
-    description: 'Share feedback and suggestions'
+    description: 'Share feedback and suggestions',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
 
   // VOLUNTEER LEVEL (den leaders and above)
@@ -163,7 +164,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: Shield,
     roles: [UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
     category: 'authenticated',
-    description: 'Privacy and data transparency'
+    description: 'Privacy and data transparency',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
 
   // ADMIN LEVEL (pack administrators and above)
@@ -233,17 +235,19 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: DollarSign,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'System cost monitoring'
+    description: 'System cost monitoring',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
 
-  // SUPER ADMIN LEVEL (system administrators only)
+  // SUPER ADMIN LEVEL (system administrators only - Pack 1703 only)
   {
     name: 'Organizations',
     href: '/organizations',
     icon: Building2,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'Multi-tenant organization management'
+    description: 'Multi-tenant organization management',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
   {
     name: 'Solyn AI',
@@ -251,7 +255,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: Bot,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'AI assistant management'
+    description: 'AI assistant management',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
   {
     name: 'SOC Console',
@@ -259,7 +264,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: Monitor,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'Security Operations Center'
+    description: 'Security Operations Center',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
   {
     name: 'System Settings',
@@ -267,7 +273,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: Cog,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'System configuration'
+    description: 'System configuration',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
   {
     name: 'System Monitor',
@@ -275,7 +282,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: Activity,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'System health monitoring'
+    description: 'System health monitoring',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
   {
     name: 'User Interactions',
@@ -283,7 +291,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: MousePointer,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'Detailed user interaction analytics and behavior tracking'
+    description: 'Detailed user interaction analytics and behavior tracking',
+    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
   },
 ];
 

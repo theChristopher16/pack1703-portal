@@ -280,19 +280,19 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: DollarSign,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'System cost monitoring',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    description: 'System cost monitoring'
+    // No orgTypes restriction - available to super admins across all org types
   },
 
-  // SUPER ADMIN LEVEL (system administrators only - Pack 1703 only)
+  // SUPER ADMIN LEVEL (system administrators only - accessible from any organization)
   {
     name: 'Organizations',
     href: '/organizations',
     icon: Building2,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'Multi-tenant organization management',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    description: 'Multi-tenant organization management'
+    // No orgTypes restriction - platform-wide admin tool
   },
   {
     name: 'Solyn AI',
@@ -300,8 +300,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: Bot,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'AI assistant management',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    description: 'AI assistant management'
+    // No orgTypes restriction - platform-wide admin tool
   },
   {
     name: 'SOC Console',
@@ -309,8 +309,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: Monitor,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'Security Operations Center',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    description: 'Security Operations Center'
+    // No orgTypes restriction - platform-wide admin tool
   },
   {
     name: 'System Settings',
@@ -318,8 +318,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: Cog,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'System configuration',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    description: 'System configuration'
+    // No orgTypes restriction - platform-wide admin tool
   },
   {
     name: 'System Monitor',
@@ -327,8 +327,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: Activity,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'System health monitoring',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    description: 'System health monitoring'
+    // No orgTypes restriction - platform-wide admin tool
   },
   {
     name: 'User Interactions',
@@ -336,8 +336,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     icon: MousePointer,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'Detailed user interaction analytics and behavior tracking',
-    orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+    description: 'Detailed user interaction analytics and behavior tracking'
+    // No orgTypes restriction - platform-wide admin tool
   },
 ];
 

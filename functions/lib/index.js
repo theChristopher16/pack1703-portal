@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.refundTenantPayment = exports.createTenantPayment = exports.squareOAuthCallback = exports.squareConnectStart = exports.uploadSensorData = exports.uploadCameraImage = exports.fixUSSStewartLocation = exports.updateRSVP = exports.resendPasswordSetupLink = exports.completePasswordSetup = exports.verifyPasswordSetupToken = exports.resetPasswordWithToken = exports.verifyPasswordResetToken = exports.sendPasswordReset = exports.publicICSFeed = exports.icsFeed = exports.sendSMS = exports.sendAnnouncementSMS = exports.sendAnnouncementEmails = exports.createAnnouncementWithEmails = exports.createTestAnnouncement = exports.helloWorld = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.getUserRSVPs = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminCloseRSVP = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
-exports.initializePack1703Org = exports.getOrganizationUsage = exports.createOrganizationBillingAccount = exports.onRSVPPaymentComplete = exports.onVolunteerSignupCreate = exports.onResourceSubmissionCreate = exports.onFeedbackCreate = exports.onAccountRequestCreate = exports.onMessageCreate = exports.onRSVPCreate = exports.manualSyncCharlestonWrap = exports.syncCharlestonWrapData = exports.onCreateGoogleAuthUser = exports.createRequestsForExistingGoogleUsers = exports.completeRSVPPayment = exports.adminUpdatePaymentStatus = exports.createRSVPPayment = exports.squareWebhook = void 0;
+exports.createTenantPayment = exports.squareOAuthCallback = exports.squareConnectStart = exports.uploadSensorData = exports.uploadCameraImage = exports.fixUSSStewartLocation = exports.updateRSVP = exports.resendPasswordSetupLink = exports.completePasswordSetup = exports.verifyPasswordSetupToken = exports.resetPasswordWithToken = exports.verifyPasswordResetToken = exports.sendPasswordReset = exports.publicICSFeed = exports.icsFeed = exports.sendSMS = exports.sendAnnouncementSMS = exports.sendAnnouncementEmails = exports.createAnnouncementWithEmails = exports.createTestAnnouncement = exports.helloWorld = exports.syncUserPhotos = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.getUserRSVPs = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminCloseRSVP = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = void 0;
+exports.initializePack1703Org = exports.getOrganizationUsage = exports.createOrganizationBillingAccount = exports.onRSVPPaymentComplete = exports.onVolunteerSignupCreate = exports.onResourceSubmissionCreate = exports.onFeedbackCreate = exports.onAccountRequestCreate = exports.onMessageCreate = exports.onRSVPCreate = exports.manualSyncCharlestonWrap = exports.syncCharlestonWrapData = exports.onCreateGoogleAuthUser = exports.createRequestsForExistingGoogleUsers = exports.completeRSVPPayment = exports.adminUpdatePaymentStatus = exports.createRSVPPayment = exports.squareWebhook = exports.refundTenantPayment = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 const squareup_1 = require("squareup");
@@ -1193,58 +1193,8 @@ exports.submitAccountRequest = functions.https.onCall(async (data, context) => {
             userAgent: data.userAgent || ''
         };
         const requestRef = await db.collection('accountRequests').add(requestData);
-        // Send email notification to cubmaster
-        try {
-            const { emailService } = await Promise.resolve().then(() => require('./emailService'));
-            const userData = {
-                uid: requestRef.id,
-                email: data.email,
-                displayName: data.displayName,
-                phone: data.phone,
-                address: data.address,
-                emergencyContact: data.emergencyContact,
-                medicalInfo: data.reason
-            };
-            const emailSent = await emailService.sendUserApprovalNotification(userData);
-            console.log('User approval notification email sent to cubmaster:', emailSent);
-            // Log email success in adminActions for tracking
-            await db.collection('adminActions').add({
-                action: 'account_request_email_sent',
-                entityType: 'account_request',
-                entityId: requestRef.id,
-                entityName: data.displayName,
-                details: {
-                    email: data.email,
-                    emailSent: emailSent
-                },
-                timestamp: getTimestamp(),
-                success: emailSent
-            });
-        }
-        catch (emailError) {
-            console.error('Failed to send user approval notification email:', emailError);
-            functions.logger.error('Email send failure', {
-                error: emailError.message,
-                stack: emailError.stack,
-                requestId: requestRef.id,
-                email: data.email
-            });
-            // Log email failure in adminActions for monitoring
-            await db.collection('adminActions').add({
-                action: 'account_request_email_failed',
-                entityType: 'account_request',
-                entityId: requestRef.id,
-                entityName: data.displayName,
-                details: {
-                    email: data.email,
-                    error: emailError.message || 'Unknown error',
-                    errorCode: emailError.code
-                },
-                timestamp: getTimestamp(),
-                success: false
-            });
-            // Don't fail the request submission if email fails
-        }
+        // Note: Email notification is handled by the onAccountRequestCreate Firestore trigger
+        // which uses adminNotificationService to send to cubmaster@sfpack1703.com only
         // Log the request
         await db.collection('adminActions').add({
             action: 'account_request_submitted',
@@ -2358,6 +2308,87 @@ exports.adminDeleteUser = functions.https.onCall(async (data, context) => {
             throw error;
         }
         throw new functions.https.HttpsError('internal', 'Failed to delete user');
+    }
+});
+// Sync user photos from Firebase Auth to Firestore
+exports.syncUserPhotos = functions.https.onCall(async (data, context) => {
+    try {
+        // Check authentication
+        if (!context.auth) {
+            throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+        }
+        // Only allow admins to run this function
+        const userDoc = await db.collection('users').doc(context.auth.uid).get();
+        const userData = userDoc.data();
+        if (!userData || (userData.role !== 'admin' && userData.role !== 'super-admin' && userData.role !== 'root')) {
+            throw new functions.https.HttpsError('permission-denied', 'Only admins can sync user photos');
+        }
+        console.log('🔄 Starting photo sync for all users...');
+        let updated = 0;
+        let skipped = 0;
+        let errors = 0;
+        const updates = [];
+        // Get all users from Firebase Auth
+        let nextPageToken;
+        do {
+            const listUsersResult = await admin.auth().listUsers(1000, nextPageToken);
+            for (const authUser of listUsersResult.users) {
+                try {
+                    const userId = authUser.uid;
+                    // Get Firestore user document
+                    const firestoreUserDoc = await db.collection('users').doc(userId).get();
+                    if (!firestoreUserDoc.exists) {
+                        console.log(`   ⏭️  Skipping ${authUser.email} - no Firestore document`);
+                        skipped++;
+                        continue;
+                    }
+                    const firestoreUser = firestoreUserDoc.data();
+                    const authPhotoURL = authUser.photoURL;
+                    // Check if we need to update
+                    if (!authPhotoURL) {
+                        console.log(`   ⏭️  No photo for ${authUser.email}`);
+                        skipped++;
+                        continue;
+                    }
+                    if ((firestoreUser === null || firestoreUser === void 0 ? void 0 : firestoreUser.photoURL) === authPhotoURL) {
+                        // Photo already up-to-date
+                        skipped++;
+                        continue;
+                    }
+                    // Update Firestore with Firebase Auth photoURL
+                    await db.collection('users').doc(userId).update({
+                        photoURL: authPhotoURL,
+                        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                    });
+                    updates.push({
+                        email: authUser.email,
+                        oldPhoto: (firestoreUser === null || firestoreUser === void 0 ? void 0 : firestoreUser.photoURL) || 'none',
+                        newPhoto: authPhotoURL
+                    });
+                    console.log(`   ✅ Updated photo for ${authUser.email}`);
+                    updated++;
+                }
+                catch (err) {
+                    console.error(`   ❌ Error syncing photo for ${authUser.email}:`, err.message);
+                    errors++;
+                }
+            }
+            nextPageToken = listUsersResult.pageToken;
+        } while (nextPageToken);
+        const result = {
+            success: true,
+            updated,
+            skipped,
+            errors,
+            updates: updates.slice(0, 10), // Return first 10 updates as examples
+            message: `Photo sync complete: ${updated} updated, ${skipped} skipped, ${errors} errors`
+        };
+        console.log(`✅ ${result.message}`);
+        return result;
+    }
+    catch (error) {
+        console.error('❌ Error syncing user photos:', error);
+        throw new functions.https.HttpsError('internal', error.message || 'Failed to sync user photos');
     }
 });
 // Simple test function
@@ -4275,24 +4306,8 @@ async function createAccountRequestForGoogleUser(user, db) {
     };
     const requestRef = await db.collection('accountRequests').add(requestData);
     console.log('Auto-created account request for Google user:', user.email, requestRef.id);
-    // Send email notification to cubmaster
-    try {
-        const { emailService } = await Promise.resolve().then(() => require('./emailService'));
-        const userData = {
-            uid: user.uid,
-            email: user.email || '',
-            displayName: user.displayName || '',
-            phone: '',
-            address: '',
-            emergencyContact: '',
-            medicalInfo: 'Google sign-in user'
-        };
-        await emailService.sendUserApprovalNotification(userData);
-        console.log('Notification email sent for auto-created request');
-    }
-    catch (emailError) {
-        console.error('Failed to send notification email for auto-created request:', emailError);
-    }
+    // Note: Email notification is handled by the onAccountRequestCreate Firestore trigger
+    // which uses adminNotificationService to send to cubmaster@sfpack1703.com only
     return requestRef.id;
 }
 // Callable function to create account requests for existing Google users who don't have requests

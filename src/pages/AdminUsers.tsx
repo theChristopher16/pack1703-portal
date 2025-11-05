@@ -205,14 +205,14 @@ const AdminUsers: React.FC = () => {
       addNotification(
         'success',
         'Photo Sync Complete',
-        `Updated: ${result.updated} users, Skipped: ${result.skipped}, Errors: ${result.errors}`
+        `Updated: ${result.updated} users, Skipped: ${result.skipped}, Errors: ${result.errors}\n\nCheck console for detailed logs to understand why photos were skipped.`
       );
       
       // Reload users to show updated photos
       await loadUsers(true);
     } catch (err) {
       console.error('Error syncing photos:', err);
-      addNotification('error', 'Sync Failed', 'Failed to sync profile photos');
+      addNotification('error', 'Sync Failed', 'Failed to sync profile photos. Check console for details.');
     } finally {
       setIsSyncingPhotos(false);
     }

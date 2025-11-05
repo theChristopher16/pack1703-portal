@@ -2077,6 +2077,7 @@ class AuthService {
   /**
    * Sync profile photos from Firebase Auth to Firestore for all users
    * Useful for updating existing users who signed in before photo sync was added
+   * Note: This can only access Firestore data, not Firebase Auth directly
    */
   async syncAllUserPhotos(): Promise<{ updated: number; skipped: number; errors: number }> {
     try {
@@ -2092,8 +2093,19 @@ class AuthService {
           const userId = userDoc.id;
           const userData = userDoc.data();
           
+          // Log current state for debugging
+          console.log(`\n📋 Checking user: ${userData.email}`);
+          console.log(`   Current photoURL: ${userData.photoURL || 'NONE'}`);
+          console.log(`   Has profile.socialData: ${!!userData.profile?.socialData}`);
+          if (userData.profile?.socialData) {
+            console.log(`   Google photo: ${userData.profile.socialData.google?.picture || 'NONE'}`);
+            console.log(`   Apple photo: ${userData.profile.socialData.apple?.picture || 'NONE'}`);
+            console.log(`   Facebook photo: ${userData.profile.socialData.facebook?.picture || 'NONE'}`);
+          }
+          
           // Skip if user already has a photoURL
           if (userData.photoURL) {
+            console.log(`   ⏭️  Skipping - already has photoURL`);
             skipped++;
             continue;
           }
@@ -2108,9 +2120,10 @@ class AuthService {
               photoURL: socialPhoto,
               updatedAt: serverTimestamp()
             });
-            console.log(`✅ Updated photo for user: ${userData.email}`);
+            console.log(`   ✅ Updated photo from social data`);
             updated++;
           } else {
+            console.log(`   ⏭️  Skipping - no social photo data available`);
             skipped++;
           }
         } catch (err) {
@@ -2119,7 +2132,9 @@ class AuthService {
         }
       }
 
-      console.log(`✅ Photo sync complete: ${updated} updated, ${skipped} skipped, ${errors} errors`);
+      console.log(`\n✅ Photo sync complete: ${updated} updated, ${skipped} skipped, ${errors} errors`);
+      console.log(`💡 Note: This sync can only use photo data already stored in Firestore.`);
+      console.log(`   If users signed in with social providers, their photos may be in Firebase Auth but not Firestore.`);
       return { updated, skipped, errors };
     } catch (error) {
       console.error('❌ Error syncing user photos:', error);

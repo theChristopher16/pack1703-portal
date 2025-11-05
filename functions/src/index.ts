@@ -2773,6 +2773,105 @@ export const adminDeleteUser = functions.https.onCall(async (data: any, context:
   }
 });
 
+// Sync user photos from Firebase Auth to Firestore
+export const syncUserPhotos = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+  try {
+    // Check authentication
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Only allow admins to run this function
+    const userDoc = await db.collection('users').doc(context.auth.uid).get();
+    const userData = userDoc.data();
+    
+    if (!userData || (userData.role !== 'admin' && userData.role !== 'super-admin' && userData.role !== 'root')) {
+      throw new functions.https.HttpsError('permission-denied', 'Only admins can sync user photos');
+    }
+
+    console.log('🔄 Starting photo sync for all users...');
+    
+    let updated = 0;
+    let skipped = 0;
+    let errors = 0;
+    const updates: any[] = [];
+
+    // Get all users from Firebase Auth
+    let nextPageToken: string | undefined;
+    do {
+      const listUsersResult = await admin.auth().listUsers(1000, nextPageToken);
+      
+      for (const authUser of listUsersResult.users) {
+        try {
+          const userId = authUser.uid;
+          
+          // Get Firestore user document
+          const firestoreUserDoc = await db.collection('users').doc(userId).get();
+          
+          if (!firestoreUserDoc.exists) {
+            console.log(`   ⏭️  Skipping ${authUser.email} - no Firestore document`);
+            skipped++;
+            continue;
+          }
+          
+          const firestoreUser = firestoreUserDoc.data();
+          const authPhotoURL = authUser.photoURL;
+          
+          // Check if we need to update
+          if (!authPhotoURL) {
+            console.log(`   ⏭️  No photo for ${authUser.email}`);
+            skipped++;
+            continue;
+          }
+          
+          if (firestoreUser?.photoURL === authPhotoURL) {
+            // Photo already up-to-date
+            skipped++;
+            continue;
+          }
+          
+          // Update Firestore with Firebase Auth photoURL
+          await db.collection('users').doc(userId).update({
+            photoURL: authPhotoURL,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+          
+          updates.push({
+            email: authUser.email,
+            oldPhoto: firestoreUser?.photoURL || 'none',
+            newPhoto: authPhotoURL
+          });
+          
+          console.log(`   ✅ Updated photo for ${authUser.email}`);
+          updated++;
+          
+        } catch (err: any) {
+          console.error(`   ❌ Error syncing photo for ${authUser.email}:`, err.message);
+          errors++;
+        }
+      }
+      
+      nextPageToken = listUsersResult.pageToken;
+    } while (nextPageToken);
+
+    const result = {
+      success: true,
+      updated,
+      skipped,
+      errors,
+      updates: updates.slice(0, 10), // Return first 10 updates as examples
+      message: `Photo sync complete: ${updated} updated, ${skipped} skipped, ${errors} errors`
+    };
+    
+    console.log(`✅ ${result.message}`);
+    return result;
+    
+  } catch (error: any) {
+    console.error('❌ Error syncing user photos:', error);
+    throw new functions.https.HttpsError('internal', error.message || 'Failed to sync user photos');
+  }
+});
+
 // Simple test function
 export const helloWorld = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   return {

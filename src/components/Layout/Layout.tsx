@@ -136,7 +136,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     {
       name: 'Main',
       items: deduplicatedNavItems.filter(item => 
-        ['Home', 'Events', 'Announcements', 'Locations', 'Volunteer', 'Ecology', 'Fundraising'].includes(item.name)
+        ['Home', 'Events', 'Announcements', 'Locations', 'Volunteer', 'Ecology', 'Fundraising', 'Products', 'Shopping Cart', 'Checkout', 'Orders'].includes(item.name)
       )
     },
     {

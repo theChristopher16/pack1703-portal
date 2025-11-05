@@ -23,7 +23,10 @@ import {
   User,
   Leaf,
   MousePointer,
-  Building2
+  Building2,
+  Store,
+  ShoppingCart,
+  Package
 } from 'lucide-react';
 
 export interface NavigationItem {
@@ -155,6 +158,48 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     category: 'authenticated',
     description: 'Share feedback and suggestions',
     orgTypes: [OrganizationType.PACK, OrganizationType.TROOP, OrganizationType.CREW, OrganizationType.POST, OrganizationType.COUNCIL, OrganizationType.DISTRICT]
+  },
+
+  // STOREFRONT COMPONENTS (storefront organizations only)
+  {
+    name: 'Products',
+    href: '/products',
+    icon: Store,
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    category: 'public',
+    description: 'Product catalog and inventory',
+    orgTypes: [OrganizationType.STOREFRONT],
+    componentId: 'products'
+  },
+  {
+    name: 'Shopping Cart',
+    href: '/cart',
+    icon: ShoppingCart,
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    category: 'public',
+    description: 'Shopping cart functionality',
+    orgTypes: [OrganizationType.STOREFRONT],
+    componentId: 'cart'
+  },
+  {
+    name: 'Checkout',
+    href: '/checkout',
+    icon: CreditCard,
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    category: 'public',
+    description: 'Payment and checkout process',
+    orgTypes: [OrganizationType.STOREFRONT],
+    componentId: 'checkout'
+  },
+  {
+    name: 'Orders',
+    href: '/orders',
+    icon: Package,
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    category: 'public',
+    description: 'Order management and tracking',
+    orgTypes: [OrganizationType.STOREFRONT],
+    componentId: 'orders'
   },
 
   // VOLUNTEER LEVEL (den leaders and above)

@@ -136,10 +136,6 @@ const OrganizationRouter: React.FC<OrganizationRouterProps> = ({ children }) => 
           billingAccountLinkedAt: data.billingAccountLinkedAt?.toDate(),
         };
 
-        console.log('📦 OrganizationRouter loaded org:', org.name);
-        console.log('📦 Org Type:', org.orgType);
-        console.log('📦 Enabled Components:', org.enabledComponents);
-
         setOrganization(org);
 
         // Don't auto-redirect - let user see the homepage

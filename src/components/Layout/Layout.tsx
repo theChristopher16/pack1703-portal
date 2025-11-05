@@ -104,15 +104,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     // First filter by role
     const roleFilteredItems = ALL_NAVIGATION_ITEMS.filter(item => item.roles.includes(userRole));
     // Then filter by organization type AND enabled components
-    const filtered = filterNavigationByOrg(roleFilteredItems, orgType, enabledComponents);
-    
-    console.log('🧭 Navigation Filter Debug:');
-    console.log('  - Org Type:', orgType);
-    console.log('  - Enabled Components:', enabledComponents);
-    console.log('  - Role Filtered Items:', roleFilteredItems.length);
-    console.log('  - Final Filtered Items:', filtered.length, filtered.map(i => i.name));
-    
-    return filtered;
+    return filterNavigationByOrg(roleFilteredItems, orgType, enabledComponents);
   };
 
   const allNavItems = getUserNavigationItems();
@@ -131,31 +123,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const isAdmin = userRole ? isAdminOrAbove(userRole) : false;
   const isRootUser = userRole ? isRoot(userRole) : false;
 
-  // Create simple navigation groups based on available items
+  // Create dynamic navigation groups based on item categories
+  // This is fully modular - new navigation items automatically go to the right group
   const navigationGroups = [
     {
       name: 'Main',
-      items: deduplicatedNavItems.filter(item => 
-        ['Home', 'Events', 'Announcements', 'Locations', 'Volunteer', 'Ecology', 'Fundraising', 'Products', 'Shopping Cart', 'Checkout', 'Orders'].includes(item.name)
-      )
+      items: deduplicatedNavItems.filter(item => item.category === 'public')
     },
     {
       name: 'My Account',
-      items: deduplicatedNavItems.filter(item => 
-        ['Profile', 'Chat', 'Resources', 'Feedback'].includes(item.name)
-      )
+      items: deduplicatedNavItems.filter(item => item.category === 'authenticated')
     },
     {
       name: 'Management',
-      items: deduplicatedNavItems.filter(item => 
-        ['Analytics', 'User Management', 'Finances', 'Seasons', 'Lists'].includes(item.name)
-      )
+      items: deduplicatedNavItems.filter(item => item.category === 'admin')
     },
     {
       name: 'System',
-      items: deduplicatedNavItems.filter(item => 
-        ['Organizations', 'Solyn AI', 'SOC Console', 'System Settings', 'System Monitor', 'Cost Management', 'User Interactions'].includes(item.name)
-      )
+      items: deduplicatedNavItems.filter(item => item.category === 'system')
     }
   ].filter(group => group.items.length > 0);
 

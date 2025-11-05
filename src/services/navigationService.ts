@@ -42,6 +42,9 @@ export interface NavigationItem {
   // Component ID required for this navigation item
   // If undefined, item doesn't require a specific component
   componentId?: ComponentId;
+  // If true, this route should always go to Pack 1703 (not org-prefixed)
+  // Used for platform-wide admin tools
+  isPlatformRoute?: boolean;
 }
 
 // Define all navigation items organized by role hierarchy
@@ -276,68 +279,68 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     name: 'Cost Management',
-    href: '/cost-management',
+    href: '/pack1703/cost-management',
     icon: DollarSign,
     roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'System cost monitoring'
-    // No orgTypes restriction - available to super admins across all org types
+    description: 'System cost monitoring',
+    isPlatformRoute: true
   },
 
-  // SUPER ADMIN LEVEL (system administrators only - accessible from any organization)
+  // SUPER ADMIN LEVEL (system administrators only - routes to Pack 1703)
   {
     name: 'Organizations',
     href: '/organizations',
     icon: Building2,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'Multi-tenant organization management'
-    // No orgTypes restriction - platform-wide admin tool
+    description: 'Multi-tenant organization management',
+    isPlatformRoute: true
   },
   {
     name: 'Solyn AI',
-    href: '/ai',
+    href: '/pack1703/ai',
     icon: Bot,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'AI assistant management'
-    // No orgTypes restriction - platform-wide admin tool
+    description: 'AI assistant management',
+    isPlatformRoute: true
   },
   {
     name: 'SOC Console',
-    href: '/soc',
+    href: '/pack1703/soc',
     icon: Monitor,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'Security Operations Center'
-    // No orgTypes restriction - platform-wide admin tool
+    description: 'Security Operations Center',
+    isPlatformRoute: true
   },
   {
     name: 'System Settings',
-    href: '/settings',
+    href: '/pack1703/settings',
     icon: Cog,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'System configuration'
-    // No orgTypes restriction - platform-wide admin tool
+    description: 'System configuration',
+    isPlatformRoute: true
   },
   {
     name: 'System Monitor',
-    href: '/system',
+    href: '/pack1703/system',
     icon: Activity,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'System health monitoring'
-    // No orgTypes restriction - platform-wide admin tool
+    description: 'System health monitoring',
+    isPlatformRoute: true
   },
   {
     name: 'User Interactions',
-    href: '/user-interactions',
+    href: '/pack1703/user-interactions',
     icon: MousePointer,
     roles: [UserRole.SUPER_ADMIN],
     category: 'system',
-    description: 'Detailed user interaction analytics and behavior tracking'
-    // No orgTypes restriction - platform-wide admin tool
+    description: 'Detailed user interaction analytics and behavior tracking',
+    isPlatformRoute: true
   },
 ];
 

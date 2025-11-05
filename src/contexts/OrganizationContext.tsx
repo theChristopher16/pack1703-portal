@@ -108,8 +108,8 @@ export const OrganizationProvider: React.FC<OrganizationProviderProps> = ({
       return path;
     }
     
-    // Don't prefix public routes that shouldn't be org-specific
-    const publicRoutes = ['/reset-password', '/password-setup', '/join', '/organizations'];
+    // Don't prefix public routes and platform admin routes that shouldn't be org-specific
+    const publicRoutes = ['/reset-password', '/password-setup', '/join', '/organizations', '/pack1703'];
     if (publicRoutes.some(route => path.startsWith(route))) {
       return path;
     }

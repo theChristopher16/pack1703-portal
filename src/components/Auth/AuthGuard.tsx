@@ -6,7 +6,7 @@ import AccountRequestModal from './AccountRequestModal';
 import { UserPlus, ChevronDown, ArrowRight, RefreshCw } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { db } from '../../firebase/config';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -114,28 +114,29 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     }
   }, [currentUser, location.pathname, location.search, navigate]);
 
+  // Listen for status changes in Firestore when user is pending
+  useEffect(() => {
+    // Only listen if user is authenticated and has pending status
+    if (!currentUser?.uid || currentUser.status !== 'pending') return;
+    
+    const unsubscribe = onSnapshot(doc(db, 'users', currentUser.uid), (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const userData = docSnapshot.data();
+        if (userData.status !== 'pending') {
+          // Status changed - refresh the auth state to get updated user data
+          console.log('🔐 AuthGuard: User status changed, refreshing auth state...');
+          window.location.reload(); // Simple refresh to reload user data
+        }
+      }
+    }, (error) => {
+      console.error('Error listening to user status:', error);
+    });
+    
+    return () => unsubscribe();
+  }, [currentUser?.uid, currentUser?.status]);
+
   // If user is authenticated but not approved, show pending approval page
   if (currentUser && currentUser.status === 'pending') {
-    // Listen for status changes in Firestore
-    useEffect(() => {
-      if (!currentUser?.uid) return;
-      
-      const unsubscribe = onSnapshot(doc(db, 'users', currentUser.uid), (docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const userData = docSnapshot.data();
-          if (userData.status !== 'pending') {
-            // Status changed - refresh the auth state to get updated user data
-            console.log('🔐 AuthGuard: User status changed, refreshing auth state...');
-            window.location.reload(); // Simple refresh to reload user data
-          }
-        }
-      }, (error) => {
-        console.error('Error listening to user status:', error);
-      });
-      
-      return () => unsubscribe();
-    }, [currentUser?.uid]);
-    
     return (
       <div className="min-h-screen bg-gradient-to-br from-fog via-forest-50/30 to-solar-50/30 flex items-center justify-center px-4">
         <div className="max-w-2xl w-full bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 text-center">

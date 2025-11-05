@@ -3,8 +3,10 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAdmin } from '../../contexts/AdminContext';
 import SocialLogin from './SocialLogin';
 import AccountRequestModal from './AccountRequestModal';
-import { UserPlus, ChevronDown, ArrowRight } from 'lucide-react';
+import { UserPlus, ChevronDown, ArrowRight, RefreshCw } from 'lucide-react';
 import { authService } from '../../services/authService';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -114,6 +116,26 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
   // If user is authenticated but not approved, show pending approval page
   if (currentUser && currentUser.status === 'pending') {
+    // Listen for status changes in Firestore
+    useEffect(() => {
+      if (!currentUser?.uid) return;
+      
+      const unsubscribe = onSnapshot(doc(db, 'users', currentUser.uid), (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const userData = docSnapshot.data();
+          if (userData.status !== 'pending') {
+            // Status changed - refresh the auth state to get updated user data
+            console.log('🔐 AuthGuard: User status changed, refreshing auth state...');
+            window.location.reload(); // Simple refresh to reload user data
+          }
+        }
+      }, (error) => {
+        console.error('Error listening to user status:', error);
+      });
+      
+      return () => unsubscribe();
+    }, [currentUser?.uid]);
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-fog via-forest-50/30 to-solar-50/30 flex items-center justify-center px-4">
         <div className="max-w-2xl w-full bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 text-center">
@@ -123,29 +145,37 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Account Pending Approval</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Account Request Submitted</h1>
             <p className="text-lg text-gray-600">
-              Your account has been created successfully and is awaiting approval from pack leadership.
+              Your account request has been submitted successfully.
             </p>
           </div>
           <div className="bg-blue-50 rounded-lg p-6 mb-6">
             <p className="text-gray-700 mb-4">
-              You'll receive an email notification once your account has been reviewed and approved by our pack administrators.
-              This typically takes 24-48 hours.
+              Please wait until an admin approves your account. Accounts are typically reviewed in less than 24 hours.
             </p>
             <p className="text-sm text-gray-600">
-              If you have any questions, please contact the pack leadership at{' '}
+              Once your account is approved, you'll gain normal access to the app. If you have any questions, please contact the pack leadership at{' '}
               <a href="mailto:cubmaster@sfpack1703.com" className="text-blue-600 hover:underline">
                 cubmaster@sfpack1703.com
               </a>
             </p>
           </div>
-          <button
-            onClick={() => authService.signOut()}
-            className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            Sign Out
-          </button>
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Check Status
+            </button>
+            <button
+              onClick={() => authService.signOut()}
+              className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
       </div>
     );

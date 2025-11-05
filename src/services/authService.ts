@@ -568,18 +568,20 @@ class AuthService {
           // If user has custom claims, check approval status
           if (customClaims && typeof customClaims.approved === 'boolean') {
             if (!customClaims.approved) {
-              // Sign out the user immediately if they're not approved
-              await signOut(this.auth);
-              throw new Error('Your account is pending approval. Please wait for pack leadership to approve your account before signing in.');
+              // User is pending approval - allow them to stay authenticated
+              // AuthGuard will show the pending approval page
+              console.log('🔐 AuthService: User has pending approval status, allowing authentication');
             }
           } else {
             // For users without custom claims, check Firestore status
             if (appUser.status === 'pending') {
-              await signOut(this.auth);
-              throw new Error('Your account is pending approval. Please wait for pack leadership to approve your account before signing in.');
+              // User is pending approval - allow them to stay authenticated
+              // AuthGuard will show the pending approval page
+              console.log('🔐 AuthService: User has pending approval status, allowing authentication');
             }
             
             if (appUser.status === 'denied') {
+              // Only deny access if explicitly denied
               await signOut(this.auth);
               throw new Error('Your account has been denied. Please contact pack leadership for more information.');
             }
@@ -1038,9 +1040,9 @@ class AuthService {
           // If user has custom claims, check approval status
           if (customClaims && typeof customClaims.approved === 'boolean') {
             if (!customClaims.approved) {
-              // Sign out the user immediately if they're not approved
-              await this.signOut();
-              throw new Error('Your account is pending approval. Please contact an administrator.');
+              // User is pending approval - allow them to stay authenticated
+              // AuthGuard will show the pending approval page
+              console.log('🔐 AuthService: User has pending approval status, allowing authentication');
             }
           }
           
@@ -1225,18 +1227,20 @@ class AuthService {
       // If user has custom claims, check approval status
       if (customClaims && typeof customClaims.approved === 'boolean') {
         if (!customClaims.approved) {
-          // Sign out the user immediately if they're not approved
-          await signOut(this.auth);
-          throw new Error('Your account is pending approval. Please wait for pack leadership to approve your account before signing in.');
+          // User is pending approval - allow them to stay authenticated
+          // AuthGuard will show the pending approval page
+          console.log('🔐 AuthService: User has pending approval status, allowing authentication');
         }
       } else {
         // For users without custom claims, check Firestore status
         if (appUser.status === 'pending') {
-          await signOut(this.auth);
-          throw new Error('Your account is pending approval. Please wait for pack leadership to approve your account before signing in.');
+          // User is pending approval - allow them to stay authenticated
+          // AuthGuard will show the pending approval page
+          console.log('🔐 AuthService: User has pending approval status, allowing authentication');
         }
         
         if (appUser.status === 'denied') {
+          // Only deny access if explicitly denied
           await signOut(this.auth);
           throw new Error('Your account has been denied. Please contact pack leadership for more information.');
         }

@@ -57,6 +57,7 @@ import AdminReminders from './pages/AdminReminders';
 import AdminUsers from './pages/AdminUsers';
 import SystemMonitor from './components/Admin/SystemMonitor';
 import OrganizationsPage from './pages/OrganizationsPage';
+import InitializePack1703Page from './pages/InitializePack1703Page';
 import OrganizationRouter from './components/OrganizationRouter';
 import PackRouter from './components/PackRouter';
 import { AdminProvider } from './contexts/AdminContext';
@@ -148,6 +149,7 @@ function App() {
                   <Routes>
                     {/* Super Admin Routes - Must come before other routes */}
                     <Route path="/organizations" element={<Layout><SuperUserOnly><OrganizationsPage /></SuperUserOnly></Layout>} />
+                    <Route path="/initialize-pack1703" element={<Layout><SuperUserOnly><InitializePack1703Page /></SuperUserOnly></Layout>} />
                     
                     {/* Pack 1703 Routes - All Pack app routes under /pack1703 */}
                     <Route path="/pack1703/*" element={<PackRouter />} />

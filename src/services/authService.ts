@@ -560,6 +560,27 @@ class AuthService {
           appUser = await this.getUserFromFirestore(result.user.uid);
           console.log('🔐 AuthService: User found in Firestore:', appUser.email);
           
+          // Update user's photo and social data from Firebase Auth
+          const updateData: any = {
+            lastLoginAt: serverTimestamp()
+          };
+          
+          // Extract and save social login data
+          const socialData = this.extractSocialLoginData(result.user);
+          if (Object.keys(socialData).length > 0) {
+            console.log('🔐 AuthService: Updating social data for existing user (redirect flow)');
+            updateData['profile.socialData'] = socialData;
+          }
+          
+          // Update photoURL if available from Firebase Auth
+          if (result.user.photoURL && result.user.photoURL !== appUser.photoURL) {
+            console.log('🔐 AuthService: Updating photoURL (redirect flow):', result.user.photoURL);
+            updateData.photoURL = result.user.photoURL;
+          }
+          
+          // Save updates to Firestore
+          await updateDoc(doc(db, 'users', result.user.uid), updateData);
+          
           // Check Firebase Auth custom claims for approval status
           const idTokenResult = await result.user.getIdTokenResult();
           const customClaims = idTokenResult.claims;
@@ -1031,6 +1052,27 @@ class AuthService {
         try {
           appUser = await this.getUserFromFirestore(result.user.uid);
           console.log('🔐 AuthService: User found in Firestore:', appUser.email);
+          
+          // Update user's photo and social data from Firebase Auth
+          const updateData: any = {
+            lastLoginAt: serverTimestamp()
+          };
+          
+          // Extract and save social login data
+          const socialData = this.extractSocialLoginData(result.user);
+          if (Object.keys(socialData).length > 0) {
+            console.log('🔐 AuthService: Updating social data for existing user');
+            updateData['profile.socialData'] = socialData;
+          }
+          
+          // Update photoURL if available from Firebase Auth
+          if (result.user.photoURL && result.user.photoURL !== appUser.photoURL) {
+            console.log('🔐 AuthService: Updating photoURL:', result.user.photoURL);
+            updateData.photoURL = result.user.photoURL;
+          }
+          
+          // Save updates to Firestore
+          await updateDoc(doc(db, 'users', result.user.uid), updateData);
           
           // Check Firebase Auth custom claims for approval status
           const idTokenResult = await result.user.getIdTokenResult();

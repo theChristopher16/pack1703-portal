@@ -104,7 +104,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     // First filter by role
     const roleFilteredItems = ALL_NAVIGATION_ITEMS.filter(item => item.roles.includes(userRole));
     // Then filter by organization type AND enabled components
-    return filterNavigationByOrg(roleFilteredItems, orgType, enabledComponents);
+    const filtered = filterNavigationByOrg(roleFilteredItems, orgType, enabledComponents);
+    
+    console.log('🧭 Navigation Filter Debug:');
+    console.log('  - Org Type:', orgType);
+    console.log('  - Enabled Components:', enabledComponents);
+    console.log('  - Role Filtered Items:', roleFilteredItems.length);
+    console.log('  - Final Filtered Items:', filtered.length, filtered.map(i => i.name));
+    
+    return filtered;
   };
 
   const allNavItems = getUserNavigationItems();

@@ -1454,61 +1454,8 @@ export const submitAccountRequest = functions.https.onCall(async (data: any, con
 
     const requestRef = await db.collection('accountRequests').add(requestData);
 
-    // Send email notification to cubmaster
-    try {
-      const { emailService } = await import('./emailService');
-      const userData = {
-        uid: requestRef.id,
-        email: data.email,
-        displayName: data.displayName,
-        phone: data.phone,
-        address: data.address,
-        emergencyContact: data.emergencyContact,
-        medicalInfo: data.reason
-      };
-      
-      const emailSent = await emailService.sendUserApprovalNotification(userData);
-      console.log('User approval notification email sent to cubmaster:', emailSent);
-      
-      // Log email success in adminActions for tracking
-      await db.collection('adminActions').add({
-        action: 'account_request_email_sent',
-        entityType: 'account_request',
-        entityId: requestRef.id,
-        entityName: data.displayName,
-        details: {
-          email: data.email,
-          emailSent: emailSent
-        },
-        timestamp: getTimestamp(),
-        success: emailSent
-      });
-    } catch (emailError: any) {
-      console.error('Failed to send user approval notification email:', emailError);
-      functions.logger.error('Email send failure', {
-        error: emailError.message,
-        stack: emailError.stack,
-        requestId: requestRef.id,
-        email: data.email
-      });
-      
-      // Log email failure in adminActions for monitoring
-      await db.collection('adminActions').add({
-        action: 'account_request_email_failed',
-        entityType: 'account_request',
-        entityId: requestRef.id,
-        entityName: data.displayName,
-        details: {
-          email: data.email,
-          error: emailError.message || 'Unknown error',
-          errorCode: emailError.code
-        },
-        timestamp: getTimestamp(),
-        success: false
-      });
-      
-      // Don't fail the request submission if email fails
-    }
+    // Note: Email notification is handled by the onAccountRequestCreate Firestore trigger
+    // which uses adminNotificationService to send to cubmaster@sfpack1703.com only
 
     // Log the request
     await db.collection('adminActions').add({
@@ -5115,24 +5062,8 @@ async function createAccountRequestForGoogleUser(user: admin.auth.UserRecord, db
   const requestRef = await db.collection('accountRequests').add(requestData);
   console.log('Auto-created account request for Google user:', user.email, requestRef.id);
   
-  // Send email notification to cubmaster
-  try {
-    const { emailService } = await import('./emailService');
-    const userData = {
-      uid: user.uid,
-      email: user.email || '',
-      displayName: user.displayName || '',
-      phone: '',
-      address: '',
-      emergencyContact: '',
-      medicalInfo: 'Google sign-in user'
-    };
-    
-    await emailService.sendUserApprovalNotification(userData);
-    console.log('Notification email sent for auto-created request');
-  } catch (emailError: any) {
-    console.error('Failed to send notification email for auto-created request:', emailError);
-  }
+  // Note: Email notification is handled by the onAccountRequestCreate Firestore trigger
+  // which uses adminNotificationService to send to cubmaster@sfpack1703.com only
   
   return requestRef.id;
 }

@@ -31,19 +31,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
   const [isFavorite, setIsFavorite] = React.useState(false);
   const [selectedImage, setSelectedImage] = React.useState(0);
+  const [imageError, setImageError] = React.useState(false);
 
   const discount = product.compareAtPrice 
     ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
     : 0;
+
+  // Fallback SVG placeholder
+  const placeholderSVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui, sans-serif' font-size='16' fill='%239ca3af'%3E${encodeURIComponent(product.name)}%3C/text%3E%3C/svg%3E`;
 
   return (
     <div className="group relative bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
       {/* Image Container */}
       <div className="relative aspect-square overflow-hidden bg-gray-50">
         <img
-          src={product.images[selectedImage] || '/placeholder-product.png'}
+          src={imageError ? placeholderSVG : (product.images[selectedImage] || placeholderSVG)}
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          onError={() => setImageError(true)}
         />
         
         {/* Badges */}

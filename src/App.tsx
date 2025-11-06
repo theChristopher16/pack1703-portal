@@ -59,6 +59,7 @@ import SystemMonitor from './components/Admin/SystemMonitor';
 import OrganizationsPage from './pages/OrganizationsPage';
 import OrganizationRouter from './components/OrganizationRouter';
 import PackRouter from './components/PackRouter';
+import CopseTestLogin from './pages/CopseTestLogin';
 import { AdminProvider } from './contexts/AdminContext';
 
 function App() {
@@ -148,6 +149,7 @@ function App() {
                   <Routes>
                     {/* Super Admin Routes - Must come before other routes */}
                     <Route path="/organizations" element={<Layout><SuperUserOnly><OrganizationsPage /></SuperUserOnly></Layout>} />
+                    <Route path="/test-copse-login" element={<SuperUserOnly><CopseTestLogin /></SuperUserOnly>} />
                     
                     {/* Pack 1703 Routes - Support both /pack1703/* and legacy root routes */}
                     <Route path="/pack1703/*" element={<PackRouter />} />

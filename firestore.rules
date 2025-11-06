@@ -265,11 +265,11 @@ service cloud.firestore {
     // PUBLIC DATA - Readable by all authenticated users
     // ============================================================================
     
-    // Events - public read for non-private events, authenticated users can write
+    // Events - authenticated users can read all events (visibility controlled at app level)
+    // Public events are truly public, but authenticated users need access to all for proper filtering
     match /events/{eventId} {
-      allow read: if resource.data.visibility == 'public' || 
-                     (isAuthenticated() && resource.data.visibility == 'link-only') ||
-                     isAdmin();
+      allow read: if isAuthenticated() || 
+                     resource.data.visibility == 'public';
       allow write: if isAuthenticated() &&
                       isValidString(resource.data.title, 200) &&
                       isValidString(resource.data.description, 2000) &&

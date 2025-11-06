@@ -2194,6 +2194,9 @@ exports.adminDeleteUser = functions.https.onCall(async (data, context) => {
         const collectionsToCleanup = [
             // User-related data
             { collection: 'users', docId: userId, directDelete: true },
+            // Account requests - cleanup by both userId and linkedUserId fields
+            { collection: 'accountRequests', field: 'userId', value: userId },
+            { collection: 'accountRequests', field: 'linkedUserId', value: userId },
             // User analytics and tracking
             { collection: 'analytics', field: 'userId', value: userId },
             { collection: 'usageTracking', field: 'userId', value: userId },

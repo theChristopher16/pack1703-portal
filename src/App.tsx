@@ -149,13 +149,38 @@ function App() {
                     {/* Super Admin Routes - Must come before other routes */}
                     <Route path="/organizations" element={<Layout><SuperUserOnly><OrganizationsPage /></SuperUserOnly></Layout>} />
                     
-                    {/* Pack 1703 Routes - All Pack app routes under /pack1703 */}
+                    {/* Pack 1703 Routes - Support both /pack1703/* and legacy root routes */}
                     <Route path="/pack1703/*" element={<PackRouter />} />
                     
-                    {/* Organization Router - Handles other org routes (must come after pack1703) */}
+                    {/* Legacy Pack 1703 Routes at Root (for backward compatibility with old links) */}
+                    <Route path="/events/*" element={<PackRouter />} />
+                    <Route path="/announcements" element={<PackRouter />} />
+                    <Route path="/locations" element={<PackRouter />} />
+                    <Route path="/volunteer" element={<PackRouter />} />
+                    <Route path="/ecology" element={<PackRouter />} />
+                    <Route path="/fundraising" element={<PackRouter />} />
+                    <Route path="/chat" element={<PackRouter />} />
+                    <Route path="/resources/*" element={<PackRouter />} />
+                    <Route path="/profile" element={<PackRouter />} />
+                    <Route path="/feedback" element={<PackRouter />} />
+                    <Route path="/dues" element={<PackRouter />} />
+                    <Route path="/analytics/*" element={<PackRouter />} />
+                    <Route path="/users" element={<PackRouter />} />
+                    <Route path="/finances" element={<PackRouter />} />
+                    <Route path="/seasons" element={<PackRouter />} />
+                    <Route path="/lists" element={<PackRouter />} />
+                    <Route path="/cost-management" element={<PackRouter />} />
+                    <Route path="/ai" element={<PackRouter />} />
+                    <Route path="/soc" element={<PackRouter />} />
+                    <Route path="/settings" element={<PackRouter />} />
+                    <Route path="/system" element={<PackRouter />} />
+                    <Route path="/user-interactions" element={<PackRouter />} />
+                    <Route path="/data-audit" element={<PackRouter />} />
+                    
+                    {/* Organization Router - Handles other org routes (must come after Pack routes) */}
                     <Route path="/:orgSlug/:componentSlug?" element={<OrganizationRouter />} />
                     
-                    {/* Root route - Only redirect here if not Pack 1703 and not super admin */}
+                    {/* Root route */}
                     <Route path="/" element={<Layout><HomePage /></Layout>} />
                     
                     <Route path="*" element={<Layout><NotFoundPage /></Layout>} />

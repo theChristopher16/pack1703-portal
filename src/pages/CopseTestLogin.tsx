@@ -161,7 +161,7 @@ const CopseTestLogin: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left side - Branding showcase */}
-            <div className="bg-gradient-to-br from-emerald-600 via-green-700 to-teal-800 rounded-3xl p-12 text-white shadow-2xl backdrop-blur-md border border-emerald-400/30">
+            <div className="bg-gradient-to-br from-emerald-500 via-green-600 to-teal-600 rounded-3xl p-12 text-white shadow-2xl backdrop-blur-md border border-emerald-400/30">
               <div className="space-y-8">
                 {/* Logo area */}
                 <div className="flex items-center gap-4">

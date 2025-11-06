@@ -5353,3 +5353,9 @@ export {
 export {
   createSuperAdminUser
 } from './createSuperAdmin';
+
+// Export custom claims management functions
+export {
+  setUserCustomClaims,
+  syncAllUserCustomClaims
+} from './setUserCustomClaims';

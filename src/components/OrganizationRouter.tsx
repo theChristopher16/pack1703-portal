@@ -19,42 +19,11 @@ import UserProfile from '../pages/UserProfile';
 import NotFoundPage from '../pages/NotFoundPage';
 import OrganizationHomePage from '../pages/OrganizationHomePage';
 
-// Placeholder components for storefront features (to be implemented)
-const StorefrontProductsPage = () => (
-  <div className="min-h-screen bg-gradient-to-br from-fog via-forest-50/30 to-solar-50/30 py-12">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h1 className="text-4xl font-display font-bold text-ink mb-4">Products</h1>
-      <p className="text-lg text-forest-600">Storefront products page coming soon...</p>
-    </div>
-  </div>
-);
-
-const StorefrontOrdersPage = () => (
-  <div className="min-h-screen bg-gradient-to-br from-fog via-forest-50/30 to-solar-50/30 py-12">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h1 className="text-4xl font-display font-bold text-ink mb-4">Orders</h1>
-      <p className="text-lg text-forest-600">Storefront orders page coming soon...</p>
-    </div>
-  </div>
-);
-
-const StorefrontCartPage = () => (
-  <div className="min-h-screen bg-gradient-to-br from-fog via-forest-50/30 to-solar-50/30 py-12">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h1 className="text-4xl font-display font-bold text-ink mb-4">Shopping Cart</h1>
-      <p className="text-lg text-forest-600">Storefront cart page coming soon...</p>
-    </div>
-  </div>
-);
-
-const StorefrontCheckoutPage = () => (
-  <div className="min-h-screen bg-gradient-to-br from-fog via-forest-50/30 to-solar-50/30 py-12">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h1 className="text-4xl font-display font-bold text-ink mb-4">Checkout</h1>
-      <p className="text-lg text-forest-600">Storefront checkout page coming soon...</p>
-    </div>
-  </div>
-);
+// Import storefront pages
+import { StorefrontProductsPage } from '../pages/StorefrontProductsPage';
+import { StorefrontCartPage } from '../pages/StorefrontCartPage';
+import { StorefrontCheckoutPage } from '../pages/StorefrontCheckoutPage';
+import { StorefrontOrdersPage } from '../pages/StorefrontOrdersPage';
 
 // Helper function to create default branding from organization data
 function createDefaultBranding(org: Organization): OrganizationBranding {

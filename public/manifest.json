@@ -1,27 +1,45 @@
 {
-  "short_name": "Pack 1703",
-  "name": "Pack 1703 Families Portal",
+  "short_name": "🌲 Pack 1703",
+  "name": "🌲 Pack 1703 Families Portal",
   "description": "One-stop hub for Pack 1703 families - events, locations, announcements, and more",
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "180x180",
+      "purpose": "any maskable"
     },
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#FFD166",
+  "theme_color": "#2F855A",
   "background_color": "#F7FAFC",
   "orientation": "portrait-primary",
   "categories": ["education", "lifestyle", "social"],

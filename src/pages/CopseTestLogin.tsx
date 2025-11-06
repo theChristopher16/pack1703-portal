@@ -41,12 +41,12 @@ const CopseTestLogin: React.FC = () => {
   const copseBranding = {
     displayName: 'Copse',
     shortName: 'Copse',
-    tagline: 'Grow Together. Organize Smarter.',
+    tagline: 'The Operating System for Modern Organizations',
     primaryColor: '#2D5016', // Deep forest green
     secondaryColor: '#8B4513', // Saddle brown
     accentColor: '#4A7C59', // Forest green
     lightColor: '#A8D5BA', // Light sage
-    description: 'Connect and coordinate across teams, families, and partner organizations. Copse brings everything together—members, events, payments, and AI assistance—so collaboration extends beyond your own group.'
+    description: 'A unified platform that scales with you—from small teams to enterprise operations. Coordinate people, resources, operations, and finances across any organizational structure. Built for the complexity of real-world coordination.'
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,7 +190,7 @@ const CopseTestLogin: React.FC = () => {
                     {copseBranding.description}
                   </p>
                   <p className="text-white/80 text-base leading-relaxed">
-                    Join a network of <strong>scout packs, school clubs, community groups,</strong> and <strong>small teams</strong> working together under one digital canopy.
+                    Built for <strong>any organization</strong>—<strong>schools, utilities, enterprises, municipalities, non-profits,</strong> and <strong>community networks</strong>—that needs to coordinate people, operations, and resources at scale.
                   </p>
                 </div>
 
@@ -201,9 +201,9 @@ const CopseTestLogin: React.FC = () => {
                       <Users className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg text-white">Member Coordination</h3>
+                      <h3 className="font-semibold text-lg text-white">People & Operations</h3>
                       <p className="text-white/80 text-sm">
-                        Manage members, families, and roles across connected organizations—with shared access and unified permissions.
+                        Coordinate teams, departments, and stakeholders across organizational boundaries—with role-based access and unified workflows.
                       </p>
                     </div>
                   </div>
@@ -213,9 +213,9 @@ const CopseTestLogin: React.FC = () => {
                       <Sprout className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg text-white">Events & Payments</h3>
+                      <h3 className="font-semibold text-lg text-white">Resources & Finance</h3>
                       <p className="text-white/80 text-sm">
-                        Host joint events, sync RSVPs across groups, and manage shared expenses seamlessly.
+                        Track budgets, manage assets, process payments, and coordinate shared resources—from equipment to facilities.
                       </p>
                     </div>
                   </div>
@@ -225,9 +225,9 @@ const CopseTestLogin: React.FC = () => {
                       <Heart className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg text-white">AI Assistant</h3>
+                      <h3 className="font-semibold text-lg text-white">AI-Powered Intelligence</h3>
                       <p className="text-white/80 text-sm">
-                        Plan together across organizations—Copse's AI helps draft announcements, coordinate logistics, and keep everyone aligned.
+                        Automate scheduling, draft communications, analyze operations, and surface insights—letting AI handle routine coordination.
                       </p>
                     </div>
                   </div>
@@ -237,9 +237,9 @@ const CopseTestLogin: React.FC = () => {
                       <Wind className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg text-white">Multi-Org Network</h3>
+                      <h3 className="font-semibold text-lg text-white">Networked Ecosystem</h3>
                       <p className="text-white/80 text-sm">
-                        Link multiple groups under one digital canopy. Share data, delegate admin roles, and collaborate safely.
+                        Link divisions, branches, or partner organizations. Share data securely, delegate authority, and enable true inter-organizational collaboration.
                       </p>
                     </div>
                   </div>
@@ -268,7 +268,7 @@ const CopseTestLogin: React.FC = () => {
                     <p className="text-emerald-600 mt-1">
                       {showResetPassword 
                         ? 'Enter your email to receive a reset link' 
-                        : 'Sign in to your organization\'s connected portal — part of the Copse Network'}
+                        : 'Access your organization\'s command center — powered by the Copse Network'}
                     </p>
                   </div>
                   <button
@@ -461,10 +461,10 @@ const CopseTestLogin: React.FC = () => {
           {/* Footer note */}
           <div className="mt-8 text-center">
             <p className="text-sm text-emerald-700 font-medium">
-              <strong>Note:</strong> This demo shows how any organization can launch a fully branded portal within the Copse Network—no code required.
+              <strong>Demo Environment:</strong> This showcases how any organization—from community groups to enterprise operations—can deploy a fully branded portal within the Copse Network.
             </p>
             <p className="text-xs text-emerald-600 mt-2 font-medium">
-              Already live with <strong>Scout packs</strong>, expanding to <strong>schools and community groups</strong> next month.
+              Live with <strong>schools, scout organizations,</strong> and <strong>community networks</strong>. Scaling to <strong>utilities, municipalities,</strong> and <strong>enterprise customers</strong>.
             </p>
           </div>
         </div>

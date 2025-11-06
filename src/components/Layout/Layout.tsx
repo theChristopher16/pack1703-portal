@@ -80,17 +80,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   // Handle navigation with error recovery
-  const handleNavigation = (href: string) => {
+  const handleNavigation = (href: string, isPlatformRoute: boolean = false) => {
     // Close mobile menu if open
     setIsMobileMenuOpen(false);
     
+    // Platform routes (like /copse-admin, /organizations) should NOT be prefixed
+    const finalPath = isPlatformRoute ? href : prefixPath(href);
+    
     // Force navigation even if there are issues
     try {
-      navigate(prefixPath(href));
+      navigate(finalPath);
     } catch (error) {
       console.error('Navigation error, forcing redirect:', error);
       // Fallback to window.location if React Router fails
-      window.location.href = prefixPath(href);
+      window.location.href = finalPath;
     }
   };
 
@@ -222,7 +225,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           <button
                             key={item.name}
                             onClick={() => {
-                              handleNavigation(item.href);
+                              handleNavigation(item.href, item.isPlatformRoute);
                               setIsMobileMenuOpen(false);
                             }}
                             className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 group ${

@@ -43,6 +43,7 @@ import UserProfile from '../pages/UserProfile';
 import AdminReminders from '../pages/AdminReminders';
 import AdminUsers from '../pages/AdminUsers';
 import SystemMonitor from '../components/Admin/SystemMonitor';
+import DebugAccountRequests from '../pages/DebugAccountRequests';
 
 import { OrganizationType } from '../types/organization';
 
@@ -88,6 +89,7 @@ const PackRouter: React.FC = () => {
         <Route path="settings" element={<Layout><RootOnly><AdminSettings /></RootOnly></Layout>} />
         <Route path="soc" element={<Layout><RootOnly><HackerTab /></RootOnly></Layout>} />
         <Route path="system" element={<Layout><RootOnly><SystemMonitor /></RootOnly></Layout>} />
+        <Route path="debug-account-requests" element={<Layout><RootOnly><DebugAccountRequests /></RootOnly></Layout>} />
         
         {/* User Profile Route */}
         <Route path="profile" element={<Layout><AuthenticatedOnly><UserProfile /></AuthenticatedOnly></Layout>} />

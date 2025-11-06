@@ -7,10 +7,10 @@ import { CheckCircle } from 'lucide-react';
 const sampleCartItems: CartItem[] = [
   {
     id: '1',
-    name: 'Pack 1703 Spirit T-Shirt',
-    description: 'Premium cotton t-shirt featuring the Pack 1703 logo.',
+    name: 'Wolves Nike Dri-FIT T-Shirt',
+    description: 'Premium Nike Dri-FIT performance t-shirt in navy blue.',
     price: 24.99,
-    images: ['/products/tshirt-blue.jpg'],
+    images: ['/products/500-2.png'],
     category: 'Apparel',
     inStock: true,
     quantity: 2,
@@ -18,27 +18,27 @@ const sampleCartItems: CartItem[] = [
     selectedColor: 'Navy'
   },
   {
-    id: '3',
-    name: 'Water Bottle - Stainless Steel',
-    description: '32oz stainless steel water bottle with Pack 1703 engraving.',
-    price: 34.99,
-    images: ['/products/bottle-blue.jpg'],
-    category: 'Accessories',
-    inStock: true,
-    quantity: 1,
-    selectedColor: 'Blue'
-  },
-  {
-    id: '6',
-    name: 'Pack 1703 Hoodie',
-    description: 'Warm and cozy hoodie with Pack 1703 screen print.',
+    id: '2',
+    name: 'SFE Wolves Hoodie - Navy',
+    description: 'Comfortable pullover hoodie with kangaroo pocket.',
     price: 44.99,
-    images: ['/products/hoodie-gray.jpg'],
+    images: ['/products/500-6.png'],
     category: 'Apparel',
     inStock: true,
     quantity: 1,
     selectedSize: 'Adult M',
-    selectedColor: 'Gray'
+    selectedColor: 'Navy'
+  },
+  {
+    id: '9',
+    name: 'Wolves Nike Beanie',
+    description: 'Nike knit beanie in navy with white swoosh logo.',
+    price: 18.99,
+    images: ['/products/Original.png'],
+    category: 'Accessories',
+    inStock: true,
+    quantity: 1,
+    selectedColor: 'Navy'
   }
 ];
 
@@ -61,7 +61,7 @@ export const StorefrontCheckoutPage: React.FC = () => {
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     // Generate order number
-    const newOrderNumber = `PK1703-${Date.now().toString().slice(-8)}`;
+    const newOrderNumber = `SFES-${Date.now().toString().slice(-8)}`;
     setOrderNumber(newOrderNumber);
     setIsOrderComplete(true);
   };

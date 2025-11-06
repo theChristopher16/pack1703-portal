@@ -5,29 +5,29 @@ import { OrderHistory, Order } from '../components/Storefront';
 const sampleOrders: Order[] = [
   {
     id: '1',
-    orderNumber: 'PK1703-00123456',
+    orderNumber: 'SFES-00123456',
     date: new Date('2025-01-15'),
     status: 'delivered',
     items: [
       {
         id: '1',
-        name: 'Pack 1703 Spirit T-Shirt',
-        image: '/products/tshirt-blue.jpg',
+        name: 'Wolves Nike Dri-FIT T-Shirt',
+        image: '/products/500-2.png',
         quantity: 2,
         price: 24.99
       },
       {
-        id: '3',
-        name: 'Water Bottle - Stainless Steel',
-        image: '/products/bottle-blue.jpg',
+        id: '9',
+        name: 'Wolves Nike Beanie',
+        image: '/products/Original.png',
         quantity: 1,
-        price: 34.99
+        price: 18.99
       }
     ],
-    subtotal: 84.97,
-    tax: 7.43,
+    subtotal: 68.97,
+    tax: 6.03,
     shipping: 0,
-    total: 92.40,
+    total: 75.00,
     shippingAddress: {
       street: '123 Main Street',
       city: 'San Francisco',
@@ -39,29 +39,29 @@ const sampleOrders: Order[] = [
   },
   {
     id: '2',
-    orderNumber: 'PK1703-00123457',
+    orderNumber: 'SFES-00123457',
     date: new Date('2025-01-28'),
     status: 'shipped',
     items: [
       {
-        id: '6',
-        name: 'Pack 1703 Hoodie',
-        image: '/products/hoodie-gray.jpg',
+        id: '2',
+        name: 'SFE Wolves Hoodie - Navy',
+        image: '/products/500-6.png',
         quantity: 1,
         price: 44.99
       },
       {
-        id: '4',
-        name: 'Pack 1703 Baseball Cap',
-        image: '/products/cap.jpg',
-        quantity: 2,
-        price: 19.99
+        id: '3',
+        name: 'SFE Wolves Hoodie - Grey',
+        image: '/products/500-7.png',
+        quantity: 1,
+        price: 44.99
       }
     ],
-    subtotal: 84.97,
-    tax: 7.43,
+    subtotal: 89.98,
+    tax: 7.87,
     shipping: 0,
-    total: 92.40,
+    total: 97.85,
     shippingAddress: {
       street: '123 Main Street',
       city: 'San Francisco',
@@ -73,36 +73,36 @@ const sampleOrders: Order[] = [
   },
   {
     id: '3',
-    orderNumber: 'PK1703-00123458',
+    orderNumber: 'SFES-00123458',
     date: new Date('2025-02-01'),
     status: 'processing',
     items: [
       {
-        id: '8',
-        name: 'Scout Handbook',
-        image: '/products/handbook.jpg',
+        id: '6',
+        name: 'Wolves Polo Shirt - Navy',
+        image: '/products/500-13.png',
         quantity: 1,
-        price: 14.99
+        price: 32.99
       },
       {
-        id: '2',
-        name: 'Cub Scout Neckerchief',
-        image: '/products/neckerchief.jpg',
+        id: '4',
+        name: 'Athletic Sweatpants - Navy',
+        image: '/products/500-8.png',
         quantity: 1,
-        price: 12.99
+        price: 29.99
       },
       {
-        id: '12',
-        name: 'Compass - Orienteering',
-        image: '/products/compass.jpg',
+        id: '10',
+        name: 'Striped Knit Beanie',
+        image: '/products/Original-2.png',
         quantity: 1,
-        price: 18.99
+        price: 16.99
       }
     ],
-    subtotal: 46.97,
-    tax: 4.11,
+    subtotal: 79.97,
+    tax: 6.99,
     shipping: 5.99,
-    total: 57.07,
+    total: 92.95,
     shippingAddress: {
       street: '123 Main Street',
       city: 'San Francisco',
@@ -113,36 +113,36 @@ const sampleOrders: Order[] = [
   },
   {
     id: '4',
-    orderNumber: 'PK1703-00123459',
+    orderNumber: 'SFES-00123459',
     date: new Date('2024-12-10'),
     status: 'delivered',
     items: [
       {
-        id: '5',
-        name: 'Camping Mess Kit',
-        image: '/products/mess-kit.jpg',
-        quantity: 1,
-        price: 29.99
-      },
-      {
-        id: '9',
-        name: 'Flashlight - LED Rechargeable',
-        image: '/products/flashlight.jpg',
-        quantity: 2,
-        price: 27.99
-      },
-      {
         id: '7',
-        name: 'First Aid Kit',
-        image: '/products/first-aid.jpg',
+        name: 'Performance Quarter-Zip Pullover',
+        image: '/products/500-15.png',
         quantity: 1,
-        price: 39.99
+        price: 49.99
+      },
+      {
+        id: '5',
+        name: 'Athletic Shorts - Navy',
+        image: '/products/500-10.png',
+        quantity: 2,
+        price: 22.99
+      },
+      {
+        id: '14',
+        name: 'Track Pants - Navy',
+        image: '/products/500-9.png',
+        quantity: 1,
+        price: 32.99
       }
     ],
-    subtotal: 125.96,
-    tax: 11.02,
+    subtotal: 128.96,
+    tax: 11.28,
     shipping: 0,
-    total: 136.98,
+    total: 140.24,
     shippingAddress: {
       street: '123 Main Street',
       city: 'San Francisco',
@@ -154,22 +154,22 @@ const sampleOrders: Order[] = [
   },
   {
     id: '5',
-    orderNumber: 'PK1703-00123460',
+    orderNumber: 'SFES-00123460',
     date: new Date('2025-01-05'),
     status: 'cancelled',
     items: [
       {
-        id: '10',
-        name: 'Pack 1703 Backpack',
-        image: '/products/backpack.jpg',
+        id: '15',
+        name: 'Wolves Hoodie - Red',
+        image: '/products/500-11.png',
         quantity: 1,
-        price: 59.99
+        price: 44.99
       }
     ],
-    subtotal: 59.99,
-    tax: 5.25,
+    subtotal: 44.99,
+    tax: 3.94,
     shipping: 0,
-    total: 65.24,
+    total: 48.93,
     shippingAddress: {
       street: '123 Main Street',
       city: 'San Francisco',

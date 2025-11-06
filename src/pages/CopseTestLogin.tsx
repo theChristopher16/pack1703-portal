@@ -63,7 +63,7 @@ const CopseTestLogin: React.FC = () => {
     setError(null);
 
     try {
-      const user = await authService.signInWithEmail(
+      const user = await authService.signIn(
         formData.email,
         formData.password
       );

@@ -6,16 +6,18 @@ A test login page showcasing multi-tenant branding capabilities with custom Cops
 
 ## What is Copse?
 
-**Copse** (a small grove or group of trees) is a test organization showcasing:
-- Custom branding and theming
-- Multi-tenant organization capabilities
-- Alternative design aesthetic from Pack 1703
+**Copse** demonstrates the platform's multi-tenant capabilities by showcasing:
+- How any organization can have their own branded portal
+- Custom branding and theming without code
+- Platform positioning: member coordination, events, payments, AI
+- Flexibility to serve scout packs, school clubs, and small teams
 
 ## Features
 
 ### 🎨 Custom Branding
-- **Organization Name**: Copse Scout Collective
-- **Tagline**: "Growing Together in Nature"
+- **Organization Name**: Copse
+- **Tagline**: "Your organization, powered"
+- **Value Proposition**: Everything your organization needs—member coordination, events, payments, and AI assistance—without the spreadsheets and email chaos
 - **Color Palette**:
   - Primary: Deep Forest Green (#2D5016)
   - Secondary: Saddle Brown (#8B4513)
@@ -27,7 +29,12 @@ A test login page showcasing multi-tenant branding capabilities with custom Cops
 - Emerald/green gradient background with animated nature icons
 - Floating leaf and tree animations
 - Custom form styling with Copse color scheme
-- Feature highlights showcasing community values
+- Feature highlights emphasizing platform capabilities:
+  - **Member Coordination**: Manage members, families, permissions
+  - **Events & Payments**: Create events, track RSVPs, collect payments
+  - **AI Assistant**: Help with announcements, event planning, more
+- Target segments listed: Scout packs • School clubs • Community groups • Small teams
+- Footer note: "Already live with scout packs • Launching to school clubs next month"
 
 ### 🔒 Access Control
 - **Super Admin Only**: Protected by `SuperUserOnly` guard

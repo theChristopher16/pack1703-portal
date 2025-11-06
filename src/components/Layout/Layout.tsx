@@ -172,8 +172,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <span className="sm:hidden">{shortName}</span>
                 </h1>
                 <p className="text-xs text-ocean-600 truncate max-w-48 sm:max-w-64 md:max-w-none">
-                  <span className="hidden sm:inline">Solarpunk Portal</span>
-                  <span className="sm:hidden">Portal</span>
+                  <span className="hidden sm:inline">🌳 Copse Network</span>
+                  <span className="sm:hidden">🌳 Network</span>
                 </p>
               </div>
             </button>

@@ -257,7 +257,7 @@ const HomePage: React.FC = () => {
           <div className="text-center">
             <LoadingSpinner
               size="xl"
-              text="Loading Solarpunk Portal..."
+              text="Loading Copse Network..."
               variant="primary"
               className="mb-8"
             />

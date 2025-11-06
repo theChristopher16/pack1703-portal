@@ -41,12 +41,12 @@ const CopseTestLogin: React.FC = () => {
   const copseBranding = {
     displayName: 'Copse',
     shortName: 'Copse',
-    tagline: 'Your organization, powered',
+    tagline: 'One Portal. Every Tool.',
     primaryColor: '#2D5016', // Deep forest green
     secondaryColor: '#8B4513', // Saddle brown
     accentColor: '#4A7C59', // Forest green
     lightColor: '#A8D5BA', // Light sage
-    description: 'Everything your organization needs—member coordination, events, payments, and AI assistance—without the spreadsheets and email chaos'
+    description: 'Streamline how your organization connects—manage members, events, payments, and communications, all in one place.'
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -184,13 +184,13 @@ const CopseTestLogin: React.FC = () => {
                 {/* Mission statement */}
                 <div className="space-y-4">
                   <h2 className="text-2xl font-semibold font-solarpunk-display text-white">
-                    One Portal, Every Tool
+                    {copseBranding.tagline}
                   </h2>
                   <p className="text-white/90 text-lg leading-relaxed">
                     {copseBranding.description}
                   </p>
-                  <p className="text-white/80 text-sm font-medium">
-                    Scout packs • School clubs • Community groups • Small teams
+                  <p className="text-white/80 text-base leading-relaxed">
+                    Built for <strong>Scout packs, school clubs, community groups,</strong> and <strong>small teams</strong> that want less chaos and more collaboration.
                   </p>
                 </div>
 
@@ -203,7 +203,7 @@ const CopseTestLogin: React.FC = () => {
                     <div>
                       <h3 className="font-semibold text-lg text-white">Member Coordination</h3>
                       <p className="text-white/80 text-sm">
-                        Manage members, families, and permissions—all in one place
+                        Bring members, families, and leaders together with shared tools and permissions.
                       </p>
                     </div>
                   </div>
@@ -215,7 +215,7 @@ const CopseTestLogin: React.FC = () => {
                     <div>
                       <h3 className="font-semibold text-lg text-white">Events & Payments</h3>
                       <p className="text-white/80 text-sm">
-                        Create events, track RSVPs, and collect payments seamlessly
+                        Plan events, track RSVPs, and handle payments—without extra apps.
                       </p>
                     </div>
                   </div>
@@ -227,7 +227,7 @@ const CopseTestLogin: React.FC = () => {
                     <div>
                       <h3 className="font-semibold text-lg text-white">AI Assistant</h3>
                       <p className="text-white/80 text-sm">
-                        Get help creating announcements, planning events, and more
+                        Get smart help writing announcements, scheduling activities, and staying organized.
                       </p>
                     </div>
                   </div>
@@ -256,7 +256,7 @@ const CopseTestLogin: React.FC = () => {
                     <p className="text-emerald-600 mt-1">
                       {showResetPassword 
                         ? 'Enter your email to receive a reset link' 
-                        : 'Sign in to access your scout portal'}
+                        : 'Sign in to access your organization\'s portal'}
                     </p>
                   </div>
                   <button
@@ -371,7 +371,7 @@ const CopseTestLogin: React.FC = () => {
                           </>
                         ) : (
                           <>
-                            <span>Sign In to Copse</span>
+                            <span>Sign In Securely</span>
                             <ArrowRight className="w-5 h-5" />
                           </>
                         )}
@@ -449,10 +449,10 @@ const CopseTestLogin: React.FC = () => {
           {/* Footer note */}
           <div className="mt-8 text-center">
             <p className="text-sm text-emerald-700 font-medium">
-              <strong>Note:</strong> This demo shows how any organization can have their own branded portal—no code required.
+              <strong>Demo Notice:</strong> This environment showcases how any organization can launch a fully branded Copse portal—no coding required.
             </p>
             <p className="text-xs text-emerald-600 mt-2 font-medium">
-              Already live with scout packs • Launching to school clubs next month
+              Already live with <strong>Scout packs</strong>, expanding to <strong>school clubs</strong> next month.
             </p>
           </div>
         </div>

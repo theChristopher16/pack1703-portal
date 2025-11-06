@@ -178,29 +178,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
             </button>
 
-            {/* Hamburger Menu Button - All Screen Sizes - Hidden on organizations page */}
-            {!isOrganizationsPage && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  console.log('Hamburger button clicked, toggling menu');
-                  setIsMobileMenuOpen(!isMobileMenuOpen);
-                }}
-                className="p-2 rounded-xl bg-white/95 backdrop-blur-sm border border-forest-200 text-forest-700 hover:bg-gradient-to-r hover:from-forest-50 hover:to-ocean-50 hover:border-forest-300 hover:text-forest-800 transition-all duration-300 relative z-[102]"
-                aria-label="Toggle menu"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="w-6 h-6" />
-                ) : (
-                  <Menu className="w-6 h-6" />
-                )}
-              </button>
-            )}
+            {/* Hamburger Menu Button - All Screen Sizes */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('Hamburger button clicked, toggling menu');
+                setIsMobileMenuOpen(!isMobileMenuOpen);
+              }}
+              className="p-2 rounded-xl bg-white/95 backdrop-blur-sm border border-forest-200 text-forest-700 hover:bg-gradient-to-r hover:from-forest-50 hover:to-ocean-50 hover:border-forest-300 hover:text-forest-800 transition-all duration-300 relative z-[102]"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Hamburger Menu - Rendered via Portal - Hidden on organizations page */}
-        {!isOrganizationsPage && isMobileMenuOpen && typeof document !== 'undefined' && createPortal(
+        {/* Hamburger Menu - Rendered via Portal */}
+        {isMobileMenuOpen && typeof document !== 'undefined' && createPortal(
           <>
             {/* Backdrop */}
             <div 

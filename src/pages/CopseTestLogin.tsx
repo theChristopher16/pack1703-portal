@@ -172,7 +172,7 @@ const CopseTestLogin: React.FC = () => {
                     <h1 className="text-4xl font-bold font-solarpunk-display tracking-tight">
                       {copseBranding.displayName}
                     </h1>
-                    <p className="text-emerald-100 text-sm font-medium tracking-wide">
+                    <p className="text-white/80 text-sm font-medium tracking-wide">
                       {copseBranding.tagline}
                     </p>
                   </div>
@@ -183,13 +183,13 @@ const CopseTestLogin: React.FC = () => {
 
                 {/* Mission statement */}
                 <div className="space-y-4">
-                  <h2 className="text-2xl font-semibold font-solarpunk-display">
-                    No More Spreadsheets
+                  <h2 className="text-2xl font-semibold font-solarpunk-display text-white">
+                    One Portal, Every Tool
                   </h2>
-                  <p className="text-emerald-50 text-lg leading-relaxed">
+                  <p className="text-white/90 text-lg leading-relaxed">
                     {copseBranding.description}
                   </p>
-                  <p className="text-emerald-100 text-sm">
+                  <p className="text-white/80 text-sm font-medium">
                     Scout packs • School clubs • Community groups • Small teams
                   </p>
                 </div>
@@ -201,8 +201,8 @@ const CopseTestLogin: React.FC = () => {
                       <Users className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg">Member Coordination</h3>
-                      <p className="text-emerald-100 text-sm">
+                      <h3 className="font-semibold text-lg text-white">Member Coordination</h3>
+                      <p className="text-white/80 text-sm">
                         Manage members, families, and permissions—all in one place
                       </p>
                     </div>
@@ -213,8 +213,8 @@ const CopseTestLogin: React.FC = () => {
                       <Sprout className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg">Events & Payments</h3>
-                      <p className="text-emerald-100 text-sm">
+                      <h3 className="font-semibold text-lg text-white">Events & Payments</h3>
+                      <p className="text-white/80 text-sm">
                         Create events, track RSVPs, and collect payments seamlessly
                       </p>
                     </div>
@@ -225,8 +225,8 @@ const CopseTestLogin: React.FC = () => {
                       <Heart className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg">AI Assistant</h3>
-                      <p className="text-emerald-100 text-sm">
+                      <h3 className="font-semibold text-lg text-white">AI Assistant</h3>
+                      <p className="text-white/80 text-sm">
                         Get help creating announcements, planning events, and more
                       </p>
                     </div>
@@ -234,12 +234,12 @@ const CopseTestLogin: React.FC = () => {
                 </div>
 
                 {/* Decorative element */}
-                <div className="pt-6 flex items-center justify-center gap-4 text-emerald-200">
-                  <TreePine className="w-8 h-8 opacity-50" />
-                  <Wind className="w-6 h-6 opacity-50 animate-pulse" />
-                  <Sun className="w-8 h-8 opacity-50" />
-                  <Wind className="w-6 h-6 opacity-50 animate-pulse" />
-                  <Mountain className="w-8 h-8 opacity-50" />
+                <div className="pt-6 flex items-center justify-center gap-4 text-white/40">
+                  <TreePine className="w-8 h-8" />
+                  <Wind className="w-6 h-6 animate-pulse" />
+                  <Sun className="w-8 h-8" />
+                  <Wind className="w-6 h-6 animate-pulse" />
+                  <Mountain className="w-8 h-8" />
                 </div>
               </div>
             </div>
@@ -448,10 +448,10 @@ const CopseTestLogin: React.FC = () => {
 
           {/* Footer note */}
           <div className="mt-8 text-center">
-            <p className="text-sm text-emerald-600">
+            <p className="text-sm text-emerald-700 font-medium">
               <strong>Note:</strong> This demo shows how any organization can have their own branded portal—no code required.
             </p>
-            <p className="text-xs text-emerald-500 mt-2">
+            <p className="text-xs text-emerald-600 mt-2 font-medium">
               Already live with scout packs • Launching to school clubs next month
             </p>
           </div>

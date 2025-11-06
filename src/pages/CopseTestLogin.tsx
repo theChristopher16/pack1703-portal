@@ -41,12 +41,12 @@ const CopseTestLogin: React.FC = () => {
   const copseBranding = {
     displayName: 'Copse',
     shortName: 'Copse',
-    tagline: 'One Portal. Every Tool.',
+    tagline: 'Grow Together. Organize Smarter.',
     primaryColor: '#2D5016', // Deep forest green
     secondaryColor: '#8B4513', // Saddle brown
     accentColor: '#4A7C59', // Forest green
     lightColor: '#A8D5BA', // Light sage
-    description: 'Streamline how your organization connects—manage members, events, payments, and communications, all in one place.'
+    description: 'Connect and coordinate across teams, families, and partner organizations. Copse brings everything together—members, events, payments, and AI assistance—so collaboration extends beyond your own group.'
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,7 +190,7 @@ const CopseTestLogin: React.FC = () => {
                     {copseBranding.description}
                   </p>
                   <p className="text-white/80 text-base leading-relaxed">
-                    Built for <strong>organizations</strong> of all types—<strong>scout packs, school clubs, community groups,</strong> and <strong>small teams</strong> that want less chaos and more collaboration.
+                    Join a network of <strong>scout packs, school clubs, community groups,</strong> and <strong>small teams</strong> working together under one digital canopy.
                   </p>
                 </div>
 
@@ -203,7 +203,7 @@ const CopseTestLogin: React.FC = () => {
                     <div>
                       <h3 className="font-semibold text-lg text-white">Member Coordination</h3>
                       <p className="text-white/80 text-sm">
-                        Bring members, families, and leaders together with shared tools and permissions.
+                        Manage members, families, and roles across connected organizations—with shared access and unified permissions.
                       </p>
                     </div>
                   </div>
@@ -215,7 +215,7 @@ const CopseTestLogin: React.FC = () => {
                     <div>
                       <h3 className="font-semibold text-lg text-white">Events & Payments</h3>
                       <p className="text-white/80 text-sm">
-                        Plan events, track RSVPs, and handle payments—without extra apps.
+                        Host joint events, sync RSVPs across groups, and manage shared expenses seamlessly.
                       </p>
                     </div>
                   </div>
@@ -227,7 +227,19 @@ const CopseTestLogin: React.FC = () => {
                     <div>
                       <h3 className="font-semibold text-lg text-white">AI Assistant</h3>
                       <p className="text-white/80 text-sm">
-                        Get smart help writing announcements, scheduling activities, and staying organized.
+                        Plan together across organizations—Copse's AI helps draft announcements, coordinate logistics, and keep everyone aligned.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Wind className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg text-white">Multi-Org Network</h3>
+                      <p className="text-white/80 text-sm">
+                        Link multiple groups under one digital canopy. Share data, delegate admin roles, and collaborate safely.
                       </p>
                     </div>
                   </div>
@@ -256,7 +268,7 @@ const CopseTestLogin: React.FC = () => {
                     <p className="text-emerald-600 mt-1">
                       {showResetPassword 
                         ? 'Enter your email to receive a reset link' 
-                        : 'Each organization gets its own branded portal'}
+                        : 'Sign in to your organization\'s connected portal — part of the Copse Network'}
                     </p>
                   </div>
                   <button
@@ -367,11 +379,11 @@ const CopseTestLogin: React.FC = () => {
                         {isLoading ? (
                           <>
                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Signing in...</span>
+                            <span>Connecting...</span>
                           </>
                         ) : (
                           <>
-                            <span>Sign In Securely</span>
+                            <span>Enter the Copse Network</span>
                             <ArrowRight className="w-5 h-5" />
                           </>
                         )}
@@ -383,7 +395,7 @@ const CopseTestLogin: React.FC = () => {
                       <p className="text-sm text-emerald-600">
                         New to Copse?{' '}
                         <button className="font-semibold text-emerald-700 hover:text-emerald-900">
-                          Contact your organization leader
+                          Ask your organization leader or connect your existing group
                         </button>
                       </p>
                     </div>
@@ -449,10 +461,10 @@ const CopseTestLogin: React.FC = () => {
           {/* Footer note */}
           <div className="mt-8 text-center">
             <p className="text-sm text-emerald-700 font-medium">
-              <strong>Demo Notice:</strong> This environment showcases how any organization can launch a fully branded portal—no coding required.
+              <strong>Note:</strong> This demo shows how any organization can launch a fully branded portal within the Copse Network—no code required.
             </p>
             <p className="text-xs text-emerald-600 mt-2 font-medium">
-              One platform, many <strong>organizations</strong>. Already live with <strong>scout packs</strong>, expanding to <strong>school clubs</strong> next month.
+              Already live with <strong>Scout packs</strong>, expanding to <strong>schools and community groups</strong> next month.
             </p>
           </div>
         </div>

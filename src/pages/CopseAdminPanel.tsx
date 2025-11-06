@@ -46,6 +46,18 @@ interface CopseAdmin {
   phone?: string;
 }
 
+interface NetworkUser {
+  id: string;
+  name: string;
+  email: string;
+  roles: ('parent' | 'den_leader' | 'admin' | 'super_admin' | 'copse_admin')[]; // Multiple roles support
+  organizations: string[]; // IDs of orgs they belong to
+  status: 'active' | 'pending' | 'suspended';
+  lastActive: Date;
+  createdAt: Date;
+  phone?: string;
+}
+
 const mockOrganizations: Organization[] = [
   {
     id: 'org-1',
@@ -160,10 +172,98 @@ const mockCopseAdmins: CopseAdmin[] = [
   }
 ];
 
+const mockNetworkUsers: NetworkUser[] = [
+  {
+    id: 'user-1',
+    name: 'John Smith',
+    email: 'john.smith@pack1703.org',
+    roles: ['parent', 'den_leader'],
+    organizations: ['org-1'],
+    status: 'active',
+    lastActive: new Date('2025-02-06T18:30:00'),
+    createdAt: new Date('2024-02-10'),
+    phone: '+1 (555) 111-2222'
+  },
+  {
+    id: 'user-2',
+    name: 'Maria Garcia',
+    email: 'maria.garcia@sfes.edu',
+    roles: ['admin', 'den_leader'],
+    organizations: ['org-2'],
+    status: 'active',
+    lastActive: new Date('2025-02-06T16:15:00'),
+    createdAt: new Date('2024-06-25')
+  },
+  {
+    id: 'user-3',
+    name: 'Robert Wilson',
+    email: 'robert.wilson@gmail.com',
+    roles: ['parent'],
+    organizations: ['org-1', 'org-3'],
+    status: 'active',
+    lastActive: new Date('2025-02-06T12:45:00'),
+    createdAt: new Date('2024-03-15'),
+    phone: '+1 (555) 333-4444'
+  },
+  {
+    id: 'user-4',
+    name: 'Lisa Anderson',
+    email: 'lisa@cysl.org',
+    roles: ['super_admin'],
+    organizations: ['org-3'],
+    status: 'active',
+    lastActive: new Date('2025-02-06T14:20:00'),
+    createdAt: new Date('2024-09-12')
+  },
+  {
+    id: 'user-5',
+    name: 'James Brown',
+    email: 'james.brown@pack1703.org',
+    roles: ['parent', 'admin'],
+    organizations: ['org-1'],
+    status: 'active',
+    lastActive: new Date('2025-02-06T19:00:00'),
+    createdAt: new Date('2024-01-20'),
+    phone: '+1 (555) 555-6666'
+  },
+  {
+    id: 'user-6',
+    name: 'Amanda Lee',
+    email: 'amanda.lee@sfes.edu',
+    roles: ['den_leader'],
+    organizations: ['org-2'],
+    status: 'pending',
+    lastActive: new Date('2025-02-05T10:30:00'),
+    createdAt: new Date('2025-02-05')
+  },
+  {
+    id: 'user-7',
+    name: 'Christopher Martinez',
+    email: 'chris@riverside-garden.org',
+    roles: ['admin', 'parent'],
+    organizations: ['org-5'],
+    status: 'active',
+    lastActive: new Date('2025-02-06T08:15:00'),
+    createdAt: new Date('2024-11-10'),
+    phone: '+1 (555) 777-8888'
+  },
+  {
+    id: 'user-8',
+    name: 'Jennifer Taylor',
+    email: 'jtaylor@troop456.org',
+    roles: ['parent'],
+    organizations: ['org-4'],
+    status: 'pending',
+    lastActive: new Date('2025-02-03T15:45:00'),
+    createdAt: new Date('2025-02-01')
+  }
+];
+
 export const CopseAdminPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'organizations' | 'admins' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'organizations' | 'users' | 'admins' | 'analytics'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<NetworkUser | null>(null);
 
   const totalOrgs = mockOrganizations.length;
   const activeOrgs = mockOrganizations.filter(o => o.status === 'active').length;
@@ -176,6 +276,17 @@ export const CopseAdminPanel: React.FC = () => {
       network_manager: { label: 'Network Manager', color: 'bg-blue-100 text-blue-800 border-blue-200' },
       billing_admin: { label: 'Billing Admin', color: 'bg-green-100 text-green-800 border-green-200' },
       support_admin: { label: 'Support Admin', color: 'bg-orange-100 text-orange-800 border-orange-200' }
+    };
+    return config[role];
+  };
+
+  const getUserRoleBadge = (role: NetworkUser['roles'][0]) => {
+    const config = {
+      parent: { label: 'Parent', color: 'bg-blue-100 text-blue-800' },
+      den_leader: { label: 'Den Leader', color: 'bg-green-100 text-green-800' },
+      admin: { label: 'Admin', color: 'bg-purple-100 text-purple-800' },
+      super_admin: { label: 'Super Admin', color: 'bg-yellow-100 text-yellow-800' },
+      copse_admin: { label: 'Copse Admin', color: 'bg-pink-100 text-pink-800' }
     };
     return config[role];
   };
@@ -236,11 +347,11 @@ export const CopseAdminPanel: React.FC = () => {
             <div className="flex items-center justify-between mb-2">
               <Users className="w-8 h-8 text-blue-600" />
               <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                +127 this week
+                {mockNetworkUsers.filter(u => u.status === 'active').length} active
               </span>
             </div>
-            <div className="text-3xl font-bold text-ink">{totalMembers.toLocaleString()}</div>
-            <div className="text-sm text-gray-600">Total Network Members</div>
+            <div className="text-3xl font-bold text-ink">{mockNetworkUsers.length}</div>
+            <div className="text-sm text-gray-600">Registered Users</div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -273,6 +384,7 @@ export const CopseAdminPanel: React.FC = () => {
               {[
                 { id: 'overview', label: 'Overview', icon: Activity },
                 { id: 'organizations', label: 'Organizations', icon: Building2 },
+                { id: 'users', label: 'Network Users', icon: Users },
                 { id: 'admins', label: 'Copse Admins', icon: Shield },
                 { id: 'analytics', label: 'Network Analytics', icon: TrendingUp }
               ].map((tab) => {
@@ -418,6 +530,94 @@ export const CopseAdminPanel: React.FC = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Network Users Tab */}
+            {activeTab === 'users' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search users by name or email..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">{mockNetworkUsers.length} total users</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {mockNetworkUsers.map((user) => {
+                    const statusBadge = getStatusBadge(user.status);
+                    return (
+                      <div key={user.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3 flex-1">
+                            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                              {user.name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <h4 className="font-semibold text-ink">{user.name}</h4>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${statusBadge.color}`}>
+                                  {statusBadge.label}
+                                </span>
+                              </div>
+                              
+                              {/* Multiple Roles Display */}
+                              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                {user.roles.map((role) => {
+                                  const roleBadge = getUserRoleBadge(role);
+                                  return (
+                                    <span key={role} className={`text-xs px-2 py-0.5 rounded-full ${roleBadge.color}`}>
+                                      {roleBadge.label}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+
+                              <div className="flex items-center gap-4 text-sm text-gray-600 mb-2 flex-wrap">
+                                <span className="flex items-center gap-1">
+                                  <Mail className="w-4 h-4" />
+                                  {user.email}
+                                </span>
+                                {user.phone && (
+                                  <span className="flex items-center gap-1">
+                                    <Phone className="w-4 h-4" />
+                                    {user.phone}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {user.organizations.length} organization{user.organizations.length !== 1 ? 's' : ''} • 
+                                Last active {user.lastActive.toLocaleDateString()} • 
+                                Joined {user.createdAt.toLocaleDateString()}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => setEditingUser(user)}
+                              className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
+                              title="Edit roles"
+                            >
+                              <Edit className="w-4 h-4 text-blue-600" />
+                            </button>
+                            <button className="p-2 hover:bg-red-100 rounded-lg transition-colors">
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -647,6 +847,119 @@ export const CopseAdminPanel: React.FC = () => {
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
                 Create Administrator
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Roles Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold text-ink">Manage User Roles</h3>
+                  <p className="text-sm text-gray-600 mt-1">{editingUser.name} ({editingUser.email})</p>
+                </div>
+                <button
+                  onClick={() => setEditingUser(null)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Assigned Roles (Select Multiple)
+                  </label>
+                  <div className="space-y-2 border border-gray-200 rounded-lg p-4">
+                    {[
+                      { value: 'parent', label: 'Parent', description: 'Family account - manage family events and RSVPs' },
+                      { value: 'den_leader', label: 'Den Leader', description: 'Den-specific management and leadership' },
+                      { value: 'admin', label: 'Admin', description: 'Organization administrator - full management access' },
+                      { value: 'super_admin', label: 'Super Admin', description: 'Organization-wide system access' },
+                      { value: 'copse_admin', label: 'Copse Admin', description: 'Network-level administration across all organizations' }
+                    ].map((roleOption) => {
+                      const isChecked = editingUser.roles.includes(roleOption.value as any);
+                      const roleBadge = getUserRoleBadge(roleOption.value as any);
+                      return (
+                        <label 
+                          key={roleOption.value}
+                          className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                            isChecked ? 'bg-emerald-50 border border-emerald-200' : 'hover:bg-gray-50 border border-transparent'
+                          }`}
+                        >
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked}
+                            onChange={(e) => {
+                              // Handle role toggle - just for UI demo
+                              console.log(`Toggle ${roleOption.value} for ${editingUser.name}`);
+                            }}
+                            className="mt-1 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" 
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-gray-900">{roleOption.label}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge.color}`}>
+                                {roleBadge.label}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-600">{roleOption.description}</p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    💡 Users can have multiple roles to access different parts of the system without creating separate accounts.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Organizations</label>
+                  <div className="text-sm text-gray-600">
+                    {editingUser.organizations.map(orgId => {
+                      const org = mockOrganizations.find(o => o.id === orgId);
+                      return org ? org.name : orgId;
+                    }).join(', ') || 'No organizations assigned'}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Account Status</label>
+                  <select 
+                    value={editingUser.status}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  >
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
+                    <option value="suspended">Suspended</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex items-center justify-between">
+              <button
+                onClick={() => setEditingUser(null)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // Handle role update
+                  console.log('Updating roles for:', editingUser.name);
+                  setEditingUser(null);
+                }}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                Save Changes
               </button>
             </div>
           </div>

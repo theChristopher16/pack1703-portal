@@ -41,12 +41,12 @@ const CopseTestLogin: React.FC = () => {
   const copseBranding = {
     displayName: 'Copse',
     shortName: 'Copse',
-    tagline: 'The Operating System for Modern Organizations',
+    tagline: 'An Operating System for Life',
     primaryColor: '#2D5016', // Deep forest green
     secondaryColor: '#8B4513', // Saddle brown
     accentColor: '#4A7C59', // Forest green
     lightColor: '#A8D5BA', // Light sage
-    description: 'A unified platform that scales with you—from small teams to enterprise operations. Coordinate people, resources, operations, and finances across any organizational structure. Built for the complexity of real-world coordination.'
+    description: 'More than software—a holistic platform for how people organize, coordinate, and thrive together. From your family to your workplace, from local communities to global networks. Built for the full spectrum of human coordination.'
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,7 +190,7 @@ const CopseTestLogin: React.FC = () => {
                     {copseBranding.description}
                   </p>
                   <p className="text-white/80 text-base leading-relaxed">
-                    Built for <strong>any organization</strong>—<strong>schools, utilities, enterprises, municipalities, non-profits,</strong> and <strong>community networks</strong>—that needs to coordinate people, operations, and resources at scale.
+                    Whether you're organizing <strong>your family, your team, your school, your city,</strong> or <strong>your enterprise</strong>—Copse adapts to how humans actually work together. A living system that grows with every connection.
                   </p>
                 </div>
 
@@ -201,9 +201,9 @@ const CopseTestLogin: React.FC = () => {
                       <Users className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg text-white">People & Operations</h3>
+                      <h3 className="font-semibold text-lg text-white">People & Connection</h3>
                       <p className="text-white/80 text-sm">
-                        Coordinate teams, departments, and stakeholders across organizational boundaries—with role-based access and unified workflows.
+                        Coordinate everyone in your life—family, colleagues, teammates, neighbors. Role-based access that respects context and relationships.
                       </p>
                     </div>
                   </div>
@@ -213,9 +213,9 @@ const CopseTestLogin: React.FC = () => {
                       <Sprout className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg text-white">Resources & Finance</h3>
+                      <h3 className="font-semibold text-lg text-white">Resources & Flow</h3>
                       <p className="text-white/80 text-sm">
-                        Track budgets, manage assets, process payments, and coordinate shared resources—from equipment to facilities.
+                        Money, time, materials, space—coordinate everything that flows through your life and work. Transparent, real-time, interconnected.
                       </p>
                     </div>
                   </div>
@@ -225,9 +225,9 @@ const CopseTestLogin: React.FC = () => {
                       <Heart className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg text-white">AI-Powered Intelligence</h3>
+                      <h3 className="font-semibold text-lg text-white">Intelligence Layer</h3>
                       <p className="text-white/80 text-sm">
-                        Automate scheduling, draft communications, analyze operations, and surface insights—letting AI handle routine coordination.
+                        AI that learns your patterns, anticipates needs, and surfaces what matters. Coordination becomes intuitive, not overwhelming.
                       </p>
                     </div>
                   </div>
@@ -237,9 +237,9 @@ const CopseTestLogin: React.FC = () => {
                       <Wind className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg text-white">Networked Ecosystem</h3>
+                      <h3 className="font-semibold text-lg text-white">Living Network</h3>
                       <p className="text-white/80 text-sm">
-                        Link divisions, branches, or partner organizations. Share data securely, delegate authority, and enable true inter-organizational collaboration.
+                        Your organizations aren't isolated—they're ecosystems. Link, share, collaborate. Grow together while maintaining autonomy.
                       </p>
                     </div>
                   </div>
@@ -461,10 +461,10 @@ const CopseTestLogin: React.FC = () => {
           {/* Footer note */}
           <div className="mt-8 text-center">
             <p className="text-sm text-emerald-700 font-medium">
-              <strong>Demo Environment:</strong> This showcases how any organization—from community groups to enterprise operations—can deploy a fully branded portal within the Copse Network.
+              <strong>Demo Environment:</strong> See how Copse adapts to any scale—from a family organizing their lives to a utility coordinating infrastructure.
             </p>
             <p className="text-xs text-emerald-600 mt-2 font-medium">
-              Live with <strong>schools, scout organizations,</strong> and <strong>community networks</strong>. Scaling to <strong>utilities, municipalities,</strong> and <strong>enterprise customers</strong>.
+              <strong>Current pilots:</strong> Schools, scout packs, community networks. <strong>In development:</strong> Municipal services, utilities, enterprise operations.
             </p>
           </div>
         </div>

@@ -5344,3 +5344,8 @@ export {
 export {
   initializePack1703Org
 } from './initializePack1703';
+
+// Export super admin bootstrap function
+export {
+  createSuperAdminUser
+} from './createSuperAdmin';

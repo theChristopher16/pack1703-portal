@@ -190,7 +190,7 @@ const CopseTestLogin: React.FC = () => {
                     {copseBranding.description}
                   </p>
                   <p className="text-white/80 text-base leading-relaxed">
-                    Built for <strong>Scout packs, school clubs, community groups,</strong> and <strong>small teams</strong> that want less chaos and more collaboration.
+                    Built for <strong>organizations</strong> of all types—<strong>scout packs, school clubs, community groups,</strong> and <strong>small teams</strong> that want less chaos and more collaboration.
                   </p>
                 </div>
 
@@ -256,7 +256,7 @@ const CopseTestLogin: React.FC = () => {
                     <p className="text-emerald-600 mt-1">
                       {showResetPassword 
                         ? 'Enter your email to receive a reset link' 
-                        : 'Sign in to access your organization\'s portal'}
+                        : 'Each organization gets its own branded portal'}
                     </p>
                   </div>
                   <button
@@ -449,10 +449,10 @@ const CopseTestLogin: React.FC = () => {
           {/* Footer note */}
           <div className="mt-8 text-center">
             <p className="text-sm text-emerald-700 font-medium">
-              <strong>Demo Notice:</strong> This environment showcases how any organization can launch a fully branded Copse portal—no coding required.
+              <strong>Demo Notice:</strong> This environment showcases how any organization can launch a fully branded portal—no coding required.
             </p>
             <p className="text-xs text-emerald-600 mt-2 font-medium">
-              Already live with <strong>Scout packs</strong>, expanding to <strong>school clubs</strong> next month.
+              One platform, many <strong>organizations</strong>. Already live with <strong>scout packs</strong>, expanding to <strong>school clubs</strong> next month.
             </p>
           </div>
         </div>

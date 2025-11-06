@@ -26,9 +26,10 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
   
   // Map AdminContext role back to UserRole enum
   const roleMap: { [key: string]: UserRole } = {
-    'root': UserRole.SUPER_ADMIN,
-    'super-admin': UserRole.SUPER_ADMIN,  // Fixed: super-admin should map to SUPER_ADMIN, not ADMIN
-    'content-admin': UserRole.ADMIN,      // Added: content-admin maps to ADMIN
+    'root': UserRole.COPSE_ADMIN,         // Root users are Copse admins
+    'super-admin': UserRole.SUPER_ADMIN,  // Super-admin maps to SUPER_ADMIN
+    'copse-admin': UserRole.COPSE_ADMIN,  // Copse admin role
+    'content-admin': UserRole.ADMIN,      // Content-admin maps to ADMIN
     'moderator': UserRole.DEN_LEADER,
     'viewer': UserRole.PARENT,
     'ai_assistant': UserRole.AI_ASSISTANT
@@ -154,12 +155,38 @@ export const AuthenticatedOnly: React.FC<{ children: React.ReactNode; fallbackPa
   
   return (
     <RoleGuard 
-      requiredRoles={[UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT]} 
+      requiredRoles={[UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.COPSE_ADMIN, UserRole.AI_ASSISTANT]} 
       fallbackPath={prefixedFallbackPath}
     >
       {children}
     </RoleGuard>
   );
+};
+
+export const CopseAdminOnly: React.FC<{ children: React.ReactNode; fallbackPath?: string }> = ({ 
+  children, 
+  fallbackPath = '/' 
+}) => {
+  const { state } = useAdmin();
+  const currentUser = state.currentUser;
+  const { prefixPath } = useOrganization();
+  const prefixedFallbackPath = prefixPath(fallbackPath);
+  
+  // Check if user has copse admin or super admin role
+  const isCopseAdmin = currentUser?.role === 'copse-admin' || 
+                      currentUser?.role === 'root' ||
+                      currentUser?.role === 'super-admin';
+  
+  if (!isCopseAdmin) {
+    console.log('🔒 CopseAdminOnly: User is not Copse admin, redirecting to home', { 
+      currentUserRole: currentUser?.role,
+      isCopseAdmin,
+      fallbackPath: prefixedFallbackPath 
+    });
+    return <Navigate to={prefixedFallbackPath} replace />;
+  }
+  
+  return <>{children}</>;
 };
 
 export default RoleGuard;

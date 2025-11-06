@@ -26,7 +26,8 @@ import {
   Building2,
   Store,
   ShoppingCart,
-  Package
+  Package,
+  Network
 } from 'lucide-react';
 
 export interface NavigationItem {
@@ -342,6 +343,15 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     description: 'Detailed user interaction analytics and behavior tracking',
     isPlatformRoute: true
   },
+  {
+    name: 'Copse Network Admin',
+    href: '/copse-admin',
+    icon: Network,
+    roles: [UserRole.SUPER_ADMIN, UserRole.COPSE_ADMIN],
+    category: 'system',
+    description: 'Enterprise network administration and cross-organizational management',
+    isPlatformRoute: true
+  },
 ];
 
 // Helper function to get navigation items for a specific role
@@ -370,7 +380,8 @@ export const getRoleLevel = (role: UserRole): number => {
     [UserRole.DEN_LEADER]: 2,
     [UserRole.AI_ASSISTANT]: 2.5,
     [UserRole.ADMIN]: 3,
-    [UserRole.SUPER_ADMIN]: 5
+    [UserRole.SUPER_ADMIN]: 5,
+    [UserRole.COPSE_ADMIN]: 6
   };
   return hierarchy[role] || 0;
 };

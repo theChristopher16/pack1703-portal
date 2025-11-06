@@ -34,12 +34,13 @@ import {
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../firebase/config';
 
-// User roles and permissions - Cub Scout pack structure
+// User roles and permissions - Multi-organizational structure
 export enum UserRole {
   PARENT = 'parent',          // Family account (default after signup)
   DEN_LEADER = 'den_leader',  // Den leaders and active volunteers
-  ADMIN = 'admin',            // Pack administrators
-  SUPER_ADMIN = 'super_admin', // Super administrators (highest level)
+  ADMIN = 'admin',            // Pack/Organization administrators
+  SUPER_ADMIN = 'super_admin', // Organization super administrators
+  COPSE_ADMIN = 'copse_admin', // Copse Network administrators (cross-org)
   AI_ASSISTANT = 'ai_assistant' // AI assistant role
 }
 
@@ -48,8 +49,9 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
   [UserRole.PARENT]: 1,           // Lowest level
   [UserRole.DEN_LEADER]: 2,       // Den leaders
   [UserRole.AI_ASSISTANT]: 3,     // AI assistant
-  [UserRole.ADMIN]: 4,            // Pack administrators
-  [UserRole.SUPER_ADMIN]: 5       // Highest level
+  [UserRole.ADMIN]: 4,            // Organization administrators
+  [UserRole.SUPER_ADMIN]: 5,      // Organization super admins
+  [UserRole.COPSE_ADMIN]: 6       // Highest level - Network administrators
 };
 
 export enum Permission {
@@ -279,6 +281,42 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.COST_ANALYTICS,
     Permission.COST_ALERTS
   ],
+  [UserRole.COPSE_ADMIN]: [
+    // Copse Admins have all permissions across the entire network
+    Permission.SYSTEM_ADMIN,
+    Permission.USER_MANAGEMENT,
+    Permission.ROLE_MANAGEMENT,
+    Permission.SYSTEM_CONFIG,
+    Permission.PACK_MANAGEMENT,
+    Permission.EVENT_MANAGEMENT,
+    Permission.LOCATION_MANAGEMENT,
+    Permission.ANNOUNCEMENT_MANAGEMENT,
+    Permission.FINANCIAL_MANAGEMENT,
+    Permission.FUNDRAISING_MANAGEMENT,
+    Permission.ALL_DEN_ACCESS,
+    Permission.DEN_CONTENT,
+    Permission.DEN_EVENTS,
+    Permission.DEN_MEMBERS,
+    Permission.DEN_CHAT_MANAGEMENT,
+    Permission.DEN_ANNOUNCEMENTS,
+    Permission.FAMILY_MANAGEMENT,
+    Permission.FAMILY_EVENTS,
+    Permission.FAMILY_RSVP,
+    Permission.FAMILY_VOLUNTEER,
+    Permission.SCOUT_CONTENT,
+    Permission.SCOUT_EVENTS,
+    Permission.SCOUT_CHAT,
+    Permission.CHAT_READ,
+    Permission.CHAT_WRITE,
+    Permission.CHAT_MANAGEMENT,
+    Permission.READ_CONTENT,
+    Permission.CREATE_CONTENT,
+    Permission.UPDATE_CONTENT,
+    Permission.DELETE_CONTENT,
+    Permission.COST_MANAGEMENT,
+    Permission.COST_ANALYTICS,
+    Permission.COST_ALERTS
+  ],
 };
 
 // Role color configuration (object format for UI components)
@@ -288,6 +326,7 @@ export const ROLE_COLORS: Record<UserRole, { bg: string; text: string; border: s
   [UserRole.AI_ASSISTANT]: { bg: '#e0f2fe', text: '#0c4a6e', border: '#7dd3fc' },
   [UserRole.ADMIN]: { bg: '#f3e8ff', text: '#7c3aed', border: '#c4b5fd' },
   [UserRole.SUPER_ADMIN]: { bg: '#fef3c7', text: '#92400e', border: '#fcd34d' },
+  [UserRole.COPSE_ADMIN]: { bg: '#fce7f3', text: '#831843', border: '#f9a8d4' },
 };
 
 // Role display names
@@ -297,6 +336,7 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   [UserRole.AI_ASSISTANT]: 'AI Assistant',
   [UserRole.ADMIN]: 'Admin',
   [UserRole.SUPER_ADMIN]: 'Super Admin',
+  [UserRole.COPSE_ADMIN]: 'Copse Admin',
 };
 
 // Role descriptions
@@ -305,15 +345,17 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   [UserRole.DEN_LEADER]: 'Den leader - den-specific management and leadership',
   [UserRole.AI_ASSISTANT]: 'AI assistant - event management and content creation',
   [UserRole.ADMIN]: 'Pack administrator - full pack management',
-  [UserRole.SUPER_ADMIN]: 'Super administrator - complete system access (highest level)'
+  [UserRole.SUPER_ADMIN]: 'Super administrator - complete system access (highest level)',
+  [UserRole.COPSE_ADMIN]: 'Copse Network administrator - enterprise-wide cross-organizational management'
 };
 
-// Selectable roles for UI components (excludes system-only roles)
+// Selectable roles for UI components (excludes system-only roles like AI_ASSISTANT)
 export const SELECTABLE_ROLES: UserRole[] = [
   UserRole.PARENT,
   UserRole.DEN_LEADER,
   UserRole.ADMIN,
-  UserRole.SUPER_ADMIN
+  UserRole.SUPER_ADMIN,
+  UserRole.COPSE_ADMIN
 ];
 
 // Scout information interface

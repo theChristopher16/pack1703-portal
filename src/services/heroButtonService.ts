@@ -97,7 +97,8 @@ class HeroButtonService {
     [UserRole.DEN_LEADER]: ['events', 'locations', 'announcements', 'volunteer', 'chat', 'resources', 'feedback', 'dataAudit'],
     [UserRole.AI_ASSISTANT]: ['events', 'locations', 'announcements', 'volunteer', 'chat', 'resources', 'feedback', 'dataAudit'],
     [UserRole.ADMIN]: ['events', 'locations', 'announcements', 'volunteer', 'chat', 'resources', 'feedback', 'dataAudit', 'analytics'],
-    [UserRole.SUPER_ADMIN]: ['events', 'locations', 'announcements', 'volunteer', 'chat', 'resources', 'feedback', 'dataAudit', 'analytics']
+    [UserRole.SUPER_ADMIN]: ['events', 'locations', 'announcements', 'volunteer', 'chat', 'resources', 'feedback', 'dataAudit', 'analytics'],
+    [UserRole.COPSE_ADMIN]: ['events', 'locations', 'announcements', 'volunteer', 'chat', 'resources', 'feedback', 'dataAudit', 'analytics']
   };
 
   // Role-based default priorities (when no usage data is available)
@@ -106,7 +107,8 @@ class HeroButtonService {
     [UserRole.DEN_LEADER]: ['events', 'volunteer'],
     [UserRole.AI_ASSISTANT]: ['events', 'announcements'],
     [UserRole.ADMIN]: ['events', 'analytics'],
-    [UserRole.SUPER_ADMIN]: ['events', 'analytics']
+    [UserRole.SUPER_ADMIN]: ['events', 'analytics'],
+    [UserRole.COPSE_ADMIN]: ['events', 'analytics']
   };
 
   /**
@@ -184,7 +186,8 @@ class HeroButtonService {
       [UserRole.DEN_LEADER]: ['events', 'volunteer', 'announcements'],
       [UserRole.AI_ASSISTANT]: ['events', 'announcements', 'chat'],
       [UserRole.ADMIN]: ['events', 'analytics', 'announcements'],
-      [UserRole.SUPER_ADMIN]: ['analytics', 'events', 'dataAudit']
+      [UserRole.SUPER_ADMIN]: ['analytics', 'events', 'dataAudit'],
+      [UserRole.COPSE_ADMIN]: ['analytics', 'events', 'dataAudit']
     };
 
     const recommendedIds = recommendations[userRole] || ['events', 'locations'];

@@ -8,7 +8,7 @@ import { versionCheckService } from './services/versionCheckService';
 
 // Components
 import Layout from './components/Layout/Layout';
-import { AdminOnly, RootOnly, AuthenticatedOnly, SuperUserOnly } from './components/Auth/RoleGuard';
+import { AdminOnly, RootOnly, AuthenticatedOnly, SuperUserOnly, CopseAdminOnly } from './components/Auth/RoleGuard';
 import AuthGuard from './components/Auth/AuthGuard';
 
 // Pages
@@ -60,6 +60,7 @@ import OrganizationsPage from './pages/OrganizationsPage';
 import OrganizationRouter from './components/OrganizationRouter';
 import PackRouter from './components/PackRouter';
 import CopseTestLogin from './pages/CopseTestLogin';
+import { CopseAdminPanel } from './pages/CopseAdminPanel';
 import { AdminProvider } from './contexts/AdminContext';
 
 function App() {
@@ -150,6 +151,7 @@ function App() {
                     {/* Super Admin Routes - Must come before other routes */}
                     <Route path="/organizations" element={<Layout><SuperUserOnly><OrganizationsPage /></SuperUserOnly></Layout>} />
                     <Route path="/test-copse-login" element={<SuperUserOnly><CopseTestLogin /></SuperUserOnly>} />
+                    <Route path="/copse-admin" element={<Layout><CopseAdminOnly><CopseAdminPanel /></CopseAdminOnly></Layout>} />
                     
                     {/* Pack 1703 Routes - Support both /pack1703/* and legacy root routes */}
                     <Route path="/pack1703/*" element={<PackRouter />} />

@@ -73,6 +73,24 @@ test-*.js
 !test-auth-flow.js
 !test-auth-enforcement.js
 populate-*.js
-!populate-*.example.jsservice-account-key.json
+!populate-*.example.js
+service-account-key.json
 *.env*
 sfpack1703app/service-account-key.json
+
+# iOS
+ios/**/*.xcodeproj/xcuserdata/
+ios/**/*.xcodeproj/project.xcworkspace/xcuserdata/
+ios/**/*.xcworkspace/xcuserdata/
+ios/**/DerivedData/
+ios/**/build/
+ios/**/.DS_Store
+ios/Copse/Config/GoogleService-Info.plist
+ios/**/*.ipa
+ios/**/*.dSYM.zip
+ios/**/*.dSYM
+ios/Pods/
+ios/**/*.xcworkspace
+ios/Podfile.lock
+ios/.build/
+ios/.swiftpm/

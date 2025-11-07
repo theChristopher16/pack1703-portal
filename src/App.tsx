@@ -62,6 +62,7 @@ import PackRouter from './components/PackRouter';
 import CopseTestLogin from './pages/CopseTestLogin';
 import { CopseAdminPanel } from './pages/CopseAdminPanel';
 import { AppCheckDebug } from './pages/AppCheckDebug';
+import { UserRoleDebug } from './pages/UserRoleDebug';
 import { AdminProvider } from './contexts/AdminContext';
 
 function App() {
@@ -154,6 +155,7 @@ function App() {
                     <Route path="/test-copse-login" element={<SuperUserOnly><CopseTestLogin /></SuperUserOnly>} />
                     <Route path="/copse-admin" element={<Layout><CopseAdminOnly><CopseAdminPanel /></CopseAdminOnly></Layout>} />
                     <Route path="/appcheck-debug" element={<SuperUserOnly><AppCheckDebug /></SuperUserOnly>} />
+                    <Route path="/role-debug" element={<SuperUserOnly><UserRoleDebug /></SuperUserOnly>} />
                     
                     {/* Pack 1703 Routes - Support both /pack1703/* and legacy root routes */}
                     <Route path="/pack1703/*" element={<PackRouter />} />

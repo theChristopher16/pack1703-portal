@@ -109,7 +109,17 @@ export const OrganizationProvider: React.FC<OrganizationProviderProps> = ({
     }
     
     // Don't prefix public routes and platform admin routes that shouldn't be org-specific
-    const publicRoutes = ['/reset-password', '/password-setup', '/join', '/organizations', '/pack1703'];
+    const publicRoutes = [
+      '/reset-password', 
+      '/password-setup', 
+      '/join', 
+      '/organizations', 
+      '/pack1703',
+      '/copse-admin',      // Copse admin panel is platform-level, not org-specific
+      '/appcheck-debug',   // Debug tools are platform-level
+      '/role-debug',       // Debug tools are platform-level
+      '/test-copse-login'  // Test pages are platform-level
+    ];
     if (publicRoutes.some(route => path.startsWith(route))) {
       return path;
     }

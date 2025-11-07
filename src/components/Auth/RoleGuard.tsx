@@ -187,13 +187,32 @@ export const CopseAdminOnly: React.FC<{ children: React.ReactNode; fallbackPath?
   const { prefixPath } = useOrganization();
   const prefixedFallbackPath = prefixPath(fallbackPath);
   
+  console.log('🔍 CopseAdminOnly: Checking access...', {
+    hasAdminUser: !!currentUser,
+    adminUserRole: currentUser?.role,
+    hasAppUser: !!authService.getCurrentUser(),
+    appUserRole: authService.getCurrentUser()?.role,
+    appUserRoles: authService.getCurrentUser() ? authService.getUserRoles(authService.getCurrentUser()!) : []
+  });
+
   // Check if user has copse admin or super admin role (multi-role aware)
   const currentAppUser = authService.getCurrentUser();
-  const isCopseAdmin = currentAppUser ? authService.hasAnyRole([UserRole.COPSE_ADMIN, UserRole.SUPER_ADMIN], currentAppUser) : false;
+  
+  // Also check AdminContext role directly as fallback
+  const hasAdminContextRole = currentUser?.role === 'copse-admin' || currentUser?.role === 'super-admin' || currentUser?.role === 'root';
+  const hasAppServiceRole = currentAppUser ? authService.hasAnyRole([UserRole.COPSE_ADMIN, UserRole.SUPER_ADMIN], currentAppUser) : false;
+  const isCopseAdmin = hasAdminContextRole || hasAppServiceRole;
+  
+  console.log('🔍 CopseAdminOnly: Access check result:', {
+    hasAdminContextRole,
+    hasAppServiceRole,
+    isCopseAdmin
+  });
   
   if (!isCopseAdmin) {
-    console.log('🔒 CopseAdminOnly: User is not Copse admin, redirecting to home', { 
-      currentUserRole: currentUser?.role,
+    console.log('🔒 CopseAdminOnly: Access DENIED, redirecting to home', { 
+      adminContextRole: currentUser?.role,
+      appServiceRole: currentAppUser?.role,
       userRoles: currentAppUser ? authService.getUserRoles(currentAppUser) : [],
       isCopseAdmin,
       fallbackPath: prefixedFallbackPath 
@@ -201,6 +220,7 @@ export const CopseAdminOnly: React.FC<{ children: React.ReactNode; fallbackPath?
     return <Navigate to={prefixedFallbackPath} replace />;
   }
   
+  console.log('✅ CopseAdminOnly: Access GRANTED');
   return <>{children}</>;
 };
 

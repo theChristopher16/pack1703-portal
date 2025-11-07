@@ -911,6 +911,46 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // GALLERY PHOTOS
+    // ============================================================================
+    
+    // Gallery photos - Individual photo access
+    match /gallery-photos/{photoId} {
+      // Anyone authenticated can read approved photos
+      // Den leaders and admins can read all photos (for approval)
+      allow read: if isAuthenticated() && (
+        resource.data.status == 'approved' ||
+        hasAnyRole(['den_leader', 'admin', 'super_admin', 'copse_admin'])
+      );
+      
+      // Any authenticated user can upload photos (pending approval)
+      allow create: if isAuthenticated() &&
+        request.resource.data.organizationId is string &&
+        request.resource.data.uploadedBy == request.auth.uid &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.fileSize > 0 &&
+        request.resource.data.fileSize < 10485760; // 10MB limit
+      
+      // Den leaders and admins can update photos (for approval/rejection)
+      // Photo uploader can update their own photos
+      allow update: if isAuthenticated() && (
+        hasAnyRole(['den_leader', 'admin', 'super_admin', 'copse_admin']) ||
+        resource.data.uploadedBy == request.auth.uid
+      );
+      
+      // Photo uploader or admins can delete photos
+      allow delete: if isAuthenticated() && (
+        resource.data.uploadedBy == request.auth.uid ||
+        hasAnyRole(['admin', 'super_admin', 'copse_admin'])
+      );
+    }
+    
+    // Gallery photos - Collection access
+    match /gallery-photos {
+      allow list: if isAuthenticated();
+    }
+
+    // ============================================================================
     // DENY ALL OTHER ACCESS
     // ============================================================================
     

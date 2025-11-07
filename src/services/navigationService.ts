@@ -145,6 +145,15 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     componentId: 'resources'
   },
   {
+    name: 'Gallery',
+    href: '/gallery',
+    icon: FileText,
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.COPSE_ADMIN],
+    category: 'authenticated',
+    description: 'Photo gallery with memories',
+    componentId: 'gallery'
+  },
+  {
     name: 'Dues',
     href: '/dues',
     icon: CreditCard,

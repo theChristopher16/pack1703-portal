@@ -46,6 +46,13 @@ export const BASE_COMPONENTS = {
     icon: '📚',
     category: 'content'
   },
+  gallery: {
+    id: 'gallery',
+    name: 'Photo Gallery',
+    description: 'Photo gallery with approval workflow',
+    icon: '📸',
+    category: 'content'
+  },
   profile: {
     id: 'profile',
     name: 'Profile',

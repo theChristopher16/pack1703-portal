@@ -13,6 +13,7 @@ import UnifiedAnnouncementsPage from '../pages/UnifiedAnnouncementsPage';
 import ResourcesPage from '../pages/ResourcesPage';
 import InventoryPage from '../pages/InventoryPage';
 import VolunteerPage from '../pages/VolunteerPage';
+import GalleryPage from '../pages/GalleryPage';
 import EcologyPage from '../pages/EcologyPage';
 import FeedbackPage from '../pages/FeedbackPage';
 import DataAuditPage from '../pages/DataAuditPage';
@@ -62,6 +63,7 @@ const PackRouter: React.FC = () => {
         <Route path="announcements" element={<Layout><AuthenticatedOnly><UnifiedAnnouncementsPage /></AuthenticatedOnly></Layout>} />
         <Route path="resources" element={<Layout><AuthenticatedOnly><ResourcesPage /></AuthenticatedOnly></Layout>} />
         <Route path="resources/inventory" element={<Layout><AuthenticatedOnly><InventoryPage /></AuthenticatedOnly></Layout>} />
+        <Route path="gallery" element={<Layout><AuthenticatedOnly><GalleryPage /></AuthenticatedOnly></Layout>} />
         <Route path="dues" element={<Layout><AuthenticatedOnly><DuesInformation /></AuthenticatedOnly></Layout>} />
         <Route path="volunteer" element={<Layout><AuthenticatedOnly><VolunteerPage /></AuthenticatedOnly></Layout>} />
         <Route path="ecology" element={<Layout><EcologyPage /></Layout>} />

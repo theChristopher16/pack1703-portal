@@ -108,21 +108,28 @@ export const AppCheckDebug: React.FC = () => {
           <div className="mb-6 space-y-3">
             <h3 className="font-semibold text-gray-900 mb-2">Test Cloud Functions</h3>
             <button
+              onClick={() => testFunctionCall('getSystemMetrics')}
+              disabled={loading}
+              className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+            >
+              {loading ? 'Testing...' : 'Test getSystemMetrics (Working Function)'}
+            </button>
+            <button
               onClick={() => testFunctionCall('updateUserRole')}
               disabled={loading}
               className="w-full px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
             >
-              {loading ? 'Testing...' : 'Test updateUserRole (Failing Function)'}
+              {loading ? 'Testing...' : 'Test updateUserRole (Broken Function)'}
             </button>
             <button
               onClick={() => testFunctionCall('testAppCheckStatus')}
               disabled={loading}
-              className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+              className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
             >
-              {loading ? 'Testing...' : 'Test testAppCheckStatus (Simple Function)'}
+              {loading ? 'Testing...' : 'Test testAppCheckStatus (Not Deployed Yet)'}
             </button>
             <p className="text-xs text-gray-500 mt-2 text-center">
-              These buttons test if Cloud Functions are being blocked by App Check or other security settings
+              Test functions to verify IAM permissions and identify which functions are working
             </p>
           </div>
 

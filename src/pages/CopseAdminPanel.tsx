@@ -179,6 +179,20 @@ const mockCopseAdmins: CopseAdmin[] = [
 // Mock users for fallback (will be replaced by real data from Firestore)
 const mockNetworkUsers: NetworkUser[] = [];
 
+// Helper function to get permissions for a role
+const getRolePermissions = (role: UserRole): string[] => {
+  const permissionMap: Record<UserRole, string[]> = {
+    [UserRole.PARENT]: ['view_events', 'rsvp_events', 'view_announcements', 'submit_feedback'],
+    [UserRole.DEN_LEADER]: ['view_events', 'rsvp_events', 'view_announcements', 'submit_feedback', 'manage_den', 'view_den_members'],
+    [UserRole.ADMIN]: ['view_events', 'rsvp_events', 'view_announcements', 'submit_feedback', 'manage_den', 'view_den_members', 'manage_events', 'manage_announcements', 'manage_users', 'view_analytics'],
+    [UserRole.SUPER_ADMIN]: ['view_events', 'rsvp_events', 'view_announcements', 'submit_feedback', 'manage_den', 'view_den_members', 'manage_events', 'manage_announcements', 'manage_users', 'view_analytics', 'system_admin', 'user_management', 'manage_roles'],
+    [UserRole.COPSE_ADMIN]: ['view_events', 'rsvp_events', 'view_announcements', 'submit_feedback', 'manage_den', 'view_den_members', 'manage_events', 'manage_announcements', 'manage_users', 'view_analytics', 'system_admin', 'user_management', 'manage_roles', 'manage_organizations', 'cross_org_admin'],
+    [UserRole.AI_ASSISTANT]: ['view_events', 'view_announcements', 'ai_operations']
+  };
+  
+  return permissionMap[role] || [];
+};
+
 export const CopseAdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'organizations' | 'users' | 'admins' | 'analytics'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
@@ -987,11 +1001,24 @@ export const CopseAdminPanel: React.FC = () => {
                                        editedRoles.includes(UserRole.DEN_LEADER) ? UserRole.DEN_LEADER :
                                        editedRoles[0];
 
-                    // Use Cloud Function to update user role (bypasses Firestore security rules)
-                    const updateUserRoleFunction = httpsCallable(functions, 'updateUserRole');
-                    await updateUserRoleFunction({
+                    // Only super admins can assign super_admin role
+                    if (primaryRole === UserRole.SUPER_ADMIN && currentUser?.role !== UserRole.SUPER_ADMIN) {
+                      setRoleError('Only super admins can assign the super admin role');
+                      setIsSavingRoles(false);
+                      return;
+                    }
+
+                    // Use adminUpdateUser function (working alternative to updateUserRole)
+                    const adminUpdateUserFunction = httpsCallable(functions, 'adminUpdateUser');
+                    await adminUpdateUserFunction({
                       userId: editingUser.id,
-                      newRole: primaryRole
+                      updates: {
+                        role: primaryRole,
+                        permissions: getRolePermissions(primaryRole),
+                        isAdmin: primaryRole === UserRole.ADMIN || primaryRole === UserRole.SUPER_ADMIN || primaryRole === UserRole.COPSE_ADMIN,
+                        isDenLeader: primaryRole === UserRole.DEN_LEADER || primaryRole === UserRole.ADMIN || primaryRole === UserRole.SUPER_ADMIN || primaryRole === UserRole.COPSE_ADMIN,
+                        isCubmaster: primaryRole === UserRole.ADMIN || primaryRole === UserRole.SUPER_ADMIN || primaryRole === UserRole.COPSE_ADMIN
+                      }
                     });
 
                     console.log(`✅ Updated role for ${editingUser.name} to ${primaryRole}`);

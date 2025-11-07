@@ -156,6 +156,8 @@ export const updateUserRole = functions.https.onCall(async (data: any, context: 
   try {
     const { userId, newRole } = data;
     
+    console.log(`[updateUserRole] Request from ${context.auth?.uid} to update user ${userId} to role ${newRole}`);
+    
     // Check authentication
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -166,16 +168,20 @@ export const updateUserRole = functions.https.onCall(async (data: any, context: 
       // Check if current user has admin privileges
       const currentUserDoc = await db.collection('users').doc(context.auth.uid).get();
       if (!currentUserDoc.exists) {
+        console.error(`[updateUserRole] Current user document not found for ${context.auth.uid}`);
         throw new functions.https.HttpsError('permission-denied', 'Current user not found');
       }
       
       const currentUserData = currentUserDoc.data();
+      console.log(`[updateUserRole] Current user role: ${currentUserData?.role}`);
+      
       const hasAdminRole = currentUserData?.role === 'super_admin' || 
                           currentUserData?.role === 'admin' || 
                           currentUserData?.role === 'copse_admin';
       const hasLegacyPermissions = currentUserData?.isAdmin || currentUserData?.isDenLeader || currentUserData?.isCubmaster;
       
       if (!hasAdminRole && !hasLegacyPermissions) {
+        console.error(`[updateUserRole] User ${context.auth.uid} lacks admin privileges`);
         throw new functions.https.HttpsError('permission-denied', 'Only admins can update other users');
       }
     }
@@ -186,7 +192,17 @@ export const updateUserRole = functions.https.onCall(async (data: any, context: 
       throw new functions.https.HttpsError('invalid-argument', 'Invalid role');
     }
 
-    // Update user role
+    // Only super admins can assign super_admin role
+    if (newRole === 'super_admin') {
+      const currentUserDoc = await db.collection('users').doc(context.auth.uid).get();
+      const currentUserData = currentUserDoc.data();
+      if (currentUserData?.role !== 'super_admin') {
+        console.error(`[updateUserRole] User ${context.auth.uid} attempted to assign super_admin role without being super_admin`);
+        throw new functions.https.HttpsError('permission-denied', 'Only super admins can assign the super admin role');
+      }
+    }
+
+    // Update user role in Firestore
     const updateData: any = {
       role: newRole,
       updatedAt: getTimestamp()
@@ -210,21 +226,59 @@ export const updateUserRole = functions.https.onCall(async (data: any, context: 
       updateData.permissions = getRolePermissions(newRole);
     }
 
+    console.log(`[updateUserRole] Updating Firestore document for user ${userId}`);
     await db.collection('users').doc(userId).update(updateData);
+    
+    // Update Firebase Auth custom claims
+    try {
+      console.log(`[updateUserRole] Setting custom claims for user ${userId}`);
+      await admin.auth().setCustomUserClaims(userId, {
+        role: newRole,
+        approved: true
+      });
+      console.log(`[updateUserRole] Successfully set custom claims for user ${userId}`);
+    } catch (authError: any) {
+      console.error(`[updateUserRole] Error setting custom claims for user ${userId}:`, authError);
+      // If user doesn't exist in Firebase Auth, log but don't fail
+      if (authError.code !== 'auth/user-not-found') {
+        throw authError;
+      }
+      console.log(`[updateUserRole] User ${userId} not found in Firebase Auth, skipping custom claims`);
+    }
 
+    // Log the action
+    try {
+      await db.collection('adminActions').add({
+        userId: context.auth.uid,
+        userEmail: context.auth.token.email || '',
+        action: 'update_role',
+        entityType: 'user',
+        entityId: userId,
+        details: { oldRole: 'unknown', newRole },
+        timestamp: getTimestamp(),
+        ipAddress: context.rawRequest?.ip || 'unknown',
+        userAgent: context.rawRequest?.headers?.['user-agent'] || 'unknown',
+        success: true
+      });
+    } catch (logError) {
+      console.error('[updateUserRole] Error logging action:', logError);
+      // Don't fail the operation if logging fails
+    }
+
+    console.log(`[updateUserRole] Successfully updated user ${userId} to role ${newRole}`);
     return {
       success: true,
       message: `User role updated to ${newRole} successfully`
     };
 
-  } catch (error) {
-    console.error('Error updating user role:', error);
+  } catch (error: any) {
+    console.error('[updateUserRole] Error:', error);
     
     if (error instanceof functions.https.HttpsError) {
       throw error;
     }
     
-    throw new functions.https.HttpsError('internal', 'Failed to update user role');
+    throw new functions.https.HttpsError('internal', `Failed to update user role: ${error.message || 'Unknown error'}`);
   }
 });
 

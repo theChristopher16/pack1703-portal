@@ -190,6 +190,9 @@ export const CopseAdminPanel: React.FC = () => {
   const [realUsers, setRealUsers] = useState<AppUser[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [usersError, setUsersError] = useState<string | null>(null);
+  
+  // Get current user to check if they're a super admin
+  const currentUser = authService.getCurrentUser();
 
   // Load real users from Firestore
   useEffect(() => {
@@ -869,9 +872,15 @@ export const CopseAdminPanel: React.FC = () => {
                       { value: UserRole.PARENT, label: 'Parent', description: 'Family account - manage family events and RSVPs' },
                       { value: UserRole.DEN_LEADER, label: 'Den Leader', description: 'Den-specific management and leadership' },
                       { value: UserRole.ADMIN, label: 'Admin', description: 'Organization administrator - full management access' },
-                      { value: UserRole.SUPER_ADMIN, label: 'Super Admin', description: 'Organization-wide system access' },
+                      { value: UserRole.SUPER_ADMIN, label: 'Super Admin', description: 'Organization-wide system access', restrictedTo: 'super_admin' },
                       { value: UserRole.COPSE_ADMIN, label: 'Copse Admin', description: 'Network-level administration across all organizations' }
-                    ].map((roleOption) => {
+                    ].filter(roleOption => {
+                      // Only show Super Admin option to super admins
+                      if (roleOption.restrictedTo === 'super_admin') {
+                        return currentUser?.role === UserRole.SUPER_ADMIN;
+                      }
+                      return true;
+                    }).map((roleOption) => {
                       const isChecked = editedRoles.includes(roleOption.value);
                       const roleBadge = getUserRoleBadge(roleOption.value);
                       return (

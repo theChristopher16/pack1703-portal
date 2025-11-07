@@ -115,9 +115,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       return roleFilteredItems.filter(item => item.isPlatformRoute === true);
     }
     
-    // Otherwise, filter by organization type AND enabled components (exclude platform routes)
+    // When in an organization context
+    // Show org-specific items + platform routes for super admins/copse admins (so they can navigate back)
+    const isSuperUser = userRole === UserRole.SUPER_ADMIN || userRole === UserRole.COPSE_ADMIN;
     const orgSpecificItems = roleFilteredItems.filter(item => !item.isPlatformRoute);
-    return filterNavigationByOrg(orgSpecificItems, orgType, enabledComponents);
+    const filteredOrgItems = filterNavigationByOrg(orgSpecificItems, orgType, enabledComponents);
+    
+    // Add platform routes for super users so they can navigate back to Organizations/Copse Admin
+    if (isSuperUser) {
+      const platformItems = roleFilteredItems.filter(item => item.isPlatformRoute === true);
+      return [...filteredOrgItems, ...platformItems];
+    }
+    
+    return filteredOrgItems;
   };
 
   const allNavItems = getUserNavigationItems();

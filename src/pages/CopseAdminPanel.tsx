@@ -604,6 +604,12 @@ export const CopseAdminPanel: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <button 
                               onClick={() => {
+                                console.log('✏️ Opening edit modal for user:', {
+                                  id: user.id,
+                                  name: user.name,
+                                  currentRoles: user.roles,
+                                  roleCount: user.roles.length
+                                });
                                 setEditingUser(user);
                                 setEditedRoles(user.roles);
                                 setRoleError(null);

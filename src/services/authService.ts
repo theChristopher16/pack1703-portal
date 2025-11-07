@@ -700,6 +700,7 @@ class AuthService {
       displayName: userData.displayName,
       photoURL: userData.photoURL,
       role: userData.role,
+      roles: userData.roles || [userData.role], // Load roles array, fallback to single role
       permissions: userData.permissions || [],
       isActive: userData.isActive,
       status: userData.status,
@@ -1914,6 +1915,7 @@ class AuthService {
           email: doc.data().email,
           displayName: doc.data().displayName,
           role: doc.data().role,
+          roles: doc.data().roles || [doc.data().role], // Load roles array, fallback to single role
           photoURL: doc.data().photoURL,
           authProvider: doc.data().authProvider,
           permissions: doc.data().permissions || [],

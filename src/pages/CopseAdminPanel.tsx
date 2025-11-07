@@ -232,7 +232,7 @@ export const CopseAdminPanel: React.FC = () => {
     id: user.uid,
     name: user.displayName || user.profile?.firstName + ' ' + user.profile?.lastName || user.email.split('@')[0],
     email: user.email,
-    roles: [user.role], // Convert single role to array for future multi-role support
+    roles: user.roles || [user.role], // Use roles array if available, fallback to single role
     organizations: ['org-1'], // TODO: Pull from user's actual org assignments
     status: user.isActive ? 'active' : 'suspended',
     lastActive: user.lastLoginAt || user.updatedAt,
@@ -993,6 +993,12 @@ export const CopseAdminPanel: React.FC = () => {
                     setIsSavingRoles(true);
                     setRoleError(null);
 
+                    console.log('🔄 Starting role update...', {
+                      userId: editingUser.id,
+                      userName: editingUser.name,
+                      selectedRoles: editedRoles
+                    });
+
                     // Get the highest priority role for the primary role field (backward compatibility)
                     const primaryRole = editedRoles.includes(UserRole.COPSE_ADMIN) ? UserRole.COPSE_ADMIN :
                                        editedRoles.includes(UserRole.SUPER_ADMIN) ? UserRole.SUPER_ADMIN :
@@ -1000,8 +1006,11 @@ export const CopseAdminPanel: React.FC = () => {
                                        editedRoles.includes(UserRole.DEN_LEADER) ? UserRole.DEN_LEADER :
                                        editedRoles[0];
 
+                    console.log('📋 Primary role determined:', primaryRole);
+
                     // Only super admins can assign super_admin role
                     if (editedRoles.includes(UserRole.SUPER_ADMIN) && currentUser?.role !== UserRole.SUPER_ADMIN) {
+                      console.error('❌ Permission denied: Only super admins can assign super_admin role');
                       setRoleError('Only super admins can assign the super admin role');
                       setIsSavingRoles(false);
                       return;
@@ -1012,35 +1021,65 @@ export const CopseAdminPanel: React.FC = () => {
                       editedRoles.flatMap(role => getRolePermissions(role))
                     ));
 
+                    console.log('🔑 Combined permissions:', allPermissions);
+
                     // Determine boolean flags based on highest role
                     const hasAdminRole = editedRoles.some(r => [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.COPSE_ADMIN].includes(r));
                     const hasDenLeaderRole = editedRoles.some(r => [UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.COPSE_ADMIN].includes(r));
                     const hasCubmasterRole = editedRoles.some(r => [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.COPSE_ADMIN].includes(r));
 
-                    // Use adminUpdateUser function with multi-role support
-                    const adminUpdateUserFunction = httpsCallable(functions, 'adminUpdateUser');
-                    await adminUpdateUserFunction({
+                    console.log('🎯 Role flags:', {
+                      isAdmin: hasAdminRole,
+                      isDenLeader: hasDenLeaderRole,
+                      isCubmaster: hasCubmasterRole
+                    });
+
+                    const updatePayload = {
                       userId: editingUser.id,
                       updates: {
-                        role: primaryRole, // Primary role for backward compatibility
-                        roles: editedRoles, // All assigned roles
+                        role: primaryRole,
+                        roles: editedRoles,
                         permissions: allPermissions,
                         isAdmin: hasAdminRole,
                         isDenLeader: hasDenLeaderRole,
                         isCubmaster: hasCubmasterRole
                       }
-                    });
+                    };
 
-                    console.log(`✅ Updated role for ${editingUser.name} to ${primaryRole}`);
+                    console.log('📤 Sending update to adminUpdateUser:', updatePayload);
+
+                    // Use adminUpdateUser function with multi-role support
+                    const adminUpdateUserFunction = httpsCallable(functions, 'adminUpdateUser');
+                    const response = await adminUpdateUserFunction(updatePayload);
+
+                    console.log('📥 Response from adminUpdateUser:', response);
+                    console.log(`✅ Updated roles for ${editingUser.name}:`, editedRoles);
                     
-                    // Reload users to show updated data
-                    const users = await authService.getUsers();
-                    setRealUsers(users);
-                    
+                    // Close modal first
                     setEditingUser(null);
                     setEditedRoles([]);
+                    
+                    // Reload users to show updated data
+                    console.log('🔄 Reloading users...');
+                    try {
+                      const users = await authService.getUsers();
+                      setRealUsers(users);
+                      console.log('✅ Users reloaded successfully:', users.length);
+                    } catch (reloadError: any) {
+                      console.warn('⚠️ Error reloading users, forcing page refresh:', reloadError);
+                      // If reload fails due to CORS, force page refresh
+                      setTimeout(() => {
+                        window.location.reload();
+                      }, 500);
+                    }
                   } catch (error: any) {
-                    console.error('Error updating user role:', error);
+                    console.error('❌ Error updating user role:', error);
+                    console.error('Error details:', {
+                      message: error.message,
+                      code: error.code,
+                      details: error.details,
+                      stack: error.stack
+                    });
                     setRoleError(error.message || 'Failed to update role');
                   } finally {
                     setIsSavingRoles(false);

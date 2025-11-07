@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Network, 
   Users, 
@@ -18,8 +18,10 @@ import {
   Phone,
   Calendar,
   Edit,
-  Trash2
+  Trash2,
+  Loader2
 } from 'lucide-react';
+import { authService, AppUser, UserRole } from '../services/authService';
 
 // Mock data for enterprise network
 interface Organization {
@@ -50,7 +52,7 @@ interface NetworkUser {
   id: string;
   name: string;
   email: string;
-  roles: ('parent' | 'den_leader' | 'admin' | 'super_admin' | 'copse_admin')[]; // Multiple roles support
+  roles: UserRole[]; // Multiple roles support (currently single role from AppUser)
   organizations: string[]; // IDs of orgs they belong to
   status: 'active' | 'pending' | 'suspended';
   lastActive: Date;
@@ -172,102 +174,53 @@ const mockCopseAdmins: CopseAdmin[] = [
   }
 ];
 
-const mockNetworkUsers: NetworkUser[] = [
-  {
-    id: 'user-1',
-    name: 'John Smith',
-    email: 'john.smith@pack1703.org',
-    roles: ['parent', 'den_leader'],
-    organizations: ['org-1'],
-    status: 'active',
-    lastActive: new Date('2025-02-06T18:30:00'),
-    createdAt: new Date('2024-02-10'),
-    phone: '+1 (555) 111-2222'
-  },
-  {
-    id: 'user-2',
-    name: 'Maria Garcia',
-    email: 'maria.garcia@sfes.edu',
-    roles: ['admin', 'den_leader'],
-    organizations: ['org-2'],
-    status: 'active',
-    lastActive: new Date('2025-02-06T16:15:00'),
-    createdAt: new Date('2024-06-25')
-  },
-  {
-    id: 'user-3',
-    name: 'Robert Wilson',
-    email: 'robert.wilson@gmail.com',
-    roles: ['parent'],
-    organizations: ['org-1', 'org-3'],
-    status: 'active',
-    lastActive: new Date('2025-02-06T12:45:00'),
-    createdAt: new Date('2024-03-15'),
-    phone: '+1 (555) 333-4444'
-  },
-  {
-    id: 'user-4',
-    name: 'Lisa Anderson',
-    email: 'lisa@cysl.org',
-    roles: ['super_admin'],
-    organizations: ['org-3'],
-    status: 'active',
-    lastActive: new Date('2025-02-06T14:20:00'),
-    createdAt: new Date('2024-09-12')
-  },
-  {
-    id: 'user-5',
-    name: 'James Brown',
-    email: 'james.brown@pack1703.org',
-    roles: ['parent', 'admin'],
-    organizations: ['org-1'],
-    status: 'active',
-    lastActive: new Date('2025-02-06T19:00:00'),
-    createdAt: new Date('2024-01-20'),
-    phone: '+1 (555) 555-6666'
-  },
-  {
-    id: 'user-6',
-    name: 'Amanda Lee',
-    email: 'amanda.lee@sfes.edu',
-    roles: ['den_leader'],
-    organizations: ['org-2'],
-    status: 'pending',
-    lastActive: new Date('2025-02-05T10:30:00'),
-    createdAt: new Date('2025-02-05')
-  },
-  {
-    id: 'user-7',
-    name: 'Christopher Martinez',
-    email: 'chris@riverside-garden.org',
-    roles: ['admin', 'parent'],
-    organizations: ['org-5'],
-    status: 'active',
-    lastActive: new Date('2025-02-06T08:15:00'),
-    createdAt: new Date('2024-11-10'),
-    phone: '+1 (555) 777-8888'
-  },
-  {
-    id: 'user-8',
-    name: 'Jennifer Taylor',
-    email: 'jtaylor@troop456.org',
-    roles: ['parent'],
-    organizations: ['org-4'],
-    status: 'pending',
-    lastActive: new Date('2025-02-03T15:45:00'),
-    createdAt: new Date('2025-02-01')
-  }
-];
+// Mock users for fallback (will be replaced by real data from Firestore)
+const mockNetworkUsers: NetworkUser[] = [];
 
 export const CopseAdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'organizations' | 'users' | 'admins' | 'analytics'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
   const [editingUser, setEditingUser] = useState<NetworkUser | null>(null);
+  const [realUsers, setRealUsers] = useState<AppUser[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [usersError, setUsersError] = useState<string | null>(null);
+
+  // Load real users from Firestore
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        setIsLoadingUsers(true);
+        setUsersError(null);
+        const users = await authService.getUsers();
+        setRealUsers(users);
+      } catch (error: any) {
+        console.error('Error loading users:', error);
+        setUsersError(error.message || 'Failed to load users');
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
+
+    loadUsers();
+  }, []);
+
+  // Convert AppUser to NetworkUser format for display
+  const networkUsers: NetworkUser[] = realUsers.map(user => ({
+    id: user.uid,
+    name: user.displayName || user.profile?.firstName + ' ' + user.profile?.lastName || user.email.split('@')[0],
+    email: user.email,
+    roles: [user.role], // Convert single role to array for future multi-role support
+    organizations: ['org-1'], // TODO: Pull from user's actual org assignments
+    status: user.isActive ? 'active' : 'suspended',
+    lastActive: user.lastLoginAt || user.updatedAt,
+    createdAt: user.createdAt,
+    phone: user.profile?.phone
+  }));
 
   const totalOrgs = mockOrganizations.length;
   const activeOrgs = mockOrganizations.filter(o => o.status === 'active').length;
-  const totalMembers = mockOrganizations.reduce((sum, org) => sum + org.memberCount, 0);
+  const totalMembers = realUsers.length;
   const totalAdmins = mockCopseAdmins.filter(a => a.status === 'active').length;
 
   const getRoleBadge = (role: CopseAdmin['role']) => {
@@ -280,13 +233,14 @@ export const CopseAdminPanel: React.FC = () => {
     return config[role];
   };
 
-  const getUserRoleBadge = (role: NetworkUser['roles'][0]) => {
-    const config = {
-      parent: { label: 'Parent', color: 'bg-blue-100 text-blue-800' },
-      den_leader: { label: 'Den Leader', color: 'bg-green-100 text-green-800' },
-      admin: { label: 'Admin', color: 'bg-purple-100 text-purple-800' },
-      super_admin: { label: 'Super Admin', color: 'bg-yellow-100 text-yellow-800' },
-      copse_admin: { label: 'Copse Admin', color: 'bg-pink-100 text-pink-800' }
+  const getUserRoleBadge = (role: UserRole) => {
+    const config: Record<UserRole, { label: string; color: string }> = {
+      [UserRole.PARENT]: { label: 'Parent', color: 'bg-blue-100 text-blue-800' },
+      [UserRole.DEN_LEADER]: { label: 'Den Leader', color: 'bg-green-100 text-green-800' },
+      [UserRole.ADMIN]: { label: 'Admin', color: 'bg-purple-100 text-purple-800' },
+      [UserRole.SUPER_ADMIN]: { label: 'Super Admin', color: 'bg-yellow-100 text-yellow-800' },
+      [UserRole.COPSE_ADMIN]: { label: 'Copse Admin', color: 'bg-pink-100 text-pink-800' },
+      [UserRole.AI_ASSISTANT]: { label: 'AI Assistant', color: 'bg-cyan-100 text-cyan-800' }
     };
     return config[role];
   };
@@ -347,10 +301,10 @@ export const CopseAdminPanel: React.FC = () => {
             <div className="flex items-center justify-between mb-2">
               <Users className="w-8 h-8 text-blue-600" />
               <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                {mockNetworkUsers.filter(u => u.status === 'active').length} active
+                {networkUsers.filter(u => u.status === 'active').length} active
               </span>
             </div>
-            <div className="text-3xl font-bold text-ink">{mockNetworkUsers.length}</div>
+            <div className="text-3xl font-bold text-ink">{networkUsers.length}</div>
             <div className="text-sm text-gray-600">Registered Users</div>
           </div>
 
@@ -549,15 +503,38 @@ export const CopseAdminPanel: React.FC = () => {
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">{mockNetworkUsers.length} total users</span>
+                    {isLoadingUsers ? (
+                      <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                    ) : (
+                      <span className="text-sm text-gray-600">{networkUsers.length} total users</span>
+                    )}
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  {mockNetworkUsers.map((user) => {
-                    const statusBadge = getStatusBadge(user.status);
-                    return (
-                      <div key={user.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow">
+                {usersError && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    {usersError}
+                  </div>
+                )}
+
+                {isLoadingUsers ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 text-forest-600 animate-spin" />
+                  </div>
+                ) : networkUsers.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    No users found in the network
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {networkUsers.filter(user => 
+                      !searchQuery || 
+                      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+                    ).map((user) => {
+                      const statusBadge = getStatusBadge(user.status);
+                      return (
+                        <div key={user.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow">
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-3 flex-1">
                             <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">
@@ -616,9 +593,10 @@ export const CopseAdminPanel: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
@@ -879,14 +857,14 @@ export const CopseAdminPanel: React.FC = () => {
                   </label>
                   <div className="space-y-2 border border-gray-200 rounded-lg p-4">
                     {[
-                      { value: 'parent', label: 'Parent', description: 'Family account - manage family events and RSVPs' },
-                      { value: 'den_leader', label: 'Den Leader', description: 'Den-specific management and leadership' },
-                      { value: 'admin', label: 'Admin', description: 'Organization administrator - full management access' },
-                      { value: 'super_admin', label: 'Super Admin', description: 'Organization-wide system access' },
-                      { value: 'copse_admin', label: 'Copse Admin', description: 'Network-level administration across all organizations' }
+                      { value: UserRole.PARENT, label: 'Parent', description: 'Family account - manage family events and RSVPs' },
+                      { value: UserRole.DEN_LEADER, label: 'Den Leader', description: 'Den-specific management and leadership' },
+                      { value: UserRole.ADMIN, label: 'Admin', description: 'Organization administrator - full management access' },
+                      { value: UserRole.SUPER_ADMIN, label: 'Super Admin', description: 'Organization-wide system access' },
+                      { value: UserRole.COPSE_ADMIN, label: 'Copse Admin', description: 'Network-level administration across all organizations' }
                     ].map((roleOption) => {
-                      const isChecked = editingUser.roles.includes(roleOption.value as any);
-                      const roleBadge = getUserRoleBadge(roleOption.value as any);
+                      const isChecked = editingUser.roles.includes(roleOption.value);
+                      const roleBadge = getUserRoleBadge(roleOption.value);
                       return (
                         <label 
                           key={roleOption.value}

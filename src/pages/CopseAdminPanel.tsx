@@ -22,6 +22,8 @@ import {
   Loader2
 } from 'lucide-react';
 import { authService, AppUser, UserRole } from '../services/authService';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase/config';
 
 // Mock data for enterprise network
 interface Organization {
@@ -182,6 +184,9 @@ export const CopseAdminPanel: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
   const [editingUser, setEditingUser] = useState<NetworkUser | null>(null);
+  const [editedRoles, setEditedRoles] = useState<UserRole[]>([]);
+  const [isSavingRoles, setIsSavingRoles] = useState(false);
+  const [roleError, setRoleError] = useState<string | null>(null);
   const [realUsers, setRealUsers] = useState<AppUser[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [usersError, setUsersError] = useState<string | null>(null);
@@ -581,7 +586,11 @@ export const CopseAdminPanel: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <button 
-                              onClick={() => setEditingUser(user)}
+                              onClick={() => {
+                                setEditingUser(user);
+                                setEditedRoles(user.roles);
+                                setRoleError(null);
+                              }}
                               className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
                               title="Edit roles"
                             >
@@ -863,7 +872,7 @@ export const CopseAdminPanel: React.FC = () => {
                       { value: UserRole.SUPER_ADMIN, label: 'Super Admin', description: 'Organization-wide system access' },
                       { value: UserRole.COPSE_ADMIN, label: 'Copse Admin', description: 'Network-level administration across all organizations' }
                     ].map((roleOption) => {
-                      const isChecked = editingUser.roles.includes(roleOption.value);
+                      const isChecked = editedRoles.includes(roleOption.value);
                       const roleBadge = getUserRoleBadge(roleOption.value);
                       return (
                         <label 
@@ -876,8 +885,20 @@ export const CopseAdminPanel: React.FC = () => {
                             type="checkbox" 
                             checked={isChecked}
                             onChange={(e) => {
-                              // Handle role toggle - just for UI demo
-                              console.log(`Toggle ${roleOption.value} for ${editingUser.name}`);
+                              if (e.target.checked) {
+                                // Add role
+                                setEditedRoles([...editedRoles, roleOption.value]);
+                                setRoleError(null);
+                              } else {
+                                // Remove role - but ensure at least one remains
+                                const newRoles = editedRoles.filter(r => r !== roleOption.value);
+                                if (newRoles.length === 0) {
+                                  setRoleError('At least one role must be assigned');
+                                } else {
+                                  setEditedRoles(newRoles);
+                                  setRoleError(null);
+                                }
+                              }
                             }}
                             className="mt-1 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" 
                           />
@@ -895,8 +916,16 @@ export const CopseAdminPanel: React.FC = () => {
                     })}
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    💡 Users can have multiple roles to access different parts of the system without creating separate accounts.
+                    💡 Note: Currently, the system stores the highest priority role. Multi-role support is prepared for future implementation.
                   </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Priority: Copse Admin → Super Admin → Admin → Den Leader → Parent
+                  </p>
+                  {roleError && (
+                    <p className="text-xs text-red-600 mt-2 font-medium">
+                      ⚠️ {roleError}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -930,14 +959,52 @@ export const CopseAdminPanel: React.FC = () => {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  // Handle role update
-                  console.log('Updating roles for:', editingUser.name);
-                  setEditingUser(null);
+                onClick={async () => {
+                  // Validate at least one role
+                  if (editedRoles.length === 0) {
+                    setRoleError('At least one role must be assigned');
+                    return;
+                  }
+
+                  try {
+                    setIsSavingRoles(true);
+                    setRoleError(null);
+
+                    // For now, we only support single role in the database
+                    // Use the highest priority role if multiple are selected
+                    const primaryRole = editedRoles.includes(UserRole.COPSE_ADMIN) ? UserRole.COPSE_ADMIN :
+                                       editedRoles.includes(UserRole.SUPER_ADMIN) ? UserRole.SUPER_ADMIN :
+                                       editedRoles.includes(UserRole.ADMIN) ? UserRole.ADMIN :
+                                       editedRoles.includes(UserRole.DEN_LEADER) ? UserRole.DEN_LEADER :
+                                       editedRoles[0];
+
+                    // Update user role in Firestore
+                    const userRef = doc(db, 'users', editingUser.id);
+                    await updateDoc(userRef, {
+                      role: primaryRole,
+                      updatedAt: new Date()
+                    });
+
+                    console.log(`✅ Updated role for ${editingUser.name} to ${primaryRole}`);
+                    
+                    // Reload users to show updated data
+                    const users = await authService.getUsers();
+                    setRealUsers(users);
+                    
+                    setEditingUser(null);
+                    setEditedRoles([]);
+                  } catch (error: any) {
+                    console.error('Error updating user role:', error);
+                    setRoleError(error.message || 'Failed to update role');
+                  } finally {
+                    setIsSavingRoles(false);
+                  }
                 }}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                disabled={isSavingRoles || editedRoles.length === 0}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                Save Changes
+                {isSavingRoles && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isSavingRoles ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

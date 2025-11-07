@@ -12,15 +12,16 @@ export const AppCheckDebug: React.FC = () => {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const testFunctionCall = async () => {
+  const testFunctionCall = async (functionName: string) => {
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
-      // Try calling a simple function to test App Check
-      const testFunction = httpsCallable(functions, 'disableAppCheckEnforcement');
+      console.log(`Testing function: ${functionName}`);
+      const testFunction = httpsCallable(functions, functionName);
       const response = await testFunction({});
+      console.log('Function response:', response);
       setResult(response.data);
     } catch (err: any) {
       console.error('Function call error:', err);
@@ -32,7 +33,8 @@ export const AppCheckDebug: React.FC = () => {
         message: err.message,
         code: err.code,
         details: err.details || 'No additional details',
-        stack: err.stack?.split('\n').slice(0, 5).join('\n')
+        stack: err.stack?.split('\n').slice(0, 5).join('\n'),
+        raw: JSON.stringify(err, null, 2)
       });
     } finally {
       setLoading(false);
@@ -102,17 +104,25 @@ export const AppCheckDebug: React.FC = () => {
             </ol>
           </div>
 
-          {/* Test Button */}
-          <div className="mb-6">
+          {/* Test Buttons */}
+          <div className="mb-6 space-y-3">
+            <h3 className="font-semibold text-gray-900 mb-2">Test Cloud Functions</h3>
             <button
-              onClick={testFunctionCall}
+              onClick={() => testFunctionCall('updateUserRole')}
               disabled={loading}
-              className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+              className="w-full px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
             >
-              {loading ? 'Testing Connection...' : 'Test Function Call'}
+              {loading ? 'Testing...' : 'Test updateUserRole (Failing Function)'}
+            </button>
+            <button
+              onClick={() => testFunctionCall('testAppCheckStatus')}
+              disabled={loading}
+              className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+            >
+              {loading ? 'Testing...' : 'Test testAppCheckStatus (Simple Function)'}
             </button>
             <p className="text-xs text-gray-500 mt-2 text-center">
-              This will attempt to call a Cloud Function to test if App Check is blocking requests
+              These buttons test if Cloud Functions are being blocked by App Check or other security settings
             </p>
           </div>
 

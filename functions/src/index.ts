@@ -2,6 +2,9 @@ import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { Client, Environment } from 'squareup';
 
+// Import test function
+export { testAppCheckStatus } from './testAppCheck';
+
 // Initialize Firebase Admin
 admin.initializeApp();
 

@@ -22,8 +22,8 @@ import {
   Loader2
 } from 'lucide-react';
 import { authService, AppUser, UserRole } from '../services/authService';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../firebase/config';
 
 // Mock data for enterprise network
 interface Organization {
@@ -978,11 +978,11 @@ export const CopseAdminPanel: React.FC = () => {
                                        editedRoles.includes(UserRole.DEN_LEADER) ? UserRole.DEN_LEADER :
                                        editedRoles[0];
 
-                    // Update user role in Firestore
-                    const userRef = doc(db, 'users', editingUser.id);
-                    await updateDoc(userRef, {
-                      role: primaryRole,
-                      updatedAt: new Date()
+                    // Use Cloud Function to update user role (bypasses Firestore security rules)
+                    const updateUserRoleFunction = httpsCallable(functions, 'updateUserRole');
+                    await updateUserRoleFunction({
+                      userId: editingUser.id,
+                      newRole: primaryRole
                     });
 
                     console.log(`✅ Updated role for ${editingUser.name} to ${primaryRole}`);

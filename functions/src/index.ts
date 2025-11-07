@@ -76,6 +76,8 @@ async function createThreatIntelligence(
 // Helper function to get role permissions
 function getRolePermissions(role: string): string[] {
   switch (role) {
+    case 'copse_admin':
+      return ['system_admin', 'user_management', 'role_management', 'system_config', 'event_management', 'pack_management', 'location_management', 'announcement_management', 'audit_logs', 'cost_management', 'network_management'];
     case 'super_admin':
       return ['system_admin', 'user_management', 'role_management', 'system_config', 'event_management', 'pack_management', 'location_management', 'announcement_management', 'audit_logs', 'cost_management'];
     case 'admin':
@@ -168,7 +170,9 @@ export const updateUserRole = functions.https.onCall(async (data: any, context: 
       }
       
       const currentUserData = currentUserDoc.data();
-      const hasAdminRole = currentUserData?.role === 'super_admin' || currentUserData?.role === 'admin';
+      const hasAdminRole = currentUserData?.role === 'super_admin' || 
+                          currentUserData?.role === 'admin' || 
+                          currentUserData?.role === 'copse_admin';
       const hasLegacyPermissions = currentUserData?.isAdmin || currentUserData?.isDenLeader || currentUserData?.isCubmaster;
       
       if (!hasAdminRole && !hasLegacyPermissions) {
@@ -177,7 +181,7 @@ export const updateUserRole = functions.https.onCall(async (data: any, context: 
     }
 
     // Validate role
-    const validRoles = ['parent', 'den_leader', 'admin', 'super_admin'];
+    const validRoles = ['parent', 'den_leader', 'admin', 'super_admin', 'copse_admin'];
     if (!validRoles.includes(newRole)) {
       throw new functions.https.HttpsError('invalid-argument', 'Invalid role');
     }
@@ -189,7 +193,7 @@ export const updateUserRole = functions.https.onCall(async (data: any, context: 
     };
 
     // Set appropriate boolean flags based on role
-    if (newRole === 'admin' || newRole === 'super_admin') {
+    if (newRole === 'admin' || newRole === 'super_admin' || newRole === 'copse_admin') {
       updateData.isAdmin = true;
       updateData.isDenLeader = true;
       updateData.isCubmaster = true;

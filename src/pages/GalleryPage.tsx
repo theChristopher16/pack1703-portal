@@ -144,7 +144,7 @@ export const GalleryPage: React.FC = () => {
   };
 
   const handleDelete = async (photoId: string) => {
-    if (!confirm('Are you sure you want to delete this photo? This cannot be undone.')) {
+    if (!window.confirm('Are you sure you want to delete this photo? This cannot be undone.')) {
       return;
     }
 

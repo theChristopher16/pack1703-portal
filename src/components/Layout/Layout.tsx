@@ -269,6 +269,69 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </div>
                 ))}
                 
+                {/* User Info Section - Shows current user and roles */}
+                {currentUser && (
+                  <div className="mb-4 bg-gradient-to-br from-forest-50/80 to-ocean-50/80 backdrop-blur-sm border border-forest-200/50 rounded-2xl overflow-hidden shadow-md p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-forest-400 to-ocean-400 flex items-center justify-center text-white font-bold text-sm shadow-glow">
+                        {currentUser.displayName?.charAt(0)?.toUpperCase() || currentUser.email?.charAt(0)?.toUpperCase() || 'U'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-forest-800 truncate text-sm">
+                          {currentUser.displayName || currentUser.email}
+                        </p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {(() => {
+                            const userRoles = currentUser.roles || [currentUser.role];
+                            const roleColors: Record<string, string> = {
+                              'copse_admin': 'bg-pink-100 text-pink-700 border-pink-200',
+                              'super_admin': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+                              'admin': 'bg-purple-100 text-purple-700 border-purple-200',
+                              'den_leader': 'bg-green-100 text-green-700 border-green-200',
+                              'parent': 'bg-blue-100 text-blue-700 border-blue-200'
+                            };
+                            return userRoles.map((role: string) => (
+                              <span 
+                                key={role}
+                                className={`text-xs px-2 py-0.5 rounded-full border ${roleColors[role] || 'bg-gray-100 text-gray-700 border-gray-200'}`}
+                              >
+                                {role.replace('_', ' ')}
+                              </span>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Organization Switcher - For multi-org users */}
+                {currentUser && (userRole === UserRole.COPSE_ADMIN || userRole === UserRole.SUPER_ADMIN) && (
+                  <div className="mb-4 bg-gradient-to-br from-purple-50/80 to-pink-50/80 backdrop-blur-sm border border-purple-200/50 rounded-2xl overflow-hidden shadow-md p-4">
+                    <h4 className="text-xs font-bold text-purple-700 uppercase tracking-wide mb-2">Organizations</h4>
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => {
+                          navigate('/copse-admin');
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-white/80 transition-colors text-purple-700 hover:text-purple-900 font-medium"
+                      >
+                        🌐 Copse Network
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate('/pack1703');
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-white/80 transition-colors text-purple-700 hover:text-purple-900"
+                      >
+                        🏕️ Pack 1703
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Account Section - Solarpunk Style */}
                 <div className="bg-white/60 backdrop-blur-sm border border-forest-200/50 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
                   <div className="bg-gradient-to-r from-forest-100 to-ocean-100 px-4 py-3 border-b border-forest-200/50">

@@ -101,12 +101,20 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
       const packParam = new URLSearchParams(location.search).get('pack');
       const wantsPackApp = packParam === '1703' || sessionStorage.getItem('pack1703_access') === 'true';
       
-      if (isSuperAdmin && !wantsPackApp) {
-        // Super admin goes to organizations page
-        console.log('🔐 AuthGuard: Redirecting super admin to /organizations');
+      // Check if user is super admin or copse admin
+      const isCopseAdmin = currentUser.role === 'copse-admin';
+      const shouldGoToOrganizations = (isSuperAdmin || isCopseAdmin) && !wantsPackApp;
+      
+      // TODO: Add multi-org detection here
+      // If user belongs to multiple organizations, they should also go to /organizations
+      // For now, we check role only
+      
+      if (shouldGoToOrganizations) {
+        // Super admins and copse admins go to organizations page
+        console.log('🔐 AuthGuard: Redirecting admin to /organizations');
         navigate('/organizations', { replace: true });
       } else {
-        // Regular users (and super admins who want Pack app) go to Pack app
+        // Regular users (and admins who want Pack app) go to Pack app
         console.log('🔐 AuthGuard: Redirecting user to Pack app');
         sessionStorage.setItem('pack1703_access', 'true');
         navigate('/pack1703/', { replace: true });

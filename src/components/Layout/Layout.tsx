@@ -47,11 +47,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       setCurrentUser(state.currentUser);
       // Convert AdminRole to UserRole
       const roleMap: { [key: string]: UserRole } = {
-        'root': UserRole.SUPER_ADMIN,
+        'root': UserRole.COPSE_ADMIN,
+        'copse-admin': UserRole.COPSE_ADMIN,  // CRITICAL: Map copse-admin
         'super-admin': UserRole.SUPER_ADMIN,
         'content-admin': UserRole.ADMIN,
         'moderator': UserRole.DEN_LEADER,
         'viewer': UserRole.PARENT,
+        'parent': UserRole.PARENT,
         'ai_assistant': UserRole.AI_ASSISTANT
       };
       setUserRole(roleMap[state.currentUser.role] || UserRole.PARENT);

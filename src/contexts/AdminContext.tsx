@@ -245,6 +245,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
       if (user) {
         // Convert AppUser to AdminUser with proper role mapping
         const roleMap: { [key: string]: AdminRole } = {
+          [UserRole.COPSE_ADMIN]: 'copse-admin',  // CRITICAL: Map copse_admin role
           [UserRole.SUPER_ADMIN]: 'super-admin',
           [UserRole.ADMIN]: 'content-admin', 
           [UserRole.DEN_LEADER]: 'moderator',
@@ -263,7 +264,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
           email: user.email,
           displayName: user.displayName || null,
           photoURL: user.photoURL || null,
-          isAdmin: user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN || user.role === UserRole.DEN_LEADER || user.role === UserRole.PARENT || (user.role as any) === 'root',
+          isAdmin: user.role === UserRole.COPSE_ADMIN || user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN || user.role === UserRole.DEN_LEADER || user.role === UserRole.PARENT || (user.role as any) === 'root',
           role: mappedRole,
           permissions: user.permissions as unknown as AdminPermission[],
           lastLogin: user.lastLoginAt || new Date(),

@@ -98,16 +98,26 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   
-  // Check if we're on the organizations page (COPPSE platform, not Pack app)
-  const isOrganizationsPage = location.pathname === '/organizations';
+  // Check if we're on a platform-level page (Copse Network level, not org-specific)
+  const isPlatformRoute = location.pathname === '/organizations' || 
+                         location.pathname === '/copse-admin' ||
+                         location.pathname === '/test-copse-login';
   
   // Get all navigation items filtered by user role, organization type, and enabled components
   const getUserNavigationItems = () => {
     if (!userRole) return [];
+    
     // First filter by role
     const roleFilteredItems = ALL_NAVIGATION_ITEMS.filter(item => item.roles.includes(userRole));
-    // Then filter by organization type AND enabled components
-    return filterNavigationByOrg(roleFilteredItems, orgType, enabledComponents);
+    
+    // If we're on a platform route, ONLY show platform routes
+    if (isPlatformRoute) {
+      return roleFilteredItems.filter(item => item.isPlatformRoute === true);
+    }
+    
+    // Otherwise, filter by organization type AND enabled components (exclude platform routes)
+    const orgSpecificItems = roleFilteredItems.filter(item => !item.isPlatformRoute);
+    return filterNavigationByOrg(orgSpecificItems, orgType, enabledComponents);
   };
 
   const allNavItems = getUserNavigationItems();

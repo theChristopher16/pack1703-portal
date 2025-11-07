@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useOrganization } from '../../contexts/OrganizationContext';
-import { UserRole } from '../../services/authService';
+import { UserRole, authService } from '../../services/authService';
 import { hasAccessToRoute, isAdminOrAbove, isRoot } from '../../services/navigationService';
 import { useAdmin } from '../../contexts/AdminContext';
 
@@ -55,25 +55,37 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
     return <Navigate to={prefixedFallbackPath} replace />;
   }
 
-  // Check specific role requirements
-  if (requiredRole && userRole !== requiredRole) {
-    console.log('🔒 RoleGuard: Role mismatch, redirecting to home', { 
-      requiredRole, 
-      userRole, 
-      currentUserRole: currentUser?.role,
-      fallbackPath: prefixedFallbackPath 
-    });
-    return <Navigate to={prefixedFallbackPath} replace />;
+  // Check specific role requirements (multi-role aware)
+  if (requiredRole) {
+    const currentAppUser = authService.getCurrentUser();
+    const hasRequiredRole = currentAppUser ? authService.hasRole(requiredRole, currentAppUser) : false;
+    
+    if (!hasRequiredRole) {
+      console.log('🔒 RoleGuard: User does not have required role, redirecting to home', { 
+        requiredRole, 
+        userRole, 
+        userRoles: currentAppUser ? authService.getUserRoles(currentAppUser) : [],
+        currentUserRole: currentUser?.role,
+        fallbackPath: prefixedFallbackPath 
+      });
+      return <Navigate to={prefixedFallbackPath} replace />;
+    }
   }
 
-  if (requiredRoles && !requiredRoles.includes(userRole)) {
-    console.log('🔒 RoleGuard: User not in required roles, redirecting to home', { 
-      requiredRoles, 
-      userRole, 
-      currentUserRole: currentUser?.role,
-      fallbackPath: prefixedFallbackPath 
-    });
-    return <Navigate to={prefixedFallbackPath} replace />;
+  if (requiredRoles && requiredRoles.length > 0) {
+    const currentAppUser = authService.getCurrentUser();
+    const hasAnyRequiredRole = currentAppUser ? authService.hasAnyRole(requiredRoles, currentAppUser) : false;
+    
+    if (!hasAnyRequiredRole) {
+      console.log('🔒 RoleGuard: User does not have any required roles, redirecting to home', { 
+        requiredRoles, 
+        userRole, 
+        userRoles: currentAppUser ? authService.getUserRoles(currentAppUser) : [],
+        currentUserRole: currentUser?.role,
+        fallbackPath: prefixedFallbackPath 
+      });
+      return <Navigate to={prefixedFallbackPath} replace />;
+    }
   }
 
   return <>{children}</>;
@@ -89,12 +101,14 @@ export const AdminOnly: React.FC<{ children: React.ReactNode; fallbackPath?: str
   const { prefixPath } = useOrganization();
   const prefixedFallbackPath = prefixPath(fallbackPath);
   
-  // Check if user has admin role (either 'super-admin', 'content-admin', or 'root')
-  const isAdmin = currentUser?.role === 'super-admin' || currentUser?.role === 'content-admin' || currentUser?.role === 'root';
+  // Check if user has admin role (multi-role aware)
+  const currentAppUser = authService.getCurrentUser();
+  const isAdmin = currentAppUser ? authService.hasAnyRole([UserRole.SUPER_ADMIN, UserRole.COPSE_ADMIN, UserRole.ADMIN], currentAppUser) : false;
   
   if (!isAdmin) {
     console.log('🔒 AdminOnly: User is not admin, redirecting to home', { 
       currentUserRole: currentUser?.role,
+      userRoles: currentAppUser ? authService.getUserRoles(currentAppUser) : [],
       isAdmin,
       fallbackPath: prefixedFallbackPath 
     });
@@ -130,13 +144,14 @@ export const SuperUserOnly: React.FC<{ children: React.ReactNode; fallbackPath?:
   const { prefixPath } = useOrganization();
   const prefixedFallbackPath = prefixPath(fallbackPath);
   
-  // Check if user has super user role (super-admin or root)
-  const isSuperUser = currentUser?.role === 'super-admin' || 
-                     currentUser?.role === 'root';
+  // Check if user has super user role (multi-role aware)
+  const currentAppUser = authService.getCurrentUser();
+  const isSuperUser = currentAppUser ? authService.hasAnyRole([UserRole.SUPER_ADMIN, UserRole.COPSE_ADMIN], currentAppUser) : false;
   
   if (!isSuperUser) {
     console.log('🔒 SuperUserOnly: User is not super user, redirecting to home', { 
       currentUserRole: currentUser?.role,
+      userRoles: currentAppUser ? authService.getUserRoles(currentAppUser) : [],
       isSuperUser,
       fallbackPath: prefixedFallbackPath 
     });
@@ -172,14 +187,14 @@ export const CopseAdminOnly: React.FC<{ children: React.ReactNode; fallbackPath?
   const { prefixPath } = useOrganization();
   const prefixedFallbackPath = prefixPath(fallbackPath);
   
-  // Check if user has copse admin or super admin role
-  const isCopseAdmin = currentUser?.role === 'copse-admin' || 
-                      currentUser?.role === 'root' ||
-                      currentUser?.role === 'super-admin';
+  // Check if user has copse admin or super admin role (multi-role aware)
+  const currentAppUser = authService.getCurrentUser();
+  const isCopseAdmin = currentAppUser ? authService.hasAnyRole([UserRole.COPSE_ADMIN, UserRole.SUPER_ADMIN], currentAppUser) : false;
   
   if (!isCopseAdmin) {
     console.log('🔒 CopseAdminOnly: User is not Copse admin, redirecting to home', { 
       currentUserRole: currentUser?.role,
+      userRoles: currentAppUser ? authService.getUserRoles(currentAppUser) : [],
       isCopseAdmin,
       fallbackPath: prefixedFallbackPath 
     });

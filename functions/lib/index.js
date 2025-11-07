@@ -1,13 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.squareOAuthCallback = exports.squareConnectStart = exports.uploadSensorData = exports.uploadCameraImage = exports.fixUSSStewartLocation = exports.updateRSVP = exports.resendPasswordSetupLink = exports.completePasswordSetup = exports.verifyPasswordSetupToken = exports.resetPasswordWithToken = exports.verifyPasswordResetToken = exports.sendPasswordReset = exports.publicICSFeed = exports.icsFeed = exports.sendSMS = exports.sendAnnouncementSMS = exports.sendAnnouncementEmails = exports.createAnnouncementWithEmails = exports.createTestAnnouncement = exports.helloWorld = exports.syncUserPhotos = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.getUserRSVPs = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminCloseRSVP = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = exports.testAppCheckStatus = void 0;
-exports.syncAllUserCustomClaims = exports.setUserCustomClaims = exports.createSuperAdminUser = exports.initializePack1703Org = exports.getOrganizationUsage = exports.createOrganizationBillingAccount = exports.onRSVPPaymentComplete = exports.onVolunteerSignupCreate = exports.onResourceSubmissionCreate = exports.onFeedbackCreate = exports.onAccountRequestCreate = exports.onMessageCreate = exports.onRSVPCreate = exports.manualSyncCharlestonWrap = exports.syncCharlestonWrapData = exports.onCreateGoogleAuthUser = exports.createRequestsForExistingGoogleUsers = exports.completeRSVPPayment = exports.adminUpdatePaymentStatus = exports.createRSVPPayment = exports.squareWebhook = exports.refundTenantPayment = exports.createTenantPayment = void 0;
+exports.squareConnectStart = exports.uploadSensorData = exports.uploadCameraImage = exports.fixUSSStewartLocation = exports.updateRSVP = exports.resendPasswordSetupLink = exports.completePasswordSetup = exports.verifyPasswordSetupToken = exports.resetPasswordWithToken = exports.verifyPasswordResetToken = exports.sendPasswordReset = exports.publicICSFeed = exports.icsFeed = exports.sendSMS = exports.sendAnnouncementSMS = exports.sendAnnouncementEmails = exports.createAnnouncementWithEmails = exports.createTestAnnouncement = exports.helloWorld = exports.syncUserPhotos = exports.adminDeleteUser = exports.getBatchDashboardData = exports.generateThreatIntelligence = exports.getSystemMetrics = exports.testAIConnection = exports.rejectAccountRequest = exports.createUserManually = exports.approveAccountRequest = exports.getPendingAccountRequests = exports.submitAccountRequest = exports.testEmailConnection = exports.sendChatMessage = exports.getChatMessages = exports.getChatChannels = exports.updateUserClaims = exports.adminUpdateUser = exports.getRSVPData = exports.getBatchRSVPCounts = exports.getRSVPCount = exports.getUserRSVPs = exports.deleteRSVP = exports.submitRSVP = exports.adminCreateEvent = exports.adminCloseRSVP = exports.adminDeleteEvent = exports.adminUpdateEvent = exports.updateUserRole = exports.disableAppCheckEnforcement = exports.migrateUsersToMultiRole = exports.testAppCheckStatus = void 0;
+exports.syncAllUserCustomClaims = exports.setUserCustomClaims = exports.createSuperAdminUser = exports.initializePack1703Org = exports.getOrganizationUsage = exports.createOrganizationBillingAccount = exports.onRSVPPaymentComplete = exports.onVolunteerSignupCreate = exports.onResourceSubmissionCreate = exports.onFeedbackCreate = exports.onAccountRequestCreate = exports.onMessageCreate = exports.onRSVPCreate = exports.manualSyncCharlestonWrap = exports.syncCharlestonWrapData = exports.onCreateGoogleAuthUser = exports.createRequestsForExistingGoogleUsers = exports.completeRSVPPayment = exports.adminUpdatePaymentStatus = exports.createRSVPPayment = exports.squareWebhook = exports.refundTenantPayment = exports.createTenantPayment = exports.squareOAuthCallback = void 0;
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 const squareup_1 = require("squareup");
 // Import test function
 var testAppCheck_1 = require("./testAppCheck");
 Object.defineProperty(exports, "testAppCheckStatus", { enumerable: true, get: function () { return testAppCheck_1.testAppCheckStatus; } });
+// Import migration functions
+var migrateToMultiRole_1 = require("./migrateToMultiRole");
+Object.defineProperty(exports, "migrateUsersToMultiRole", { enumerable: true, get: function () { return migrateToMultiRole_1.migrateUsersToMultiRole; } });
 // Initialize Firebase Admin
 admin.initializeApp();
 // Get Firestore instance
@@ -941,16 +944,47 @@ exports.adminUpdateUser = functions.https.onCall(async (data, context) => {
         if (updates.profile !== undefined) {
             updateData.profile = updates.profile;
         }
+        // Handle multi-role updates
+        if (updates.roles !== undefined) {
+            updateData.roles = updates.roles;
+            // Also update primary role if provided
+            if (updates.role !== undefined) {
+                updateData.role = updates.role;
+            }
+        }
+        else if (updates.role !== undefined) {
+            // If only single role is provided, create roles array with just that role
+            updateData.role = updates.role;
+            updateData.roles = [updates.role];
+        }
+        // Update other role-related fields
+        if (updates.permissions !== undefined) {
+            updateData.permissions = updates.permissions;
+        }
+        if (updates.isAdmin !== undefined) {
+            updateData.isAdmin = updates.isAdmin;
+        }
+        if (updates.isDenLeader !== undefined) {
+            updateData.isDenLeader = updates.isDenLeader;
+        }
+        if (updates.isCubmaster !== undefined) {
+            updateData.isCubmaster = updates.isCubmaster;
+        }
         // Update Firestore document
         await db.collection('users').doc(userId).update(updateData);
         // Update Firebase Auth custom claims if role is being changed
-        if (updates.role !== undefined) {
+        if (updates.role !== undefined || updates.roles !== undefined) {
             try {
-                // Try to set custom claims in Firebase Auth
-                await admin.auth().setCustomUserClaims(userId, {
+                // Set custom claims with both role and roles array for multi-role support
+                const customClaims = {
                     approved: true,
-                    role: updates.role
-                });
+                    role: updates.role || updateData.role
+                };
+                // Add roles array if present
+                if (updates.roles || updateData.roles) {
+                    customClaims.roles = updates.roles || updateData.roles;
+                }
+                await admin.auth().setCustomUserClaims(userId, customClaims);
                 console.log(`Successfully updated Firebase Auth claims for user ${userId}`);
             }
             catch (authError) {

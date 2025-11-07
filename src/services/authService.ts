@@ -376,7 +376,8 @@ export interface AppUser {
   email: string;
   displayName?: string;
   photoURL?: string;
-  role: UserRole;
+  role: UserRole; // Primary role (highest priority) - kept for backward compatibility
+  roles?: UserRole[]; // Multi-role support - all roles this user has
   permissions: Permission[];
   isActive: boolean;
   status?: 'pending' | 'approved' | 'denied';
@@ -1476,34 +1477,35 @@ class AuthService {
     return permissions.every(permission => this.hasPermission(permission));
   }
 
-  // Check if user is root
+  // Check if user is root (super admin or copse admin)
   isRoot(): boolean {
-    return this.currentUser?.role === UserRole.SUPER_ADMIN;
+    return this.hasAnyRole([UserRole.SUPER_ADMIN, UserRole.COPSE_ADMIN]);
   }
 
   // Check if user is admin or higher
   isAdmin(): boolean {
-    return this.currentUser?.role === UserRole.SUPER_ADMIN || this.currentUser?.role === UserRole.ADMIN;
+    return this.hasAnyRole([UserRole.SUPER_ADMIN, UserRole.COPSE_ADMIN, UserRole.ADMIN]);
   }
 
   // Check if user is den leader or higher
   isDenLeader(): boolean {
-    return this.isAdmin() || this.currentUser?.role === UserRole.DEN_LEADER;
+    return this.hasAnyRole([UserRole.SUPER_ADMIN, UserRole.COPSE_ADMIN, UserRole.ADMIN, UserRole.DEN_LEADER]);
   }
 
-  // Check if user has specific permission (with role hierarchy)
+  // Check if user has specific permission (with role hierarchy and multi-role support)
   hasPermission(permission: Permission, user?: AppUser): boolean {
     const targetUser = user || this.currentUser;
     if (!targetUser) return false;
     
-    // Root has access to everything
-    if (targetUser.role === UserRole.SUPER_ADMIN) return true;
+    // Super admins and Copse admins have access to everything
+    if (this.hasAnyRole([UserRole.SUPER_ADMIN, UserRole.COPSE_ADMIN], targetUser)) return true;
     
     // Check if user has the specific permission
     if (targetUser.permissions.includes(permission)) return true;
     
-    // Check role hierarchy - higher roles inherit permissions from lower roles
-    const userRoleLevel = ROLE_HIERARCHY[targetUser.role];
+    // Check role hierarchy for ALL user roles - if any role grants the permission, allow it
+    const userRoles = this.getUserRoles(targetUser);
+    const highestRoleLevel = Math.max(...userRoles.map(r => ROLE_HIERARCHY[r] || 0));
     
     // Define permission-to-role mappings for inheritance
     const permissionRoleMap: Record<Permission, UserRole> = {
@@ -1561,35 +1563,104 @@ class AuthService {
     
     const requiredRoleLevel = ROLE_HIERARCHY[permissionRoleMap[permission]];
     
-    // User has permission if their role level is >= required role level
-    return userRoleLevel >= requiredRoleLevel;
+    // User has permission if their highest role level is >= required role level
+    return highestRoleLevel >= requiredRoleLevel;
   }
 
-  // Check if user has at least the specified role level
+  // Check if user has at least the specified role level (multi-role aware)
   hasAtLeastRole(requiredRole: UserRole, user?: AppUser): boolean {
     const targetUser = user || this.currentUser;
     if (!targetUser) return false;
     
-    const userRoleLevel = ROLE_HIERARCHY[targetUser.role];
+    const userRoles = this.getUserRoles(targetUser);
     const requiredRoleLevel = ROLE_HIERARCHY[requiredRole];
     
-    return userRoleLevel >= requiredRoleLevel;
+    // Check if ANY of the user's roles meets or exceeds the required level
+    return userRoles.some(role => (ROLE_HIERARCHY[role] || 0) >= requiredRoleLevel);
   }
 
-  // Check if user has exactly the specified role
+  // Multi-role support methods
+
+  /**
+   * Get all roles for a user (including primary role)
+   */
+  getUserRoles(user?: AppUser): UserRole[] {
+    const targetUser = user || this.currentUser;
+    if (!targetUser) return [];
+    
+    // Return roles array if it exists, otherwise return array with primary role
+    if (targetUser.roles && targetUser.roles.length > 0) {
+      return targetUser.roles;
+    }
+    
+    return [targetUser.role];
+  }
+
+  /**
+   * Check if user has a specific role (checks roles array)
+   */
   hasRole(role: UserRole, user?: AppUser): boolean {
     const targetUser = user || this.currentUser;
     if (!targetUser) return false;
     
-    return targetUser.role === role;
+    const userRoles = this.getUserRoles(targetUser);
+    return userRoles.includes(role);
   }
 
-  // Get user's role level
+  /**
+   * Check if user has any of the specified roles
+   */
+  hasAnyRole(roles: UserRole[], user?: AppUser): boolean {
+    const targetUser = user || this.currentUser;
+    if (!targetUser) return false;
+    
+    const userRoles = this.getUserRoles(targetUser);
+    return roles.some(role => userRoles.includes(role));
+  }
+
+  /**
+   * Check if user has all of the specified roles
+   */
+  hasAllRoles(roles: UserRole[], user?: AppUser): boolean {
+    const targetUser = user || this.currentUser;
+    if (!targetUser) return false;
+    
+    const userRoles = this.getUserRoles(targetUser);
+    return roles.every(role => userRoles.includes(role));
+  }
+
+  /**
+   * Get the highest priority role from user's roles
+   */
+  getPrimaryRole(user?: AppUser): UserRole {
+    const targetUser = user || this.currentUser;
+    if (!targetUser) return UserRole.PARENT;
+    
+    const userRoles = this.getUserRoles(targetUser);
+    
+    // Find the role with the highest hierarchy value
+    let highestRole = userRoles[0];
+    let highestLevel = ROLE_HIERARCHY[highestRole] || 0;
+    
+    for (const role of userRoles) {
+      const level = ROLE_HIERARCHY[role] || 0;
+      if (level > highestLevel) {
+        highestLevel = level;
+        highestRole = role;
+      }
+    }
+    
+    return highestRole;
+  }
+
+  // Get user's role level (uses highest role from roles array)
   getRoleLevel(user?: AppUser): number {
     const targetUser = user || this.currentUser;
     if (!targetUser) return -1;
     
-    return ROLE_HIERARCHY[targetUser.role];
+    const userRoles = this.getUserRoles(targetUser);
+    // Return the highest role level from all roles
+    return Math.max(...userRoles.map(r => ROLE_HIERARCHY[r] || 0));
   }
 
   // Check if user can manage other users

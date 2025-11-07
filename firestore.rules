@@ -11,17 +11,24 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
-    function isAdmin() {
-      // Check both token and user document for admin status
+    // Helper function to check if user has any of the specified roles (multi-role support)
+    function hasAnyRole(rolesList) {
       return isAuthenticated() && (
-        request.auth.token.get('role', '') in ['admin', 'super_admin', 'super-admin', 'den_leader', 'root'] ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin', 'super-admin', 'den_leader', 'root', 'content-admin']
+        request.auth.token.get('role', '') in rolesList ||
+        request.auth.token.get('roles', []).hasAny(rolesList) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in rolesList ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('roles', []).hasAny(rolesList)
       );
     }
     
+    function isAdmin() {
+      // Multi-role aware admin check (includes den_leader and above)
+      return hasAnyRole(['admin', 'super_admin', 'super-admin', 'den_leader', 'root', 'content-admin', 'copse_admin']);
+    }
+    
     function isSuperAdmin() {
-      return isAuthenticated() && 
-             request.auth.token.get('role', '') == 'super_admin';
+      // Multi-role aware super admin check
+      return hasAnyRole(['super_admin', 'super-admin', 'copse_admin', 'root']);
     }
     
     // TEMPORARY: Allow all authenticated users to read public data when App Check blocks access
@@ -58,11 +65,10 @@ service cloud.firestore {
              request.auth.token.platform.hasAny(['SUPER_ADMIN']);
     }
     function isRootRole() {
-      return request.auth != null && request.auth.token.get('role', '') in ['root', 'super_admin', 'super-admin'];
+      return hasAnyRole(['root', 'super_admin', 'super-admin', 'copse_admin']);
     }
     function isSuperViaUserDoc() {
-      return request.auth != null &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['root', 'super_admin', 'super-admin'];
+      return hasAnyRole(['root', 'super_admin', 'super-admin', 'copse_admin']);
     }
     function isSuper() { return isPlatformSuper() || isRootRole() || isSuperViaUserDoc(); }
 
@@ -87,11 +93,10 @@ service cloud.firestore {
     // Super admin users can also create user documents for others
     allow create: if request.auth != null && 
                      (request.auth.uid == userId || 
-                      request.auth.token.get('role', '') == 'super_admin');
+                      hasAnyRole(['super_admin', 'super-admin', 'copse_admin']));
     
     // Only super admin users can delete users
-    allow delete: if request.auth != null && 
-                    request.auth.token.get('role', '') == 'super_admin';
+    allow delete: if hasAnyRole(['super_admin', 'super-admin', 'copse_admin', 'root']);
   }
   
     // Allow aggregation queries on users collection for admins
@@ -167,7 +172,7 @@ service cloud.firestore {
         request.resource.data.userId == request.auth.uid;
       // Allow admins to update paperwork status and payment status
       allow update: if isAuthenticated() && 
-        request.auth.token.get('role', '') in ['volunteer', 'admin', 'super-admin', 'root'] &&
+        hasAnyRole(['volunteer', 'admin', 'super-admin', 'super_admin', 'root', 'den_leader', 'copse_admin']) &&
         request.resource.data.userId == resource.data.userId; // Can't change the user
     }
     
@@ -182,25 +187,24 @@ service cloud.firestore {
       
       // Admins can read all payment records
       allow read: if isAuthenticated() && 
-        request.auth.token.get('role', '') in ['den_leader', 'admin', 'super_admin', 'root'];
+        hasAnyRole(['den_leader', 'admin', 'super_admin', 'root', 'copse_admin']);
       
       // Payment creation is handled by Cloud Functions only
       allow create: if false;
       
       // Admins can update payment records (for manual payment recording, refunds, etc.)
       allow update: if isAuthenticated() && 
-        request.auth.token.get('role', '') in ['admin', 'super_admin', 'root'] &&
+        hasAnyRole(['admin', 'super_admin', 'root', 'copse_admin']) &&
         request.resource.data.userId == resource.data.userId; // Can't change the user
       
       // Only super admins can delete payments (for corrections)
-      allow delete: if isAuthenticated() && 
-        request.auth.token.get('role', '') in ['super_admin', 'root'];
+      allow delete: if hasAnyRole(['super_admin', 'root', 'copse_admin']);
     }
     
     // Allow aggregation queries on payments collection for admins
     match /payments {
       allow read: if isAuthenticated() && 
-        request.auth.token.get('role', '') in ['den_leader', 'admin', 'super_admin', 'root'];
+        hasAnyRole(['den_leader', 'admin', 'super_admin', 'root', 'copse_admin']);
     }
     
     // Feedback - users can access their own feedback, den leaders+ can read all and respond
@@ -210,13 +214,13 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid;
       // Den leaders and up can read all feedback
       allow read: if isAuthenticated() && 
-        request.auth.token.get('role', '') in ['volunteer', 'admin', 'root'];
+        hasAnyRole(['volunteer', 'admin', 'root', 'den_leader', 'super_admin', 'copse_admin']);
       // Users can create their own feedback
       allow create: if isAuthenticated() && 
         request.resource.data.userId == request.auth.uid;
       // Den leaders and up can update feedback (add responses)
       allow update: if isAuthenticated() && 
-        request.auth.token.get('role', '') in ['volunteer', 'admin', 'root'];
+        hasAnyRole(['volunteer', 'admin', 'root', 'den_leader', 'super_admin', 'copse_admin']);
     }
     
     // Volunteer needs - authenticated users can read, admins can write
@@ -373,11 +377,11 @@ service cloud.firestore {
     match /resources/{resourceId} {
       allow read: if true; // Public resources
       allow create: if isAuthenticated() && 
-                       request.auth.token.get('role', '') in ['volunteer', 'admin', 'super-admin', 'root'] &&
+                       hasAnyRole(['volunteer', 'admin', 'super-admin', 'super_admin', 'root', 'den_leader', 'copse_admin']) &&
                        isValidString(request.resource.data.title, 200) &&
                        isValidString(request.resource.data.description, 1000);
       allow update: if isAuthenticated() && 
-                       request.auth.token.get('role', '') in ['volunteer', 'admin', 'super-admin', 'root'] &&
+                       hasAnyRole(['volunteer', 'admin', 'super-admin', 'super_admin', 'root', 'den_leader', 'copse_admin']) &&
                        isValidString(resource.data.title, 200) &&
                        isValidString(resource.data.description, 1000);
       // Allow authenticated users to update download count and like count
@@ -387,7 +391,7 @@ service cloud.firestore {
                        request.resource.data.title == resource.data.title &&
                        request.resource.data.description == resource.data.description;
       allow delete: if isAuthenticated() && 
-                       request.auth.token.get('role', '') in ['volunteer', 'admin', 'super-admin', 'root'];
+                       hasAnyRole(['volunteer', 'admin', 'super-admin', 'super_admin', 'root', 'den_leader', 'copse_admin']);
     }
     
     // Allow aggregation queries on resources collection for admins
@@ -416,7 +420,7 @@ service cloud.firestore {
       // Users can read their own submissions, admins can read all
       allow read: if isAuthenticated() && 
                      (resource.data.submittedBy == request.auth.uid || 
-                      request.auth.token.get('role', '') in ['volunteer', 'admin', 'super-admin', 'root']);
+                      hasAnyRole(['volunteer', 'admin', 'super-admin', 'super_admin', 'root', 'den_leader', 'copse_admin']));
       // Any authenticated user can create submissions
       allow create: if isAuthenticated() &&
                        request.resource.data.submittedBy == request.auth.uid &&
@@ -425,11 +429,11 @@ service cloud.firestore {
                        isValidString(request.resource.data.fileName, 200);
       // Only admins can update (for reviews)
       allow update: if isAuthenticated() && 
-                       request.auth.token.get('role', '') in ['volunteer', 'admin', 'super-admin', 'root'];
+                       hasAnyRole(['volunteer', 'admin', 'super-admin', 'super_admin', 'root', 'den_leader', 'copse_admin']);
       // Users can delete their own submissions, admins can delete any
       allow delete: if isAuthenticated() && 
                        (resource.data.submittedBy == request.auth.uid || 
-                        request.auth.token.get('role', '') in ['volunteer', 'admin', 'super-admin', 'root']);
+                        hasAnyRole(['volunteer', 'admin', 'super-admin', 'super_admin', 'root', 'den_leader', 'copse_admin']));
     }
     
     // Allow aggregation queries on resource-submissions
@@ -766,11 +770,11 @@ service cloud.firestore {
     // Inventory items - admins, super admins, content admins, and parents can read and write
     match /inventory/{itemId} {
       allow read: if isAuthenticated() && (
-        request.auth.token.get('role', '') in ['super_admin', 'content_admin', 'parent'] ||
+        hasAnyRole(['super_admin', 'content_admin', 'parent', 'admin', 'copse_admin', 'den_leader']) ||
         isAdmin()
       );
       allow write: if isAuthenticated() && (
-        request.auth.token.get('role', '') in ['super_admin', 'content_admin', 'parent'] ||
+        hasAnyRole(['super_admin', 'content_admin', 'parent', 'admin', 'copse_admin', 'den_leader']) ||
         isAdmin()
       );
     }
@@ -778,7 +782,7 @@ service cloud.firestore {
     // Allow aggregation queries on inventory collection
     match /inventory {
       allow read: if isAuthenticated() && (
-        request.auth.token.get('role', '') in ['super_admin', 'content_admin', 'parent'] ||
+        hasAnyRole(['super_admin', 'content_admin', 'parent', 'admin', 'copse_admin', 'den_leader']) ||
         isAdmin()
       );
     }
@@ -854,8 +858,7 @@ service cloud.firestore {
     // All authenticated users can write their own interactions
     match /userInteractions {
       allow read: if isAuthenticated() && (
-        request.auth.token.get('role', '') in ['super_admin', 'super-admin', 'root'] ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['super_admin', 'super-admin', 'root']
+        hasAnyRole(['super_admin', 'super-admin', 'root', 'copse_admin'])
       );
       allow write: if false; // Only allow create on individual documents
     }

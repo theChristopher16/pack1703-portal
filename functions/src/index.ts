@@ -5,6 +5,9 @@ import { Client, Environment } from 'squareup';
 // Import test function
 export { testAppCheckStatus } from './testAppCheck';
 
+// Import migration functions
+export { migrateUsersToMultiRole } from './migrateToMultiRole';
+
 // Initialize Firebase Admin
 admin.initializeApp();
 
@@ -1134,17 +1137,54 @@ export const adminUpdateUser = functions.https.onCall(async (data: any, context:
       updateData.profile = updates.profile;
     }
 
+    // Handle multi-role updates
+    if (updates.roles !== undefined) {
+      updateData.roles = updates.roles;
+      // Also update primary role if provided
+      if (updates.role !== undefined) {
+        updateData.role = updates.role;
+      }
+    } else if (updates.role !== undefined) {
+      // If only single role is provided, create roles array with just that role
+      updateData.role = updates.role;
+      updateData.roles = [updates.role];
+    }
+
+    // Update other role-related fields
+    if (updates.permissions !== undefined) {
+      updateData.permissions = updates.permissions;
+    }
+
+    if (updates.isAdmin !== undefined) {
+      updateData.isAdmin = updates.isAdmin;
+    }
+
+    if (updates.isDenLeader !== undefined) {
+      updateData.isDenLeader = updates.isDenLeader;
+    }
+
+    if (updates.isCubmaster !== undefined) {
+      updateData.isCubmaster = updates.isCubmaster;
+    }
+
     // Update Firestore document
     await db.collection('users').doc(userId).update(updateData);
 
     // Update Firebase Auth custom claims if role is being changed
-    if (updates.role !== undefined) {
+    if (updates.role !== undefined || updates.roles !== undefined) {
       try {
-        // Try to set custom claims in Firebase Auth
-        await admin.auth().setCustomUserClaims(userId, {
+        // Set custom claims with both role and roles array for multi-role support
+        const customClaims: any = {
           approved: true,
-          role: updates.role
-        });
+          role: updates.role || updateData.role
+        };
+        
+        // Add roles array if present
+        if (updates.roles || updateData.roles) {
+          customClaims.roles = updates.roles || updateData.roles;
+        }
+        
+        await admin.auth().setCustomUserClaims(userId, customClaims);
         console.log(`Successfully updated Firebase Auth claims for user ${userId}`);
       } catch (authError: any) {
         // If user doesn't exist in Firebase Auth, just log and continue

@@ -939,10 +939,10 @@ export const CopseAdminPanel: React.FC = () => {
                     })}
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    💡 Note: Currently, the system stores the highest priority role. Multi-role support is prepared for future implementation.
+                    ✅ Multi-role support is now active! Users can have multiple roles simultaneously.
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    Priority: Copse Admin → Super Admin → Admin → Den Leader → Parent
+                    Primary role priority: Copse Admin → Super Admin → Admin → Den Leader → Parent
                   </p>
                   {roleError && (
                     <p className="text-xs text-red-600 mt-2 font-medium">
@@ -993,8 +993,7 @@ export const CopseAdminPanel: React.FC = () => {
                     setIsSavingRoles(true);
                     setRoleError(null);
 
-                    // For now, we only support single role in the database
-                    // Use the highest priority role if multiple are selected
+                    // Get the highest priority role for the primary role field (backward compatibility)
                     const primaryRole = editedRoles.includes(UserRole.COPSE_ADMIN) ? UserRole.COPSE_ADMIN :
                                        editedRoles.includes(UserRole.SUPER_ADMIN) ? UserRole.SUPER_ADMIN :
                                        editedRoles.includes(UserRole.ADMIN) ? UserRole.ADMIN :
@@ -1002,22 +1001,33 @@ export const CopseAdminPanel: React.FC = () => {
                                        editedRoles[0];
 
                     // Only super admins can assign super_admin role
-                    if (primaryRole === UserRole.SUPER_ADMIN && currentUser?.role !== UserRole.SUPER_ADMIN) {
+                    if (editedRoles.includes(UserRole.SUPER_ADMIN) && currentUser?.role !== UserRole.SUPER_ADMIN) {
                       setRoleError('Only super admins can assign the super admin role');
                       setIsSavingRoles(false);
                       return;
                     }
 
-                    // Use adminUpdateUser function (working alternative to updateUserRole)
+                    // Get combined permissions from all roles
+                    const allPermissions = Array.from(new Set(
+                      editedRoles.flatMap(role => getRolePermissions(role))
+                    ));
+
+                    // Determine boolean flags based on highest role
+                    const hasAdminRole = editedRoles.some(r => [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.COPSE_ADMIN].includes(r));
+                    const hasDenLeaderRole = editedRoles.some(r => [UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.COPSE_ADMIN].includes(r));
+                    const hasCubmasterRole = editedRoles.some(r => [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.COPSE_ADMIN].includes(r));
+
+                    // Use adminUpdateUser function with multi-role support
                     const adminUpdateUserFunction = httpsCallable(functions, 'adminUpdateUser');
                     await adminUpdateUserFunction({
                       userId: editingUser.id,
                       updates: {
-                        role: primaryRole,
-                        permissions: getRolePermissions(primaryRole),
-                        isAdmin: primaryRole === UserRole.ADMIN || primaryRole === UserRole.SUPER_ADMIN || primaryRole === UserRole.COPSE_ADMIN,
-                        isDenLeader: primaryRole === UserRole.DEN_LEADER || primaryRole === UserRole.ADMIN || primaryRole === UserRole.SUPER_ADMIN || primaryRole === UserRole.COPSE_ADMIN,
-                        isCubmaster: primaryRole === UserRole.ADMIN || primaryRole === UserRole.SUPER_ADMIN || primaryRole === UserRole.COPSE_ADMIN
+                        role: primaryRole, // Primary role for backward compatibility
+                        roles: editedRoles, // All assigned roles
+                        permissions: allPermissions,
+                        isAdmin: hasAdminRole,
+                        isDenLeader: hasDenLeaderRole,
+                        isCubmaster: hasCubmasterRole
                       }
                     });
 

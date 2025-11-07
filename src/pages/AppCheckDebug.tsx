@@ -11,6 +11,8 @@ export const AppCheckDebug: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [migrationLoading, setMigrationLoading] = useState(false);
+  const [migrationResult, setMigrationResult] = useState<any>(null);
 
   const testFunctionCall = async (functionName: string) => {
     setLoading(true);
@@ -38,6 +40,32 @@ export const AppCheckDebug: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const runMigration = async () => {
+    if (!window.confirm('⚠️ This will migrate all users to multi-role format. Continue?')) {
+      return;
+    }
+
+    setMigrationLoading(true);
+    setMigrationResult(null);
+
+    try {
+      console.log('Running multi-role migration...');
+      const migrateFunction = httpsCallable(functions, 'migrateUsersToMultiRole');
+      const response = await migrateFunction({});
+      console.log('Migration response:', response);
+      setMigrationResult(response.data);
+    } catch (err: any) {
+      console.error('Migration error:', err);
+      setMigrationResult({
+        success: false,
+        error: err.message,
+        code: err.code
+      });
+    } finally {
+      setMigrationLoading(false);
     }
   };
 
@@ -158,6 +186,29 @@ export const AppCheckDebug: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Migration Tool */}
+          <div className="mt-6 pt-6 border-t">
+            <h4 className="font-semibold text-gray-900 mb-3">🔄 Multi-Role Migration</h4>
+            <p className="text-sm text-gray-600 mb-4">
+              Migrate all users from single-role to multi-role format. This allows users to have multiple roles simultaneously (e.g., Den Leader + Admin).
+            </p>
+            <button
+              onClick={runMigration}
+              disabled={migrationLoading}
+              className="w-full px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+            >
+              {migrationLoading ? 'Migrating Users...' : 'Run Multi-Role Migration'}
+            </button>
+            
+            {migrationResult && (
+              <div className={`mt-4 p-4 rounded-lg ${migrationResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                <pre className="text-xs font-mono overflow-auto">
+                  {JSON.stringify(migrationResult, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
 
           {/* Additional Help */}
           <div className="mt-6 pt-6 border-t">

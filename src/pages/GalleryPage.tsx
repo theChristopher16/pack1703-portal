@@ -29,10 +29,11 @@ export const GalleryPage: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'approved' | 'pending' | 'my-uploads'>('all');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadDescription, setUploadDescription] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: boolean }>({});
   const [pendingCount, setPendingCount] = useState(0);
 
   const currentUser = authService.getCurrentUser();
@@ -119,32 +120,48 @@ export const GalleryPage: React.FC = () => {
 
   const handleUpload = async () => {
     console.log('📸 Gallery: handleUpload called');
-    console.log('📸 Gallery: uploadFile:', uploadFile?.name);
+    console.log('📸 Gallery: uploadFiles count:', uploadFiles.length);
     console.log('📸 Gallery: organizationId:', organizationId);
     
-    if (!uploadFile || !organizationId) {
-      console.log('📸 Gallery: Missing uploadFile or organizationId, returning');
+    if (uploadFiles.length === 0 || !organizationId) {
+      console.log('📸 Gallery: Missing uploadFiles or organizationId, returning');
       return;
     }
 
     try {
       setUploading(true);
-      console.log('📸 Gallery: Creating upload request...');
+      const progress: { [key: string]: boolean } = {};
       
-      const uploadRequest: PhotoUploadRequest = {
-        file: uploadFile,
-        title: uploadTitle,
-        description: uploadDescription
-      };
+      console.log('📸 Gallery: Uploading', uploadFiles.length, 'photos...');
+      
+      // Upload all files in parallel (with a reasonable concurrency)
+      const uploadPromises = uploadFiles.map(async (file) => {
+        try {
+          const uploadRequest: PhotoUploadRequest = {
+            file,
+            title: uploadTitle || file.name.replace(/\.[^/.]+$/, ''), // Use filename without extension as default title
+            description: uploadDescription
+          };
 
-      console.log('📸 Gallery: Calling galleryService.uploadPhoto...');
-      await galleryService.uploadPhoto(organizationId, uploadRequest);
-      console.log('📸 Gallery: Upload successful!');
+          console.log('📸 Gallery: Uploading', file.name);
+          await galleryService.uploadPhoto(organizationId, uploadRequest);
+          progress[file.name] = true;
+          setUploadProgress({ ...progress });
+          console.log('📸 Gallery: Successfully uploaded', file.name);
+        } catch (error) {
+          console.error('📸 Gallery: Failed to upload', file.name, error);
+          throw error;
+        }
+      });
+
+      await Promise.all(uploadPromises);
+      console.log('📸 Gallery: All uploads successful!');
       
       // Reset form
-      setUploadFile(null);
+      setUploadFiles([]);
       setUploadTitle('');
       setUploadDescription('');
+      setUploadProgress({});
       setShowUploadModal(false);
       
       // Reload photos
@@ -152,9 +169,11 @@ export const GalleryPage: React.FC = () => {
       if (canApprove) {
         await loadPendingCount();
       }
+      
+      alert(`Successfully uploaded ${uploadFiles.length} photo${uploadFiles.length > 1 ? 's' : ''}!`);
     } catch (error: any) {
       console.error('📸 Gallery: Upload error:', error);
-      alert(`Failed to upload photo: ${error.message}`);
+      alert(`Some photos failed to upload. Please try again.`);
     } finally {
       setUploading(false);
     }
@@ -221,27 +240,50 @@ export const GalleryPage: React.FC = () => {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log('📸 Gallery: handleFileSelect called');
-    const file = e.target.files?.[0];
-    console.log('📸 Gallery: Selected file:', file?.name, file?.size, file?.type);
+    const files = Array.from(e.target.files || []);
+    console.log('📸 Gallery: Selected files count:', files.length);
     
-    if (file) {
+    if (files.length === 0) {
+      return;
+    }
+
+    // Limit to 20 files
+    if (files.length > 20) {
+      alert('You can upload up to 20 photos at once. Please select fewer files.');
+      return;
+    }
+
+    const validFiles: File[] = [];
+    const errors: string[] = [];
+
+    files.forEach((file) => {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        console.log('📸 Gallery: Invalid file type');
-        alert('Please select an image file');
+        errors.push(`${file.name}: Not an image file`);
         return;
       }
 
       // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        console.log('📸 Gallery: File too large');
-        alert('File size must be less than 10MB');
+        errors.push(`${file.name}: File too large (max 10MB)`);
         return;
       }
 
-      console.log('📸 Gallery: File validated, setting uploadFile');
-      setUploadFile(file);
+      validFiles.push(file);
+    });
+
+    if (errors.length > 0) {
+      alert(`Some files were skipped:\n\n${errors.join('\n')}`);
     }
+
+    if (validFiles.length > 0) {
+      console.log('📸 Gallery: Valid files:', validFiles.length);
+      setUploadFiles(validFiles);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setUploadFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const getStatusBadge = (status: PhotoStatus) => {
@@ -426,46 +468,84 @@ export const GalleryPage: React.FC = () => {
               {/* File Upload */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Photo
+                  Select Photos (up to 20)
                 </label>
                 <div className="border-2 border-dashed border-forest-300 rounded-xl p-8 text-center hover:border-forest-500 transition-colors cursor-pointer bg-gradient-to-br from-forest-50/30 to-ocean-50/30">
                   <input
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleFileSelect}
                     className="hidden"
                     id="photo-upload"
                   />
                   <label htmlFor="photo-upload" className="cursor-pointer">
-                    {uploadFile ? (
+                    {uploadFiles.length > 0 ? (
                       <div className="space-y-2">
                         <Check className="w-12 h-12 mx-auto text-green-500" />
-                        <p className="font-semibold text-forest-800">{uploadFile.name}</p>
+                        <p className="font-semibold text-forest-800">
+                          {uploadFiles.length} photo{uploadFiles.length > 1 ? 's' : ''} selected
+                        </p>
                         <p className="text-sm text-gray-600">
-                          {(uploadFile.size / 1024 / 1024).toFixed(2)} MB
+                          Total: {(uploadFiles.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024).toFixed(2)} MB
                         </p>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         <Upload className="w-12 h-12 mx-auto text-forest-500" />
-                        <p className="font-semibold text-forest-800">Click to select photo</p>
-                        <p className="text-sm text-gray-600">Max size: 10MB</p>
+                        <p className="font-semibold text-forest-800">Click to select photos</p>
+                        <p className="text-sm text-gray-600">Select up to 20 photos • Max 10MB each</p>
                       </div>
                     )}
                   </label>
                 </div>
               </div>
 
+              {/* Photo Previews */}
+              {uploadFiles.length > 0 && (
+                <div className="max-h-60 overflow-y-auto space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Selected Photos:
+                  </label>
+                  {uploadFiles.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <ImageIcon className="w-5 h-5 text-forest-500 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="ml-2 p-1 hover:bg-gray-200 rounded transition-colors flex-shrink-0"
+                        title="Remove"
+                      >
+                        <X className="w-4 h-4 text-gray-500" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Title */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Title (optional)
+                  {uploadFiles.length > 1 && (
+                    <span className="text-xs text-gray-500 ml-2">
+                      • Will use filenames if empty
+                    </span>
+                  )}
                 </label>
                 <input
                   type="text"
                   value={uploadTitle}
                   onChange={(e) => setUploadTitle(e.target.value)}
-                  placeholder="Give your photo a title"
+                  placeholder={uploadFiles.length > 1 ? "Leave empty to use filenames" : "Give your photo a title"}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-transparent"
                 />
               </div>
@@ -474,11 +554,16 @@ export const GalleryPage: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description (optional)
+                  {uploadFiles.length > 1 && (
+                    <span className="text-xs text-gray-500 ml-2">
+                      • Applied to all photos
+                    </span>
+                  )}
                 </label>
                 <textarea
                   value={uploadDescription}
                   onChange={(e) => setUploadDescription(e.target.value)}
-                  placeholder="Tell us about this photo"
+                  placeholder={uploadFiles.length > 1 ? "Description for all photos" : "Tell us about this photo"}
                   rows={3}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-transparent resize-none"
                 />
@@ -491,7 +576,10 @@ export const GalleryPage: React.FC = () => {
                   <div>
                     <p className="text-sm text-blue-800 font-medium">Approval Required</p>
                     <p className="text-xs text-blue-700 mt-1">
-                      Your photo will be reviewed by den leaders before appearing in the gallery. This helps keep our community safe and appropriate.
+                      {uploadFiles.length > 1 
+                        ? `All ${uploadFiles.length} photos will be reviewed by den leaders before appearing in the gallery.`
+                        : 'Your photo will be reviewed by den leaders before appearing in the gallery.'
+                      } This helps keep our community safe and appropriate.
                     </p>
                   </div>
                 </div>
@@ -500,18 +588,27 @@ export const GalleryPage: React.FC = () => {
 
             <div className="p-6 border-t border-gray-200 flex items-center justify-end gap-3">
               <button
-                onClick={() => setShowUploadModal(false)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                onClick={() => {
+                  setShowUploadModal(false);
+                  setUploadFiles([]);
+                  setUploadTitle('');
+                  setUploadDescription('');
+                }}
+                disabled={uploading}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
                 onClick={handleUpload}
-                disabled={!uploadFile || uploading}
+                disabled={uploadFiles.length === 0 || uploading}
                 className="px-6 py-2 bg-gradient-to-r from-forest-500 to-ocean-500 text-white rounded-lg hover:from-forest-600 hover:to-ocean-600 transition-all duration-300 shadow-glow disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center gap-2"
               >
                 {uploading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {uploading ? 'Uploading...' : 'Upload Photo'}
+                {uploading 
+                  ? `Uploading ${uploadFiles.length} photo${uploadFiles.length > 1 ? 's' : ''}...` 
+                  : `Upload ${uploadFiles.length} Photo${uploadFiles.length > 1 ? 's' : ''}`
+                }
               </button>
             </div>
           </div>

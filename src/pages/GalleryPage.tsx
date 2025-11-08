@@ -13,11 +13,14 @@ import {
   ChevronLeft,
   Trash2,
   AlertCircle,
-  Loader2
+  Loader2,
+  Folder,
+  FolderPlus,
+  ChevronRight
 } from 'lucide-react';
 import { useOrganization } from '../contexts/OrganizationContext';
 import { galleryService } from '../services/galleryService';
-import { GalleryPhoto, PhotoStatus, PhotoUploadRequest } from '../types/gallery';
+import { GalleryPhoto, GalleryAlbum, PhotoStatus, PhotoUploadRequest } from '../types/gallery';
 import { authService } from '../services/authService';
 
 export const GalleryPage: React.FC = () => {
@@ -35,9 +38,18 @@ export const GalleryPage: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: boolean }>({});
   const [pendingCount, setPendingCount] = useState(0);
+  
+  // Album state
+  const [albums, setAlbums] = useState<GalleryAlbum[]>([]);
+  const [currentAlbum, setCurrentAlbum] = useState<GalleryAlbum | null>(null);
+  const [showAlbumModal, setShowAlbumModal] = useState(false);
+  const [albumName, setAlbumName] = useState('');
+  const [albumDescription, setAlbumDescription] = useState('');
+  const [selectedAlbumForUpload, setSelectedAlbumForUpload] = useState<string | null>(null);
 
   const currentUser = authService.getCurrentUser();
   const canApprove = galleryService.canApprovePhotos();
+  const canManageAlbums = galleryService.canApprovePhotos(); // Same permission level
 
   // Debug logging
   useEffect(() => {
@@ -52,6 +64,13 @@ export const GalleryPage: React.FC = () => {
     console.log('📸 Gallery: showUploadModal changed to:', showUploadModal);
   }, [showUploadModal]);
 
+  // Load albums
+  useEffect(() => {
+    if (organizationId) {
+      loadAlbums();
+    }
+  }, [organizationId, currentAlbum]);
+
   // Load photos
   useEffect(() => {
     console.log('📸 Gallery: useEffect triggered - organizationId:', organizationId, 'filter:', filter);
@@ -62,7 +81,7 @@ export const GalleryPage: React.FC = () => {
       console.log('📸 Gallery: No organizationId, setting loading to false');
       setLoading(false);
     }
-  }, [organizationId, filter]);
+  }, [organizationId, filter, currentAlbum]);
 
   // Load pending count for admins
   useEffect(() => {
@@ -70,6 +89,15 @@ export const GalleryPage: React.FC = () => {
       loadPendingCount();
     }
   }, [organizationId, canApprove]);
+
+  const loadAlbums = async () => {
+    try {
+      const loadedAlbums = await galleryService.getAlbums(organizationId!, currentAlbum?.id || null);
+      setAlbums(loadedAlbums);
+    } catch (error: any) {
+      console.error('📸 Gallery: Error loading albums:', error);
+    }
+  };
 
   const loadPhotos = async () => {
     try {
@@ -96,6 +124,11 @@ export const GalleryPage: React.FC = () => {
         // 'all' - admins see everything, regular users see only approved
         console.log('📸 Gallery: Loading all photos...');
         loadedPhotos = await galleryService.getPhotos(organizationId!);
+      }
+
+      // Filter by current album if one is selected
+      if (currentAlbum) {
+        loadedPhotos = loadedPhotos.filter(p => p.albumId === currentAlbum.id);
       }
 
       console.log('📸 Gallery: Loaded photos:', loadedPhotos.length);
@@ -140,7 +173,8 @@ export const GalleryPage: React.FC = () => {
           const uploadRequest: PhotoUploadRequest = {
             file,
             title: uploadTitle || file.name.replace(/\.[^/.]+$/, ''), // Use filename without extension as default title
-            description: uploadDescription
+            description: uploadDescription,
+            albumId: selectedAlbumForUpload || undefined
           };
 
           console.log('📸 Gallery: Uploading', file.name);
@@ -162,10 +196,12 @@ export const GalleryPage: React.FC = () => {
       setUploadTitle('');
       setUploadDescription('');
       setUploadProgress({});
+      setSelectedAlbumForUpload(null);
       setShowUploadModal(false);
       
-      // Reload photos
+      // Reload photos and albums (to update photo count)
       await loadPhotos();
+      await loadAlbums();
       if (canApprove) {
         await loadPendingCount();
       }
@@ -181,8 +217,16 @@ export const GalleryPage: React.FC = () => {
 
   const handleApprove = async (photoId: string) => {
     try {
+      const photo = photos.find(p => p.id === photoId);
       await galleryService.approvePhoto(photoId);
+      
+      // Update album photo count if photo is in an album
+      if (photo?.albumId) {
+        await galleryService.updateAlbumPhotoCount(photo.albumId);
+      }
+      
       await loadPhotos();
+      await loadAlbums();
       await loadPendingCount();
       setSelectedPhoto(null);
     } catch (error: any) {
@@ -284,6 +328,39 @@ export const GalleryPage: React.FC = () => {
 
   const removeFile = (index: number) => {
     setUploadFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleCreateAlbum = async () => {
+    if (!albumName.trim() || !organizationId) {
+      alert('Please enter an album name');
+      return;
+    }
+
+    try {
+      await galleryService.createAlbum(
+        organizationId,
+        albumName.trim(),
+        albumDescription.trim() || undefined,
+        undefined, // denId - could add den selection later
+        undefined  // denName
+      );
+      
+      setAlbumName('');
+      setAlbumDescription('');
+      setShowAlbumModal(false);
+      
+      await loadAlbums();
+    } catch (error: any) {
+      alert(`Failed to create album: ${error.message}`);
+    }
+  };
+
+  const handleAlbumClick = (album: GalleryAlbum) => {
+    setCurrentAlbum(album);
+  };
+
+  const handleBackToAllPhotos = () => {
+    setCurrentAlbum(null);
   };
 
   const getStatusBadge = (status: PhotoStatus) => {
@@ -414,6 +491,62 @@ export const GalleryPage: React.FC = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Breadcrumb / Back Button */}
+        {currentAlbum && (
+          <button
+            onClick={handleBackToAllPhotos}
+            className="flex items-center gap-2 text-forest-600 hover:text-forest-800 mb-6 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            <span className="font-medium">Back to All Albums</span>
+          </button>
+        )}
+
+        {/* Albums Grid (only show when not in an album) */}
+        {!currentAlbum && !loading && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-forest-800">📁 Albums</h2>
+              {canManageAlbums && (
+                <button
+                  onClick={() => setShowAlbumModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-forest-100 hover:bg-forest-200 text-forest-800 rounded-lg transition-colors font-medium"
+                >
+                  <FolderPlus className="w-4 h-4" />
+                  New Album
+                </button>
+              )}
+            </div>
+
+            {albums.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+                {albums.map((album) => (
+                  <button
+                    key={album.id}
+                    onClick={() => handleAlbumClick(album)}
+                    className="flex flex-col items-center p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-forest-200/50 group"
+                  >
+                    <Folder className="w-16 h-16 text-forest-500 group-hover:text-forest-600 transition-colors mb-2" />
+                    <span className="text-sm font-medium text-forest-800 text-center line-clamp-2">{album.name}</span>
+                    <span className="text-xs text-gray-500 mt-1">{album.photoCount} photos</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Current Album Header */}
+        {currentAlbum && (
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-forest-800 mb-2">{currentAlbum.name}</h2>
+            {currentAlbum.description && (
+              <p className="text-forest-600">{currentAlbum.description}</p>
+            )}
+            <p className="text-sm text-gray-500 mt-2">{photos.length} photos</p>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-forest-500" />
@@ -569,6 +702,27 @@ export const GalleryPage: React.FC = () => {
                 />
               </div>
 
+              {/* Album Selection */}
+              {albums.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Album (optional)
+                  </label>
+                  <select
+                    value={selectedAlbumForUpload || ''}
+                    onChange={(e) => setSelectedAlbumForUpload(e.target.value || null)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-transparent"
+                  >
+                    <option value="">No album (default)</option>
+                    {albums.map((album) => (
+                      <option key={album.id} value={album.id}>
+                        📁 {album.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Info Note */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-start gap-3">
@@ -593,6 +747,7 @@ export const GalleryPage: React.FC = () => {
                   setUploadFiles([]);
                   setUploadTitle('');
                   setUploadDescription('');
+                  setSelectedAlbumForUpload(null);
                 }}
                 disabled={uploading}
                 className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -627,6 +782,72 @@ export const GalleryPage: React.FC = () => {
           canApprove={canApprove}
           currentUserId={currentUser?.uid}
         />
+      )}
+
+      {/* Create Album Modal */}
+      {showAlbumModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-forest-800">📁 Create New Album</h3>
+                <button
+                  onClick={() => setShowAlbumModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Album Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Album Name *
+                </label>
+                <input
+                  type="text"
+                  value={albumName}
+                  onChange={(e) => setAlbumName(e.target.value)}
+                  placeholder="e.g., Summer Camp 2025"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-transparent"
+                  autoFocus
+                />
+              </div>
+
+              {/* Album Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description (optional)
+                </label>
+                <textarea
+                  value={albumDescription}
+                  onChange={(e) => setAlbumDescription(e.target.value)}
+                  placeholder="Describe what this album is for..."
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-transparent resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowAlbumModal(false)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateAlbum}
+                disabled={!albumName.trim()}
+                className="px-6 py-2 bg-gradient-to-r from-forest-500 to-ocean-500 text-white rounded-lg hover:from-forest-600 hover:to-ocean-600 transition-all duration-300 shadow-glow disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+              >
+                Create Album
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

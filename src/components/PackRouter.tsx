@@ -50,7 +50,12 @@ import { OrganizationType } from '../types/organization';
 
 const PackRouter: React.FC = () => {
   return (
-    <OrganizationProvider orgSlug="pack1703" orgType={OrganizationType.PACK}>
+    <OrganizationProvider 
+      orgSlug="pack1703" 
+      organizationId="pack1703" 
+      organizationName="Cub Scout Pack 1703"
+      orgType={OrganizationType.PACK}
+    >
       <Routes>
         {/* Public Routes */}
         <Route path="" element={<Layout><HomePage /></Layout>} />

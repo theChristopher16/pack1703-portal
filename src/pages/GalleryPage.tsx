@@ -46,6 +46,11 @@ export const GalleryPage: React.FC = () => {
     console.log('📸 Gallery: canApprove:', canApprove);
   }, []);
 
+  // Debug modal state
+  useEffect(() => {
+    console.log('📸 Gallery: showUploadModal changed to:', showUploadModal);
+  }, [showUploadModal]);
+
   // Load photos
   useEffect(() => {
     console.log('📸 Gallery: useEffect triggered - organizationId:', organizationId, 'filter:', filter);
@@ -113,10 +118,18 @@ export const GalleryPage: React.FC = () => {
   };
 
   const handleUpload = async () => {
-    if (!uploadFile || !organizationId) return;
+    console.log('📸 Gallery: handleUpload called');
+    console.log('📸 Gallery: uploadFile:', uploadFile?.name);
+    console.log('📸 Gallery: organizationId:', organizationId);
+    
+    if (!uploadFile || !organizationId) {
+      console.log('📸 Gallery: Missing uploadFile or organizationId, returning');
+      return;
+    }
 
     try {
       setUploading(true);
+      console.log('📸 Gallery: Creating upload request...');
       
       const uploadRequest: PhotoUploadRequest = {
         file: uploadFile,
@@ -124,7 +137,9 @@ export const GalleryPage: React.FC = () => {
         description: uploadDescription
       };
 
+      console.log('📸 Gallery: Calling galleryService.uploadPhoto...');
       await galleryService.uploadPhoto(organizationId, uploadRequest);
+      console.log('📸 Gallery: Upload successful!');
       
       // Reset form
       setUploadFile(null);
@@ -138,6 +153,7 @@ export const GalleryPage: React.FC = () => {
         await loadPendingCount();
       }
     } catch (error: any) {
+      console.error('📸 Gallery: Upload error:', error);
       alert(`Failed to upload photo: ${error.message}`);
     } finally {
       setUploading(false);
@@ -190,20 +206,26 @@ export const GalleryPage: React.FC = () => {
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('📸 Gallery: handleFileSelect called');
     const file = e.target.files?.[0];
+    console.log('📸 Gallery: Selected file:', file?.name, file?.size, file?.type);
+    
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
+        console.log('📸 Gallery: Invalid file type');
         alert('Please select an image file');
         return;
       }
 
       // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
+        console.log('📸 Gallery: File too large');
         alert('File size must be less than 10MB');
         return;
       }
 
+      console.log('📸 Gallery: File validated, setting uploadFile');
       setUploadFile(file);
     }
   };
@@ -244,7 +266,12 @@ export const GalleryPage: React.FC = () => {
 
               {/* Upload Button */}
               <button
-                onClick={() => setShowUploadModal(true)}
+                onClick={() => {
+                  console.log('📸 Gallery: Upload button clicked');
+                  console.log('📸 Gallery: organizationId:', organizationId);
+                  setShowUploadModal(true);
+                  console.log('📸 Gallery: showUploadModal set to true');
+                }}
                 className="px-4 py-2 bg-gradient-to-r from-forest-500 to-ocean-500 text-white rounded-lg hover:from-forest-600 hover:to-ocean-600 transition-all duration-300 shadow-glow flex items-center gap-2 font-semibold"
               >
                 <Upload className="w-4 h-4" />

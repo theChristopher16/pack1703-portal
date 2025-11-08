@@ -377,55 +377,62 @@ export const GalleryPage: React.FC = () => {
 
   const handleDownloadPhoto = async (photo: GalleryPhoto) => {
     try {
-      console.log('📸 Gallery: Downloading photo', photo.id);
+      console.log('📸 Gallery: Saving photo', photo.id);
       
       // Generate filename
       const filename = photo.title 
         ? `${photo.title.replace(/[^a-z0-9]/gi, '_')}.jpg`
         : `photo_${photo.id}.jpg`;
       
-      // Get the blob from Firebase Storage using authenticated SDK
-      const storageRef = ref(storage, photo.storagePath);
-      const blob = await getBlob(storageRef);
-      console.log('📸 Gallery: Got blob from Firebase Storage');
+      // For mobile: Use Web Share API if available
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       
-      // Check if Web Share API is available (mobile)
-      if (navigator.share && navigator.canShare) {
+      if (isMobile && navigator.share) {
         try {
-          // Create a file from the blob for sharing
-          const file = new File([blob], filename, { type: blob.type });
-          
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: photo.title || 'Photo from Gallery',
-              text: photo.description || 'Shared from Pack 1703 Gallery'
-            });
-            console.log('📸 Gallery: Photo shared successfully');
+          // Try to share the image URL directly
+          // This works on iOS/Android and brings up share sheet with "Save Image" option
+          await navigator.share({
+            url: photo.imageUrl,
+            title: photo.title || 'Photo from Gallery',
+            text: photo.description || 'Photo from Pack 1703 Gallery'
+          });
+          console.log('📸 Gallery: Photo shared via URL');
+          return;
+        } catch (shareError: any) {
+          if (shareError.name === 'AbortError') {
+            console.log('📸 Gallery: Share cancelled by user');
             return;
           }
-        } catch (shareError: any) {
-          console.log('📸 Gallery: Share failed or cancelled, falling back to download', shareError);
-          // Continue to download fallback
+          console.log('📸 Gallery: URL share failed, trying alternative', shareError);
         }
       }
       
-      // Fallback: Download the blob
-      const url = window.URL.createObjectURL(blob);
+      // For desktop or if share fails: Use download link with CORS workaround
+      // We'll use an invisible iframe to trigger the download
       const link = document.createElement('a');
-      link.href = url;
+      link.href = photo.imageUrl;
       link.download = filename;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      
+      // Add download attribute which works on modern browsers
+      link.setAttribute('download', filename);
       
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      // Cleanup
-      window.URL.revokeObjectURL(url);
-      console.log('📸 Gallery: Photo downloaded');
+      console.log('📸 Gallery: Download triggered');
     } catch (error: any) {
-      console.error('📸 Gallery: Download error:', error);
-      alert('Failed to save photo. Please try again or open in a new tab to save manually.');
+      console.error('📸 Gallery: Save error:', error);
+      
+      // Final fallback: Open in new tab with instructions
+      const newWindow = window.open(photo.imageUrl, '_blank');
+      if (newWindow) {
+        alert('Photo opened in new tab. On mobile: long-press and select "Save Image". On desktop: right-click and select "Save Image As".');
+      } else {
+        alert('Please allow pop-ups to save photos.');
+      }
     }
   };
 

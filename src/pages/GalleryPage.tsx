@@ -24,7 +24,8 @@ import { galleryService } from '../services/galleryService';
 import { GalleryPhoto, GalleryAlbum, PhotoStatus, PhotoUploadRequest } from '../types/gallery';
 import { authService } from '../services/authService';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, storage } from '../firebase/config';
+import { ref, getBlob } from 'firebase/storage';
 
 export const GalleryPage: React.FC = () => {
   const { organizationId, organizationName } = useOrganization();
@@ -383,29 +384,48 @@ export const GalleryPage: React.FC = () => {
         ? `${photo.title.replace(/[^a-z0-9]/gi, '_')}.jpg`
         : `photo_${photo.id}.jpg`;
       
-      // Try direct download first (works on most browsers)
-      const link = document.createElement('a');
-      link.href = photo.imageUrl;
-      link.download = filename;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
+      // Get the blob from Firebase Storage using authenticated SDK
+      const storageRef = ref(storage, photo.storagePath);
+      const blob = await getBlob(storageRef);
+      console.log('📸 Gallery: Got blob from Firebase Storage');
       
-      // For iOS/mobile: open in new tab which allows save to photos
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // On mobile, opening in new tab allows "Save Image" or "Add to Photos"
-        window.open(photo.imageUrl, '_blank');
-        console.log('📸 Gallery: Opened photo in new tab (mobile)');
-      } else {
-        // On desktop, trigger download
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        console.log('📸 Gallery: Photo download triggered (desktop)');
+      // Check if Web Share API is available (mobile)
+      if (navigator.share && navigator.canShare) {
+        try {
+          // Create a file from the blob for sharing
+          const file = new File([blob], filename, { type: blob.type });
+          
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: photo.title || 'Photo from Gallery',
+              text: photo.description || 'Shared from Pack 1703 Gallery'
+            });
+            console.log('📸 Gallery: Photo shared successfully');
+            return;
+          }
+        } catch (shareError: any) {
+          console.log('📸 Gallery: Share failed or cancelled, falling back to download', shareError);
+          // Continue to download fallback
+        }
       }
+      
+      // Fallback: Download the blob
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      console.log('📸 Gallery: Photo downloaded');
     } catch (error: any) {
       console.error('📸 Gallery: Download error:', error);
-      // Fallback: open in new tab
-      window.open(photo.imageUrl, '_blank');
+      alert('Failed to save photo. Please try again or open in a new tab to save manually.');
     }
   };
 

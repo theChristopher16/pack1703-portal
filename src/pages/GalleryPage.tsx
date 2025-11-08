@@ -48,6 +48,10 @@ export const GalleryPage: React.FC = () => {
   const [albumName, setAlbumName] = useState('');
   const [albumDescription, setAlbumDescription] = useState('');
   const [selectedAlbumForUpload, setSelectedAlbumForUpload] = useState<string | null>(null);
+  
+  // Drag and drop state
+  const [draggedPhotoId, setDraggedPhotoId] = useState<string | null>(null);
+  const [dropTargetAlbumId, setDropTargetAlbumId] = useState<string | null>(null);
 
   const currentUser = authService.getCurrentUser();
   const canApprove = galleryService.canApprovePhotos();
@@ -391,6 +395,41 @@ export const GalleryPage: React.FC = () => {
     }
   };
 
+  // Drag and drop handlers
+  const handleDragStart = (photoId: string) => {
+    if (!canManageAlbums) return;
+    setDraggedPhotoId(photoId);
+    console.log('📸 Gallery: Started dragging photo', photoId);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedPhotoId(null);
+    setDropTargetAlbumId(null);
+    console.log('📸 Gallery: Drag ended');
+  };
+
+  const handleDragOver = (e: React.DragEvent, albumId: string) => {
+    if (!canManageAlbums || !draggedPhotoId) return;
+    e.preventDefault();
+    setDropTargetAlbumId(albumId);
+  };
+
+  const handleDragLeave = () => {
+    setDropTargetAlbumId(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, albumId: string) => {
+    e.preventDefault();
+    if (!canManageAlbums || !draggedPhotoId) return;
+
+    console.log('📸 Gallery: Dropped photo', draggedPhotoId, 'on album', albumId);
+    
+    await handleMovePhoto(draggedPhotoId, albumId);
+    
+    setDraggedPhotoId(null);
+    setDropTargetAlbumId(null);
+  };
+
   const getStatusBadge = (status: PhotoStatus) => {
     const config = {
       [PhotoStatus.PENDING]: { label: 'Pending Approval', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: Clock },
@@ -534,7 +573,12 @@ export const GalleryPage: React.FC = () => {
         {!currentAlbum && !loading && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-forest-800">📁 Albums</h2>
+              <div>
+                <h2 className="text-xl font-bold text-forest-800">📁 Albums</h2>
+                {canManageAlbums && albums.length > 0 && !draggedPhotoId && (
+                  <p className="text-xs text-gray-500 mt-1">💡 Drag photos onto albums to organize them</p>
+                )}
+              </div>
               {canManageAlbums && (
                 <button
                   onClick={() => setShowAlbumModal(true)}
@@ -546,18 +590,42 @@ export const GalleryPage: React.FC = () => {
               )}
             </div>
 
+            {/* Drag and Drop Hint */}
+            {canManageAlbums && albums.length > 0 && draggedPhotoId && (
+              <div className="bg-gradient-to-r from-forest-100 to-ocean-100 border border-forest-300 rounded-lg p-3 mb-4 flex items-center gap-3">
+                <ChevronRight className="w-5 h-5 text-forest-600 animate-pulse" />
+                <p className="text-sm font-medium text-forest-800">
+                  Drop photo on an album to organize it
+                </p>
+              </div>
+            )}
+
             {albums.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
                 {albums.map((album) => (
-                  <button
+                  <div
                     key={album.id}
+                    onDragOver={(e) => handleDragOver(e, album.id)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, album.id)}
                     onClick={() => handleAlbumClick(album)}
-                    className="flex flex-col items-center p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-forest-200/50 group"
+                    className={`flex flex-col items-center p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border cursor-pointer group ${
+                      dropTargetAlbumId === album.id 
+                        ? 'border-forest-500 border-2 bg-forest-50 scale-105 shadow-2xl' 
+                        : 'border-forest-200/50'
+                    }`}
                   >
-                    <Folder className="w-16 h-16 text-forest-500 group-hover:text-forest-600 transition-colors mb-2" />
+                    <Folder className={`w-16 h-16 transition-colors mb-2 ${
+                      dropTargetAlbumId === album.id 
+                        ? 'text-forest-600 scale-110' 
+                        : 'text-forest-500 group-hover:text-forest-600'
+                    }`} />
                     <span className="text-sm font-medium text-forest-800 text-center line-clamp-2">{album.name}</span>
                     <span className="text-xs text-gray-500 mt-1">{album.photoCount} photos</span>
-                  </button>
+                    {dropTargetAlbumId === album.id && draggedPhotoId && (
+                      <span className="text-xs text-forest-600 font-semibold mt-2">📥 Drop here</span>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
@@ -603,6 +671,10 @@ export const GalleryPage: React.FC = () => {
                 onLike={handleLike}
                 canApprove={canApprove}
                 currentUserId={currentUser?.uid}
+                isDraggable={canManageAlbums && !currentAlbum}
+                isDragging={draggedPhotoId === photo.id}
+                onDragStart={() => handleDragStart(photo.id)}
+                onDragEnd={handleDragEnd}
               />
             ))}
           </div>
@@ -892,16 +964,38 @@ interface PhotoCardProps {
   onLike: (photoId: string) => void;
   canApprove: boolean;
   currentUserId?: string;
+  isDraggable?: boolean;
+  isDragging?: boolean;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
 }
 
-const PhotoCard: React.FC<PhotoCardProps> = ({ photo, viewMode, onSelect, onLike, canApprove, currentUserId }) => {
+const PhotoCard: React.FC<PhotoCardProps> = ({ 
+  photo, 
+  viewMode, 
+  onSelect, 
+  onLike, 
+  canApprove, 
+  currentUserId,
+  isDraggable = false,
+  isDragging = false,
+  onDragStart,
+  onDragEnd
+}) => {
   const statusBadge = getStatusBadge(photo.status);
   const StatusIcon = statusBadge.icon;
   const hasLiked = currentUserId ? photo.likedBy.includes(currentUserId) : false;
 
   if (viewMode === 'list') {
     return (
-      <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-forest-200/50">
+      <div 
+        draggable={isDraggable}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        className={`bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-forest-200/50 ${
+          isDragging ? 'opacity-50 scale-95' : ''
+        } ${isDraggable ? 'cursor-move' : ''}`}
+      >
         <div className="flex gap-4 p-4">
           <img
             src={photo.imageUrl}
@@ -952,10 +1046,20 @@ const PhotoCard: React.FC<PhotoCardProps> = ({ photo, viewMode, onSelect, onLike
 
   return (
     <div
-      className="bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer group border border-forest-200/50"
+      draggable={isDraggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      className={`bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group border border-forest-200/50 ${
+        isDragging ? 'opacity-50 scale-95 cursor-grabbing' : isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+      }`}
       onClick={() => onSelect(photo)}
     >
       <div className="relative aspect-square overflow-hidden bg-forest-100">
+        {isDragging && (
+          <div className="absolute inset-0 bg-forest-500/30 backdrop-blur-sm flex items-center justify-center z-10">
+            <span className="text-white font-semibold text-sm">Moving...</span>
+          </div>
+        )}
         <img
           src={photo.imageUrl}
           alt={photo.title || 'Gallery photo'}

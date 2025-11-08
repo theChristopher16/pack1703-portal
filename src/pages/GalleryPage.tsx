@@ -16,7 +16,8 @@ import {
   Loader2,
   Folder,
   FolderPlus,
-  ChevronRight
+  ChevronRight,
+  Download
 } from 'lucide-react';
 import { useOrganization } from '../contexts/OrganizationContext';
 import { galleryService } from '../services/galleryService';
@@ -371,6 +372,41 @@ export const GalleryPage: React.FC = () => {
 
   const handleBackToAllPhotos = () => {
     setCurrentAlbum(null);
+  };
+
+  const handleDownloadPhoto = async (photo: GalleryPhoto) => {
+    try {
+      console.log('📸 Gallery: Downloading photo', photo.id);
+      
+      // Fetch the image
+      const response = await fetch(photo.imageUrl);
+      const blob = await response.blob();
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Generate filename
+      const filename = photo.title 
+        ? `${photo.title.replace(/[^a-z0-9]/gi, '_')}.jpg`
+        : `photo_${photo.id}.jpg`;
+      
+      link.download = filename;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('📸 Gallery: Photo download triggered');
+    } catch (error: any) {
+      console.error('📸 Gallery: Download error:', error);
+      alert('Failed to download photo. Please try again.');
+    }
   };
 
   const handleMovePhoto = async (photoId: string, targetAlbumId: string | null) => {
@@ -893,6 +929,7 @@ export const GalleryPage: React.FC = () => {
           onDelete={handleDelete}
           onLike={handleLike}
           onMove={handleMovePhoto}
+          onDownload={handleDownloadPhoto}
           canApprove={canApprove}
           canManageAlbums={canManageAlbums}
           currentUserId={currentUser?.uid}
@@ -1129,6 +1166,7 @@ interface PhotoDetailModalProps {
   onDelete: (photoId: string) => void;
   onLike: (photoId: string) => void;
   onMove: (photoId: string, targetAlbumId: string | null) => void;
+  onDownload: (photo: GalleryPhoto) => void;
   canApprove: boolean;
   canManageAlbums: boolean;
   currentUserId?: string;
@@ -1143,6 +1181,7 @@ const PhotoDetailModal: React.FC<PhotoDetailModalProps> = ({
   onDelete,
   onLike,
   onMove,
+  onDownload,
   canApprove,
   canManageAlbums,
   currentUserId
@@ -1330,11 +1369,20 @@ const PhotoDetailModal: React.FC<PhotoDetailModalProps> = ({
               </div>
             )}
 
+            {/* Download Button */}
+            <button
+              onClick={() => onDownload(photo)}
+              className="w-full px-4 py-2 bg-gradient-to-r from-ocean-500 to-forest-500 text-white rounded-lg hover:from-ocean-600 hover:to-forest-600 transition-all duration-300 shadow-glow font-semibold flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Save Photo
+            </button>
+
             {/* Delete Button for Owner or Admin */}
             {(isOwner || canApprove) && (
               <button
                 onClick={() => onDelete(photo.id)}
-                className="w-full px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-semibold flex items-center justify-center gap-2"
+                className="w-full px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-semibold flex items-center justify-center gap-2 mt-3"
               >
                 <Trash2 className="w-4 h-4" />
                 Delete Photo

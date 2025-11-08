@@ -38,10 +38,23 @@ export const GalleryPage: React.FC = () => {
   const currentUser = authService.getCurrentUser();
   const canApprove = galleryService.canApprovePhotos();
 
+  // Debug logging
+  useEffect(() => {
+    console.log('📸 Gallery: organizationId:', organizationId);
+    console.log('📸 Gallery: organizationName:', organizationName);
+    console.log('📸 Gallery: currentUser:', currentUser?.email);
+    console.log('📸 Gallery: canApprove:', canApprove);
+  }, []);
+
   // Load photos
   useEffect(() => {
+    console.log('📸 Gallery: useEffect triggered - organizationId:', organizationId, 'filter:', filter);
     if (organizationId) {
+      console.log('📸 Gallery: Loading photos...');
       loadPhotos();
+    } else {
+      console.log('📸 Gallery: No organizationId, setting loading to false');
+      setLoading(false);
     }
   }, [organizationId, filter]);
 
@@ -54,28 +67,38 @@ export const GalleryPage: React.FC = () => {
 
   const loadPhotos = async () => {
     try {
+      console.log('📸 Gallery: loadPhotos called');
       setLoading(true);
       
       let loadedPhotos: GalleryPhoto[] = [];
       
+      console.log('📸 Gallery: filter:', filter, 'canApprove:', canApprove);
+      
       if (filter === 'approved') {
+        console.log('📸 Gallery: Loading approved photos...');
         loadedPhotos = await galleryService.getPhotos(organizationId!, PhotoStatus.APPROVED);
       } else if (filter === 'pending') {
         if (canApprove) {
+          console.log('📸 Gallery: Loading pending photos...');
           loadedPhotos = await galleryService.getPhotos(organizationId!, PhotoStatus.PENDING);
         }
       } else if (filter === 'my-uploads') {
+        console.log('📸 Gallery: Loading my uploads...');
         const allPhotos = await galleryService.getPhotos(organizationId!);
         loadedPhotos = allPhotos.filter(p => p.uploadedBy === currentUser?.uid);
       } else {
         // 'all' - admins see everything, regular users see only approved
+        console.log('📸 Gallery: Loading all photos...');
         loadedPhotos = await galleryService.getPhotos(organizationId!);
       }
 
+      console.log('📸 Gallery: Loaded photos:', loadedPhotos.length);
       setPhotos(loadedPhotos);
     } catch (error: any) {
-      console.error('Error loading photos:', error);
+      console.error('📸 Gallery: Error loading photos:', error);
+      console.error('📸 Gallery: Error details:', error.message, error.code);
     } finally {
+      console.log('📸 Gallery: Setting loading to false');
       setLoading(false);
     }
   };

@@ -117,12 +117,18 @@ class GalleryService {
    */
   async getPhotos(organizationId: string, status?: PhotoStatus, limitCount: number = 50): Promise<GalleryPhoto[]> {
     try {
+      console.log('📸 GalleryService: getPhotos called with organizationId:', organizationId, 'status:', status);
+      
       const currentUser = authService.getCurrentUser();
       if (!currentUser) {
+        console.error('📸 GalleryService: No current user');
         throw new Error('User must be authenticated');
       }
+      
+      console.log('📸 GalleryService: Current user:', currentUser.email);
 
       // Build query
+      console.log('📸 GalleryService: Building query for collection:', this.collectionName);
       let q = query(
         collection(db, this.collectionName),
         where('organizationId', '==', organizationId)
@@ -130,6 +136,7 @@ class GalleryService {
 
       // Filter by status
       if (status) {
+        console.log('📸 GalleryService: Filtering by status:', status);
         q = query(q, where('status', '==', status));
       } else {
         // Regular users only see approved photos
@@ -140,15 +147,22 @@ class GalleryService {
           UserRole.COPSE_ADMIN
         ]);
 
+        console.log('📸 GalleryService: canSeeAllPhotos:', canSeeAllPhotos);
+
         if (!canSeeAllPhotos) {
+          console.log('📸 GalleryService: User can only see approved photos');
           q = query(q, where('status', '==', PhotoStatus.APPROVED));
+        } else {
+          console.log('📸 GalleryService: User can see all photos');
         }
       }
 
       // Order by upload date (newest first)
       q = query(q, orderBy('uploadedAt', 'desc'), firestoreLimit(limitCount));
 
+      console.log('📸 GalleryService: Executing query...');
       const snapshot = await getDocs(q);
+      console.log('📸 GalleryService: Query returned', snapshot.size, 'documents');
       
       return snapshot.docs.map(doc => ({
         id: doc.id,

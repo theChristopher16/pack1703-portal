@@ -583,11 +583,11 @@ export const GalleryPage: React.FC = () => {
           </div>
 
           {/* Filters */}
-          <div className="flex items-center gap-3 mt-4">
-            <div className="flex items-center gap-2 bg-white/60 rounded-lg p-1 border border-forest-200/50">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-4 w-full">
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-white/60 rounded-lg p-1 border border-forest-200/50 flex-wrap overflow-x-auto max-w-full">
               <button
                 onClick={() => setFilter('all')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                className={`px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   filter === 'all' 
                     ? 'bg-gradient-to-r from-forest-100 to-ocean-100 text-forest-800'
                     : 'text-forest-600 hover:bg-forest-50'
@@ -597,7 +597,7 @@ export const GalleryPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setFilter('approved')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                className={`px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   filter === 'approved' 
                     ? 'bg-gradient-to-r from-forest-100 to-ocean-100 text-forest-800'
                     : 'text-forest-600 hover:bg-forest-50'
@@ -608,7 +608,7 @@ export const GalleryPage: React.FC = () => {
               {canApprove && (
                 <button
                   onClick={() => setFilter('pending')}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  className={`px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                     filter === 'pending' 
                       ? 'bg-gradient-to-r from-forest-100 to-ocean-100 text-forest-800'
                       : 'text-forest-600 hover:bg-forest-50'
@@ -619,7 +619,7 @@ export const GalleryPage: React.FC = () => {
               )}
               <button
                 onClick={() => setFilter('my-uploads')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                className={`px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   filter === 'my-uploads' 
                     ? 'bg-gradient-to-r from-forest-100 to-ocean-100 text-forest-800'
                     : 'text-forest-600 hover:bg-forest-50'
@@ -630,7 +630,7 @@ export const GalleryPage: React.FC = () => {
             </div>
 
             {/* View Mode Toggle */}
-            <div className="flex items-center gap-1 bg-white/60 rounded-lg p-1 border border-forest-200/50">
+            <div className="flex items-center gap-1 bg-white/60 rounded-lg p-1 border border-forest-200/50 self-end sm:self-auto flex-shrink-0">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2 rounded-lg transition-all ${

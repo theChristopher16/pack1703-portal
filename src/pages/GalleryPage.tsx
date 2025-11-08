@@ -22,6 +22,8 @@ import { useOrganization } from '../contexts/OrganizationContext';
 import { galleryService } from '../services/galleryService';
 import { GalleryPhoto, GalleryAlbum, PhotoStatus, PhotoUploadRequest } from '../types/gallery';
 import { authService } from '../services/authService';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase/config';
 
 export const GalleryPage: React.FC = () => {
   const { organizationId, organizationName } = useOrganization();
@@ -361,6 +363,32 @@ export const GalleryPage: React.FC = () => {
 
   const handleBackToAllPhotos = () => {
     setCurrentAlbum(null);
+  };
+
+  const handleMovePhoto = async (photoId: string, targetAlbumId: string | null) => {
+    try {
+      const photoRef = doc(db, 'gallery-photos', photoId);
+      const photo = photos.find(p => p.id === photoId);
+      
+      await updateDoc(photoRef, {
+        albumId: targetAlbumId,
+        updatedAt: serverTimestamp()
+      });
+
+      // Update photo counts for both old and new albums
+      if (photo?.albumId) {
+        await galleryService.updateAlbumPhotoCount(photo.albumId);
+      }
+      if (targetAlbumId) {
+        await galleryService.updateAlbumPhotoCount(targetAlbumId);
+      }
+
+      await loadPhotos();
+      await loadAlbums();
+      setSelectedPhoto(null);
+    } catch (error: any) {
+      alert(`Failed to move photo: ${error.message}`);
+    }
   };
 
   const getStatusBadge = (status: PhotoStatus) => {
@@ -774,12 +802,15 @@ export const GalleryPage: React.FC = () => {
       {selectedPhoto && (
         <PhotoDetailModal
           photo={selectedPhoto}
+          albums={albums}
           onClose={() => setSelectedPhoto(null)}
           onApprove={handleApprove}
           onReject={handleReject}
           onDelete={handleDelete}
           onLike={handleLike}
+          onMove={handleMovePhoto}
           canApprove={canApprove}
+          canManageAlbums={canManageAlbums}
           currentUserId={currentUser?.uid}
         />
       )}
@@ -975,27 +1006,35 @@ const PhotoCard: React.FC<PhotoCardProps> = ({ photo, viewMode, onSelect, onLike
 // Photo Detail Modal Component
 interface PhotoDetailModalProps {
   photo: GalleryPhoto;
+  albums: GalleryAlbum[];
   onClose: () => void;
   onApprove: (photoId: string) => void;
   onReject: (photoId: string, reason?: string) => void;
   onDelete: (photoId: string) => void;
   onLike: (photoId: string) => void;
+  onMove: (photoId: string, targetAlbumId: string | null) => void;
   canApprove: boolean;
+  canManageAlbums: boolean;
   currentUserId?: string;
 }
 
 const PhotoDetailModal: React.FC<PhotoDetailModalProps> = ({
   photo,
+  albums,
   onClose,
   onApprove,
   onReject,
   onDelete,
   onLike,
+  onMove,
   canApprove,
+  canManageAlbums,
   currentUserId
 }) => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [showMoveForm, setShowMoveForm] = useState(false);
+  const [targetAlbumId, setTargetAlbumId] = useState<string | null>(photo.albumId || null);
   const statusBadge = getStatusBadge(photo.status);
   const StatusIcon = statusBadge.icon;
   const hasLiked = currentUserId ? photo.likedBy.includes(currentUserId) : false;
@@ -1109,6 +1148,61 @@ const PhotoDetailModal: React.FC<PhotoDetailModalProps> = ({
                         onClick={() => {
                           setShowRejectForm(false);
                           setRejectionReason('');
+                        }}
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Move to Album (Den Leaders+) */}
+            {canManageAlbums && albums.length > 0 && (
+              <div className="bg-forest-50 border border-forest-200 rounded-lg p-4 mb-4">
+                <h4 className="font-semibold text-forest-900 mb-3 flex items-center gap-2">
+                  <Folder className="w-4 h-4" />
+                  Organize Photo
+                </h4>
+                {!showMoveForm ? (
+                  <button
+                    onClick={() => setShowMoveForm(true)}
+                    className="w-full px-4 py-2 bg-forest-100 hover:bg-forest-200 text-forest-800 rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                    Move to Album
+                  </button>
+                ) : (
+                  <div className="space-y-3">
+                    <select
+                      value={targetAlbumId || ''}
+                      onChange={(e) => setTargetAlbumId(e.target.value || null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-transparent text-sm"
+                    >
+                      <option value="">No album</option>
+                      {albums.map((album) => (
+                        <option key={album.id} value={album.id}>
+                          📁 {album.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          onMove(photo.id, targetAlbumId);
+                          setShowMoveForm(false);
+                        }}
+                        disabled={targetAlbumId === (photo.albumId || null)}
+                        className="flex-1 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Move Photo
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowMoveForm(false);
+                          setTargetAlbumId(photo.albumId || null);
                         }}
                         className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                       >

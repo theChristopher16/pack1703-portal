@@ -41,6 +41,7 @@ export interface GalleryPhoto {
   likes: number;
   likedBy: string[];
   viewCount: number;
+  viewedBy: string[]; // Array of user IDs who have viewed this photo
   
   // Organization
   tags?: string[];

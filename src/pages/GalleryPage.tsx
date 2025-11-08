@@ -205,6 +205,20 @@ export const GalleryPage: React.FC = () => {
     }
   };
 
+  const handlePhotoSelect = async (photo: GalleryPhoto) => {
+    // Set the selected photo to open the modal
+    setSelectedPhoto(photo);
+    
+    // Increment view count (only counts once per user)
+    await galleryService.incrementViewCount(photo.id);
+    
+    // Reload photos to show updated view count
+    // Use a small delay to ensure the update has propagated
+    setTimeout(() => {
+      loadPhotos();
+    }, 500);
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log('📸 Gallery: handleFileSelect called');
     const file = e.target.files?.[0];
@@ -382,7 +396,7 @@ export const GalleryPage: React.FC = () => {
                 key={photo.id}
                 photo={photo}
                 viewMode={viewMode}
-                onSelect={setSelectedPhoto}
+                onSelect={handlePhotoSelect}
                 onLike={handleLike}
                 canApprove={canApprove}
                 currentUserId={currentUser?.uid}
@@ -525,7 +539,7 @@ export const GalleryPage: React.FC = () => {
 interface PhotoCardProps {
   photo: GalleryPhoto;
   viewMode: 'grid' | 'list';
-  onSelect: (photo: GalleryPhoto) => void;
+  onSelect: (photo: GalleryPhoto) => void | Promise<void>;
   onLike: (photoId: string) => void;
   canApprove: boolean;
   currentUserId?: string;

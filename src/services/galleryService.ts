@@ -73,6 +73,7 @@ class GalleryService {
         likes: 0,
         likedBy: [],
         viewCount: 0,
+        viewedBy: [],
         tags: uploadRequest.tags || [],
         eventId: uploadRequest.eventId || null,
         denId: uploadRequest.denId || null,
@@ -189,6 +190,7 @@ class GalleryService {
         likes: doc.data().likes || 0,
         likedBy: doc.data().likedBy || [],
         viewCount: doc.data().viewCount || 0,
+        viewedBy: doc.data().viewedBy || [],
         tags: doc.data().tags || [],
         eventId: doc.data().eventId,
         denId: doc.data().denId,
@@ -363,14 +365,34 @@ class GalleryService {
   }
 
   /**
-   * Increment view count
+   * Increment view count (once per user)
    */
   async incrementViewCount(photoId: string): Promise<void> {
     try {
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser) {
+        return; // Don't track views for non-authenticated users
+      }
+
       const photoRef = doc(db, this.collectionName, photoId);
-      await updateDoc(photoRef, {
-        viewCount: increment(1)
-      });
+      const photoDoc = await getDoc(photoRef);
+      
+      if (!photoDoc.exists()) {
+        return;
+      }
+
+      const viewedBy = photoDoc.data().viewedBy || [];
+      
+      // Only increment if user hasn't viewed this photo before
+      if (!viewedBy.includes(currentUser.uid)) {
+        await updateDoc(photoRef, {
+          viewCount: increment(1),
+          viewedBy: arrayUnion(currentUser.uid)
+        });
+        console.log('📸 Gallery: View counted for user', currentUser.uid);
+      } else {
+        console.log('📸 Gallery: User has already viewed this photo');
+      }
     } catch (error: any) {
       console.error('Error incrementing view count:', error);
       // Don't throw - this is a non-critical operation

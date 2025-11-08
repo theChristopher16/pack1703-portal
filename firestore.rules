@@ -933,9 +933,13 @@ service cloud.firestore {
       
       // Den leaders and admins can update photos (for approval/rejection)
       // Photo uploader can update their own photos
+      // Any authenticated user can update viewCount/viewedBy (for view tracking)
       allow update: if isAuthenticated() && (
         hasAnyRole(['den_leader', 'admin', 'super_admin', 'copse_admin']) ||
-        resource.data.uploadedBy == request.auth.uid
+        resource.data.uploadedBy == request.auth.uid ||
+        // Allow view count updates if only viewCount and viewedBy are being modified
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount', 'viewedBy', 'updatedAt']) &&
+         request.auth.uid in request.resource.data.viewedBy)
       );
       
       // Photo uploader or admins can delete photos

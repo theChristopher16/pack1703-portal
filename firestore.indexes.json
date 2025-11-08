@@ -160,6 +160,23 @@
         { "fieldPath": "status", "mode": "ASCENDING" },
         { "fieldPath": "createdAt", "mode": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "gallery-photos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "organizationId", "mode": "ASCENDING" },
+        { "fieldPath": "uploadedAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "gallery-photos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "organizationId", "mode": "ASCENDING" },
+        { "fieldPath": "status", "mode": "ASCENDING" },
+        { "fieldPath": "uploadedAt", "mode": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

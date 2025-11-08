@@ -378,34 +378,34 @@ export const GalleryPage: React.FC = () => {
     try {
       console.log('📸 Gallery: Downloading photo', photo.id);
       
-      // Fetch the image
-      const response = await fetch(photo.imageUrl);
-      const blob = await response.blob();
-      
-      // Create a download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      
       // Generate filename
       const filename = photo.title 
         ? `${photo.title.replace(/[^a-z0-9]/gi, '_')}.jpg`
         : `photo_${photo.id}.jpg`;
       
+      // Try direct download first (works on most browsers)
+      const link = document.createElement('a');
+      link.href = photo.imageUrl;
       link.download = filename;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
       
-      // Trigger download
-      document.body.appendChild(link);
-      link.click();
-      
-      // Cleanup
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      console.log('📸 Gallery: Photo download triggered');
+      // For iOS/mobile: open in new tab which allows save to photos
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        // On mobile, opening in new tab allows "Save Image" or "Add to Photos"
+        window.open(photo.imageUrl, '_blank');
+        console.log('📸 Gallery: Opened photo in new tab (mobile)');
+      } else {
+        // On desktop, trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        console.log('📸 Gallery: Photo download triggered (desktop)');
+      }
     } catch (error: any) {
       console.error('📸 Gallery: Download error:', error);
-      alert('Failed to download photo. Please try again.');
+      // Fallback: open in new tab
+      window.open(photo.imageUrl, '_blank');
     }
   };
 

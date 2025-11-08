@@ -132,9 +132,13 @@ export const GalleryPage: React.FC = () => {
         loadedPhotos = await galleryService.getPhotos(organizationId!);
       }
 
-      // Filter by current album if one is selected
+      // Filter by current album context
       if (currentAlbum) {
+        // Inside an album: show only photos in this album
         loadedPhotos = loadedPhotos.filter(p => p.albumId === currentAlbum.id);
+      } else {
+        // Main gallery view: show only photos NOT in any album (unorganized photos)
+        loadedPhotos = loadedPhotos.filter(p => !p.albumId);
       }
 
       console.log('📸 Gallery: Loaded photos:', loadedPhotos.length);
@@ -640,6 +644,14 @@ export const GalleryPage: React.FC = () => {
               <p className="text-forest-600">{currentAlbum.description}</p>
             )}
             <p className="text-sm text-gray-500 mt-2">{photos.length} photos</p>
+          </div>
+        )}
+
+        {/* Unorganized Photos Header */}
+        {!currentAlbum && !loading && photos.length > 0 && (
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-forest-800">📷 Unorganized Photos</h2>
+            <p className="text-sm text-gray-600">Photos not yet organized into albums ({photos.length})</p>
           </div>
         )}
 

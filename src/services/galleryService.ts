@@ -23,10 +23,11 @@ import {
 } from 'firebase/storage';
 import { db, storage } from '../firebase/config';
 import { authService, UserRole } from './authService';
-import { GalleryPhoto, PhotoStatus, PhotoUploadRequest, PhotoApprovalAction } from '../types/gallery';
+import { GalleryPhoto, GalleryAlbum, PhotoStatus, PhotoUploadRequest, PhotoApprovalAction } from '../types/gallery';
 
 class GalleryService {
   private collectionName = 'gallery-photos';
+  private albumsCollectionName = 'gallery-albums';
 
   /**
    * Upload a photo to the gallery
@@ -77,6 +78,7 @@ class GalleryService {
         tags: uploadRequest.tags || [],
         eventId: uploadRequest.eventId || null,
         denId: uploadRequest.denId || null,
+        albumId: uploadRequest.albumId || null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
@@ -194,12 +196,219 @@ class GalleryService {
         tags: doc.data().tags || [],
         eventId: doc.data().eventId,
         denId: doc.data().denId,
+        albumId: doc.data().albumId,
         createdAt: doc.data().createdAt?.toDate(),
         updatedAt: doc.data().updatedAt?.toDate()
       }));
     } catch (error: any) {
       console.error('Error getting photos:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Create a new album (den leader and above)
+   */
+  async createAlbum(
+    organizationId: string,
+    name: string,
+    description?: string,
+    denId?: string,
+    denName?: string,
+    parentAlbumId?: string
+  ): Promise<string> {
+    try {
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser) {
+        throw new Error('User must be authenticated');
+      }
+
+      const canCreateAlbum = authService.hasAnyRole([
+        UserRole.DEN_LEADER,
+        UserRole.ADMIN,
+        UserRole.SUPER_ADMIN,
+        UserRole.COPSE_ADMIN
+      ]);
+
+      if (!canCreateAlbum) {
+        throw new Error('Only den leaders and above can create albums');
+      }
+
+      const albumData = {
+        organizationId,
+        name,
+        description: description || '',
+        coverPhotoId: null,
+        photoCount: 0,
+        denId: denId || null,
+        denName: denName || null,
+        parentAlbumId: parentAlbumId || null,
+        createdBy: currentUser.uid,
+        createdByName: currentUser.displayName || currentUser.email,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        sortOrder: 0
+      };
+
+      const docRef = await addDoc(collection(db, this.albumsCollectionName), albumData);
+      console.log('✅ Album created:', docRef.id);
+
+      return docRef.id;
+    } catch (error: any) {
+      console.error('Error creating album:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get albums for an organization
+   */
+  async getAlbums(organizationId: string, parentAlbumId?: string | null): Promise<GalleryAlbum[]> {
+    try {
+      let q = query(
+        collection(db, this.albumsCollectionName),
+        where('organizationId', '==', organizationId)
+      );
+
+      // Filter by parent album if specified (for sub-folders)
+      if (parentAlbumId !== undefined) {
+        q = query(q, where('parentAlbumId', '==', parentAlbumId));
+      }
+
+      q = query(q, orderBy('sortOrder', 'asc'), orderBy('createdAt', 'desc'));
+
+      const snapshot = await getDocs(q);
+      
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        organizationId: doc.data().organizationId,
+        name: doc.data().name,
+        description: doc.data().description,
+        coverPhotoId: doc.data().coverPhotoId,
+        photoCount: doc.data().photoCount || 0,
+        denId: doc.data().denId,
+        denName: doc.data().denName,
+        parentAlbumId: doc.data().parentAlbumId,
+        createdBy: doc.data().createdBy,
+        createdByName: doc.data().createdByName,
+        createdAt: doc.data().createdAt?.toDate(),
+        updatedAt: doc.data().updatedAt?.toDate(),
+        sortOrder: doc.data().sortOrder || 0
+      }));
+    } catch (error: any) {
+      console.error('Error getting albums:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update album
+   */
+  async updateAlbum(
+    albumId: string,
+    updates: Partial<{
+      name: string;
+      description: string;
+      denId: string;
+      denName: string;
+      sortOrder: number;
+    }>
+  ): Promise<void> {
+    try {
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser) {
+        throw new Error('User must be authenticated');
+      }
+
+      const canUpdate = authService.hasAnyRole([
+        UserRole.DEN_LEADER,
+        UserRole.ADMIN,
+        UserRole.SUPER_ADMIN,
+        UserRole.COPSE_ADMIN
+      ]);
+
+      if (!canUpdate) {
+        throw new Error('Only den leaders and above can update albums');
+      }
+
+      const albumRef = doc(db, this.albumsCollectionName, albumId);
+      await updateDoc(albumRef, {
+        ...updates,
+        updatedAt: serverTimestamp()
+      });
+
+      console.log('✅ Album updated:', albumId);
+    } catch (error: any) {
+      console.error('Error updating album:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete album (and optionally reassign photos)
+   */
+  async deleteAlbum(albumId: string, movePhotosToAlbumId?: string | null): Promise<void> {
+    try {
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser) {
+        throw new Error('User must be authenticated');
+      }
+
+      const canDelete = authService.hasAnyRole([
+        UserRole.ADMIN,
+        UserRole.SUPER_ADMIN,
+        UserRole.COPSE_ADMIN
+      ]);
+
+      if (!canDelete) {
+        throw new Error('Only admins can delete albums');
+      }
+
+      // Get photos in this album
+      const photosQuery = query(
+        collection(db, this.collectionName),
+        where('albumId', '==', albumId)
+      );
+      const photosSnapshot = await getDocs(photosQuery);
+
+      // Update photos to move them or remove album association
+      const updatePromises = photosSnapshot.docs.map(photoDoc =>
+        updateDoc(doc(db, this.collectionName, photoDoc.id), {
+          albumId: movePhotosToAlbumId || null,
+          updatedAt: serverTimestamp()
+        })
+      );
+      await Promise.all(updatePromises);
+
+      // Delete the album
+      await deleteDoc(doc(db, this.albumsCollectionName, albumId));
+      console.log('✅ Album deleted:', albumId);
+    } catch (error: any) {
+      console.error('Error deleting album:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update album photo count
+   */
+  async updateAlbumPhotoCount(albumId: string): Promise<void> {
+    try {
+      const photosQuery = query(
+        collection(db, this.collectionName),
+        where('albumId', '==', albumId),
+        where('status', '==', PhotoStatus.APPROVED)
+      );
+      const snapshot = await getDocs(photosQuery);
+
+      const albumRef = doc(db, this.albumsCollectionName, albumId);
+      await updateDoc(albumRef, {
+        photoCount: snapshot.size,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error: any) {
+      console.error('Error updating album photo count:', error);
+      // Don't throw - this is a non-critical operation
     }
   }
 

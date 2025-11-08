@@ -177,6 +177,33 @@
         { "fieldPath": "status", "mode": "ASCENDING" },
         { "fieldPath": "uploadedAt", "mode": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "gallery-photos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "albumId", "mode": "ASCENDING" },
+        { "fieldPath": "status", "mode": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "gallery-albums",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "organizationId", "mode": "ASCENDING" },
+        { "fieldPath": "sortOrder", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "gallery-albums",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "organizationId", "mode": "ASCENDING" },
+        { "fieldPath": "parentAlbumId", "mode": "ASCENDING" },
+        { "fieldPath": "sortOrder", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -47,6 +47,7 @@ export interface GalleryPhoto {
   tags?: string[];
   eventId?: string;
   denId?: string;
+  albumId?: string; // Album/folder this photo belongs to
   
   // Timestamps
   createdAt: Date;
@@ -67,9 +68,20 @@ export interface GalleryAlbum {
   description?: string;
   coverPhotoId?: string;
   photoCount: number;
+  
+  // Organization & Access
+  denId?: string; // Optional: Filter to specific den
+  denName?: string;
+  parentAlbumId?: string; // For sub-albums/folders
+  
+  // Metadata
   createdBy: string;
+  createdByName: string;
   createdAt: Date;
   updatedAt: Date;
+  
+  // Display order
+  sortOrder?: number;
 }
 
 export interface PhotoUploadRequest {
@@ -79,6 +91,7 @@ export interface PhotoUploadRequest {
   tags?: string[];
   eventId?: string;
   denId?: string;
+  albumId?: string; // Optional: Add to specific album
 }
 
 export interface PhotoApprovalAction {

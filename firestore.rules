@@ -955,6 +955,35 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // GALLERY ALBUMS
+    // ============================================================================
+    
+    // Gallery albums - Individual album access
+    match /gallery-albums/{albumId} {
+      // Anyone authenticated can read albums
+      allow read: if isAuthenticated();
+      
+      // Den leaders and above can create albums
+      allow create: if isAuthenticated() &&
+        hasAnyRole(['den_leader', 'admin', 'super_admin', 'copse_admin']) &&
+        request.resource.data.organizationId is string &&
+        request.resource.data.createdBy == request.auth.uid;
+      
+      // Den leaders and above can update albums
+      allow update: if isAuthenticated() &&
+        hasAnyRole(['den_leader', 'admin', 'super_admin', 'copse_admin']);
+      
+      // Only admins can delete albums
+      allow delete: if isAuthenticated() &&
+        hasAnyRole(['admin', 'super_admin', 'copse_admin']);
+    }
+    
+    // Gallery albums - Collection access
+    match /gallery-albums {
+      allow list: if isAuthenticated();
+    }
+
+    // ============================================================================
     // DENY ALL OTHER ACCESS
     // ============================================================================
     

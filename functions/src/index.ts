@@ -234,7 +234,7 @@ export const updateUserRole = functions.https.onCall(async (data: any, context: 
 
     console.log(`[updateUserRole] Updating Firestore document for user ${userId}`);
     await db.collection('users').doc(userId).update(updateData);
-    
+
     // Update Firebase Auth custom claims
     try {
       console.log(`[updateUserRole] Setting custom claims for user ${userId}`);

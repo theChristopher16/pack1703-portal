@@ -62,29 +62,29 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
     
     if (!hasRequiredRole) {
       console.log('🔒 RoleGuard: User does not have required role, redirecting to home', { 
-        requiredRole, 
-        userRole, 
+      requiredRole, 
+      userRole, 
         userRoles: currentAppUser ? authService.getUserRoles(currentAppUser) : [],
-        currentUserRole: currentUser?.role,
-        fallbackPath: prefixedFallbackPath 
-      });
-      return <Navigate to={prefixedFallbackPath} replace />;
-    }
+      currentUserRole: currentUser?.role,
+      fallbackPath: prefixedFallbackPath 
+    });
+    return <Navigate to={prefixedFallbackPath} replace />;
+  }
   }
 
   if (requiredRoles && requiredRoles.length > 0) {
     const currentAppUser = authService.getCurrentUser();
     const hasAnyRequiredRole = currentAppUser ? authService.hasAnyRole(requiredRoles, currentAppUser) : false;
-    
+
     if (!hasAnyRequiredRole) {
       console.log('🔒 RoleGuard: User does not have any required roles, redirecting to home', { 
-        requiredRoles, 
-        userRole, 
+      requiredRoles, 
+      userRole, 
         userRoles: currentAppUser ? authService.getUserRoles(currentAppUser) : [],
-        currentUserRole: currentUser?.role,
-        fallbackPath: prefixedFallbackPath 
-      });
-      return <Navigate to={prefixedFallbackPath} replace />;
+      currentUserRole: currentUser?.role,
+      fallbackPath: prefixedFallbackPath 
+    });
+    return <Navigate to={prefixedFallbackPath} replace />;
     }
   }
 

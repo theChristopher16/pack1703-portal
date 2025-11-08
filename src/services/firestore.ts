@@ -91,8 +91,8 @@ export const firestoreService = {
         
         // Build query with optional organizationId filter
         let q;
-        if (organizationId) {
-          // Filter by organizationId for multi-tenant organizations
+        if (organizationId && organizationId !== 'pack1703') {
+          // Filter by organizationId for multi-tenant organizations (not Pack 1703)
           q = query(
             eventsRef,
             where('organizationId', '==', organizationId),
@@ -101,6 +101,7 @@ export const firestoreService = {
           );
         } else {
           // Pack 1703 or no organization - show all public events
+          // This includes legacy events without organizationId field
           q = query(
             eventsRef, 
             where('visibility', 'in', ['public', null]),

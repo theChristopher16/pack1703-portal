@@ -384,55 +384,90 @@ export const GalleryPage: React.FC = () => {
         ? `${photo.title.replace(/[^a-z0-9]/gi, '_')}.jpg`
         : `photo_${photo.id}.jpg`;
       
-      // For mobile: Use Web Share API if available
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       
-      if (isMobile && navigator.share) {
+      // Use canvas to convert image to blob (bypasses CORS)
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      // Create a promise to wait for image load
+      const loadImage = new Promise<Blob>((resolve, reject) => {
+        img.onload = () => {
+          try {
+            // Create canvas and draw image
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            
+            if (!ctx) {
+              reject(new Error('Could not get canvas context'));
+              return;
+            }
+            
+            ctx.drawImage(img, 0, 0);
+            
+            // Convert canvas to blob
+            canvas.toBlob((blob) => {
+              if (blob) {
+                resolve(blob);
+              } else {
+                reject(new Error('Failed to create blob'));
+              }
+            }, 'image/jpeg', 0.95);
+          } catch (error) {
+            reject(error);
+          }
+        };
+        
+        img.onerror = () => reject(new Error('Failed to load image'));
+      });
+      
+      // Start loading the image
+      img.src = photo.imageUrl;
+      
+      // Wait for image to load and convert to blob
+      const blob = await loadImage;
+      console.log('📸 Gallery: Image converted to blob');
+      
+      // For mobile: Use Web Share API with file
+      if (isMobile && navigator.share && navigator.canShare) {
         try {
-          // Try to share the image URL directly
-          // This works on iOS/Android and brings up share sheet with "Save Image" option
-          await navigator.share({
-            url: photo.imageUrl,
-            title: photo.title || 'Photo from Gallery',
-            text: photo.description || 'Photo from Pack 1703 Gallery'
-          });
-          console.log('📸 Gallery: Photo shared via URL');
-          return;
+          const file = new File([blob], filename, { type: 'image/jpeg' });
+          
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: photo.title || 'Photo from Gallery',
+              text: photo.description || 'Photo from Pack 1703 Gallery'
+            });
+            console.log('📸 Gallery: Photo shared successfully');
+            return;
+          }
         } catch (shareError: any) {
           if (shareError.name === 'AbortError') {
             console.log('📸 Gallery: Share cancelled by user');
             return;
           }
-          console.log('📸 Gallery: URL share failed, trying alternative', shareError);
+          console.log('📸 Gallery: Share failed, falling back to download', shareError);
         }
       }
       
-      // For desktop or if share fails: Use download link with CORS workaround
-      // We'll use an invisible iframe to trigger the download
+      // For desktop or fallback: Download the blob
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = photo.imageUrl;
+      link.href = url;
       link.download = filename;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      
-      // Add download attribute which works on modern browsers
-      link.setAttribute('download', filename);
       
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      console.log('📸 Gallery: Download triggered');
+      window.URL.revokeObjectURL(url);
+      console.log('📸 Gallery: Photo downloaded');
     } catch (error: any) {
       console.error('📸 Gallery: Save error:', error);
-      
-      // Final fallback: Open in new tab with instructions
-      const newWindow = window.open(photo.imageUrl, '_blank');
-      if (newWindow) {
-        alert('Photo opened in new tab. On mobile: long-press and select "Save Image". On desktop: right-click and select "Save Image As".');
-      } else {
-        alert('Please allow pop-ups to save photos.');
-      }
+      alert('Failed to save photo. Please long-press on the photo and select "Save Image" to save manually.');
     }
   };
 

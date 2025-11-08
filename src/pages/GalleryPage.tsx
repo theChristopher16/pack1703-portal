@@ -566,10 +566,13 @@ const PhotoCard: React.FC<PhotoCardProps> = ({ photo, viewMode, onSelect, onLike
                 <h4 className="font-semibold text-forest-800">{photo.title || 'Untitled'}</h4>
                 <p className="text-sm text-forest-600">by {photo.uploaderName}</p>
               </div>
-              <span className={`text-xs px-2 py-1 rounded-full border ${statusBadge.color} flex items-center gap-1`}>
-                <StatusIcon className="w-3 h-3" />
-                {statusBadge.label}
-              </span>
+              {/* Only show status badge for non-approved photos */}
+              {photo.status !== PhotoStatus.APPROVED && (
+                <span className={`text-xs px-2 py-1 rounded-full border ${statusBadge.color} flex items-center gap-1`}>
+                  <StatusIcon className="w-3 h-3" />
+                  {statusBadge.label}
+                </span>
+              )}
             </div>
             {photo.description && (
               <p className="text-sm text-gray-600 mt-2 line-clamp-2">{photo.description}</p>
@@ -610,13 +613,15 @@ const PhotoCard: React.FC<PhotoCardProps> = ({ photo, viewMode, onSelect, onLike
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         />
         
-        {/* Status Badge */}
-        <div className="absolute top-2 right-2">
-          <span className={`text-xs px-2 py-1 rounded-full border ${statusBadge.color} flex items-center gap-1 backdrop-blur-md`}>
-            <StatusIcon className="w-3 h-3" />
-            {statusBadge.label}
-          </span>
-        </div>
+        {/* Status Badge - Only show for non-approved photos */}
+        {photo.status !== PhotoStatus.APPROVED && (
+          <div className="absolute top-2 right-2">
+            <span className={`text-xs px-2 py-1 rounded-full border ${statusBadge.color} flex items-center gap-1 backdrop-blur-md`}>
+              <StatusIcon className="w-3 h-3" />
+              {statusBadge.label}
+            </span>
+          </div>
+        )}
 
         {/* Overlay on Hover */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -707,10 +712,13 @@ const PhotoDetailModal: React.FC<PhotoDetailModalProps> = ({
                 <p className="text-forest-600 mb-2">
                   Uploaded by <span className="font-semibold">{photo.uploaderName}</span>
                 </p>
-                <span className={`inline-flex items-center gap-2 text-xs px-3 py-1 rounded-full border ${statusBadge.color}`}>
-                  <StatusIcon className="w-4 h-4" />
-                  {statusBadge.label}
-                </span>
+                {/* Only show status badge for non-approved photos */}
+                {photo.status !== PhotoStatus.APPROVED && (
+                  <span className={`inline-flex items-center gap-2 text-xs px-3 py-1 rounded-full border ${statusBadge.color}`}>
+                    <StatusIcon className="w-4 h-4" />
+                    {statusBadge.label}
+                  </span>
+                )}
               </div>
             </div>
 

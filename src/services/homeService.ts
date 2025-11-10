@@ -24,6 +24,26 @@ import {
   MealPlan,
   Task,
   TaskStatus,
+  Expense,
+  Budget,
+  BudgetCategory,
+  SavingsGoal,
+  Bill,
+  MaintenanceItem,
+  MaintenanceLog,
+  InventoryItem,
+  FamilyEvent,
+  Medication,
+  HealthAppointment,
+  VaccinationRecord,
+  Vehicle,
+  VehicleMaintenance,
+  Pet,
+  PetAppointment,
+  PetMedication,
+  Document,
+  CleaningTask,
+  CleaningLog,
 } from '../types/home';
 
 class HomeService {
@@ -33,6 +53,26 @@ class HomeService {
   private readonly SHOPPING_LISTS_COLLECTION = 'shoppingLists';
   private readonly MEAL_PLANS_COLLECTION = 'mealPlans';
   private readonly TASKS_COLLECTION = 'tasks';
+  private readonly EXPENSES_COLLECTION = 'expenses';
+  private readonly BUDGETS_COLLECTION = 'budgets';
+  private readonly BUDGET_CATEGORIES_COLLECTION = 'budgetCategories';
+  private readonly SAVINGS_GOALS_COLLECTION = 'savingsGoals';
+  private readonly BILLS_COLLECTION = 'bills';
+  private readonly MAINTENANCE_ITEMS_COLLECTION = 'maintenanceItems';
+  private readonly MAINTENANCE_LOGS_COLLECTION = 'maintenanceLogs';
+  private readonly INVENTORY_ITEMS_COLLECTION = 'inventoryItems';
+  private readonly FAMILY_EVENTS_COLLECTION = 'familyEvents';
+  private readonly MEDICATIONS_COLLECTION = 'medications';
+  private readonly HEALTH_APPOINTMENTS_COLLECTION = 'healthAppointments';
+  private readonly VACCINATIONS_COLLECTION = 'vaccinations';
+  private readonly VEHICLES_COLLECTION = 'vehicles';
+  private readonly VEHICLE_MAINTENANCE_COLLECTION = 'vehicleMaintenance';
+  private readonly PETS_COLLECTION = 'pets';
+  private readonly PET_APPOINTMENTS_COLLECTION = 'petAppointments';
+  private readonly PET_MEDICATIONS_COLLECTION = 'petMedications';
+  private readonly DOCUMENTS_COLLECTION = 'documents';
+  private readonly CLEANING_TASKS_COLLECTION = 'cleaningTasks';
+  private readonly CLEANING_LOGS_COLLECTION = 'cleaningLogs';
 
   // ==================== Grocery Methods ====================
 
@@ -583,6 +623,490 @@ class HomeService {
 
     if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
       throw new Error('Task not found or access denied');
+    }
+
+    await deleteDoc(docRef);
+  }
+
+  // ==================== Budget & Expense Methods ====================
+
+  async getBudgetCategories(): Promise<BudgetCategory[]> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const q = query(
+      collection(db, this.BUDGET_CATEGORIES_COLLECTION),
+      where('userId', '==', user.uid)
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as BudgetCategory));
+  }
+
+  async getExpenses(month: string): Promise<Expense[]> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const [year, monthNum] = month.split('-');
+    const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
+    const endDate = new Date(parseInt(year), parseInt(monthNum), 0);
+
+    const q = query(
+      collection(db, this.EXPENSES_COLLECTION),
+      where('userId', '==', user.uid),
+      where('date', '>=', startDate),
+      where('date', '<=', endDate),
+      orderBy('date', 'desc')
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        date: data.date?.toDate(),
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate(),
+      } as Expense;
+    });
+  }
+
+  async addExpense(expense: Omit<Expense, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const now = Timestamp.now();
+    const docRef = await addDoc(collection(db, this.EXPENSES_COLLECTION), {
+      ...expense,
+      date: Timestamp.fromDate(expense.date),
+      userId: user.uid,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return docRef.id;
+  }
+
+  async updateExpense(id: string, updates: Partial<Omit<Expense, 'id' | 'userId' | 'createdAt'>>): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const docRef = doc(db, this.EXPENSES_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
+      throw new Error('Expense not found or access denied');
+    }
+
+    const updateData: any = { ...updates, updatedAt: Timestamp.now() };
+    if (updates.date) updateData.date = Timestamp.fromDate(updates.date);
+
+    await updateDoc(docRef, updateData);
+  }
+
+  async deleteExpense(id: string): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const docRef = doc(db, this.EXPENSES_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
+      throw new Error('Expense not found or access denied');
+    }
+
+    await deleteDoc(docRef);
+  }
+
+  async getBudget(month: string): Promise<Budget | null> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const q = query(
+      collection(db, this.BUDGETS_COLLECTION),
+      where('userId', '==', user.uid),
+      where('month', '==', month)
+    );
+
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+
+    const data = snapshot.docs[0].data();
+    return {
+      id: snapshot.docs[0].id,
+      ...data,
+      createdAt: data.createdAt?.toDate(),
+      updatedAt: data.updatedAt?.toDate(),
+    } as Budget;
+  }
+
+  async getSavingsGoals(): Promise<SavingsGoal[]> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const q = query(
+      collection(db, this.SAVINGS_GOALS_COLLECTION),
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        deadline: data.deadline?.toDate(),
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate(),
+      } as SavingsGoal;
+    });
+  }
+
+  async addSavingsGoal(goal: Omit<SavingsGoal, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const now = Timestamp.now();
+    const docRef = await addDoc(collection(db, this.SAVINGS_GOALS_COLLECTION), {
+      ...goal,
+      deadline: goal.deadline ? Timestamp.fromDate(goal.deadline) : null,
+      userId: user.uid,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return docRef.id;
+  }
+
+  async updateSavingsGoal(id: string, updates: Partial<Omit<SavingsGoal, 'id' | 'userId' | 'createdAt'>>): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const docRef = doc(db, this.SAVINGS_GOALS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
+      throw new Error('Goal not found or access denied');
+    }
+
+    const updateData: any = { ...updates, updatedAt: Timestamp.now() };
+    if (updates.deadline) updateData.deadline = Timestamp.fromDate(updates.deadline);
+
+    await updateDoc(docRef, updateData);
+  }
+
+  async deleteSavingsGoal(id: string): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const docRef = doc(db, this.SAVINGS_GOALS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
+      throw new Error('Goal not found or access denied');
+    }
+
+    await deleteDoc(docRef);
+  }
+
+  // ==================== Bills Methods ====================
+
+  async getBills(): Promise<Bill[]> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const q = query(
+      collection(db, this.BILLS_COLLECTION),
+      where('userId', '==', user.uid),
+      orderBy('nextDueDate')
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        nextDueDate: data.nextDueDate?.toDate(),
+        lastPaidDate: data.lastPaidDate?.toDate(),
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate(),
+      } as Bill;
+    });
+  }
+
+  async addBill(bill: Omit<Bill, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'lastPaidDate'>): Promise<string> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const now = Timestamp.now();
+    const docRef = await addDoc(collection(db, this.BILLS_COLLECTION), {
+      ...bill,
+      nextDueDate: Timestamp.fromDate(bill.nextDueDate),
+      userId: user.uid,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return docRef.id;
+  }
+
+  async updateBill(id: string, updates: Partial<Omit<Bill, 'id' | 'userId' | 'createdAt'>>): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const docRef = doc(db, this.BILLS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
+      throw new Error('Bill not found or access denied');
+    }
+
+    const updateData: any = { ...updates, updatedAt: Timestamp.now() };
+    if (updates.nextDueDate) updateData.nextDueDate = Timestamp.fromDate(updates.nextDueDate);
+    if (updates.lastPaidDate) updateData.lastPaidDate = Timestamp.fromDate(updates.lastPaidDate);
+
+    await updateDoc(docRef, updateData);
+  }
+
+  async deleteBill(id: string): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const docRef = doc(db, this.BILLS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
+      throw new Error('Bill not found or access denied');
+    }
+
+    await deleteDoc(docRef);
+  }
+
+  // ==================== Maintenance Methods ====================
+
+  async getMaintenanceItems(): Promise<MaintenanceItem[]> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const q = query(
+      collection(db, this.MAINTENANCE_ITEMS_COLLECTION),
+      where('userId', '==', user.uid),
+      orderBy('nextDue')
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        lastCompleted: data.lastCompleted?.toDate(),
+        nextDue: data.nextDue?.toDate(),
+        warrantyExpiration: data.warrantyExpiration?.toDate(),
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate(),
+      } as MaintenanceItem;
+    });
+  }
+
+  async addMaintenanceItem(item: Omit<MaintenanceItem, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'lastCompleted'>): Promise<string> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const now = Timestamp.now();
+    const docRef = await addDoc(collection(db, this.MAINTENANCE_ITEMS_COLLECTION), {
+      ...item,
+      nextDue: Timestamp.fromDate(item.nextDue),
+      warrantyExpiration: item.warrantyExpiration ? Timestamp.fromDate(item.warrantyExpiration) : null,
+      userId: user.uid,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return docRef.id;
+  }
+
+  async updateMaintenanceItem(id: string, updates: Partial<Omit<MaintenanceItem, 'id' | 'userId' | 'createdAt'>>): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const docRef = doc(db, this.MAINTENANCE_ITEMS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
+      throw new Error('Item not found or access denied');
+    }
+
+    const updateData: any = { ...updates, updatedAt: Timestamp.now() };
+    if (updates.nextDue) updateData.nextDue = Timestamp.fromDate(updates.nextDue);
+    if (updates.lastCompleted) updateData.lastCompleted = Timestamp.fromDate(updates.lastCompleted);
+    if (updates.warrantyExpiration) updateData.warrantyExpiration = Timestamp.fromDate(updates.warrantyExpiration);
+
+    await updateDoc(docRef, updateData);
+  }
+
+  async deleteMaintenanceItem(id: string): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const docRef = doc(db, this.MAINTENANCE_ITEMS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
+      throw new Error('Item not found or access denied');
+    }
+
+    await deleteDoc(docRef);
+  }
+
+  async completeMaintenanceItem(id: string, logData: { cost?: number; performedBy: string; notes?: string }): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const itemRef = doc(db, this.MAINTENANCE_ITEMS_COLLECTION, id);
+    const itemSnap = await getDoc(itemRef);
+
+    if (!itemSnap.exists() || itemSnap.data()?.userId !== user.uid) {
+      throw new Error('Item not found or access denied');
+    }
+
+    const item = itemSnap.data() as MaintenanceItem;
+    const completedDate = new Date();
+
+    // Calculate next due date based on frequency
+    let nextDue = new Date(completedDate);
+    switch (item.frequency) {
+      case 'monthly':
+        nextDue.setMonth(nextDue.getMonth() + 1);
+        break;
+      case 'quarterly':
+        nextDue.setMonth(nextDue.getMonth() + 3);
+        break;
+      case 'semiannually':
+        nextDue.setMonth(nextDue.getMonth() + 6);
+        break;
+      case 'annually':
+        nextDue.setFullYear(nextDue.getFullYear() + 1);
+        break;
+    }
+
+    // Update maintenance item
+    await updateDoc(itemRef, {
+      lastCompleted: Timestamp.fromDate(completedDate),
+      nextDue: Timestamp.fromDate(nextDue),
+      updatedAt: Timestamp.now(),
+    });
+
+    // Create log entry
+    await addDoc(collection(db, this.MAINTENANCE_LOGS_COLLECTION), {
+      maintenanceItemId: id,
+      completedDate: Timestamp.fromDate(completedDate),
+      cost: logData.cost || null,
+      performedBy: logData.performedBy,
+      notes: logData.notes || null,
+      nextScheduled: Timestamp.fromDate(nextDue),
+      userId: user.uid,
+      createdAt: Timestamp.now(),
+    });
+  }
+
+  async getMaintenanceLogs(): Promise<MaintenanceLog[]> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const q = query(
+      collection(db, this.MAINTENANCE_LOGS_COLLECTION),
+      where('userId', '==', user.uid),
+      orderBy('completedDate', 'desc')
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        completedDate: data.completedDate?.toDate(),
+        nextScheduled: data.nextScheduled?.toDate(),
+        createdAt: data.createdAt?.toDate(),
+      } as MaintenanceLog;
+    });
+  }
+
+  // ==================== Inventory Methods ====================
+
+  async getInventoryItems(): Promise<InventoryItem[]> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const q = query(
+      collection(db, this.INVENTORY_ITEMS_COLLECTION),
+      where('userId', '==', user.uid),
+      orderBy('room'),
+      orderBy('name')
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        purchaseDate: data.purchaseDate?.toDate(),
+        warrantyExpiration: data.warrantyExpiration?.toDate(),
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate(),
+      } as InventoryItem;
+    });
+  }
+
+  async addInventoryItem(item: Omit<InventoryItem, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const now = Timestamp.now();
+    const docRef = await addDoc(collection(db, this.INVENTORY_ITEMS_COLLECTION), {
+      ...item,
+      purchaseDate: item.purchaseDate ? Timestamp.fromDate(item.purchaseDate) : null,
+      warrantyExpiration: item.warrantyExpiration ? Timestamp.fromDate(item.warrantyExpiration) : null,
+      userId: user.uid,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return docRef.id;
+  }
+
+  async updateInventoryItem(id: string, updates: Partial<Omit<InventoryItem, 'id' | 'userId' | 'createdAt'>>): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const docRef = doc(db, this.INVENTORY_ITEMS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
+      throw new Error('Item not found or access denied');
+    }
+
+    const updateData: any = { ...updates, updatedAt: Timestamp.now() };
+    if (updates.purchaseDate) updateData.purchaseDate = Timestamp.fromDate(updates.purchaseDate);
+    if (updates.warrantyExpiration) updateData.warrantyExpiration = Timestamp.fromDate(updates.warrantyExpiration);
+
+    await updateDoc(docRef, updateData);
+  }
+
+  async deleteInventoryItem(id: string): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const docRef = doc(db, this.INVENTORY_ITEMS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
+      throw new Error('Item not found or access denied');
     }
 
     await deleteDoc(docRef);

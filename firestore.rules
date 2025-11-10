@@ -71,6 +71,22 @@ service cloud.firestore {
       return hasAnyRole(['root', 'super_admin', 'super-admin', 'copse_admin']);
     }
     function isSuper() { return isPlatformSuper() || isRootRole() || isSuperViaUserDoc(); }
+    
+    // Helper to get member permissions from household members array
+    function getMemberPermissions(members, userId) {
+      return members.filter(m => m.userId == userId)[0].permissions;
+    }
+    
+    // Helper to check if user is in any household
+    function userInAnyHousehold(households, userId) {
+      return households.hasAny([{householdId: userId}]); // Simplified check
+    }
+    
+    // Helper to check if user is member of household
+    function userInHousehold(householdId, userId) {
+      return exists(/databases/$(database)/documents/sharedHouseholds/$(householdId)) &&
+        get(/databases/$(database)/documents/sharedHouseholds/$(householdId)).data.members.hasAny([{userId: userId}]);
+    }
 
     // ============================================================================
     // USER DATA SECURITY - Users can only access their own data
@@ -1177,6 +1193,109 @@ service cloud.firestore {
     // Calendar Credentials - Secure storage for API credentials (cloud functions only)
     match /calendarCredentials/{userId} {
       allow read, write: if false; // Only cloud functions can access
+    }
+    
+    // === HOUSEHOLD SHARING ===
+    
+    // Shared Households
+    match /sharedHouseholds/{householdId} {
+      // Read if user is a member
+      allow read: if isAuthenticated() && 
+        resource.data.members.hasAny([{userId: request.auth.uid}]);
+      
+      // Create new household
+      allow create: if isAuthenticated() && 
+        request.resource.data.ownerId == request.auth.uid &&
+        request.resource.data.members[0].userId == request.auth.uid;
+      
+      // Update if user is member with permissions
+      allow update: if isAuthenticated() && 
+        resource.data.members.hasAny([{userId: request.auth.uid}]) &&
+        (
+          // Owner can do anything
+          resource.data.ownerId == request.auth.uid ||
+          // Admins can manage most things
+          getMemberPermissions(resource.data.members, request.auth.uid).canManageMembers
+        );
+      
+      // Delete only by owner
+      allow delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+    }
+    
+    // Household Invitations
+    match /householdInvitations/{invitationId} {
+      // Read if user is inviter or invitee
+      allow read: if isAuthenticated() && 
+        (resource.data.invitedBy == request.auth.uid || 
+         resource.data.invitedEmail == request.auth.token.email);
+      
+      // Create invitation (by household members with permission)
+      allow create: if isAuthenticated() && 
+        request.resource.data.invitedBy == request.auth.uid;
+      
+      // Update invitation (accept/decline by invitee)
+      allow update: if isAuthenticated() && 
+        resource.data.invitedEmail == request.auth.token.email;
+      
+      // Delete invitation (by inviter)
+      allow delete: if isAuthenticated() && resource.data.invitedBy == request.auth.uid;
+    }
+    
+    // User Households Mapping
+    match /userHouseholds/{userId} {
+      allow read, write: if isAuthenticated() && userId == request.auth.uid;
+    }
+    
+    // Child Profiles
+    match /childProfiles/{childId} {
+      // Read if user is parent or in any of child's households
+      allow read: if isAuthenticated() && 
+        (request.auth.uid in resource.data.parentUserIds ||
+         userInAnyHousehold(resource.data.households, request.auth.uid));
+      
+      // Create by authenticated user
+      allow create: if isAuthenticated() && 
+        request.auth.uid in request.resource.data.parentUserIds;
+      
+      // Update by parents only
+      allow update: if isAuthenticated() && 
+        request.auth.uid in resource.data.parentUserIds;
+      
+      // Delete by parents only
+      allow delete: if isAuthenticated() && 
+        request.auth.uid in resource.data.parentUserIds;
+    }
+    
+    // === SMART SHOPPING SYSTEM ===
+    
+    // Shopping Provider Configs
+    match /shoppingProviders/{configId} {
+      allow read, write: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid ||
+         userInHousehold(resource.data.householdId, request.auth.uid));
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Shopping Carts
+    match /shoppingCarts/{cartId} {
+      allow read, write: if isAuthenticated() && 
+        userInHousehold(resource.data.householdId, request.auth.uid);
+      allow create: if isAuthenticated();
+    }
+    
+    // Auto-Shopping Rules
+    match /autoShoppingRules/{ruleId} {
+      allow read, write: if isAuthenticated() && 
+        userInHousehold(resource.data.householdId, request.auth.uid);
+      allow create: if isAuthenticated();
+    }
+    
+    // Order History
+    match /orderHistory/{orderId} {
+      allow read: if isAuthenticated() && 
+        userInHousehold(resource.data.householdId, request.auth.uid);
+      allow write: if false; // Only cloud functions can write
     }
     
     // Budget & Financial Collections

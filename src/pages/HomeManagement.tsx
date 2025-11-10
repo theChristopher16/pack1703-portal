@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, ShoppingBasket, Book, ChefHat, ShoppingCart, Calendar, CheckSquare,
   Settings, DollarSign, CreditCard, Wrench, Package, CalendarDays,
-  Heart, Car, PawPrint, FileText, Sparkles, CalendarRange
+  Heart, Car, PawPrint, FileText, Sparkles, CalendarRange, Users
 } from 'lucide-react';
 import GroceryManager from '../components/Home/GroceryManager';
 import RecipeManager from '../components/Home/RecipeManager';
@@ -22,13 +22,14 @@ import VehicleManager from '../components/Home/VehicleManager';
 import PetManager from '../components/Home/PetManager';
 import DocumentVault from '../components/Home/DocumentVault';
 import CleaningSchedule from '../components/Home/CleaningSchedule';
+import HouseholdMembers from '../components/Home/HouseholdMembers';
 import homePreferencesService from '../services/homePreferencesService';
 import householdService from '../services/householdService';
 import { HomePreferences } from '../types/homePreferences';
 import { useToast } from '../contexts/ToastContext';
 import HouseholdSetupWizard from '../components/Home/HouseholdSetupWizard';
 
-type TabType = 'groceries' | 'recipes' | 'shopping' | 'meals' | 'tasks' | 'settings' | 
+type TabType = 'household' | 'groceries' | 'recipes' | 'shopping' | 'meals' | 'tasks' | 'settings' | 
   'budget' | 'bills' | 'maintenance' | 'inventory' | 'familyCalendar' | 'health' | 
   'vehicles' | 'pets' | 'documents' | 'cleaning' | 'unifiedCalendar';
 
@@ -69,6 +70,7 @@ const HomeManagement: React.FC = () => {
   };
 
   const allTabs = [
+    { id: 'household' as TabType, label: 'Household', icon: Users, feature: null }, // Always visible
     { id: 'groceries' as TabType, label: 'Groceries', icon: ShoppingBasket, feature: 'groceries' },
     { id: 'recipes' as TabType, label: 'Recipes', icon: Book, feature: 'recipes' },
     { id: 'shopping' as TabType, label: 'Shopping', icon: ShoppingCart, feature: 'shoppingLists' },
@@ -159,6 +161,7 @@ const HomeManagement: React.FC = () => {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.2 }}
           >
+            {activeTab === 'household' && <HouseholdMembers />}
             {activeTab === 'groceries' && <GroceryManager />}
             {activeTab === 'recipes' && <RecipeManager />}
             {activeTab === 'shopping' && <ShoppingListManager />}

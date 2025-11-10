@@ -72,20 +72,10 @@ service cloud.firestore {
     }
     function isSuper() { return isPlatformSuper() || isRootRole() || isSuperViaUserDoc(); }
     
-    // Helper to get member permissions from household members array
-    function getMemberPermissions(members, userId) {
-      return members.filter(m => m.userId == userId)[0].permissions;
-    }
-    
-    // Helper to check if user is in any household
-    function userInAnyHousehold(households, userId) {
-      return households.hasAny([{householdId: userId}]); // Simplified check
-    }
-    
-    // Helper to check if user is member of household
+    // Helper to check if user is member of household  
     function userInHousehold(householdId, userId) {
       return exists(/databases/$(database)/documents/sharedHouseholds/$(householdId)) &&
-        get(/databases/$(database)/documents/sharedHouseholds/$(householdId)).data.members.hasAny([{userId: userId}]);
+        get(/databases/$(database)/documents/sharedHouseholds/$(householdId)).data.ownerId == userId;
     }
 
     // ============================================================================
@@ -1199,24 +1189,15 @@ service cloud.firestore {
     
     // Shared Households
     match /sharedHouseholds/{householdId} {
-      // Read if user is a member
-      allow read: if isAuthenticated() && 
-        resource.data.members.hasAny([{userId: request.auth.uid}]);
+      // Read if user is owner (simplified for now - members array checking is complex in rules)
+      allow read: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
       
       // Create new household
       allow create: if isAuthenticated() && 
-        request.resource.data.ownerId == request.auth.uid &&
-        request.resource.data.members[0].userId == request.auth.uid;
+        request.resource.data.ownerId == request.auth.uid;
       
-      // Update if user is member with permissions
-      allow update: if isAuthenticated() && 
-        resource.data.members.hasAny([{userId: request.auth.uid}]) &&
-        (
-          // Owner can do anything
-          resource.data.ownerId == request.auth.uid ||
-          // Admins can manage most things
-          getMemberPermissions(resource.data.members, request.auth.uid).canManageMembers
-        );
+      // Update if user is owner
+      allow update: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
       
       // Delete only by owner
       allow delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
@@ -1248,10 +1229,9 @@ service cloud.firestore {
     
     // Child Profiles
     match /childProfiles/{childId} {
-      // Read if user is parent or in any of child's households
+      // Read if user is parent
       allow read: if isAuthenticated() && 
-        (request.auth.uid in resource.data.parentUserIds ||
-         userInAnyHousehold(resource.data.households, request.auth.uid));
+        request.auth.uid in resource.data.parentUserIds;
       
       // Create by authenticated user
       allow create: if isAuthenticated() && 

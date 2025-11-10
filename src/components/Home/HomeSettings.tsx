@@ -184,23 +184,40 @@ const HomeSettings: React.FC = () => {
                 return (
                   <div
                     key={key}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    className={`flex items-center justify-between p-4 border-2 rounded-lg transition-all ${
+                      isEnabled
+                        ? 'border-green-400 bg-green-50 shadow-sm'
+                        : 'border-gray-200 bg-white hover:bg-gray-50'
+                    }`}
                   >
                     <div className="flex-1">
-                      <h4 className="font-semibold text-gray-800">{feature.name}</h4>
-                      <p className="text-sm text-gray-600">{feature.description}</p>
+                      <div className="flex items-center gap-2">
+                        <h4 className={`font-semibold ${isEnabled ? 'text-green-900' : 'text-gray-800'}`}>
+                          {feature.name}
+                        </h4>
+                        {isEnabled && (
+                          <span className="px-2 py-0.5 bg-green-500 text-white text-xs font-medium rounded-full">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <p className={`text-sm ${isEnabled ? 'text-green-700' : 'text-gray-600'}`}>
+                        {feature.description}
+                      </p>
                     </div>
 
                     {/* Toggle Switch */}
                     <button
                       onClick={() => handleToggle(key as keyof HomePreferences['features'])}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-${info.color}-500 focus:ring-offset-2 ${
-                        isEnabled ? `bg-${info.color}-600` : 'bg-gray-200'
+                      className={`relative inline-flex h-8 w-14 flex-shrink-0 items-center rounded-full transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-inner ${
+                        isEnabled ? 'bg-green-500' : 'bg-gray-300'
                       }`}
+                      role="switch"
+                      aria-checked={isEnabled}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          isEnabled ? 'translate-x-6' : 'translate-x-1'
+                        className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out ${
+                          isEnabled ? 'translate-x-7' : 'translate-x-1'
                         }`}
                       />
                     </button>

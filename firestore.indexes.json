@@ -273,13 +273,6 @@
       ]
     },
     {
-      "collectionGroup": "budgetCategories",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "userId", "mode": "ASCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "budgets",
       "queryScope": "COLLECTION",
       "fields": [

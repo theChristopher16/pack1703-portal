@@ -327,7 +327,7 @@ const BillModal: React.FC<BillModalProps> = ({ bill, onClose, onSave }) => {
         amount: Number(formData.amount),
         frequency: formData.frequency,
         dueDay: Number(formData.dueDay),
-        category: formData.category || undefined,
+        category: formData.category || 'Other',
         autoPayEnabled: formData.autoPayEnabled,
         notes: formData.notes || undefined,
         nextDueDate: nextDue,

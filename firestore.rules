@@ -1278,6 +1278,24 @@ service cloud.firestore {
       allow write: if false; // Only cloud functions can write
     }
     
+    // === CROSS-ORGANIZATION SYNC ===
+    
+    // User Organization Memberships (cache)
+    match /userOrganizationMemberships/{userId} {
+      allow read, write: if isAuthenticated() && userId == request.auth.uid;
+    }
+    
+    // Cross-Org Sync Preferences
+    match /crossOrgSyncPreferences/{userId} {
+      allow read, write: if isAuthenticated() && userId == request.auth.uid;
+    }
+    
+    // Cross-Org Sync Status
+    match /crossOrgSyncStatus/{userId} {
+      allow read: if isAuthenticated() && userId == request.auth.uid;
+      allow write: if false; // Only cloud functions update status
+    }
+    
     // Budget & Financial Collections
     match /expenses/{expenseId} {
       allow read, write: if isAuthenticated() && resource.data.userId == request.auth.uid;

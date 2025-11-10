@@ -5,8 +5,11 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import authService from '../../services/authService';
 import appleCalendarService from '../../services/appleCalendarService';
+import crossOrgSyncService from '../../services/crossOrgSyncService';
 import { useToast } from '../../contexts/ToastContext';
 import CalendarConnection from './CalendarConnection';
+import OrgSyncSettings from './OrgSyncSettings';
+import { RSVPStatus } from '../../types/crossOrgSync';
 
 interface AggregatedEvent {
   id: string;
@@ -19,6 +22,12 @@ interface AggregatedEvent {
   sourceType: 'organization' | 'home' | 'phone';
   organizationId?: string;
   organizationName?: string;
+  // RSVP information
+  requiresRSVP?: boolean;
+  rsvpStatus?: RSVPStatus;
+  rsvpDeadline?: Date;
+  canRSVP?: boolean;
+  priority?: 'low' | 'medium' | 'high';
 }
 
 const UnifiedCalendar: React.FC = () => {
@@ -27,6 +36,8 @@ const UnifiedCalendar: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedSource, setSelectedSource] = useState<string>('all');
   const [showConnections, setShowConnections] = useState(false);
+  const [showSyncSettings, setShowSyncSettings] = useState(false);
+  const [selectedRSVPFilter, setSelectedRSVPFilter] = useState<string>('all');
   const { showError } = useToast();
 
   useEffect(() => {
@@ -169,9 +180,19 @@ const UnifiedCalendar: React.FC = () => {
   };
 
   const sources = Array.from(new Set(events.map((e) => e.source)));
-  const filteredEvents = selectedSource === 'all'
+  let filteredEvents = selectedSource === 'all'
     ? events
     : events.filter((e) => e.source === selectedSource);
+  
+  // Apply RSVP filter
+  if (selectedRSVPFilter !== 'all') {
+    filteredEvents = filteredEvents.filter((e) => {
+      if (selectedRSVPFilter === 'going') return e.rsvpStatus === 'going';
+      if (selectedRSVPFilter === 'pending') return e.rsvpStatus === 'not_responded' || e.rsvpStatus === 'pending';
+      if (selectedRSVPFilter === 'needs_rsvp') return e.canRSVP === true;
+      return true;
+    });
+  }
 
   const goToPreviousMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
@@ -206,6 +227,17 @@ const UnifiedCalendar: React.FC = () => {
           </button>
           <CalendarConnection />
         </div>
+      ) : showSyncSettings ? (
+        <div>
+          <button
+            onClick={() => setShowSyncSettings(false)}
+            className="mb-4 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            Back to Calendar
+          </button>
+          <OrgSyncSettings />
+        </div>
       ) : (
         <>
           {/* Header */}
@@ -225,15 +257,34 @@ const UnifiedCalendar: React.FC = () => {
                 </button>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setShowConnections(true)}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
-                  title="Manage calendar connections"
+                  className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  title="Calendar Connections"
                 >
                   <Smartphone className="w-5 h-5" />
-                  <Settings className="w-4 h-4" />
                 </button>
+                
+                <button
+                  onClick={() => setShowSyncSettings(true)}
+                  className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  title="Sync Settings"
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
+                
+                <select
+                  value={selectedRSVPFilter}
+                  onChange={(e) => setSelectedRSVPFilter(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">All Events</option>
+                  <option value="going">✓ Going</option>
+                  <option value="pending">⏳ Not Responded</option>
+                  <option value="needs_rsvp">❗ Needs RSVP</option>
+                </select>
+                
                 <select
                   value={selectedSource}
                   onChange={(e) => setSelectedSource(e.target.value)}
@@ -246,6 +297,7 @@ const UnifiedCalendar: React.FC = () => {
                     </option>
                   ))}
                 </select>
+                
                 <button
                   onClick={goToToday}
                   className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg"
@@ -277,18 +329,49 @@ const UnifiedCalendar: React.FC = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-semibold text-lg text-gray-800">{event.title}</h3>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${
+                            event.sourceType === 'organization'
+                              ? 'bg-blue-100 text-blue-800'
+                              : event.sourceType === 'phone'
+                              ? 'bg-gray-800 text-white'
+                              : 'bg-green-100 text-green-800'
+                          }`}
+                        >
+                          {event.sourceType === 'phone' && <Smartphone className="w-3 h-3" />}
+                          {event.source}
+                        </span>
+                        
+                        {/* RSVP Status Badge */}
+                        {event.requiresRSVP && (
                           <span
-                            className={`px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${
-                              event.sourceType === 'organization'
-                                ? 'bg-blue-100 text-blue-800'
-                                : event.sourceType === 'phone'
-                                ? 'bg-gray-800 text-white'
-                                : 'bg-green-100 text-green-800'
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              event.rsvpStatus === 'going'
+                                ? 'bg-green-100 text-green-800 border border-green-300'
+                                : event.rsvpStatus === 'not_going'
+                                ? 'bg-red-100 text-red-800 border border-red-300'
+                                : event.rsvpStatus === 'maybe'
+                                ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                : event.canRSVP
+                                ? 'bg-purple-100 text-purple-800 border border-purple-300 animate-pulse'
+                                : 'bg-gray-100 text-gray-600 border border-gray-300'
                             }`}
+                            title={event.canRSVP ? 'RSVP Needed' : event.rsvpStatus}
                           >
-                            {event.sourceType === 'phone' && <Smartphone className="w-3 h-3" />}
-                            {event.source}
+                            {event.rsvpStatus === 'going' && '✓ Going'}
+                            {event.rsvpStatus === 'not_going' && '✗ Not Going'}
+                            {event.rsvpStatus === 'maybe' && '? Maybe'}
+                            {event.canRSVP && '❗ RSVP Now'}
+                            {event.rsvpStatus === 'not_responded' && !event.canRSVP && '⏳ No Response'}
                           </span>
+                        )}
+                        
+                        {/* Priority Indicator */}
+                        {event.priority === 'high' && (
+                          <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" title="High Priority" />
+                        )}
+                      </div>
                         </div>
 
                         {event.description && (
@@ -306,12 +389,22 @@ const UnifiedCalendar: React.FC = () => {
                             </span>
                           </div>
 
-                          {event.location && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="w-4 h-4" />
-                              <span>{event.location}</span>
-                            </div>
-                          )}
+                      {event.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          <span>{event.location}</span>
+                        </div>
+                      )}
+                      
+                      {/* RSVP Deadline */}
+                      {event.rsvpDeadline && event.canRSVP && (
+                        <div className="flex items-center gap-1 text-red-600">
+                          <CalendarRange className="w-4 h-4" />
+                          <span className="font-medium">
+                            RSVP by {event.rsvpDeadline.toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
                         </div>
                       </div>
                     </div>

@@ -45,6 +45,9 @@ const HomeSettings: React.FC = () => {
       // Save to database
       await homePreferencesService.toggleFeature(featureKey);
       showSuccess(`${HOME_FEATURES[featureKey].name} ${newValue ? 'enabled' : 'disabled'}`);
+      
+      // Dispatch event to notify parent component for live update
+      window.dispatchEvent(new CustomEvent('homePreferencesUpdated'));
     } catch (error: any) {
       showError('Failed to update preference', error.message);
       // Revert on error

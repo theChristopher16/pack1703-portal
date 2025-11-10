@@ -44,35 +44,30 @@ class CrossOrgSyncService {
     if (!user) throw new Error('User not authenticated');
 
     try {
-      // Get user's profile which contains organization memberships
-      const userDoc = await getDoc(doc(db, this.USERS_COLLECTION, user.uid));
+      // Query crossOrganizationUsers collection to find user's organizations
+      const crossOrgQuery = query(
+        collection(db, 'crossOrganizationUsers'),
+        where('userId', '==', user.uid)
+      );
       
-      if (!userDoc.exists()) {
-        return [];
-      }
-
-      const userData = userDoc.data();
+      const crossOrgSnapshot = await getDocs(crossOrgQuery);
       const organizations: UserOrganization[] = [];
 
-      // User's organizations are stored in their profile
-      // Format: { organizationId: { role: 'admin', joinedAt: Date, ... } }
-      const orgMemberships = userData.organizations || {};
-
-      for (const [orgId, membership] of Object.entries(orgMemberships)) {
-        const membershipData = membership as any;
+      for (const docSnapshot of crossOrgSnapshot.docs) {
+        const data = docSnapshot.data();
         
         // Get organization details
-        const orgDoc = await getDoc(doc(db, 'organizations', orgId));
+        const orgDoc = await getDoc(doc(db, 'organizations', data.organizationId));
         if (orgDoc.exists()) {
           const orgData = orgDoc.data();
           
           organizations.push({
-            organizationId: orgId,
-            organizationName: orgData.name || 'Unknown Organization',
-            organizationType: orgData.type || 'general',
-            userRole: membershipData.role || 'member',
-            joinedAt: membershipData.joinedAt?.toDate() || new Date(),
-            isActive: membershipData.isActive !== false,
+            organizationId: data.organizationId,
+            organizationName: data.organizationName || orgData.name || 'Unknown Organization',
+            organizationType: data.organizationType || orgData.orgType || 'general',
+            userRole: data.role || 'member',
+            joinedAt: data.joinedAt?.toDate() || new Date(),
+            isActive: data.isActive !== false,
             // Infer enabled services from organization's enabled components
             enabledServices: this.inferEnabledServices(orgData.enabledComponents || []),
           });
@@ -80,7 +75,9 @@ class CrossOrgSyncService {
       }
 
       // Cache the membership data
-      await this.cacheMembershipData(user.uid, organizations);
+      if (organizations.length > 0) {
+        await this.cacheMembershipData(user.uid, organizations);
+      }
 
       return organizations;
     } catch (error) {

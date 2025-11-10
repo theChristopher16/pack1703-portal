@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, CalendarRange, MapPin, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarRange, MapPin, Users, Smartphone, Settings } from 'lucide-react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import authService from '../../services/authService';
+import appleCalendarService from '../../services/appleCalendarService';
 import { useToast } from '../../contexts/ToastContext';
+import CalendarConnection from './CalendarConnection';
 
 interface AggregatedEvent {
   id: string;
@@ -13,8 +15,8 @@ interface AggregatedEvent {
   startDate: Date;
   endDate: Date;
   location?: string;
-  source: string; // Organization name or 'Home'
-  sourceType: 'organization' | 'home';
+  source: string; // Organization name, 'Home', or 'Apple Calendar'
+  sourceType: 'organization' | 'home' | 'phone';
   organizationId?: string;
   organizationName?: string;
 }
@@ -24,6 +26,7 @@ const UnifiedCalendar: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedSource, setSelectedSource] = useState<string>('all');
+  const [showConnections, setShowConnections] = useState(false);
   const { showError } = useToast();
 
   useEffect(() => {
@@ -136,6 +139,25 @@ const UnifiedCalendar: React.FC = () => {
         console.warn('Failed to load home events:', error);
       }
 
+      // 3. Load SYNCED PHONE CALENDAR events (from Apple Calendar, Google Calendar, etc.)
+      try {
+        const syncedEvents = await appleCalendarService.getSyncedEvents(monthStart, monthEnd);
+        syncedEvents.forEach((event) => {
+          allEvents.push({
+            id: event.id,
+            title: event.title,
+            description: event.description,
+            startDate: event.startTime,
+            endDate: event.endTime,
+            location: event.location,
+            source: event.provider === 'apple' ? 'Apple Calendar' : 'Phone Calendar',
+            sourceType: 'phone',
+          });
+        });
+      } catch (error) {
+        console.warn('Failed to load synced calendar events:', error);
+      }
+
       // Sort by date
       allEvents.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
       setEvents(allEvents);
@@ -173,106 +195,132 @@ const UnifiedCalendar: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-4">
-            <button onClick={goToPreviousMonth} className="p-2 hover:bg-gray-100 rounded">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-800">
-                {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-              </h2>
-            </div>
-            <button onClick={goToNextMonth} className="p-2 hover:bg-gray-100 rounded">
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="flex gap-2">
-            <select
-              value={selectedSource}
-              onChange={(e) => setSelectedSource(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="all">All Sources</option>
-              {sources.map((source) => (
-                <option key={source} value={source}>
-                  {source}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={goToToday}
-              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg"
-            >
-              Today
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Events List */}
-      {filteredEvents.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-          <CalendarRange className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">No events this month</h3>
-          <p className="text-gray-500">Events from all your organizations will appear here</p>
+      {showConnections ? (
+        <div>
+          <button
+            onClick={() => setShowConnections(false)}
+            className="mb-4 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            Back to Calendar
+          </button>
+          <CalendarConnection />
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="divide-y divide-gray-200">
-            {filteredEvents.map((event) => (
-              <motion.div
-                key={event.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="p-6 hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-semibold text-lg text-gray-800">{event.title}</h3>
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-medium ${
-                          event.sourceType === 'organization'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}
-                      >
-                        {event.source}
-                      </span>
-                    </div>
-
-                    {event.description && (
-                      <p className="text-gray-600 text-sm mb-2">{event.description}</p>
-                    )}
-
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <CalendarRange className="w-4 h-4" />
-                        <span>
-                          {event.startDate.toLocaleDateString()}
-                          {event.endDate &&
-                            event.endDate.toDateString() !== event.startDate.toDateString() &&
-                            ` - ${event.endDate.toLocaleDateString()}`}
-                        </span>
-                      </div>
-
-                      {event.location && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          <span>{event.location}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+        <>
+          {/* Header */}
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-4">
+                <button onClick={goToPreviousMonth} className="p-2 hover:bg-gray-100 rounded">
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </h2>
                 </div>
-              </motion.div>
-            ))}
+                <button onClick={goToNextMonth} className="p-2 hover:bg-gray-100 rounded">
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowConnections(true)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  title="Manage calendar connections"
+                >
+                  <Smartphone className="w-5 h-5" />
+                  <Settings className="w-4 h-4" />
+                </button>
+                <select
+                  value={selectedSource}
+                  onChange={(e) => setSelectedSource(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">All Sources</option>
+                  {sources.map((source) => (
+                    <option key={source} value={source}>
+                      {source}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={goToToday}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg"
+                >
+                  Today
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+
+          {/* Events List */}
+          {filteredEvents.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+              <CalendarRange className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">No events this month</h3>
+              <p className="text-gray-500">Events from all your organizations will appear here</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div className="divide-y divide-gray-200">
+                {filteredEvents.map((event) => (
+                  <motion.div
+                    key={event.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="p-6 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-lg text-gray-800">{event.title}</h3>
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${
+                              event.sourceType === 'organization'
+                                ? 'bg-blue-100 text-blue-800'
+                                : event.sourceType === 'phone'
+                                ? 'bg-gray-800 text-white'
+                                : 'bg-green-100 text-green-800'
+                            }`}
+                          >
+                            {event.sourceType === 'phone' && <Smartphone className="w-3 h-3" />}
+                            {event.source}
+                          </span>
+                        </div>
+
+                        {event.description && (
+                          <p className="text-gray-600 text-sm mb-2">{event.description}</p>
+                        )}
+
+                        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-1">
+                            <CalendarRange className="w-4 h-4" />
+                            <span>
+                              {event.startDate.toLocaleDateString()}
+                              {event.endDate &&
+                                event.endDate.toDateString() !== event.startDate.toDateString() &&
+                                ` - ${event.endDate.toLocaleDateString()}`}
+                            </span>
+                          </div>
+
+                          {event.location && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4" />
+                              <span>{event.location}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

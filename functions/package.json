@@ -19,6 +19,8 @@
     "@types/cors": "^2.8.19",
     "@types/node-imap": "^0.9.3",
     "@types/nodemailer": "^7.0.1",
+    "@types/xml2js": "^0.4.14",
+    "axios": "^1.13.2",
     "cheerio": "^1.0.0-rc.12",
     "cors": "^2.8.5",
     "firebase": "^12.2.1",
@@ -29,6 +31,7 @@
     "puppeteer": "^21.6.0",
     "squareup": "^1.0.0",
     "twilio": "^5.10.1",
+    "xml2js": "^0.6.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {

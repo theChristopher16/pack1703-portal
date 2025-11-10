@@ -8,6 +8,9 @@ export { testAppCheckStatus } from './testAppCheck';
 // Import migration functions
 export { migrateUsersToMultiRole } from './migrateToMultiRole';
 
+// Import Apple Calendar integration functions
+export { connectAppleCalendar, syncAppleCalendar } from './appleCalendar';
+
 // Initialize Firebase Admin
 admin.initializeApp();
 

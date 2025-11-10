@@ -25,7 +25,7 @@ const RecipeManager: React.FC = () => {
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [showUseModal, setShowUseModal] = useState<Recipe | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     loadRecipes();
@@ -37,7 +37,7 @@ const RecipeManager: React.FC = () => {
       const items = await homeService.getRecipes();
       setRecipes(items);
     } catch (error: any) {
-      showToast('Failed to load recipes: ' + error.message, 'error');
+      showError('Failed to load recipes', error.message);
     } finally {
       setLoading(false);
     }
@@ -49,9 +49,9 @@ const RecipeManager: React.FC = () => {
     try {
       await homeService.deleteRecipe(id);
       setRecipes(recipes.filter((r) => r.id !== id));
-      showToast('Recipe deleted successfully', 'success');
+      showSuccess('Recipe deleted successfully');
     } catch (error: any) {
-      showToast('Failed to delete recipe: ' + error.message, 'error');
+      showError('Failed to delete recipe', error.message);
     }
   };
 
@@ -310,7 +310,7 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose, onSave }) =>
     ingredients: recipe?.ingredients || [{ name: '', quantity: 0, unit: '', optional: false }],
     instructions: recipe?.instructions || [''],
   });
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToast();
   const [saving, setSaving] = useState(false);
 
   const handleAddIngredient = () => {
@@ -378,15 +378,15 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose, onSave }) =>
 
       if (recipe) {
         await homeService.updateRecipe(recipe.id, recipeData);
-        showToast('Recipe updated successfully', 'success');
+        showSuccess('Recipe updated successfully');
       } else {
         await homeService.addRecipe(recipeData);
-        showToast('Recipe added successfully', 'success');
+        showSuccess('Recipe added successfully');
       }
 
       onSave();
     } catch (error: any) {
-      showToast('Failed to save recipe: ' + error.message, 'error');
+      showError('Failed to save recipe', error.message);
     } finally {
       setSaving(false);
     }
@@ -491,7 +491,7 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose, onSave }) =>
                   </label>
                   <select
                     value={formData.difficulty}
-                    onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, difficulty: e.target.value as 'easy' | 'medium' | 'hard' })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="easy">Easy</option>
@@ -645,16 +645,16 @@ const UseRecipeModal: React.FC<UseRecipeModalProps> = ({ recipe, onClose, onSucc
   const [servingMultiplier, setServingMultiplier] = useState(1);
   const [using, setUsing] = useState(false);
   const [result, setResult] = useState<any>(null);
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToast();
 
   const handleUseRecipe = async () => {
     setUsing(true);
     try {
       const useLog = await homeService.useRecipe(recipe.id, servingMultiplier);
       setResult(useLog);
-      showToast('Recipe used successfully! Groceries updated.', 'success');
+      showSuccess('Recipe used successfully! Groceries updated.');
     } catch (error: any) {
-      showToast('Failed to use recipe: ' + error.message, 'error');
+      showError('Failed to use recipe', error.message);
       setUsing(false);
     }
   };

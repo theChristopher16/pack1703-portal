@@ -22,7 +22,7 @@ const GroceryManager: React.FC = () => {
   const [editingItem, setEditingItem] = useState<GroceryItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<GroceryCategory | 'all'>('all');
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     loadGroceries();
@@ -34,7 +34,7 @@ const GroceryManager: React.FC = () => {
       const items = await homeService.getGroceries();
       setGroceries(items);
     } catch (error: any) {
-      showToast('Failed to load groceries: ' + error.message, 'error');
+      showError('Failed to load groceries', error.message);
     } finally {
       setLoading(false);
     }
@@ -46,9 +46,9 @@ const GroceryManager: React.FC = () => {
     try {
       await homeService.deleteGroceryItem(id);
       setGroceries(groceries.filter((g) => g.id !== id));
-      showToast('Item deleted successfully', 'success');
+      showSuccess('Item deleted successfully');
     } catch (error: any) {
-      showToast('Failed to delete item: ' + error.message, 'error');
+      showError('Failed to delete item', error.message);
     }
   };
 
@@ -302,7 +302,7 @@ const GroceryModal: React.FC<GroceryModalProps> = ({ item, onClose, onSave }) =>
       : '',
     notes: item?.notes || '',
   });
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToast();
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -322,15 +322,15 @@ const GroceryModal: React.FC<GroceryModalProps> = ({ item, onClose, onSave }) =>
 
       if (item) {
         await homeService.updateGroceryItem(item.id, groceryData);
-        showToast('Grocery item updated successfully', 'success');
+        showSuccess('Grocery item updated successfully');
       } else {
         await homeService.addGroceryItem(groceryData);
-        showToast('Grocery item added successfully', 'success');
+        showSuccess('Grocery item added successfully');
       }
 
       onSave();
     } catch (error: any) {
-      showToast('Failed to save item: ' + error.message, 'error');
+      showError('Failed to save item', error.message);
     } finally {
       setSaving(false);
     }

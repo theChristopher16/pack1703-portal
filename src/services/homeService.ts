@@ -12,7 +12,7 @@ import {
   writeBatch,
   getDoc,
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { db } from '../firebase/config';
 import authService from './authService';
 import {
   GroceryItem,
@@ -35,7 +35,7 @@ class HomeService {
 
     const q = query(
       collection(db, this.GROCERIES_COLLECTION),
-      where('userId', '==', user.id),
+      where('userId', '==', user.uid),
       orderBy('category'),
       orderBy('name')
     );
@@ -60,7 +60,7 @@ class HomeService {
     const now = Timestamp.now();
     const docRef = await addDoc(collection(db, this.GROCERIES_COLLECTION), {
       ...item,
-      userId: user.id,
+      userId: user.uid,
       createdAt: now,
       updatedAt: now,
       expirationDate: item.expirationDate ? Timestamp.fromDate(item.expirationDate) : null,
@@ -79,7 +79,7 @@ class HomeService {
     const docRef = doc(db, this.GROCERIES_COLLECTION, id);
     const docSnap = await getDoc(docRef);
 
-    if (!docSnap.exists() || docSnap.data()?.userId !== user.id) {
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
       throw new Error('Grocery item not found or access denied');
     }
 
@@ -102,7 +102,7 @@ class HomeService {
     const docRef = doc(db, this.GROCERIES_COLLECTION, id);
     const docSnap = await getDoc(docRef);
 
-    if (!docSnap.exists() || docSnap.data()?.userId !== user.id) {
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
       throw new Error('Grocery item not found or access denied');
     }
 
@@ -117,7 +117,7 @@ class HomeService {
 
     const q = query(
       collection(db, this.RECIPES_COLLECTION),
-      where('userId', '==', user.id),
+      where('userId', '==', user.uid),
       orderBy('name')
     );
 
@@ -141,7 +141,7 @@ class HomeService {
     const now = Timestamp.now();
     const docRef = await addDoc(collection(db, this.RECIPES_COLLECTION), {
       ...recipe,
-      userId: user.id,
+      userId: user.uid,
       createdAt: now,
       updatedAt: now,
       timesUsed: 0,
@@ -161,7 +161,7 @@ class HomeService {
     const docRef = doc(db, this.RECIPES_COLLECTION, id);
     const docSnap = await getDoc(docRef);
 
-    if (!docSnap.exists() || docSnap.data()?.userId !== user.id) {
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
       throw new Error('Recipe not found or access denied');
     }
 
@@ -178,7 +178,7 @@ class HomeService {
     const docRef = doc(db, this.RECIPES_COLLECTION, id);
     const docSnap = await getDoc(docRef);
 
-    if (!docSnap.exists() || docSnap.data()?.userId !== user.id) {
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
       throw new Error('Recipe not found or access denied');
     }
 
@@ -196,7 +196,7 @@ class HomeService {
 
     // Get the recipe
     const recipeDoc = await getDoc(doc(db, this.RECIPES_COLLECTION, recipeId));
-    if (!recipeDoc.exists() || recipeDoc.data()?.userId !== user.id) {
+    if (!recipeDoc.exists() || recipeDoc.data()?.userId !== user.uid) {
       throw new Error('Recipe not found or access denied');
     }
 
@@ -292,7 +292,7 @@ class HomeService {
       recipeId: recipe.id,
       recipeName: recipe.name,
       usedAt: now,
-      userId: user.id,
+      userId: user.uid,
       groceryDeductions: deductions,
     };
 
@@ -318,14 +318,14 @@ class HomeService {
     if (recipeId) {
       q = query(
         collection(db, this.RECIPE_USE_LOGS_COLLECTION),
-        where('userId', '==', user.id),
+        where('userId', '==', user.uid),
         where('recipeId', '==', recipeId),
         orderBy('usedAt', 'desc')
       );
     } else {
       q = query(
         collection(db, this.RECIPE_USE_LOGS_COLLECTION),
-        where('userId', '==', user.id),
+        where('userId', '==', user.uid),
         orderBy('usedAt', 'desc')
       );
     }

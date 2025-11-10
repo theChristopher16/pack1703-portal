@@ -987,6 +987,83 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // HOME MANAGEMENT - Groceries and Recipes
+    // ============================================================================
+    
+    // Groceries - Users can only access their own grocery items
+    match /groceries/{groceryId} {
+      // Users can read their own groceries
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Super admins can read all groceries
+      allow read: if isSuperAdmin();
+      
+      // Users can create their own grocery items
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can update their own grocery items
+      allow update: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Users can delete their own grocery items
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Groceries - Collection access
+    match /groceries {
+      allow list: if isAuthenticated();
+    }
+    
+    // Recipes - Users can only access their own recipes
+    match /recipes/{recipeId} {
+      // Users can read their own recipes
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Super admins can read all recipes
+      allow read: if isSuperAdmin();
+      
+      // Users can create their own recipes
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can update their own recipes
+      allow update: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Users can delete their own recipes
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Recipes - Collection access
+    match /recipes {
+      allow list: if isAuthenticated();
+    }
+    
+    // Recipe use logs - Users can only access their own logs
+    match /recipeUseLogs/{logId} {
+      // Users can read their own logs
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Super admins can read all logs
+      allow read: if isSuperAdmin();
+      
+      // Users can create their own logs
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Recipe use logs - Collection access
+    match /recipeUseLogs {
+      allow list: if isAuthenticated();
+    }
+
+    // ============================================================================
     // DENY ALL OTHER ACCESS
     // ============================================================================
     

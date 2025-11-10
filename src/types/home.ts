@@ -65,3 +65,70 @@ export interface RecipeUseLog {
   }[];
 }
 
+// Shopping Lists
+export interface ShoppingListItem {
+  name: string;
+  quantity: number;
+  unit: string;
+  category?: GroceryCategory;
+  isPurchased: boolean;
+  notes?: string;
+}
+
+export interface ShoppingList {
+  id: string;
+  name: string;
+  items: ShoppingListItem[];
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  isArchived: boolean;
+}
+
+// Meal Planning
+export interface MealPlan {
+  id: string;
+  date: Date;
+  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  recipeId?: string;
+  recipeName?: string;
+  customMeal?: string;
+  notes?: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Tasks/Chores
+export enum TaskPriority {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+  URGENT = 'urgent',
+}
+
+export enum TaskStatus {
+  TODO = 'todo',
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled',
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  dueDate?: Date;
+  completedAt?: Date;
+  category?: string; // e.g., 'cleaning', 'maintenance', 'shopping', 'yard work'
+  recurring?: {
+    frequency: 'daily' | 'weekly' | 'monthly';
+    interval: number;
+  };
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+

@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, ShoppingBasket, Book, ChefHat } from 'lucide-react';
+import { Home, ShoppingBasket, Book, ChefHat, ShoppingCart, Calendar, CheckSquare } from 'lucide-react';
 import GroceryManager from '../components/Home/GroceryManager';
 import RecipeManager from '../components/Home/RecipeManager';
+import ShoppingListManager from '../components/Home/ShoppingListManager';
+import MealPlannerManager from '../components/Home/MealPlannerManager';
+import TaskManager from '../components/Home/TaskManager';
 
-type TabType = 'groceries' | 'recipes';
+type TabType = 'groceries' | 'recipes' | 'shopping' | 'meals' | 'tasks';
 
 const HomeManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('groceries');
@@ -12,6 +15,9 @@ const HomeManagement: React.FC = () => {
   const tabs = [
     { id: 'groceries' as TabType, label: 'Groceries', icon: ShoppingBasket },
     { id: 'recipes' as TabType, label: 'Recipes', icon: Book },
+    { id: 'shopping' as TabType, label: 'Shopping Lists', icon: ShoppingCart },
+    { id: 'meals' as TabType, label: 'Meal Planner', icon: Calendar },
+    { id: 'tasks' as TabType, label: 'Tasks', icon: CheckSquare },
   ];
 
   return (
@@ -40,21 +46,21 @@ const HomeManagement: React.FC = () => {
 
         {/* Tab Navigation */}
         <div className="bg-white rounded-xl shadow-sm p-2 mb-6">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
+                  className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
                     activeTab === tab.id
                       ? 'bg-gradient-to-r from-green-500 to-blue-500 text-white shadow-md'
                       : 'text-gray-600 hover:bg-gray-100'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
-                  {tab.label}
+                  <span className="hidden sm:inline">{tab.label}</span>
                 </button>
               );
             })}
@@ -72,6 +78,9 @@ const HomeManagement: React.FC = () => {
           >
             {activeTab === 'groceries' && <GroceryManager />}
             {activeTab === 'recipes' && <RecipeManager />}
+            {activeTab === 'shopping' && <ShoppingListManager />}
+            {activeTab === 'meals' && <MealPlannerManager />}
+            {activeTab === 'tasks' && <TaskManager />}
           </motion.div>
         </AnimatePresence>
       </div>

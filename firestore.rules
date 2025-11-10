@@ -1062,6 +1062,87 @@ service cloud.firestore {
     match /recipeUseLogs {
       allow list: if isAuthenticated();
     }
+    
+    // Shopping Lists - Users can only access their own lists
+    match /shoppingLists/{listId} {
+      // Users can read their own lists
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Super admins can read all lists
+      allow read: if isSuperAdmin();
+      
+      // Users can create their own lists
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can update their own lists
+      allow update: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Users can delete their own lists
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Shopping Lists - Collection access
+    match /shoppingLists {
+      allow list: if isAuthenticated();
+    }
+    
+    // Meal Plans - Users can only access their own plans
+    match /mealPlans/{planId} {
+      // Users can read their own plans
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Super admins can read all plans
+      allow read: if isSuperAdmin();
+      
+      // Users can create their own plans
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can update their own plans
+      allow update: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Users can delete their own plans
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Meal Plans - Collection access
+    match /mealPlans {
+      allow list: if isAuthenticated();
+    }
+    
+    // Tasks - Users can only access their own tasks
+    match /tasks/{taskId} {
+      // Users can read their own tasks
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Super admins can read all tasks
+      allow read: if isSuperAdmin();
+      
+      // Users can create their own tasks
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can update their own tasks
+      allow update: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Users can delete their own tasks
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Tasks - Collection access
+    match /tasks {
+      allow list: if isAuthenticated();
+    }
 
     // ============================================================================
     // DENY ALL OTHER ACCESS

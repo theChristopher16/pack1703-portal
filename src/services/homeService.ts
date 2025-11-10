@@ -20,12 +20,19 @@ import {
   Recipe,
   RecipeIngredient,
   RecipeUseLog,
+  ShoppingList,
+  MealPlan,
+  Task,
+  TaskStatus,
 } from '../types/home';
 
 class HomeService {
   private readonly GROCERIES_COLLECTION = 'groceries';
   private readonly RECIPES_COLLECTION = 'recipes';
   private readonly RECIPE_USE_LOGS_COLLECTION = 'recipeUseLogs';
+  private readonly SHOPPING_LISTS_COLLECTION = 'shoppingLists';
+  private readonly MEAL_PLANS_COLLECTION = 'mealPlans';
+  private readonly TASKS_COLLECTION = 'tasks';
 
   // ==================== Grocery Methods ====================
 
@@ -339,6 +346,246 @@ class HomeService {
         usedAt: data.usedAt?.toDate(),
       } as RecipeUseLog;
     });
+  }
+
+  // ==================== Shopping List Methods ====================
+
+  async getShoppingLists(): Promise<ShoppingList[]> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const q = query(
+      collection(db, this.SHOPPING_LISTS_COLLECTION),
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate(),
+      } as ShoppingList;
+    });
+  }
+
+  async addShoppingList(list: Omit<ShoppingList, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const now = Timestamp.now();
+    const docRef = await addDoc(collection(db, this.SHOPPING_LISTS_COLLECTION), {
+      ...list,
+      userId: user.uid,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return docRef.id;
+  }
+
+  async updateShoppingList(
+    id: string,
+    updates: Partial<Omit<ShoppingList, 'id' | 'userId' | 'createdAt'>>
+  ): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const docRef = doc(db, this.SHOPPING_LISTS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
+      throw new Error('Shopping list not found or access denied');
+    }
+
+    await updateDoc(docRef, {
+      ...updates,
+      updatedAt: Timestamp.now(),
+    });
+  }
+
+  async deleteShoppingList(id: string): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const docRef = doc(db, this.SHOPPING_LISTS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
+      throw new Error('Shopping list not found or access denied');
+    }
+
+    await deleteDoc(docRef);
+  }
+
+  // ==================== Meal Plan Methods ====================
+
+  async getMealPlans(): Promise<MealPlan[]> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const q = query(
+      collection(db, this.MEAL_PLANS_COLLECTION),
+      where('userId', '==', user.uid),
+      orderBy('date', 'desc')
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        date: data.date?.toDate(),
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate(),
+      } as MealPlan;
+    });
+  }
+
+  async addMealPlan(plan: Omit<MealPlan, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const now = Timestamp.now();
+    const docRef = await addDoc(collection(db, this.MEAL_PLANS_COLLECTION), {
+      ...plan,
+      date: Timestamp.fromDate(plan.date),
+      userId: user.uid,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return docRef.id;
+  }
+
+  async updateMealPlan(
+    id: string,
+    updates: Partial<Omit<MealPlan, 'id' | 'userId' | 'createdAt'>>
+  ): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const docRef = doc(db, this.MEAL_PLANS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
+      throw new Error('Meal plan not found or access denied');
+    }
+
+    const updateData: any = {
+      ...updates,
+      updatedAt: Timestamp.now(),
+    };
+
+    if (updates.date) {
+      updateData.date = Timestamp.fromDate(updates.date);
+    }
+
+    await updateDoc(docRef, updateData);
+  }
+
+  async deleteMealPlan(id: string): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const docRef = doc(db, this.MEAL_PLANS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
+      throw new Error('Meal plan not found or access denied');
+    }
+
+    await deleteDoc(docRef);
+  }
+
+  // ==================== Task Methods ====================
+
+  async getTasks(): Promise<Task[]> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const q = query(
+      collection(db, this.TASKS_COLLECTION),
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        dueDate: data.dueDate?.toDate(),
+        completedAt: data.completedAt?.toDate(),
+        createdAt: data.createdAt?.toDate(),
+        updatedAt: data.updatedAt?.toDate(),
+      } as Task;
+    });
+  }
+
+  async addTask(task: Omit<Task, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'completedAt'>): Promise<string> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const now = Timestamp.now();
+    const docRef = await addDoc(collection(db, this.TASKS_COLLECTION), {
+      ...task,
+      dueDate: task.dueDate ? Timestamp.fromDate(task.dueDate) : null,
+      userId: user.uid,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return docRef.id;
+  }
+
+  async updateTask(
+    id: string,
+    updates: Partial<Omit<Task, 'id' | 'userId' | 'createdAt'>>
+  ): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const docRef = doc(db, this.TASKS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
+      throw new Error('Task not found or access denied');
+    }
+
+    const updateData: any = {
+      ...updates,
+      updatedAt: Timestamp.now(),
+    };
+
+    if (updates.dueDate) {
+      updateData.dueDate = Timestamp.fromDate(updates.dueDate);
+    }
+
+    if (updates.completedAt) {
+      updateData.completedAt = Timestamp.fromDate(updates.completedAt);
+    }
+
+    await updateDoc(docRef, updateData);
+  }
+
+  async deleteTask(id: string): Promise<void> {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const docRef = doc(db, this.TASKS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data()?.userId !== user.uid) {
+      throw new Error('Task not found or access denied');
+    }
+
+    await deleteDoc(docRef);
   }
 }
 

@@ -23,8 +23,10 @@ import PetManager from '../components/Home/PetManager';
 import DocumentVault from '../components/Home/DocumentVault';
 import CleaningSchedule from '../components/Home/CleaningSchedule';
 import homePreferencesService from '../services/homePreferencesService';
+import householdService from '../services/householdService';
 import { HomePreferences } from '../types/homePreferences';
 import { useToast } from '../contexts/ToastContext';
+import HouseholdSetupWizard from '../components/Home/HouseholdSetupWizard';
 
 type TabType = 'groceries' | 'recipes' | 'shopping' | 'meals' | 'tasks' | 'settings' | 
   'budget' | 'bills' | 'maintenance' | 'inventory' | 'familyCalendar' | 'health' | 
@@ -34,6 +36,7 @@ const HomeManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('groceries');
   const [preferences, setPreferences] = useState<HomePreferences | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
   const { showError } = useToast();
 
   useEffect(() => {
@@ -44,6 +47,12 @@ const HomeManagement: React.FC = () => {
     try {
       const prefs = await homePreferencesService.getPreferences();
       setPreferences(prefs);
+      
+      // Check if household setup is complete
+      const hasCompletedSetup = await householdService.hasCompletedSetup();
+      if (!hasCompletedSetup) {
+        setShowSetupWizard(true);
+      }
       
       // If current tab is disabled, switch to first enabled tab
       if (!prefs.features[activeTab as keyof HomePreferences['features']] && activeTab !== 'settings') {
@@ -170,6 +179,16 @@ const HomeManagement: React.FC = () => {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Household Setup Wizard */}
+      {showSetupWizard && (
+        <HouseholdSetupWizard
+          onComplete={() => {
+            setShowSetupWizard(false);
+            loadPreferences(); // Reload to update feature visibility
+          }}
+        />
+      )}
     </div>
   );
 };

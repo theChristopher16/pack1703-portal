@@ -1149,6 +1149,11 @@ service cloud.firestore {
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
     }
     
+    // Household Profiles - Users can only access their own profile
+    match /householdProfiles/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
     // Budget & Financial Collections
     match /expenses/{expenseId} {
       allow read, write: if isAuthenticated() && resource.data.userId == request.auth.uid;

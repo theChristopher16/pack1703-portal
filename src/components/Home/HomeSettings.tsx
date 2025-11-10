@@ -209,17 +209,27 @@ const HomeSettings: React.FC = () => {
                     {/* Toggle Switch */}
                     <button
                       onClick={() => handleToggle(key as keyof HomePreferences['features'])}
-                      className={`relative inline-flex h-8 w-14 flex-shrink-0 items-center rounded-full transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-inner ${
-                        isEnabled ? 'bg-green-500' : 'bg-gray-300'
+                      className={`relative inline-flex h-8 w-14 flex-shrink-0 items-center rounded-full transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 border-2 ${
+                        isEnabled 
+                          ? 'bg-gradient-to-r from-green-400 to-blue-500 border-green-500' 
+                          : 'bg-gray-200 border-gray-300'
                       }`}
                       role="switch"
                       aria-checked={isEnabled}
                     >
                       <span
-                        className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out ${
-                          isEnabled ? 'translate-x-7' : 'translate-x-1'
+                        className={`inline-block h-6 w-6 transform rounded-full shadow-lg transition-all duration-200 ease-in-out flex items-center justify-center ${
+                          isEnabled 
+                            ? 'translate-x-7 bg-white' 
+                            : 'translate-x-1 bg-gray-400'
                         }`}
-                      />
+                      >
+                        {isEnabled && (
+                          <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
                     </button>
                   </div>
                 );

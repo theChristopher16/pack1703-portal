@@ -24,6 +24,7 @@ import PetManager from '../components/Home/PetManager';
 import DocumentVault from '../components/Home/DocumentVault';
 import CleaningSchedule from '../components/Home/CleaningSchedule';
 import HouseholdMembers from '../components/Home/HouseholdMembers';
+import CalendarDebug from '../components/Home/CalendarDebug';
 import homePreferencesService from '../services/homePreferencesService';
 import householdService from '../services/householdService';
 import { HomePreferences } from '../types/homePreferences';
@@ -32,7 +33,7 @@ import HouseholdSetupWizard from '../components/Home/HouseholdSetupWizard';
 
 type TabType = 'household' | 'groceries' | 'recipes' | 'shopping' | 'meals' | 'tasks' | 'settings' | 
   'budget' | 'bills' | 'maintenance' | 'inventory' | 'familyCalendar' | 'health' | 
-  'vehicles' | 'pets' | 'documents' | 'cleaning' | 'unifiedCalendar';
+  'vehicles' | 'pets' | 'documents' | 'cleaning' | 'unifiedCalendar' | 'debug';
 
 const HomeManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('household');
@@ -85,6 +86,7 @@ const HomeManagement: React.FC = () => {
     // Always visible
     { id: 'household' as TabType, label: 'Household', icon: Users, feature: null, category: 'General' },
     { id: 'settings' as TabType, label: 'Settings', icon: Settings, feature: null, category: 'General' },
+    { id: 'debug' as TabType, label: '🐛 Debug Calendar', icon: Settings, feature: null, category: 'General' },
     
     // Food & Shopping
     { id: 'groceries' as TabType, label: 'Groceries', icon: ShoppingBasket, feature: 'groceries', category: 'Food & Shopping' },
@@ -260,6 +262,7 @@ const HomeManagement: React.FC = () => {
               {activeTab === 'documents' && <DocumentVault />}
               {activeTab === 'cleaning' && <CleaningSchedule />}
               {activeTab === 'settings' && <HomeSettings />}
+              {activeTab === 'debug' && <CalendarDebug />}
             </motion.div>
           </AnimatePresence>
         </div>

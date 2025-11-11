@@ -11,6 +11,9 @@ export { migrateUsersToMultiRole } from './migrateToMultiRole';
 // Import Apple Calendar integration functions
 export { connectAppleCalendar, syncAppleCalendar } from './appleCalendar';
 
+// Import organization linking functions
+export { linkUserToOrganization, autoLinkToPack1703 } from './linkUserToOrganization';
+
 // Initialize Firebase Admin
 admin.initializeApp();
 

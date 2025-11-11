@@ -6,6 +6,7 @@ import authService from '../../services/authService';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useToast } from '../../contexts/ToastContext';
+import FixOrgLink from './FixOrgLink';
 
 /**
  * Debug component to help troubleshoot calendar sync issues
@@ -155,6 +156,11 @@ const CalendarDebug: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Auto-Fix Banner */}
+      {debugInfo && debugInfo.crossOrgUsers?.count === 0 && debugInfo.userRSVPs?.count > 0 && (
+        <FixOrgLink onSuccess={() => runDiagnostics()} />
+      )}
 
       {/* Debug Results */}
       {debugInfo && (

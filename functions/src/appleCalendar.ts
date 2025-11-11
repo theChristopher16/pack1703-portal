@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import axios from 'axios';
 import { parseStringPromise } from 'xml2js';
@@ -27,7 +27,7 @@ interface CalDAVEvent {
  * Connect Apple Calendar
  * Validates credentials and retrieves available calendars
  */
-export const connectAppleCalendar = functions.https.onCall(async (data, context) => {
+export const connectAppleCalendar = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   // Verify authentication
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -132,7 +132,7 @@ export const connectAppleCalendar = functions.https.onCall(async (data, context)
  * Sync Apple Calendar events
  * Fetches events from Apple Calendar and stores them in Firestore
  */
-export const syncAppleCalendar = functions.https.onCall(async (data, context) => {
+export const syncAppleCalendar = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }
@@ -249,7 +249,7 @@ export const syncAppleCalendar = functions.https.onCall(async (data, context) =>
         isAllDay: event.isAllDay || false,
         status: event.status || 'confirmed',
         provider: 'apple',
-        userId: context.auth.uid,
+        userId: context.auth!.uid,
         lastSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),

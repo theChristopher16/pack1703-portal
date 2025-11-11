@@ -130,14 +130,20 @@ class CrossOrgSyncService {
 
         // FALLBACK: Also fetch events directly from user's RSVPs
         // This handles cases where events are missing organizationId field
+        console.log(`🔍 Fetching RSVP'd events for ${org.organizationName}...`);
         const rsvpEvents = await this.getEventsFromUserRSVPs(user.uid, org);
+        console.log(`🔍 Found ${rsvpEvents.length} RSVP'd events from fallback`);
         const filteredRSVPEvents = this.filterEventsByPreferences(rsvpEvents, preferences);
+        console.log(`🔍 After filtering: ${filteredRSVPEvents.length} events remain`);
         
         // Add RSVP'd events that weren't already found
         const existingEventIds = new Set(events.map(e => e.id));
         filteredRSVPEvents.forEach((event) => {
           if (!existingEventIds.has(event.eventId)) {
+            console.log(`✅ Adding RSVP'd event: ${event.title}`);
             events.push(this.convertToAggregatedEvent(event, org));
+          } else {
+            console.log(`⚠️ Skipping duplicate event: ${event.title}`);
           }
         });
       } catch (error) {
@@ -159,6 +165,7 @@ class CrossOrgSyncService {
         where('userId', '==', userId)
       );
       const rsvpsSnapshot = await getDocs(rsvpsQuery);
+      console.log(`📝 Found ${rsvpsSnapshot.size} total RSVPs for user`);
       
       const events: OrgEvent[] = [];
       
@@ -166,6 +173,7 @@ class CrossOrgSyncService {
       for (const rsvpDoc of rsvpsSnapshot.docs) {
         const rsvpData = rsvpDoc.data();
         const eventId = rsvpData.eventId;
+        console.log(`🔍 Checking RSVP event ${eventId}...`);
         
         try {
           const eventDocRef = doc(db, this.EVENTS_COLLECTION, eventId);
@@ -173,10 +181,13 @@ class CrossOrgSyncService {
           
           if (eventDoc.exists()) {
             const data = eventDoc.data();
+            console.log(`  ✅ Event exists: ${data.title}`);
             
             // Only include if event belongs to this org (or has no org set)
             const eventOrgId = data.organizationId;
+            console.log(`  📍 Event orgId: "${eventOrgId}" | Target orgId: "${org.organizationId}"`);
             if (!eventOrgId || eventOrgId === org.organizationId) {
+              console.log(`  ✅ Including event in results`);
               events.push({
                 eventId: eventDoc.id,
                 organizationId: org.organizationId,
@@ -196,16 +207,20 @@ class CrossOrgSyncService {
                 createdBy: data.createdBy,
                 createdAt: data.createdAt?.toDate?.() || new Date(),
                 userRSVP: {
-                  status: rsvpData.status,
+                  status: rsvpData.status || 'going',
                   attendees: rsvpData.attendees,
                   notes: rsvpData.notes,
                   submittedAt: rsvpData.createdAt?.toDate?.() || new Date(),
                 },
               });
+            } else {
+              console.log(`  ❌ Skipping: orgId mismatch`);
             }
+          } else {
+            console.log(`  ❌ Event ${eventId} does not exist in events collection`);
           }
         } catch (error) {
-          console.error(`Failed to fetch event ${eventId}:`, error);
+          console.error(`  ❌ Error fetching event ${eventId}:`, error);
         }
       }
       

@@ -104,7 +104,7 @@ class CrossOrgSyncService {
     // Get events from each organization
     for (const org of organizations) {
       // Check if org sync is enabled
-      const orgOverride = preferences.organizationOverrides[org.organizationId];
+      const orgOverride = preferences.organizationOverrides?.[org.organizationId];
       if (orgOverride && !orgOverride.enabled) {
         continue;
       }
@@ -314,6 +314,7 @@ class CrossOrgSyncService {
       const data = docSnap.data();
       return {
         ...data,
+        organizationOverrides: data.organizationOverrides || {}, // Ensure this exists
         lastSyncAt: data.lastSyncAt?.toDate(),
         createdAt: data.createdAt?.toDate(),
         updatedAt: data.updatedAt?.toDate(),

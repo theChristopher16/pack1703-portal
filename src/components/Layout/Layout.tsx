@@ -103,6 +103,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Check if we're on a platform-level page (Copse Network level, not org-specific)
   const isPlatformRoute = location.pathname === '/organizations' || 
                          location.pathname === '/copse-admin' ||
+                         location.pathname === '/home' ||
                          location.pathname === '/test-copse-login';
   
   // Get all navigation items filtered by user role, organization type, and enabled components
@@ -320,8 +321,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           <div className="px-4 py-2 border-b border-forest-100/50">
                             <button
                               onClick={() => {
-                                navigate('/home');
-                                setIsMobileMenuOpen(false);
+                                handleNavigation('/home', true); // true = platform route, no org prefix
                               }}
                               className="w-full text-left px-2 py-1.5 rounded-lg text-xs hover:bg-forest-50/50 transition-colors text-blue-700 hover:text-blue-900 font-medium flex items-center gap-2"
                             >

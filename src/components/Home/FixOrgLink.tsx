@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link2, CheckCircle, Loader } from 'lucide-react';
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '../../firebase/config';
+import { collection, doc, setDoc, getDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { db } from '../../firebase/config';
 import { useToast } from '../../contexts/ToastContext';
+import authService from '../../services/authService';
 
 /**
  * Component to fix missing crossOrganizationUsers link
@@ -15,17 +16,70 @@ const FixOrgLink: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
   const handleAutoLink = async () => {
     try {
       setFixing(true);
-      const autoLinkFunction = httpsCallable(functions, 'autoLinkToPack1703');
-      const result = await autoLinkFunction({});
-      const data = result.data as any;
-
-      if (data.success) {
-        showSuccess(data.message);
-        onSuccess();
-      } else {
-        showError('Auto-link failed', data.message);
+      
+      const user = authService.getCurrentUser();
+      if (!user) {
+        showError('Authentication required', 'Please sign in again');
+        return;
       }
+
+      // Find Pack 1703 organization
+      const orgsQuery = query(
+        collection(db, 'organizations'),
+        where('name', '==', 'Pack 1703')
+      );
+      const orgsSnapshot = await getDocs(orgsQuery);
+
+      if (orgsSnapshot.empty) {
+        showError('Organization not found', 'Could not find Pack 1703');
+        return;
+      }
+
+      const pack1703 = orgsSnapshot.docs[0];
+      const orgId = pack1703.id;
+      const orgData = pack1703.data();
+
+      // Check if link already exists
+      const existingQuery = query(
+        collection(db, 'crossOrganizationUsers'),
+        where('userId', '==', user.uid),
+        where('organizationId', '==', orgId)
+      );
+      const existingSnapshot = await getDocs(existingQuery);
+
+      if (!existingSnapshot.empty) {
+        showSuccess('Already linked to Pack 1703!');
+        onSuccess();
+        return;
+      }
+
+      // Get user data
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userData = userDoc.data();
+
+      // Create the crossOrganizationUsers record
+      const linkRef = doc(collection(db, 'crossOrganizationUsers'));
+      await setDoc(linkRef, {
+        userId: user.uid,
+        organizationId: orgId,
+        organizationName: orgData.name || 'Pack 1703',
+        organizationType: orgData.orgType || 'cub_scout',
+        role: userData?.role || 'member',
+        isActive: true,
+        joinedAt: Timestamp.now(),
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      });
+
+      showSuccess('Successfully linked to Pack 1703! Running diagnostics...');
+      
+      // Wait a moment for Firestore to propagate, then trigger success callback
+      setTimeout(() => {
+        onSuccess();
+      }, 1000);
+      
     } catch (error: any) {
+      console.error('Failed to link account:', error);
       showError('Failed to link account', error.message);
     } finally {
       setFixing(false);

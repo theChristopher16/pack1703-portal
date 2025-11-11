@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Bug, RefreshCw, Database, Calendar, Users, CheckCircle, XCircle } from 'lucide-react';
 import crossOrgSyncService from '../../services/crossOrgSyncService';
 import authService from '../../services/authService';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useToast } from '../../contexts/ToastContext';
 import FixOrgLink from './FixOrgLink';
@@ -107,18 +107,49 @@ const CalendarDebug: React.FC = () => {
         where('userId', '==', user.uid)
       );
       const rsvpsSnapshot = await getDocs(rsvpsQuery);
+      const rsvpData = rsvpsSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          eventId: data.eventId,
+          status: data.status,
+          attendees: data.attendees,
+          createdAt: data.createdAt?.toDate()?.toLocaleDateString(),
+        };
+      });
       info.userRSVPs = {
         count: rsvpsSnapshot.size,
-        rsvps: rsvpsSnapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            eventId: data.eventId,
-            status: data.status,
-            attendees: data.attendees,
-            createdAt: data.createdAt?.toDate()?.toLocaleDateString(),
-          };
-        }),
+        rsvps: rsvpData,
+      };
+
+      // 4b. Check if those specific events exist in the events collection
+      const eventLookups: any[] = [];
+      for (const rsvp of rsvpData) {
+        try {
+          const eventDocRef = doc(db, 'events', rsvp.eventId);
+          const eventDoc = await getDoc(eventDocRef);
+          eventLookups.push({
+            eventId: rsvp.eventId,
+            exists: eventDoc.exists(),
+            data: eventDoc.exists() ? {
+              title: eventDoc.data()?.title,
+              organizationId: eventDoc.data()?.organizationId,
+              isActive: eventDoc.data()?.isActive,
+              isArchived: eventDoc.data()?.isArchived,
+              startDate: eventDoc.data()?.startDate?.toDate()?.toLocaleDateString(),
+            } : null,
+          });
+        } catch (error: any) {
+          eventLookups.push({
+            eventId: rsvp.eventId,
+            exists: false,
+            error: error.message,
+          });
+        }
+      }
+      info.rsvpEventLookups = {
+        count: eventLookups.length,
+        lookups: eventLookups,
       };
 
       // 5. Test aggregated calendar
@@ -281,6 +312,48 @@ const CalendarDebug: React.FC = () => {
                 <pre className="text-xs bg-pink-100 p-3 rounded overflow-auto max-h-40">
                   {JSON.stringify(debugInfo.userRSVPs.rsvps, null, 2)}
                 </pre>
+              </div>
+            )}
+
+            {/* RSVP Event Lookups */}
+            {debugInfo.rsvpEventLookups && (
+              <div className="mb-6 p-4 bg-orange-50 rounded-lg border-2 border-orange-300">
+                <h4 className="font-semibold text-orange-900 mb-2 flex items-center gap-2">
+                  <Database className="w-5 h-5" />
+                  RSVP'd Event Lookup (Do These Events Exist?)
+                </h4>
+                <p className="text-sm text-orange-800 mb-2">
+                  Checking if the events you RSVP'd to actually exist in the events collection...
+                </p>
+                {debugInfo.rsvpEventLookups.lookups.map((lookup: any, index: number) => (
+                  <div key={index} className={`mb-3 p-3 rounded-lg ${lookup.exists ? 'bg-green-100' : 'bg-red-100'}`}>
+                    <p className="text-sm font-semibold mb-1 flex items-center gap-2">
+                      {lookup.exists ? (
+                        <>
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <span className="text-green-900">Event {lookup.eventId}: ✅ EXISTS</span>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-4 h-4 text-red-600" />
+                          <span className="text-red-900">Event {lookup.eventId}: ❌ NOT FOUND</span>
+                        </>
+                      )}
+                    </p>
+                    {lookup.exists && lookup.data && (
+                      <div className="text-xs mt-2">
+                        <p><strong>Title:</strong> {lookup.data.title}</p>
+                        <p><strong>Organization ID:</strong> {lookup.data.organizationId}</p>
+                        <p><strong>Is Active:</strong> {lookup.data.isActive ? '✅ Yes' : '❌ No'}</p>
+                        <p><strong>Is Archived:</strong> {lookup.data.isArchived ? '✅ Yes' : '❌ No'}</p>
+                        <p><strong>Start Date:</strong> {lookup.data.startDate}</p>
+                      </div>
+                    )}
+                    {lookup.error && (
+                      <p className="text-xs text-red-600 mt-1">Error: {lookup.error}</p>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 

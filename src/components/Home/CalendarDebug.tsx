@@ -52,7 +52,7 @@ const CalendarDebug: React.FC = () => {
         organizations: orgs,
       };
 
-      // 3. Check events from each org
+      // 3. Check events from each org (active events)
       for (const org of orgs) {
         const eventsQuery = query(
           collection(db, 'events'),
@@ -61,7 +61,7 @@ const CalendarDebug: React.FC = () => {
         );
         const eventsSnapshot = await getDocs(eventsQuery);
         
-        info[`org_${org.organizationId}_events`] = {
+        info[`org_${org.organizationId}_events_active`] = {
           orgName: org.organizationName,
           eventCount: eventsSnapshot.size,
           events: eventsSnapshot.docs.map((doc) => {
@@ -72,6 +72,30 @@ const CalendarDebug: React.FC = () => {
               startDate: data.startDate?.toDate()?.toLocaleDateString(),
               requiresRSVP: data.requiresRSVP,
               isActive: data.isActive,
+              isArchived: data.isArchived,
+            };
+          }),
+        };
+
+        // Also check ALL events (no isActive filter) for this org
+        const allEventsQuery = query(
+          collection(db, 'events'),
+          where('organizationId', '==', org.organizationId)
+        );
+        const allEventsSnapshot = await getDocs(allEventsQuery);
+        
+        info[`org_${org.organizationId}_events_all`] = {
+          orgName: org.organizationName,
+          eventCount: allEventsSnapshot.size,
+          events: allEventsSnapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              title: data.title,
+              startDate: data.startDate?.toDate()?.toLocaleDateString(),
+              requiresRSVP: data.requiresRSVP,
+              isActive: data.isActive,
+              isArchived: data.isArchived,
             };
           }),
         };

@@ -127,12 +127,93 @@ class CrossOrgSyncService {
         filteredEvents.forEach((event) => {
           events.push(this.convertToAggregatedEvent(event, org));
         });
+
+        // FALLBACK: Also fetch events directly from user's RSVPs
+        // This handles cases where events are missing organizationId field
+        const rsvpEvents = await this.getEventsFromUserRSVPs(user.uid, org);
+        const filteredRSVPEvents = this.filterEventsByPreferences(rsvpEvents, preferences);
+        
+        // Add RSVP'd events that weren't already found
+        const existingEventIds = new Set(events.map(e => e.id));
+        filteredRSVPEvents.forEach((event) => {
+          if (!existingEventIds.has(event.eventId)) {
+            events.push(this.convertToAggregatedEvent(event, org));
+          }
+        });
       } catch (error) {
         console.error(`Failed to get events from ${org.organizationName}:`, error);
       }
     }
 
     return events;
+  }
+
+  /**
+   * Get events directly from user's RSVPs (fallback for events missing organizationId)
+   */
+  private async getEventsFromUserRSVPs(userId: string, org: UserOrganization): Promise<OrgEvent[]> {
+    try {
+      // Get user's RSVPs
+      const rsvpsQuery = query(
+        collection(db, this.RSVPS_COLLECTION),
+        where('userId', '==', userId)
+      );
+      const rsvpsSnapshot = await getDocs(rsvpsQuery);
+      
+      const events: OrgEvent[] = [];
+      
+      // For each RSVP, try to fetch the event directly
+      for (const rsvpDoc of rsvpsSnapshot.docs) {
+        const rsvpData = rsvpDoc.data();
+        const eventId = rsvpData.eventId;
+        
+        try {
+          const eventDocRef = doc(db, this.EVENTS_COLLECTION, eventId);
+          const eventDoc = await getDoc(eventDocRef);
+          
+          if (eventDoc.exists()) {
+            const data = eventDoc.data();
+            
+            // Only include if event belongs to this org (or has no org set)
+            const eventOrgId = data.organizationId;
+            if (!eventOrgId || eventOrgId === org.organizationId) {
+              events.push({
+                eventId: eventDoc.id,
+                organizationId: org.organizationId,
+                organizationName: org.organizationName,
+                title: data.title || 'Untitled Event',
+                description: data.description,
+                startDate: data.startDate?.toDate?.() || new Date(),
+                endDate: data.endDate?.toDate?.() || new Date(),
+                location: data.location,
+                isPublic: data.isPublic || false,
+                requiresRSVP: data.requiresRSVP !== false,
+                userRSVPStatus: rsvpData.status || 'going', // Use RSVP status directly
+                rsvpDeadline: data.rsvpDeadline?.toDate?.(),
+                tags: data.tags || [],
+                isRecurring: data.isRecurring || false,
+                recurringPattern: data.recurringPattern,
+                createdBy: data.createdBy,
+                createdAt: data.createdAt?.toDate?.() || new Date(),
+                userRSVP: {
+                  status: rsvpData.status,
+                  attendees: rsvpData.attendees,
+                  notes: rsvpData.notes,
+                  submittedAt: rsvpData.createdAt?.toDate?.() || new Date(),
+                },
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to fetch event ${eventId}:`, error);
+        }
+      }
+      
+      return events;
+    } catch (error) {
+      console.error('Failed to get events from RSVPs:', error);
+      return [];
+    }
   }
 
   /**

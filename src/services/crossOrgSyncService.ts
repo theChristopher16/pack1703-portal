@@ -289,9 +289,11 @@ class CrossOrgSyncService {
       
       if (!rsvpSnapshot.empty) {
         const rsvpData = rsvpSnapshot.docs[0].data();
-        event.userRSVPStatus = rsvpData.status || 'not_responded';
+        // If status field exists, use it. Otherwise, having attendees means 'going'
+        const rsvpStatus = rsvpData.status || (rsvpData.attendees?.length > 0 ? 'going' : 'not_responded');
+        event.userRSVPStatus = rsvpStatus;
         event.userRSVP = {
-          status: rsvpData.status,
+          status: rsvpStatus,
           attendees: rsvpData.attendees,
           notes: rsvpData.notes,
           submittedAt: rsvpData.createdAt?.toDate() || new Date(),
@@ -320,27 +322,22 @@ class CrossOrgSyncService {
   ): OrgEvent[] {
     const { events: eventPrefs } = preferences.syncSettings;
 
+    // If user belongs to the organization, show ALL events by default
+    // This is a personal calendar view, not a public view
     return events.filter((event) => {
-      // Include RSVP'd events
-      if (event.userRSVPStatus === 'going' && eventPrefs.includeRSVPd) {
+      // Always show events the user has RSVP'd to
+      if (event.userRSVP) {
         return true;
       }
 
-      // Include pending/not responded events
-      if (
-        (event.userRSVPStatus === 'not_responded' || event.userRSVPStatus === 'pending') &&
-        eventPrefs.includePending &&
-        event.requiresRSVP
-      ) {
+      // Show events where status is 'going'
+      if (event.userRSVPStatus === 'going') {
         return true;
       }
 
-      // Include public events
-      if (event.isPublic && eventPrefs.includePublic) {
-        return true;
-      }
-
-      return false;
+      // Show ALL other events (they belong to this org, so they should see everything)
+      // Users can filter by RSVP status in the UI if they want
+      return true;
     });
   }
 

@@ -415,7 +415,9 @@ class CrossOrgSyncService {
     if (docSnap.exists()) {
       const data = docSnap.data();
       return {
-        ...data,
+        ...DEFAULT_SYNC_PREFERENCES, // Start with defaults
+        ...data, // Override with user's saved preferences
+        enabled: data.enabled ?? true, // Ensure enabled defaults to true
         organizationOverrides: data.organizationOverrides || {}, // Ensure this exists
         lastSyncAt: data.lastSyncAt?.toDate(),
         createdAt: data.createdAt?.toDate(),

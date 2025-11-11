@@ -144,10 +144,11 @@ class CrossOrgSyncService {
     startDate?: Date,
     endDate?: Date
   ): Promise<OrgEvent[]> {
+    // Don't filter by isActive - let RSVP status determine visibility
+    // Users should see events they RSVP'd to even if they're archived
     let q = query(
       collection(db, this.EVENTS_COLLECTION),
       where('organizationId', '==', organizationId),
-      where('isActive', '==', true),
       orderBy('startDate', 'desc'),
       firestoreLimit(50)
     );

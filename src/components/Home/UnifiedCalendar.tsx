@@ -60,7 +60,35 @@ const UnifiedCalendar: React.FC = () => {
       const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
       const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
 
-      // 1. Load events from ALL organizations the user belongs to
+      console.log('🔍 UnifiedCalendar: Loading events for month:', currentMonth.toLocaleDateString());
+
+      // 1. Load events from ALL organizations using crossOrgSyncService
+      // This includes RSVP fallback and proper filtering
+      const orgEvents = await crossOrgSyncService.getAggregatedCalendarEvents(monthStart, monthEnd);
+      console.log(`✅ Got ${orgEvents.length} org events from crossOrgSyncService`);
+      
+      orgEvents.forEach((event) => {
+        allEvents.push({
+          id: event.id,
+          title: event.title,
+          description: event.description,
+          startDate: event.startDate,
+          endDate: event.endDate,
+          location: event.location,
+          source: event.sourceName,
+          sourceType: 'organization',
+          organizationId: event.sourceId,
+          organizationName: event.sourceName,
+          requiresRSVP: event.requiresRSVP,
+          rsvpStatus: event.rsvpStatus,
+          rsvpDeadline: event.rsvpDeadline,
+          canRSVP: event.canRSVP,
+          priority: event.priority,
+        });
+      });
+
+      // OLD CODE - replaced with crossOrgSyncService call above
+      /*
       // First, get user's organizations from crossOrganizationUsers collection
       const crossOrgQuery = query(
         collection(db, 'crossOrganizationUsers'),
@@ -99,6 +127,7 @@ const UnifiedCalendar: React.FC = () => {
           console.warn(`Failed to load events from ${org.organizationName}:`, error);
         }
       }
+      */
 
       // 2. Load HOME events (meal plans, family calendar events, etc.)
       // These will NOT appear in organization calendars - one-way flow

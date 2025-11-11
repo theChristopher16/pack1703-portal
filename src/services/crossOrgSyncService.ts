@@ -93,12 +93,20 @@ class CrossOrgSyncService {
     const user = authService.getCurrentUser();
     if (!user) throw new Error('User not authenticated');
 
+    console.log('🔍 CrossOrgSync: Getting aggregated calendar events...');
     const preferences = await this.getSyncPreferences();
+    console.log('📋 Sync preferences:', {
+      enabled: preferences.enabled,
+      eventsEnabled: preferences.syncSettings.events.enabled,
+    });
+    
     if (!preferences.enabled || !preferences.syncSettings.events.enabled) {
+      console.warn('⚠️ Sync is DISABLED in preferences! Returning empty array.');
       return [];
     }
 
     const organizations = await this.discoverUserOrganizations();
+    console.log(`🏢 Found ${organizations.length} organizations`);
     const events: AggregatedCalendarEvent[] = [];
 
     // Get events from each organization

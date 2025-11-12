@@ -620,6 +620,17 @@ const EventCard: React.FC<EventCardProps> = ({
 
       {/* Action Buttons */}
       <div className="px-6 pb-6">
+        {/* RSVP Closed Warning for Users with Existing RSVPs */}
+        {event.rsvpClosed && userHasRSVP && (
+          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl flex items-center space-x-2">
+            <span className="text-lg">🚫</span>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-red-700">No longer accepting new RSVPs</p>
+              <p className="text-xs text-red-600">You can still edit or cancel your existing RSVP</p>
+            </div>
+          </div>
+        )}
+        
         <div className="flex flex-wrap gap-3">
           {/* Primary Actions */}
           {userHasRSVP ? (

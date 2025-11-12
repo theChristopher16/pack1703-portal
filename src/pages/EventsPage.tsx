@@ -1435,9 +1435,10 @@ const EventsPage: React.FC = () => {
                       location: typeof event.location === 'string' 
                         ? { name: event.location, address: '', coordinates: undefined }
                         : event.location,
-                      // Ensure startDate and endDate are passed through
+                      // Ensure startDate, endDate, and rsvpClosed are passed through
                       startDate: event.startDate,
-                      endDate: event.endDate
+                      endDate: event.endDate,
+                      rsvpClosed: event.rsvpClosed || false
                     };
                     
                     

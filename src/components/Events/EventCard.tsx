@@ -32,6 +32,7 @@ interface Event {
     url: string;
     type: 'pdf' | 'image';
   }>;
+  rsvpClosed?: boolean; // Whether RSVPs are closed
   // Elective Event specific fields
   isElective?: boolean;
   electiveOptions?: {
@@ -312,6 +313,12 @@ const EventCard: React.FC<EventCardProps> = ({
             <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getCategoryColor(event.category)}`}>
               {getCategoryLabel(event.category)}
             </span>
+            {event.rsvpClosed && (
+              <span className="px-2 py-1 bg-red-50 text-red-700 text-xs font-semibold rounded-full border border-red-300 flex items-center space-x-1">
+                <span>🚫</span>
+                <span>RSVPs Closed</span>
+              </span>
+            )}
             {event.category === 'meeting' && event.denTags.length > 0 && (
               <span className="px-2 py-1 bg-yellow-50 text-yellow-800 text-xs rounded-full border border-yellow-300">
                 {event.denTags.join(' & ')} Den Meeting
@@ -649,18 +656,24 @@ const EventCard: React.FC<EventCardProps> = ({
           ) : (
             // User hasn't RSVP'd - show RSVP button
             <button
-              onClick={() => onRSVP(event.id)}
-              className={`flex-1 px-4 py-2 font-medium rounded-xl transition-all duration-200 transform hover:scale-105 ${
-                isAuthenticated 
-                  ? event.isElective && event.electiveOptions?.casualAttendance
-                    ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white hover:from-indigo-600 hover:to-indigo-700 shadow-glow-indigo/50'
-                    : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 shadow-glow-primary/50'
-                  : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-gray-500 hover:to-gray-600 shadow-glow-gray/50'
+              onClick={() => !event.rsvpClosed && onRSVP(event.id)}
+              disabled={event.rsvpClosed}
+              className={`flex-1 px-4 py-2 font-medium rounded-xl transition-all duration-200 ${
+                event.rsvpClosed
+                  ? 'bg-gradient-to-r from-gray-300 to-gray-400 text-gray-600 cursor-not-allowed opacity-75'
+                  : isAuthenticated 
+                    ? event.isElective && event.electiveOptions?.casualAttendance
+                      ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white hover:from-indigo-600 hover:to-indigo-700 shadow-glow-indigo/50 transform hover:scale-105'
+                      : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 shadow-glow-primary/50 transform hover:scale-105'
+                    : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-gray-500 hover:to-gray-600 shadow-glow-gray/50 transform hover:scale-105'
               }`}
+              title={event.rsvpClosed ? 'RSVPs are closed for this event' : undefined}
             >
-              {isAuthenticated 
-                ? (event.isElective && event.electiveOptions?.casualAttendance ? 'Let Us Know You\'re Coming!' : 'RSVP Now')
-                : 'Login to RSVP'
+              {event.rsvpClosed
+                ? '🚫 RSVPs Closed'
+                : isAuthenticated 
+                  ? (event.isElective && event.electiveOptions?.casualAttendance ? 'Let Us Know You\'re Coming!' : 'RSVP Now')
+                  : 'Login to RSVP'
               }
             </button>
           )}

@@ -46,6 +46,7 @@ interface Event {
   // Admin-specific fields
   visibility?: 'public' | 'link-only' | 'private';
   isActive?: boolean;
+  rsvpClosed?: boolean; // Whether RSVPs are closed (manually or automatically)
   locationId?: string;
   startDate?: string;
   endDate?: string;
@@ -1656,6 +1657,7 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
     visibility: event?.visibility || 'public',
     maxCapacity: event?.maxCapacity ? event.maxCapacity.toString() : '',
     isActive: event?.isActive ?? true,
+    rsvpClosed: event?.rsvpClosed || false, // Whether RSVPs are closed
     // Payment fields
     paymentRequired: event?.paymentRequired || false,
     paymentAmount: event?.paymentAmount ? (event.paymentAmount / 100).toString() : '', // Convert from cents to dollars
@@ -1707,6 +1709,7 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
         visibility: event.visibility || 'public',
         maxCapacity: event.maxCapacity ? event.maxCapacity.toString() : '',
         isActive: event.isActive ?? true,
+        rsvpClosed: event.rsvpClosed || false,
         // Payment fields
         paymentRequired: event.paymentRequired || false,
         paymentAmount: event.paymentAmount ? (event.paymentAmount / 100).toString() : '',
@@ -1813,6 +1816,7 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
         category: formData.category as 'pack' | 'den' | 'campout' | 'overnight' | 'service' | 'meeting' | 'elective',
         visibility: formData.visibility,
         isActive: formData.isActive,
+        rsvpClosed: formData.rsvpClosed, // Whether RSVPs are closed
         locationId: locationId || formData.location,
         startDate: formatLocalDateTime(startDateObj) as any, // Local timezone format
         endDate: formatLocalDateTime(endDateObj) as any, // Local timezone format
@@ -2051,7 +2055,7 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
         </div>
 
         {/* Active Status */}
-        <div className="mt-6">
+        <div className="mt-6 space-y-3">
           <label className="flex items-center">
             <input
               type="checkbox"
@@ -2061,6 +2065,19 @@ const EventForm: React.FC<EventFormProps> = ({ event, mode, onSave, onCancel, is
             />
             <span className="ml-2 text-sm font-medium text-gray-700">
               Event is active and visible to participants
+            </span>
+          </label>
+          
+          {/* RSVP Closed Toggle */}
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={formData.rsvpClosed}
+              onChange={(e) => handleInputChange('rsvpClosed', e.target.checked)}
+              className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+            />
+            <span className="ml-2 text-sm font-medium text-gray-700">
+              🚫 RSVPs are closed (prevent new signups)
             </span>
           </label>
         </div>

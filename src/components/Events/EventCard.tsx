@@ -97,6 +97,8 @@ const EventCard: React.FC<EventCardProps> = ({
   userPaymentStatus = null,
   paymentAmount = 0
 }) => {
+  console.log(`🎯 EventCard ${event.id}: rsvpClosed=${event.rsvpClosed}, title=${event.title}`);
+  
   const [isExpanded, setIsExpanded] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [rsvpData, setRsvpData] = useState<any[]>([]);

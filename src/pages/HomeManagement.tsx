@@ -4,7 +4,7 @@ import {
   Home, ShoppingBasket, Book, ChefHat, ShoppingCart, Calendar, CheckSquare,
   Settings, DollarSign, CreditCard, Wrench, Package, CalendarDays,
   Heart, Car, PawPrint, FileText, Sparkles, CalendarRange, Users, Menu, X,
-  ChevronRight
+  ChevronRight, DoorOpen
 } from 'lucide-react';
 import GroceryManager from '../components/Home/GroceryManager';
 import RecipeManager from '../components/Home/RecipeManager';
@@ -24,6 +24,7 @@ import PetManager from '../components/Home/PetManager';
 import DocumentVault from '../components/Home/DocumentVault';
 import CleaningSchedule from '../components/Home/CleaningSchedule';
 import HouseholdMembers from '../components/Home/HouseholdMembers';
+import RoomManager from '../components/Home/RoomManager';
 import CalendarDebug from '../components/Home/CalendarDebug';
 import homePreferencesService from '../services/homePreferencesService';
 import householdService from '../services/householdService';
@@ -31,7 +32,7 @@ import { HomePreferences } from '../types/homePreferences';
 import { useToast } from '../contexts/ToastContext';
 import HouseholdSetupWizard from '../components/Home/HouseholdSetupWizard';
 
-type TabType = 'household' | 'groceries' | 'recipes' | 'shopping' | 'meals' | 'tasks' | 'settings' | 
+type TabType = 'household' | 'rooms' | 'groceries' | 'recipes' | 'shopping' | 'meals' | 'tasks' | 'settings' | 
   'budget' | 'bills' | 'maintenance' | 'inventory' | 'familyCalendar' | 'health' | 
   'vehicles' | 'pets' | 'documents' | 'cleaning' | 'unifiedCalendar' | 'debug';
 
@@ -85,6 +86,7 @@ const HomeManagement: React.FC = () => {
   const allTabs = [
     // Always visible
     { id: 'household' as TabType, label: 'Household', icon: Users, feature: null, category: 'General' },
+    { id: 'rooms' as TabType, label: 'Rooms & Spaces', icon: DoorOpen, feature: null, category: 'General' },
     { id: 'settings' as TabType, label: 'Settings', icon: Settings, feature: null, category: 'General' },
     { id: 'debug' as TabType, label: '🐛 Debug Calendar', icon: Settings, feature: null, category: 'General' },
     
@@ -245,6 +247,7 @@ const HomeManagement: React.FC = () => {
               transition={{ duration: 0.2 }}
             >
               {activeTab === 'household' && <HouseholdMembers />}
+              {activeTab === 'rooms' && <RoomManager />}
               {activeTab === 'groceries' && <GroceryManager />}
               {activeTab === 'recipes' && <RecipeManager />}
               {activeTab === 'shopping' && <ShoppingListManager />}

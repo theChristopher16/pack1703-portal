@@ -68,7 +68,10 @@ class HouseholdSharingService {
     return {
       id: docSnap.id,
       ...data,
-      members: data.members || [],
+      members: (data.members || []).map((member: any) => ({
+        ...member,
+        joinedAt: member.joinedAt?.toDate ? member.joinedAt.toDate() : member.joinedAt,
+      })),
       createdAt: data.createdAt?.toDate(),
       updatedAt: data.updatedAt?.toDate(),
     } as SharedHousehold;
@@ -115,6 +118,17 @@ class HouseholdSharingService {
 
     await setDoc(sharedHouseholdRef, {
       ...sharedHousehold,
+      members: [
+        {
+          userId: user.uid,
+          email: user.email || '',
+          displayName: user.displayName || 'Unknown',
+          role: 'owner',
+          joinedAt: now,
+          addedBy: user.uid,
+          permissions: OWNER_PERMISSIONS,
+        },
+      ],
       createdAt: now,
       updatedAt: now,
     });

@@ -56,7 +56,8 @@ const HouseholdSetupWizard: React.FC<HouseholdSetupWizardProps> = ({ onComplete 
         ...formData.customRooms.map((r) => ({ ...r, id: '' })),
       ];
 
-      await householdService.createHouseholdProfile({
+      // Create the household profile
+      const profileId = await householdService.createHouseholdProfile({
         householdName: formData.householdName,
         address: formData.address || undefined,
         members: formData.members.filter((m) => m.name.trim() !== ''),
@@ -66,6 +67,10 @@ const HouseholdSetupWizard: React.FC<HouseholdSetupWizardProps> = ({ onComplete 
         monthlyBudget: formData.monthlyBudget || undefined,
         useBudgetCategories: formData.useBudgetCategories,
       });
+
+      // Also create a shared household for collaboration features
+      const householdSharingService = (await import('../../services/householdSharingService')).default;
+      await householdSharingService.migrateToSharedHousehold(profileId);
 
       showSuccess('Household setup complete!');
       onComplete();

@@ -30,6 +30,7 @@ export interface HouseholdProfile {
   budgetCategories?: string[];
   setupCompleted: boolean;
   setupCompletedAt?: Date;
+  sharedHouseholdId?: string; // Reference to associated SharedHousehold
   createdAt: Date;
   updatedAt: Date;
 }

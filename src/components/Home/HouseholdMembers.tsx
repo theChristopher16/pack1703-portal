@@ -43,6 +43,30 @@ const HouseholdMembers: React.FC = () => {
     try {
       setLoading(true);
       const households = await householdSharingService.getUserHouseholds();
+      
+      // If no shared households exist, check if there's a household profile to migrate
+      if (!households || households.households.length === 0) {
+        const householdService = (await import('../../services/householdService')).default;
+        const profile = await householdService.getHouseholdProfile();
+        
+        if (profile && !profile.sharedHouseholdId) {
+          // Migrate the profile to a shared household
+          await householdSharingService.migrateToSharedHousehold(profile.id);
+          // Reload data after migration
+          const newHouseholds = await householdSharingService.getUserHouseholds();
+          setUserHouseholds(newHouseholds);
+          
+          if (newHouseholds && newHouseholds.primaryHouseholdId) {
+            const household = await householdSharingService.getHousehold(newHouseholds.primaryHouseholdId);
+            setActiveHousehold(household);
+          }
+          
+          const invites = await householdSharingService.getMyInvitations();
+          setPendingInvitations(invites);
+          return;
+        }
+      }
+      
       setUserHouseholds(households);
 
       if (households && households.primaryHouseholdId) {

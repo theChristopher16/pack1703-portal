@@ -14,6 +14,7 @@ import {
   X,
   Home,
   AlertCircle,
+  Search,
 } from 'lucide-react';
 import householdSharingService from '../../services/householdSharingService';
 import {
@@ -416,7 +417,70 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ household, onClos
     message: '',
   });
   const [sending, setSending] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const { showSuccess, showError } = useToast();
+
+  // Load all users on mount
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const authService = (await import('../../services/authService')).default;
+      const users = await authService.getUsers();
+      // Filter out users already in the household
+      const existingEmails = household.members.map(m => m.email.toLowerCase());
+      const availableUsers = users.filter(u => 
+        !existingEmails.includes(u.email?.toLowerCase() || '')
+      );
+      setAllUsers(availableUsers);
+    } catch (error: any) {
+      console.error('Failed to load users:', error);
+      // Non-critical error, user can still enter email manually
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setFormData({ ...formData, email: value });
+
+    if (value.trim().length < 2) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    // Search users by name or email
+    const query = value.toLowerCase();
+    const results = allUsers.filter(user => {
+      const email = user.email?.toLowerCase() || '';
+      const displayName = user.displayName?.toLowerCase() || '';
+      const firstName = user.profile?.firstName?.toLowerCase() || '';
+      const lastName = user.profile?.lastName?.toLowerCase() || '';
+      
+      return email.includes(query) ||
+             displayName.includes(query) ||
+             firstName.includes(query) ||
+             lastName.includes(query);
+    }).slice(0, 5); // Limit to 5 results
+
+    setSearchResults(results);
+    setShowSearchResults(results.length > 0);
+  };
+
+  const handleSelectUser = (user: any) => {
+    setFormData({ ...formData, email: user.email });
+    setSearchQuery(user.email);
+    setShowSearchResults(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -463,16 +527,64 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ household, onClos
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Search Copse User or Enter Email *
+              </label>
               <input
                 type="email"
                 required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onFocus={() => {
+                  if (searchResults.length > 0) {
+                    setShowSearchResults(true);
+                  }
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="member@example.com"
+                placeholder="Start typing name or email..."
               />
+              {loadingUsers && (
+                <div className="absolute right-3 top-9 text-gray-400">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                </div>
+              )}
+              
+              {/* Search Results Dropdown */}
+              {showSearchResults && searchResults.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {searchResults.map((user) => (
+                    <button
+                      key={user.uid}
+                      type="button"
+                      onClick={() => handleSelectUser(user)}
+                      className="w-full px-4 py-3 text-left hover:bg-blue-50 border-b border-gray-100 last:border-b-0 flex items-center gap-3 transition-colors"
+                    >
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+                        {(user.displayName || user.email || '?')[0].toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate">
+                          {user.displayName || 'Unknown'}
+                        </p>
+                        <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                        {(user.profile?.firstName || user.profile?.lastName) && (
+                          <p className="text-xs text-gray-400">
+                            {user.profile?.firstName} {user.profile?.lastName}
+                          </p>
+                        )}
+                      </div>
+                      <Users className="w-4 h-4 text-blue-500" />
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                {allUsers.length > 0 
+                  ? `${allUsers.length} Copse users available. Type to search by name or email.`
+                  : 'Enter email address to invite a member.'
+                }
+              </p>
             </div>
 
             <div>

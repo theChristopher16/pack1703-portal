@@ -97,8 +97,16 @@ const EnhancedRoomManager: React.FC = () => {
     if (!editingRoomId || !profile) return;
 
     try {
+      // Clean up undefined values (Firestore doesn't accept undefined)
+      const cleanEditForm = Object.entries(editForm).reduce((acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key as keyof typeof editForm] = value;
+        }
+        return acc;
+      }, {} as any);
+
       const updatedRooms = rooms.map((room) =>
-        room.id === editingRoomId ? { ...room, ...editForm } : room
+        room.id === editingRoomId ? { ...room, ...cleanEditForm } : room
       );
 
       await householdService.updateHouseholdProfile({
@@ -137,8 +145,16 @@ const EnhancedRoomManager: React.FC = () => {
     }
 
     try {
+      // Clean up undefined values (Firestore doesn't accept undefined)
+      const cleanRoom = Object.entries(newRoom).reduce((acc, [key, value]) => {
+        if (value !== undefined && value !== '') {
+          acc[key as keyof typeof newRoom] = value;
+        }
+        return acc;
+      }, {} as any);
+
       const roomToAdd: Room = {
-        ...newRoom,
+        ...cleanRoom,
         id: `room_${Date.now()}`,
         roomNotes: [],
       };

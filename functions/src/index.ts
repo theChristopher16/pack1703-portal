@@ -14,6 +14,9 @@ export { connectAppleCalendar, syncAppleCalendar } from './appleCalendar';
 // Import organization linking functions
 export { linkUserToOrganization, autoLinkToPack1703 } from './linkUserToOrganization';
 
+// Import user search functions
+export { searchUsersForHousehold } from './searchUsers';
+
 // Initialize Firebase Admin
 admin.initializeApp();
 

@@ -14,7 +14,6 @@ import {
   X,
   Home,
   AlertCircle,
-  Search,
 } from 'lucide-react';
 import householdSharingService from '../../services/householdSharingService';
 import {
@@ -432,14 +431,21 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ household, onClos
   const loadUsers = async () => {
     try {
       setLoadingUsers(true);
-      const authService = (await import('../../services/authService')).default;
-      const users = await authService.getUsers();
-      // Filter out users already in the household
-      const existingEmails = household.members.map(m => m.email.toLowerCase());
-      const availableUsers = users.filter(u => 
-        !existingEmails.includes(u.email?.toLowerCase() || '')
-      );
-      setAllUsers(availableUsers);
+      // Get existing household member emails to exclude them
+      const existingEmails = household.members.map(m => m.email);
+      
+      // Use Cloud Function to search users (avoids permission issues)
+      const { httpsCallable } = await import('firebase/functions');
+      const { functions } = await import('../../firebase/config');
+      const searchUsers = httpsCallable(functions, 'searchUsersForHousehold');
+      
+      // Get all users by searching with empty query
+      const result = await searchUsers({
+        searchQuery: '',
+        excludeEmails: existingEmails,
+      }) as any;
+      
+      setAllUsers(result.data || []);
     } catch (error: any) {
       console.error('Failed to load users:', error);
       // Non-critical error, user can still enter email manually
@@ -448,32 +454,60 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ household, onClos
     }
   };
 
-  const handleSearchChange = (value: string) => {
+  const handleSearchChange = async (value: string) => {
     setSearchQuery(value);
     setFormData({ ...formData, email: value });
 
     if (value.trim().length < 2) {
       setSearchResults([]);
       setShowSearchResults(false);
+      // Load all users if search is cleared
+      if (allUsers.length === 0) {
+        loadUsers();
+      }
       return;
     }
 
-    // Search users by name or email
-    const query = value.toLowerCase();
-    const results = allUsers.filter(user => {
-      const email = user.email?.toLowerCase() || '';
-      const displayName = user.displayName?.toLowerCase() || '';
-      const firstName = user.profile?.firstName?.toLowerCase() || '';
-      const lastName = user.profile?.lastName?.toLowerCase() || '';
+    // Search users via Cloud Function
+    try {
+      const { httpsCallable } = await import('firebase/functions');
+      const { functions } = await import('../../firebase/config');
+      const searchUsers = httpsCallable(functions, 'searchUsersForHousehold');
       
-      return email.includes(query) ||
-             displayName.includes(query) ||
-             firstName.includes(query) ||
-             lastName.includes(query);
-    }).slice(0, 5); // Limit to 5 results
-
-    setSearchResults(results);
-    setShowSearchResults(results.length > 0);
+      const existingEmails = household.members.map(m => m.email);
+      const result = await searchUsers({
+        searchQuery: value,
+        excludeEmails: existingEmails,
+      }) as any;
+      
+      const results = result.data || [];
+      setSearchResults(results.slice(0, 5)); // Limit to 5 results
+      setShowSearchResults(results.length > 0);
+      
+      // Also update allUsers if we haven't loaded them yet
+      if (allUsers.length === 0) {
+        setAllUsers(results);
+      }
+    } catch (error) {
+      console.error('Failed to search users:', error);
+      // Fallback to local search if available
+      if (allUsers.length > 0) {
+        const query = value.toLowerCase();
+        const results = allUsers.filter(user => {
+          const email = user.email?.toLowerCase() || '';
+          const displayName = user.displayName?.toLowerCase() || '';
+          const firstName = user.profile?.firstName?.toLowerCase() || '';
+          const lastName = user.profile?.lastName?.toLowerCase() || '';
+          
+          return email.includes(query) ||
+                 displayName.includes(query) ||
+                 firstName.includes(query) ||
+                 lastName.includes(query);
+        }).slice(0, 5);
+        setSearchResults(results);
+        setShowSearchResults(results.length > 0);
+      }
+    }
   };
 
   const handleSelectUser = (user: any) => {

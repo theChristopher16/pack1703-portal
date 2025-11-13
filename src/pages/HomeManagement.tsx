@@ -24,7 +24,7 @@ import PetManager from '../components/Home/PetManager';
 import DocumentVault from '../components/Home/DocumentVault';
 import CleaningSchedule from '../components/Home/CleaningSchedule';
 import HouseholdMembers from '../components/Home/HouseholdMembers';
-import RoomManager from '../components/Home/RoomManager';
+import EnhancedRoomManager from '../components/Home/EnhancedRoomManager';
 import CalendarDebug from '../components/Home/CalendarDebug';
 import homePreferencesService from '../services/homePreferencesService';
 import householdService from '../services/householdService';
@@ -247,7 +247,7 @@ const HomeManagement: React.FC = () => {
               transition={{ duration: 0.2 }}
             >
               {activeTab === 'household' && <HouseholdMembers />}
-              {activeTab === 'rooms' && <RoomManager />}
+              {activeTab === 'rooms' && <EnhancedRoomManager />}
               {activeTab === 'groceries' && <GroceryManager />}
               {activeTab === 'recipes' && <RecipeManager />}
               {activeTab === 'shopping' && <ShoppingListManager />}

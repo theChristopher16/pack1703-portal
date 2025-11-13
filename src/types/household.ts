@@ -9,12 +9,37 @@ export interface HouseholdMember {
   medicalNotes?: string;
 }
 
+export interface RoomNote {
+  id: string;
+  content: string;
+  category: 'general' | 'maintenance' | 'paint' | 'furniture' | 'renovation' | 'cleaning' | 'issues';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Room {
   id: string;
   name: string;
   type: 'bedroom' | 'bathroom' | 'kitchen' | 'living' | 'dining' | 'garage' | 'basement' | 'attic' | 'office' | 'other';
   floor?: number;
-  notes?: string;
+  notes?: string; // Legacy field - will migrate to roomNotes
+  roomNotes?: RoomNote[];
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+    unit?: 'feet' | 'meters';
+  };
+  squareFootage?: number;
+  paintColors?: {
+    walls?: string;
+    trim?: string;
+    ceiling?: string;
+  };
+  flooringType?: string;
+  windowCount?: number;
+  lastCleaned?: Date;
+  lastMaintenance?: Date;
 }
 
 export interface HouseholdProfile {
@@ -31,6 +56,32 @@ export interface HouseholdProfile {
   setupCompleted: boolean;
   setupCompletedAt?: Date;
   sharedHouseholdId?: string; // Reference to associated SharedHousehold
+  
+  // House details
+  propertyDetails?: {
+    yearBuilt?: number;
+    squareFootage?: number;
+    lotSize?: number;
+    stories?: number;
+    propertyType?: 'single-family' | 'condo' | 'townhouse' | 'apartment' | 'other';
+    heatingType?: string;
+    coolingType?: string;
+    roofType?: string;
+    roofAge?: number;
+    exteriorType?: string;
+  };
+  
+  // Utilities & Services
+  utilities?: {
+    wifiNetwork?: string;
+    wifiPassword?: string;
+    electricProvider?: string;
+    gasProvider?: string;
+    waterProvider?: string;
+    internetProvider?: string;
+    securitySystem?: string;
+  };
+  
   createdAt: Date;
   updatedAt: Date;
 }

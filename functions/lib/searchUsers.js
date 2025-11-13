@@ -13,8 +13,8 @@ exports.searchUsersForHousehold = functions.https.onCall(async (data, context) =
         throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
     }
     const { searchQuery, excludeEmails } = data;
-    if (!searchQuery || typeof searchQuery !== 'string') {
-        throw new functions.https.HttpsError('invalid-argument', 'Search query is required');
+    if (typeof searchQuery !== 'string') {
+        throw new functions.https.HttpsError('invalid-argument', 'Search query must be a string');
     }
     try {
         const query = searchQuery.toLowerCase().trim();

@@ -13,8 +13,8 @@ export const searchUsersForHousehold = functions.https.onCall(async (data: any, 
 
   const { searchQuery, excludeEmails } = data as { searchQuery: string; excludeEmails?: string[] };
 
-  if (!searchQuery || typeof searchQuery !== 'string') {
-    throw new functions.https.HttpsError('invalid-argument', 'Search query is required');
+  if (typeof searchQuery !== 'string') {
+    throw new functions.https.HttpsError('invalid-argument', 'Search query must be a string');
   }
 
   try {

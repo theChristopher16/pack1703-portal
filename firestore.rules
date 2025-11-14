@@ -1210,9 +1210,13 @@ service cloud.firestore {
         (resource.data.invitedBy == request.auth.uid || 
          resource.data.invitedEmail == request.auth.token.email);
       
-      // Create invitation (by household members with permission)
+      // Create invitation - allow if:
+      // 1. User is the inviter (invitedBy == auth.uid)
+      // 2. User is the owner of the household being invited to
       allow create: if isAuthenticated() && 
-        request.resource.data.invitedBy == request.auth.uid;
+        request.resource.data.invitedBy == request.auth.uid &&
+        exists(/databases/$(database)/documents/sharedHouseholds/$(request.resource.data.householdId)) &&
+        get(/databases/$(database)/documents/sharedHouseholds/$(request.resource.data.householdId)).data.ownerId == request.auth.uid;
       
       // Update invitation (accept/decline by invitee)
       allow update: if isAuthenticated() && 

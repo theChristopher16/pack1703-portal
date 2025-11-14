@@ -531,7 +531,13 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ household, onClos
       showSuccess('Invitation sent successfully!');
       onSuccess();
     } catch (error: any) {
-      showError('Failed to send invitation', error.message);
+      console.error('Invitation error details:', error);
+      // Provide more helpful error messages
+      let errorMessage = error.message || 'Unknown error';
+      if (error.code === 'permission-denied' || errorMessage.includes('permission')) {
+        errorMessage = 'You do not have permission to invite members. Please ensure you are the household owner or have been granted member management permissions.';
+      }
+      showError('Failed to send invitation', errorMessage);
     } finally {
       setSending(false);
     }

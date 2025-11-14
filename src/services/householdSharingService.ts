@@ -163,7 +163,12 @@ class HouseholdSharingService {
     if (!household) throw new Error('Household not found');
 
     const currentMember = household.members.find((m) => m.userId === user.uid);
-    if (!currentMember || !currentMember.permissions.canManageMembers) {
+    
+    // Owners can always invite, or check if member has canManageMembers permission
+    const isOwner = household.ownerId === user.uid;
+    const canInvite = isOwner || (currentMember?.permissions?.canManageMembers === true);
+    
+    if (!currentMember || !canInvite) {
       throw new Error('You do not have permission to invite members');
     }
 

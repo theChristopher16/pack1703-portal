@@ -27,7 +27,8 @@ import {
   Store,
   ShoppingCart,
   Package,
-  Network
+  Network,
+  StickyNote
 } from 'lucide-react';
 
 export interface NavigationItem {
@@ -86,6 +87,15 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     category: 'public',
     description: 'Meeting places and venues',
     componentId: 'locations'
+  },
+  {
+    name: 'Notes',
+    href: '/notes',
+    icon: StickyNote,
+    roles: [UserRole.PARENT, UserRole.DEN_LEADER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.AI_ASSISTANT],
+    category: 'public',
+    description: 'Organization notes and reminders',
+    componentId: 'notes'
   },
   {
     name: 'Volunteer',

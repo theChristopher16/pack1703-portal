@@ -31,6 +31,7 @@ import EventDetailPage from '../pages/EventDetailPage';
 import TestNavigation from '../pages/TestNavigation';
 import AuthDebugPage from '../pages/AuthDebugPage';
 import UnifiedChat from '../components/Chat/UnifiedChat';
+import NotesPage from '../pages/NotesPage';
 
 // Admin Pages
 import AdminLists from '../pages/AdminLists';
@@ -66,6 +67,7 @@ const PackRouter: React.FC = () => {
         <Route path="auth-debug" element={<AuthDebugPage />} />
         <Route path="locations" element={<Layout><AuthenticatedOnly><LocationsPage /></AuthenticatedOnly></Layout>} />
         <Route path="announcements" element={<Layout><AuthenticatedOnly><UnifiedAnnouncementsPage /></AuthenticatedOnly></Layout>} />
+        <Route path="notes" element={<Layout><AuthenticatedOnly><NotesPage /></AuthenticatedOnly></Layout>} />
         <Route path="resources" element={<Layout><AuthenticatedOnly><ResourcesPage /></AuthenticatedOnly></Layout>} />
         <Route path="resources/inventory" element={<Layout><AuthenticatedOnly><InventoryPage /></AuthenticatedOnly></Layout>} />
         <Route path="gallery" element={<Layout><AuthenticatedOnly><GalleryPage /></AuthenticatedOnly></Layout>} />

@@ -18,6 +18,7 @@ import UnifiedChat from '../components/Chat/UnifiedChat';
 import UserProfile from '../pages/UserProfile';
 import NotFoundPage from '../pages/NotFoundPage';
 import OrganizationHomePage from '../pages/OrganizationHomePage';
+import NotesPage from '../pages/NotesPage';
 
 // Import storefront pages
 import { StorefrontProductsPage } from '../pages/StorefrontProductsPage';
@@ -176,6 +177,8 @@ const OrganizationRouter: React.FC<OrganizationRouterProps> = ({ children }) => 
         return <Layout><AuthenticatedOnly><ResourcesPage /></AuthenticatedOnly></Layout>;
       case 'profile':
         return <Layout><AuthenticatedOnly><UserProfile /></AuthenticatedOnly></Layout>;
+      case 'notes':
+        return <Layout><AuthenticatedOnly><NotesPage /></AuthenticatedOnly></Layout>;
       case 'products':
         return <Layout><AuthenticatedOnly><StorefrontProductsPage /></AuthenticatedOnly></Layout>;
       case 'orders':

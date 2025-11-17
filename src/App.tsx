@@ -165,6 +165,7 @@ function App() {
                     {/* Legacy Pack 1703 Routes at Root (for backward compatibility with old links) */}
                     <Route path="/events/*" element={<PackRouter />} />
                     <Route path="/announcements" element={<PackRouter />} />
+                    <Route path="/notes" element={<PackRouter />} />
                     <Route path="/locations" element={<PackRouter />} />
                     <Route path="/volunteer" element={<PackRouter />} />
                     <Route path="/ecology" element={<PackRouter />} />

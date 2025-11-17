@@ -19,7 +19,8 @@ import {
   Calendar,
   Edit,
   Trash2,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { authService, AppUser, UserRole } from '../services/authService';
 import { httpsCallable } from 'firebase/functions';
@@ -209,22 +210,29 @@ export const CopseAdminPanel: React.FC = () => {
   const currentUser = authService.getCurrentUser();
 
   // Load real users from Firestore
-  useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        setIsLoadingUsers(true);
-        setUsersError(null);
-        const users = await authService.getUsers();
-        setRealUsers(users);
-      } catch (error: any) {
-        console.error('Error loading users:', error);
-        setUsersError(error.message || 'Failed to load users');
-      } finally {
-        setIsLoadingUsers(false);
-      }
-    };
+  const loadUsers = async () => {
+    try {
+      setIsLoadingUsers(true);
+      setUsersError(null);
+      const users = await authService.getUsers();
+      setRealUsers(users);
+    } catch (error: any) {
+      console.error('Error loading users:', error);
+      setUsersError(error.message || 'Failed to load users');
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
 
+  useEffect(() => {
     loadUsers();
+    
+    // Auto-refresh user list every 30 seconds to show updated lastActive dates
+    const refreshInterval = setInterval(() => {
+      loadUsers();
+    }, 30000);
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
   // Convert AppUser to NetworkUser format for display
@@ -524,6 +532,15 @@ export const CopseAdminPanel: React.FC = () => {
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-forest-500 focus:border-transparent"
                     />
                   </div>
+                  <button
+                    onClick={loadUsers}
+                    disabled={isLoadingUsers}
+                    className="flex items-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Refresh user list"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isLoadingUsers ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </button>
                   <div className="flex items-center gap-2">
                     {isLoadingUsers ? (
                       <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />

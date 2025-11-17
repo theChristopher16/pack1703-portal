@@ -10,17 +10,43 @@ class UserActivityService {
   private readonly UPDATE_INTERVAL = 5 * 60 * 1000; // Update every 5 minutes
   private lastUpdateTime: number = 0;
   private updateTimer: NodeJS.Timeout | null = null;
+  private authUnsubscribe: (() => void) | null = null;
 
   constructor() {
-    // Start periodic activity updates
-    this.startActivityTracking();
+    // Listen to auth state changes to start tracking when user logs in
+    this.setupAuthListener();
+  }
+
+  /**
+   * Setup auth state listener to start tracking when user logs in
+   */
+  private setupAuthListener(): void {
+    // Check if user is already authenticated
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+      this.startActivityTracking();
+    }
+
+    // Listen for auth state changes
+    this.authUnsubscribe = authService.onAuthStateChanged((user) => {
+      if (user) {
+        console.log('UserActivityService: User authenticated, starting activity tracking');
+        this.startActivityTracking();
+      } else {
+        console.log('UserActivityService: User logged out, stopping activity tracking');
+        this.stopActivityTracking();
+      }
+    });
   }
 
   /**
    * Start tracking user activity
    */
   private startActivityTracking(): void {
-    // Update on page load
+    // Stop any existing tracking
+    this.stopActivityTracking();
+
+    // Update immediately
     this.updateActivity();
 
     // Set up periodic updates
@@ -30,6 +56,16 @@ class UserActivityService {
 
     // Update on user interactions (throttled)
     this.setupInteractionTracking();
+  }
+
+  /**
+   * Stop tracking user activity
+   */
+  private stopActivityTracking(): void {
+    if (this.updateTimer) {
+      clearInterval(this.updateTimer);
+      this.updateTimer = null;
+    }
   }
 
   /**
@@ -74,6 +110,7 @@ class UserActivityService {
     try {
       const user = authService.getCurrentUser();
       if (!user) {
+        console.log('UserActivityService: No authenticated user, skipping update');
         return;
       }
 
@@ -88,7 +125,7 @@ class UserActivityService {
       // Check if user document exists
       const userDoc = await getDoc(userRef);
       if (!userDoc.exists()) {
-        console.warn('User document does not exist, cannot update activity');
+        console.warn('UserActivityService: User document does not exist, cannot update activity');
         return;
       }
 
@@ -97,9 +134,10 @@ class UserActivityService {
         lastActive: serverTimestamp()
       });
 
+      console.log('UserActivityService: Updated lastActive for user', user.uid);
       this.lastUpdateTime = now;
     } catch (error) {
-      console.error('Error updating user activity:', error);
+      console.error('UserActivityService: Error updating user activity:', error);
     }
   }
 
@@ -115,9 +153,10 @@ class UserActivityService {
    * Cleanup - stop tracking
    */
   destroy(): void {
-    if (this.updateTimer) {
-      clearInterval(this.updateTimer);
-      this.updateTimer = null;
+    this.stopActivityTracking();
+    if (this.authUnsubscribe) {
+      this.authUnsubscribe();
+      this.authUnsubscribe = null;
     }
   }
 }

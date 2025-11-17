@@ -4,8 +4,11 @@ import { firestoreService } from '../services/firestore';
 import { userAnnouncementService } from '../services/userAnnouncementService';
 import { AnnouncementCard, AnnouncementFeed } from '../components/Announcements';
 import { Announcement } from '../types/firestore';
+import { offlineService } from '../services/offlineService';
+import { useOrganization } from '../contexts/OrganizationContext';
 
 const AnnouncementsPage: React.FC = () => {
+  const { organizationId } = useOrganization();
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   // const [loading, setLoading] = useState(true);
@@ -18,16 +21,56 @@ const AnnouncementsPage: React.FC = () => {
         // setLoading(true);
         setError(null);
         setUsingFallbackData(false);
+        
+        const isOnline = offlineService.getOnlineStatus();
+        
+        // Check cache first
+        const cachedAnnouncements = offlineService.getCachedAnnouncements(organizationId);
+        if (cachedAnnouncements && cachedAnnouncements.length > 0) {
+          console.log('📦 Loading announcements from cache...', cachedAnnouncements.length);
+          // Transform cached announcements to match Announcement type
+          const transformedCached = cachedAnnouncements.map((ann: any) => ({
+            ...ann,
+            createdAt: ann.createdAt?.toDate ? ann.createdAt.toDate() : new Date(ann.createdAt),
+            updatedAt: ann.updatedAt?.toDate ? ann.updatedAt.toDate() : new Date(ann.updatedAt || ann.createdAt)
+          }));
+          setAnnouncements(transformedCached);
+          
+          if (!isOnline) {
+            setUsingFallbackData(true);
+            console.log('📴 Using cached announcements (offline mode)');
+            return; // Don't try to fetch if offline
+          }
+        }
+        
         // Use the new service that includes user-specific pin status
         const fetchedAnnouncements = await userAnnouncementService.getAnnouncementsWithPinStatus();
         setAnnouncements(fetchedAnnouncements);
+        
+        // Cache announcements for offline access
+        if (isOnline) {
+          await offlineService.cacheAnnouncements(organizationId);
+        }
       } catch (err) {
         console.error('Failed to fetch announcements from Firebase:', err);
         
-        // No fallback data - show empty state
-        setAnnouncements([]);
-        setError('Unable to load announcements. Please try again later.');
-        console.log('Failed to load announcements from database');
+        // Try to use cached data if available
+        const cachedAnnouncements = offlineService.getCachedAnnouncements(organizationId);
+        if (cachedAnnouncements && cachedAnnouncements.length > 0) {
+          console.log('📦 Using cached announcements after error');
+          const transformedCached = cachedAnnouncements.map((ann: any) => ({
+            ...ann,
+            createdAt: ann.createdAt?.toDate ? ann.createdAt.toDate() : new Date(ann.createdAt),
+            updatedAt: ann.updatedAt?.toDate ? ann.updatedAt.toDate() : new Date(ann.updatedAt || ann.createdAt)
+          }));
+          setAnnouncements(transformedCached);
+          setUsingFallbackData(true);
+        } else {
+          // No fallback data - show empty state
+          setAnnouncements([]);
+          setError('Unable to load announcements. Please try again later.');
+          console.log('Failed to load announcements from database');
+        }
       } finally {
         // setLoading(false);
       }
@@ -36,7 +79,7 @@ const AnnouncementsPage: React.FC = () => {
     fetchAnnouncements();
     const interval = setInterval(fetchAnnouncements, 30000); // Poll every 30 seconds
     return () => clearInterval(interval);
-  }, []);
+  }, [organizationId]);
 
   const handleAnnouncementClick = (announcement: Announcement) => {
     setSelectedAnnouncement(announcement);

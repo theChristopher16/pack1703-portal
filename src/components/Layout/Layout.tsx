@@ -8,7 +8,7 @@ import { useAdmin } from '../../contexts/AdminContext';
 import { useOrganization } from '../../contexts/OrganizationContext';
 import { UserRole } from '../../services/authService';
 import { getNavigationByCategory, isAdminOrAbove, isRoot, ALL_NAVIGATION_ITEMS, filterNavigationByOrg } from '../../services/navigationService';
-import OfflineBanner from './OfflineBanner';
+import OfflineBanner from '../OfflineBanner/OfflineBanner';
 import PWAInstallPrompt from '../PWAInstallPrompt/PWAInstallPrompt';
 import BackToTop from '../BackToTop/BackToTop';
 import LoginModal from '../Auth/LoginModal';

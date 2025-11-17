@@ -10,6 +10,7 @@ import { useToast } from '../contexts/ToastContext';
 import { authService, UserRole } from '../services/authService';
 import ProfilePicture from '../components/ui/ProfilePicture';
 import { useChatState } from '../hooks/useOptimizedState';
+import { offlineService } from '../services/offlineService';
 
 // Rich text formatting utilities
 const FORMATTING_PATTERNS = {
@@ -121,11 +122,39 @@ const ChatPage: React.FC = () => {
     if (state.selectedChannel) {
       const loadMessages = async () => {
         try {
+          const isOnline = offlineService.getOnlineStatus();
+          
+          // Check cache first
+          const cachedMessages = offlineService.getCachedChatMessages(state.selectedChannel);
+          if (cachedMessages && cachedMessages.length > 0) {
+            console.log('📦 Loading chat messages from cache...', cachedMessages.length);
+            actions.setMessages(cachedMessages);
+            
+            if (!isOnline) {
+              console.log('📴 Using cached messages (offline mode)');
+              return; // Don't try to fetch if offline
+            }
+          }
+          
+          // Load fresh messages
           const messages = await chatService.getMessages(state.selectedChannel);
           actions.setMessages(messages);
+          
+          // Cache messages for offline access
+          if (isOnline) {
+            await offlineService.cacheChatMessages(state.selectedChannel, messages);
+          }
         } catch (error) {
           console.error('Failed to load messages:', error);
-          actions.setError('Failed to load messages');
+          
+          // Try to use cached messages if available
+          const cachedMessages = offlineService.getCachedChatMessages(state.selectedChannel);
+          if (cachedMessages && cachedMessages.length > 0) {
+            console.log('📦 Using cached messages after error');
+            actions.setMessages(cachedMessages);
+          } else {
+            actions.setError('Failed to load messages');
+          }
         }
       };
       
@@ -144,27 +173,65 @@ const ChatPage: React.FC = () => {
   const handleSendMessage = async () => {
     if (!state.newMessage.trim() || !selectors.canSendMessage) return;
 
-    try {
-      const message: ChatMessage = {
-        id: Date.now().toString(),
-        message: state.newMessage,
-        userId: state.currentUser!.id,
-        userName: state.currentUser!.name,
-        channelId: state.selectedChannel,
-        timestamp: new Date(),
-        isSystem: false,
-        isAdmin: state.currentUser!.isAdmin || false,
-        reactions: []
-      };
+    const messageText = state.newMessage.trim();
+    const isOnline = offlineService.getOnlineStatus();
 
-      await chatService.sendMessage(state.selectedChannel, state.newMessage);
-      actions.setNewMessage('');
-      actions.setUploadedImages([]);
-      
-      showSuccess('Message sent successfully');
+    // Optimistically add message to UI
+    const optimisticMessage: ChatMessage = {
+      id: `temp_${Date.now()}`,
+      message: messageText,
+      userId: state.currentUser!.id,
+      userName: state.currentUser!.name,
+      channelId: state.selectedChannel,
+      timestamp: new Date(),
+      isSystem: false,
+      isAdmin: state.currentUser!.isAdmin || false,
+      reactions: []
+    };
+
+    // Add optimistic message immediately
+    actions.setMessages([...state.messages, optimisticMessage]);
+    actions.setNewMessage('');
+    actions.setUploadedImages([]);
+
+    try {
+      if (isOnline) {
+        // Send immediately if online
+        await chatService.sendMessage(state.selectedChannel, messageText);
+        showSuccess('Message sent successfully');
+      } else {
+        // Queue for later if offline
+        offlineService.queueAction({
+          type: 'send_message',
+          payload: {
+            channelId: state.selectedChannel,
+            message: messageText
+          }
+        });
+        showInfo('Message queued - will send when online');
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
-      showError('Failed to send message');
+      
+      // Remove optimistic message on error
+      actions.setMessages(state.messages.filter(m => m.id !== optimisticMessage.id));
+      
+      // Restore message text
+      actions.setNewMessage(messageText);
+      
+      // Queue if offline or network error
+      if (!isOnline || (error as any).code === 'unavailable') {
+        offlineService.queueAction({
+          type: 'send_message',
+          payload: {
+            channelId: state.selectedChannel,
+            message: messageText
+          }
+        });
+        showInfo('Message queued - will send when online');
+      } else {
+        showError('Failed to send message');
+      }
     }
   };
 

@@ -11,6 +11,7 @@ import LocationEditModal from '../components/Locations/LocationEditModal';
 import AppleLocationMap from '../components/Locations/AppleLocationMap';
 import { useAdmin } from '../contexts/AdminContext';
 import { offlineCacheService } from '../services/offlineCacheService';
+import { offlineService } from '../services/offlineService';
 import { useUserInteraction } from '../hooks/useUserInteraction';
 
 const LocationsPage: React.FC = () => {
@@ -49,6 +50,9 @@ const LocationsPage: React.FC = () => {
       try {
         setLoading(true);
         
+        const isOnlineStatus = offlineService.getOnlineStatus();
+        setIsOnline(isOnlineStatus);
+        
         // Check cache first
         const cachedLocations = offlineCacheService.getCachedLocations();
         if (cachedLocations && cachedLocations.length > 0) {
@@ -58,7 +62,7 @@ const LocationsPage: React.FC = () => {
         }
 
         // Try to fetch fresh data if online
-        if (isOnline) {
+        if (isOnlineStatus) {
           console.log('Fetching fresh locations...');
           const locs = await firestoreService.getLocations();
           console.log('Locations fetched:', locs.length);
@@ -66,6 +70,7 @@ const LocationsPage: React.FC = () => {
           // Update locations and cache
           setLocations(locs);
           offlineCacheService.cacheLocations(locs);
+          await offlineService.cacheLocations(); // Also cache via offline service
           setCacheStatus('Data updated from server');
         } else if (!cachedLocations) {
           setCacheStatus('No cached data available');
@@ -85,7 +90,7 @@ const LocationsPage: React.FC = () => {
 
   // Listen for online/offline status changes
   useEffect(() => {
-    const cleanup = offlineCacheService.onOnlineStatusChange((online) => {
+    const cleanup = offlineService.onStatusChange((online: boolean) => {
       setIsOnline(online);
       if (online) {
         // Refresh data when coming back online
@@ -94,6 +99,7 @@ const LocationsPage: React.FC = () => {
             const locs = await firestoreService.getLocations();
             setLocations(locs);
             offlineCacheService.cacheLocations(locs);
+            await offlineService.cacheLocations();
             setCacheStatus('Data synced with server');
           } catch (err) {
             console.error('Error syncing locations:', err);

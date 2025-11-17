@@ -12,6 +12,7 @@ import { firestoreService } from '../services/firestore';
 import { useAdmin } from '../contexts/AdminContext';
 import { adminService } from '../services/adminService';
 import { authService } from '../services/authService';
+import { offlineService } from '../services/offlineService';
 import { LocationSelector } from '../components/Locations';
 import { archiveEvent, unarchiveEvent, getCurrentScoutingYear, extractScoutingYearFromEvent, shouldAutoArchive } from '../services/archivedEventsService';
 import { useUserInteraction } from '../hooks/useUserInteraction';
@@ -361,8 +362,85 @@ const EventsPage: React.FC = () => {
       setUsingFallbackData(false);
       
       try {
-        // Load events first (with caching)
+        const isOnline = offlineService.getOnlineStatus();
+        
+        // Check cache first if offline or for faster initial load
+        const cachedEvents = offlineService.getCachedEvents(organizationId);
+        if (cachedEvents && cachedEvents.length > 0) {
+          console.log('📦 Loading events from cache...', cachedEvents.length);
+          // Transform cached events (same transformation as below)
+          const transformedCached = cachedEvents.map((firebaseEvent: any) => {
+            let localDate = '';
+            try {
+              const jsDate = firebaseEvent.startDate?.toDate?.()
+                ? firebaseEvent.startDate.toDate()
+                : new Date(firebaseEvent.startDate);
+              if (jsDate && !isNaN(jsDate.getTime())) {
+                const year = jsDate.getFullYear();
+                const month = String(jsDate.getMonth() + 1).padStart(2, '0');
+                const day = String(jsDate.getDate()).padStart(2, '0');
+                localDate = `${year}-${month}-${day}`;
+              }
+            } catch (_) {
+              if (typeof firebaseEvent.startDate === 'string') {
+                localDate = (firebaseEvent.startDate.split ? firebaseEvent.startDate.split('T')[0] : firebaseEvent.startDate) || '';
+              }
+            }
+
+            return {
+              id: firebaseEvent.id,
+              title: firebaseEvent.title,
+              date: localDate || '',
+              startTime: firebaseEvent.startTime || '00:00',
+              endTime: firebaseEvent.endTime || '00:00',
+              startDate: firebaseEvent.startDate?.toDate?.() ? formatLocalDateTime(firebaseEvent.startDate.toDate()) : firebaseEvent.startDate,
+              endDate: firebaseEvent.endDate?.toDate?.() ? formatLocalDateTime(firebaseEvent.endDate.toDate()) : firebaseEvent.endDate,
+              location: firebaseEvent.location || {
+                name: firebaseEvent.locationName || 'TBD',
+                address: firebaseEvent.address || 'Address TBD',
+                coordinates: firebaseEvent.coordinates || undefined
+              },
+              category: firebaseEvent.category || 'pack-wide',
+              denTags: firebaseEvent.denTags || [],
+              maxCapacity: firebaseEvent.maxCapacity || null,
+              currentRSVPs: 0,
+              description: firebaseEvent.description || '',
+              packingList: firebaseEvent.packingList || [],
+              fees: firebaseEvent.fees || null,
+              contactEmail: firebaseEvent.contactEmail || 'cubmaster@sfpack1703.com',
+              isOvernight: firebaseEvent.isOvernight || false,
+              requiresPermission: firebaseEvent.requiresPermission || false,
+              attachments: firebaseEvent.attachments || [],
+              visibility: firebaseEvent.visibility,
+              isActive: firebaseEvent.isActive,
+              locationId: firebaseEvent.locationId,
+              paymentRequired: firebaseEvent.paymentRequired || false,
+              paymentAmount: firebaseEvent.paymentAmount || undefined,
+              paymentCurrency: firebaseEvent.paymentCurrency || 'USD',
+              paymentDescription: firebaseEvent.paymentDescription || undefined,
+              isArchived: firebaseEvent.isArchived || false,
+              archivedAt: firebaseEvent.archivedAt,
+              archivedBy: firebaseEvent.archivedBy,
+              scoutingYear: firebaseEvent.scoutingYear
+            };
+          }).filter((event: any) => !event.isArchived);
+          
+          setEvents(transformedCached);
+          setIsLoading(false);
+          if (!isOnline) {
+            setUsingFallbackData(true);
+            console.log('📴 Using cached events (offline mode)');
+            return; // Don't try to fetch if offline
+          }
+        }
+        
+        // Load events from server (with caching)
         const firebaseEvents = await firestoreService.getEvents(organizationId);
+        
+        // Cache events for offline access
+        if (isOnline) {
+          await offlineService.cacheEvents(organizationId);
+        }
         
         // Track successful data load
         console.log('Events loaded from database:', firebaseEvents.length);

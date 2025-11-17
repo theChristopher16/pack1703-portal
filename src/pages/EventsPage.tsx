@@ -16,6 +16,7 @@ import { offlineService } from '../services/offlineService';
 import { LocationSelector } from '../components/Locations';
 import { archiveEvent, unarchiveEvent, getCurrentScoutingYear, extractScoutingYearFromEvent, shouldAutoArchive } from '../services/archivedEventsService';
 import { useUserInteraction } from '../hooks/useUserInteraction';
+import NotesPanel from '../components/Notes/NotesPanel';
 // import { analytics } from '../services/analytics';
 
 interface Event {
@@ -1632,6 +1633,14 @@ const EventsPage: React.FC = () => {
             </div>
             <div className="text-gray-600">Elective Events</div>
           </div>
+        </div>
+
+        {/* Notes Panel */}
+        <div className="mt-12">
+          <NotesPanel 
+            componentId="events" 
+            componentType="page" 
+          />
         </div>
 
         {/* Admin RSVP Viewer Modal */}

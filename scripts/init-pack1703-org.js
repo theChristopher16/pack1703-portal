@@ -63,6 +63,7 @@ async function initializePack1703() {
         'locations',
         'resources',
         'profile',
+        'notes',
         
         // Pack-specific components
         'analytics',

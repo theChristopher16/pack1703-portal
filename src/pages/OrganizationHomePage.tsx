@@ -23,7 +23,8 @@ import {
   Target,
   ArrowRight,
   Sparkles,
-  Zap
+  Zap,
+  StickyNote
 } from 'lucide-react';
 
 interface OrganizationHomePageProps {
@@ -69,6 +70,7 @@ const OrganizationHomePage: React.FC<OrganizationHomePageProps> = ({ organizatio
     ecology: <Leaf className="w-6 h-6" />,
     fundraising: <Target className="w-6 h-6" />,
     dues: <DollarSign className="w-6 h-6" />,
+    notes: <StickyNote className="w-6 h-6" />,
   };
 
   const handleComponentClick = (componentId: ComponentId) => {

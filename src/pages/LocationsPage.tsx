@@ -13,6 +13,7 @@ import { useAdmin } from '../contexts/AdminContext';
 import { offlineCacheService } from '../services/offlineCacheService';
 import { offlineService } from '../services/offlineService';
 import { useUserInteraction } from '../hooks/useUserInteraction';
+import NotesPanel from '../components/Notes/NotesPanel';
 
 const LocationsPage: React.FC = () => {
   const { state: adminState, hasRole } = useAdmin();
@@ -458,6 +459,14 @@ const LocationsPage: React.FC = () => {
           height="600px"
         />
         )}
+
+        {/* Notes Panel */}
+        <div className="mt-12">
+          <NotesPanel 
+            componentId="locations" 
+            componentType="page" 
+          />
+        </div>
       </div>
 
       {/* Location Creation Modal */}

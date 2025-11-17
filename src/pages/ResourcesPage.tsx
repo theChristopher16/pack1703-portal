@@ -21,6 +21,7 @@ import { useAdmin } from '../contexts/AdminContext';
 import { Resource, ResourceSubmission, resourceService } from '../services/resourceService';
 import { ResourceManagementModal, SubmissionReviewModal } from '../components/Resources';
 import { useUserInteraction } from '../hooks/useUserInteraction';
+import NotesPanel from '../components/Notes/NotesPanel';
 
 // Resource interface is now imported from resourceService
 
@@ -699,6 +700,14 @@ const ResourcesPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Notes Panel */}
+        <div className="mt-12">
+          <NotesPanel 
+            componentId="resources" 
+            componentType="page" 
+          />
+        </div>
 
         {/* Submission Review Modal */}
         <SubmissionReviewModal

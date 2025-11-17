@@ -59,6 +59,13 @@ export const BASE_COMPONENTS = {
     description: 'User profiles and settings',
     icon: '👤',
     category: 'user'
+  },
+  notes: {
+    id: 'notes',
+    name: 'Notes',
+    description: 'Collaborative notes and annotations',
+    icon: '📝',
+    category: 'content'
   }
 } as const;
 

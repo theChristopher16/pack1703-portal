@@ -6,6 +6,7 @@ import { AnnouncementCard, AnnouncementFeed } from '../components/Announcements'
 import { Announcement } from '../types/firestore';
 import { offlineService } from '../services/offlineService';
 import { useOrganization } from '../contexts/OrganizationContext';
+import NotesPanel from '../components/Notes/NotesPanel';
 
 const AnnouncementsPage: React.FC = () => {
   const { organizationId } = useOrganization();
@@ -226,6 +227,12 @@ const AnnouncementsPage: React.FC = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Notes Panel */}
+            <NotesPanel 
+              componentId="announcements" 
+              componentType="page" 
+            />
+
             {/* Pinned Announcements */}
             {pinnedCount > 0 && (
               <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-soft">

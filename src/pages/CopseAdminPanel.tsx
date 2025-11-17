@@ -235,7 +235,7 @@ export const CopseAdminPanel: React.FC = () => {
     roles: user.roles || [user.role], // Use roles array if available, fallback to single role
     organizations: ['org-1'], // TODO: Pull from user's actual org assignments
     status: user.isActive ? 'active' : 'suspended',
-    lastActive: user.lastLoginAt || user.updatedAt,
+    lastActive: user.lastActive || user.lastLoginAt || user.updatedAt,
     createdAt: user.createdAt,
     phone: user.profile?.phone
   }));
@@ -596,8 +596,8 @@ export const CopseAdminPanel: React.FC = () => {
                               </div>
                               <div className="text-xs text-gray-500">
                                 {user.organizations.length} organization{user.organizations.length !== 1 ? 's' : ''} • 
-                                Last active {user.lastActive.toLocaleDateString()} • 
-                                Joined {user.createdAt.toLocaleDateString()}
+                                Last active {user.lastActive instanceof Date ? user.lastActive.toLocaleDateString() : new Date(user.lastActive).toLocaleDateString()} • 
+                                Joined {user.createdAt instanceof Date ? user.createdAt.toLocaleDateString() : new Date(user.createdAt).toLocaleDateString()}
                               </div>
                             </div>
                           </div>

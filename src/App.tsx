@@ -5,6 +5,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './contexts/ToastContext';
 import ScrollToTop from './components/ScrollToTop';
 import { versionCheckService } from './services/versionCheckService';
+import { userActivityService } from './services/userActivityService';
 
 // Components
 import Layout from './components/Layout/Layout';

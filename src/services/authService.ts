@@ -384,6 +384,7 @@ export interface AppUser {
   createdAt: Date;
   updatedAt: Date;
   lastLoginAt?: Date;
+  lastActive?: Date; // Last time user was active in the app (updated on interactions)
   authProvider?: SocialProvider;
   lastPasswordChange?: Date;
   
@@ -707,6 +708,7 @@ class AuthService {
       createdAt: userData.createdAt?.toDate ? userData.createdAt.toDate() : userData.createdAt,
       updatedAt: userData.updatedAt?.toDate ? userData.updatedAt.toDate() : userData.updatedAt,
       lastLoginAt: userData.lastLoginAt?.toDate ? userData.lastLoginAt.toDate() : userData.lastLoginAt,
+      lastActive: userData.lastActive?.toDate ? userData.lastActive.toDate() : userData.lastActive,
       authProvider: userData.authProvider,
       profile: userData.profile,
       lastPasswordChange: userData.lastPasswordChange?.toDate ? userData.lastPasswordChange.toDate() : userData.lastPasswordChange
@@ -1924,6 +1926,7 @@ class AuthService {
           createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : doc.data().createdAt,
           updatedAt: doc.data().updatedAt?.toDate ? doc.data().updatedAt.toDate() : doc.data().updatedAt,
           lastLoginAt: doc.data().lastLoginAt?.toDate ? doc.data().lastLoginAt.toDate() : doc.data().lastLoginAt,
+          lastActive: doc.data().lastActive?.toDate ? doc.data().lastActive.toDate() : doc.data().lastActive,
           profile: doc.data().profile || {}
         }))
         .filter(user => {

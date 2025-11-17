@@ -1435,6 +1435,49 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // NOTES - Read by parents/den leaders/admins, write by den leaders/admins/super admins
+    // ============================================================================
+    
+    // Notes collection - allow read for parents, den leaders, admins, super admins
+    match /notes/{noteId} {
+      // Read: Parents, Den Leaders, Admins, Super Admins can read all notes
+      allow read: if isAuthenticated() && (
+        hasAnyRole(['parent', 'den_leader', 'admin', 'super_admin', 'super-admin', 'copse_admin']) ||
+        isAdmin()
+      );
+      
+      // Create: Den Leaders, Admins, Super Admins can create notes
+      allow create: if isAuthenticated() && (
+        hasAnyRole(['den_leader', 'admin', 'super_admin', 'super-admin', 'copse_admin']) ||
+        isAdmin()
+      ) && request.resource.data.authorId == request.auth.uid;
+      
+      // Update: Super Admins can update any note, or note author (if admin/den leader) can update their own
+      allow update: if isAuthenticated() && (
+        // Super admins can update any note
+        hasAnyRole(['super_admin', 'super-admin', 'copse_admin']) ||
+        // Note author (if admin or den leader) can update their own note
+        (hasAnyRole(['admin', 'den_leader']) && resource.data.authorId == request.auth.uid)
+      );
+      
+      // Delete: Super Admins can delete any note, or note author (if admin/den leader) can delete their own
+      allow delete: if isAuthenticated() && (
+        // Super admins can delete any note
+        hasAnyRole(['super_admin', 'super-admin', 'copse_admin']) ||
+        // Note author (if admin or den leader) can delete their own note
+        (hasAnyRole(['admin', 'den_leader']) && resource.data.authorId == request.auth.uid)
+      );
+    }
+    
+    // Allow aggregation queries on notes collection
+    match /notes {
+      allow read: if isAuthenticated() && (
+        hasAnyRole(['parent', 'den_leader', 'admin', 'super_admin', 'super-admin', 'copse_admin']) ||
+        isAdmin()
+      );
+    }
+
+    // ============================================================================
     // DENY ALL OTHER ACCESS
     // ============================================================================
     

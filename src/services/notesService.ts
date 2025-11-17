@@ -76,6 +76,7 @@ class NotesService {
     
     const roles = authService.getUserRoles(user);
     return roles.some(role => 
+      role === UserRole.DEN_LEADER ||
       role === UserRole.ADMIN ||
       role === UserRole.SUPER_ADMIN ||
       role === UserRole.COPSE_ADMIN
@@ -97,7 +98,7 @@ class NotesService {
   }
 
   /**
-   * Check if user can delete a specific note (super-admin or note author if admin)
+   * Check if user can delete a specific note (super-admin or note author if admin/den leader)
    */
   canDeleteNote(note: Note): boolean {
     const user = authService.getCurrentUser();
@@ -106,10 +107,11 @@ class NotesService {
     // Super admins can delete any note
     if (this.canDeleteNotes()) return true;
     
-    // Admins can delete their own notes
+    // Admins and den leaders can delete their own notes
     const roles = authService.getUserRoles(user);
     const isAdmin = roles.some(role => role === UserRole.ADMIN);
-    if (isAdmin && note.authorId === user.uid) return true;
+    const isDenLeader = roles.some(role => role === UserRole.DEN_LEADER);
+    if ((isAdmin || isDenLeader) && note.authorId === user.uid) return true;
     
     return false;
   }
@@ -286,8 +288,10 @@ class NotesService {
       throw new Error('Note not found');
     }
 
-    // Only super-admins or the note author (if admin) can update
-    const canUpdate = this.canDeleteNotes() || (note.authorId === user.uid && this.canAddNotes());
+    // Super-admins can update any note, or note author (if admin/den leader) can update their own
+    const roles = authService.getUserRoles(user);
+    const isSuperAdmin = roles.some(role => role === UserRole.SUPER_ADMIN || role === UserRole.COPSE_ADMIN);
+    const canUpdate = isSuperAdmin || (note.authorId === user.uid && this.canAddNotes());
     if (!canUpdate) {
       throw new Error('You do not have permission to update this note');
     }

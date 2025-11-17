@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { authService, UserRole } from './authService';
+import { offlineService } from './offlineService';
 
 export interface Note {
   id: string;
@@ -193,6 +194,32 @@ class NotesService {
       throw new Error('User must be authenticated to create notes');
     }
 
+    // Check if we have connectivity
+    const hasConnectivity = offlineService.getOnlineStatus();
+    
+    // If offline, queue the action
+    if (!hasConnectivity) {
+      const actionId = offlineService.queueAction({
+        type: 'create_note',
+        payload: data
+      }, false); // Notes can work with local connectivity
+      
+      // Return a temporary note object for optimistic UI
+      return {
+        id: `temp_${actionId}`,
+        ...data,
+        authorId: user.uid,
+        authorName: user.displayName || user.email || 'Unknown User',
+        authorEmail: user.email || null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isPinned: data.isPinned || false,
+        tags: data.tags || [],
+        metadata: data.metadata || {},
+        organizationId: data.organizationId || null
+      } as Note;
+    }
+
     try {
       const notesRef = collection(db, this.COLLECTION);
       const noteData = {
@@ -220,6 +247,27 @@ class NotesService {
       return createdNote;
     } catch (error) {
       console.error('Error creating note:', error);
+      // If error is due to connectivity, queue it
+      if (error instanceof Error && (error.message.includes('network') || error.message.includes('offline'))) {
+        const actionId = offlineService.queueAction({
+          type: 'create_note',
+          payload: data
+        }, false);
+        
+        return {
+          id: `temp_${actionId}`,
+          ...data,
+          authorId: user.uid,
+          authorName: user.displayName || user.email || 'Unknown User',
+          authorEmail: user.email || null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isPinned: data.isPinned || false,
+          tags: data.tags || [],
+          metadata: data.metadata || {},
+          organizationId: data.organizationId || null
+        } as Note;
+      }
       throw error;
     }
   }
@@ -244,6 +292,18 @@ class NotesService {
       throw new Error('You do not have permission to update this note');
     }
 
+    // Check if we have connectivity
+    const hasConnectivity = offlineService.getOnlineStatus();
+    
+    // If offline, queue the action
+    if (!hasConnectivity) {
+      offlineService.queueAction({
+        type: 'update_note',
+        payload: { noteId, updates }
+      }, false); // Notes can work with local connectivity
+      return;
+    }
+
     try {
       const noteRef = doc(db, this.COLLECTION, noteId);
       await updateDoc(noteRef, {
@@ -252,6 +312,14 @@ class NotesService {
       });
     } catch (error) {
       console.error('Error updating note:', error);
+      // If error is due to connectivity, queue it
+      if (error instanceof Error && (error.message.includes('network') || error.message.includes('offline'))) {
+        offlineService.queueAction({
+          type: 'update_note',
+          payload: { noteId, updates }
+        }, false);
+        return;
+      }
       throw error;
     }
   }
@@ -269,11 +337,31 @@ class NotesService {
       throw new Error('You do not have permission to delete this note');
     }
 
+    // Check if we have connectivity
+    const hasConnectivity = offlineService.getOnlineStatus();
+    
+    // If offline, queue the action
+    if (!hasConnectivity) {
+      offlineService.queueAction({
+        type: 'delete_note',
+        payload: { noteId }
+      }, false); // Notes can work with local connectivity
+      return;
+    }
+
     try {
       const noteRef = doc(db, this.COLLECTION, noteId);
       await deleteDoc(noteRef);
     } catch (error) {
       console.error('Error deleting note:', error);
+      // If error is due to connectivity, queue it
+      if (error instanceof Error && (error.message.includes('network') || error.message.includes('offline'))) {
+        offlineService.queueAction({
+          type: 'delete_note',
+          payload: { noteId }
+        }, false);
+        return;
+      }
       throw error;
     }
   }
@@ -286,6 +374,18 @@ class NotesService {
       throw new Error('You do not have permission to pin notes');
     }
 
+    // Check if we have connectivity
+    const hasConnectivity = offlineService.getOnlineStatus();
+    
+    // If offline, queue the action
+    if (!hasConnectivity) {
+      offlineService.queueAction({
+        type: 'toggle_pin_note',
+        payload: { noteId, isPinned }
+      }, false); // Notes can work with local connectivity
+      return;
+    }
+
     try {
       const noteRef = doc(db, this.COLLECTION, noteId);
       await updateDoc(noteRef, {
@@ -294,6 +394,14 @@ class NotesService {
       });
     } catch (error) {
       console.error('Error toggling pin:', error);
+      // If error is due to connectivity, queue it
+      if (error instanceof Error && (error.message.includes('network') || error.message.includes('offline'))) {
+        offlineService.queueAction({
+          type: 'toggle_pin_note',
+          payload: { noteId, isPinned }
+        }, false);
+        return;
+      }
       throw error;
     }
   }

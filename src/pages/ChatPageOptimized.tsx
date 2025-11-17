@@ -200,15 +200,15 @@ const ChatPage: React.FC = () => {
         await chatService.sendMessage(state.selectedChannel, messageText);
         showSuccess('Message sent successfully');
       } else {
-        // Queue for later if offline
+        // Queue for later if offline (chat can work with local connectivity)
         offlineService.queueAction({
           type: 'send_message',
           payload: {
             channelId: state.selectedChannel,
             message: messageText
           }
-        });
-        showInfo('Message queued - will send when online');
+        }, false); // Chat can work with local connectivity
+        showInfo('Message queued - will send when connectivity is available');
       }
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -219,7 +219,7 @@ const ChatPage: React.FC = () => {
       // Restore message text
       actions.setNewMessage(messageText);
       
-      // Queue if offline or network error
+      // Queue if offline or network error (chat can work with local connectivity)
       if (!isOnline || (error as any).code === 'unavailable') {
         offlineService.queueAction({
           type: 'send_message',
@@ -227,8 +227,8 @@ const ChatPage: React.FC = () => {
             channelId: state.selectedChannel,
             message: messageText
           }
-        });
-        showInfo('Message queued - will send when online');
+        }, false); // Chat can work with local connectivity
+        showInfo('Message queued - will send when connectivity is available');
       } else {
         showError('Failed to send message');
       }

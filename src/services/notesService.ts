@@ -53,7 +53,7 @@ class NotesService {
    * Check if user can view notes
    */
   canViewNotes(): boolean {
-    const user = authService.currentUser;
+    const user = authService.getCurrentUser();
     if (!user) return false;
     
     const roles = authService.getUserRoles(user);
@@ -70,7 +70,7 @@ class NotesService {
    * Check if user can add notes
    */
   canAddNotes(): boolean {
-    const user = authService.currentUser;
+    const user = authService.getCurrentUser();
     if (!user) return false;
     
     const roles = authService.getUserRoles(user);
@@ -85,7 +85,7 @@ class NotesService {
    * Check if user can delete notes
    */
   canDeleteNotes(): boolean {
-    const user = authService.currentUser;
+    const user = authService.getCurrentUser();
     if (!user) return false;
     
     const roles = authService.getUserRoles(user);
@@ -99,7 +99,7 @@ class NotesService {
    * Check if user can delete a specific note (super-admin or note author if admin)
    */
   canDeleteNote(note: Note): boolean {
-    const user = authService.currentUser;
+    const user = authService.getCurrentUser();
     if (!user) return false;
     
     // Super admins can delete any note
@@ -108,7 +108,7 @@ class NotesService {
     // Admins can delete their own notes
     const roles = authService.getUserRoles(user);
     const isAdmin = roles.some(role => role === UserRole.ADMIN);
-    if (isAdmin && note.authorId === user.id) return true;
+    if (isAdmin && note.authorId === user.uid) return true;
     
     return false;
   }
@@ -188,7 +188,7 @@ class NotesService {
       throw new Error('You do not have permission to create notes');
     }
 
-    const user = authService.currentUser;
+    const user = authService.getCurrentUser();
     if (!user) {
       throw new Error('User must be authenticated to create notes');
     }
@@ -200,7 +200,7 @@ class NotesService {
         componentId: data.componentId,
         componentType: data.componentType,
         organizationId: data.organizationId || null,
-        authorId: user.id,
+        authorId: user.uid,
         authorName: user.displayName || user.email || 'Unknown User',
         authorEmail: user.email || null,
         isPinned: data.isPinned || false,
@@ -228,7 +228,7 @@ class NotesService {
    * Update an existing note
    */
   async updateNote(noteId: string, updates: Partial<CreateNoteData>): Promise<void> {
-    const user = authService.currentUser;
+    const user = authService.getCurrentUser();
     if (!user) {
       throw new Error('User must be authenticated to update notes');
     }
@@ -239,7 +239,7 @@ class NotesService {
     }
 
     // Only super-admins or the note author (if admin) can update
-    const canUpdate = this.canDeleteNotes() || (note.authorId === user.id && this.canAddNotes());
+    const canUpdate = this.canDeleteNotes() || (note.authorId === user.uid && this.canAddNotes());
     if (!canUpdate) {
       throw new Error('You do not have permission to update this note');
     }

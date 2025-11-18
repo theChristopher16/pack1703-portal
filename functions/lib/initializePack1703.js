@@ -36,6 +36,7 @@ exports.initializePack1703Org = functions.https.onCall(async (data, context) => 
                     'locations',
                     'resources',
                     'profile',
+                    'notes',
                     // Pack-specific components
                     'analytics',
                     'userManagement',
@@ -71,6 +72,7 @@ exports.initializePack1703Org = functions.https.onCall(async (data, context) => 
                 'locations',
                 'resources',
                 'profile',
+                'notes',
                 // Pack-specific components
                 'analytics',
                 'userManagement',

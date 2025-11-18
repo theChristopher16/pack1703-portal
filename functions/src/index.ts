@@ -17,6 +17,9 @@ export { linkUserToOrganization, autoLinkToPack1703 } from './linkUserToOrganiza
 // Import user search functions
 export { searchUsersForHousehold } from './searchUsers';
 
+// Import user approval functions
+export { createPendingUser, approveUser, getPendingUsers, getAuditLogs } from './userApproval';
+
 // Initialize Firebase Admin
 admin.initializeApp();
 

@@ -22,10 +22,6 @@
       ],
       "rewrites": [
         {
-          "source": "!/version.json",
-          "destination": "/index.html"
-        },
-        {
           "source": "**",
           "destination": "/index.html"
         }
@@ -86,10 +82,6 @@
         "**/node_modules/**"
       ],
       "rewrites": [
-        {
-          "source": "!/version.json",
-          "destination": "/index.html"
-        },
         {
           "source": "**",
           "destination": "/index.html"

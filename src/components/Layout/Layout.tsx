@@ -316,8 +316,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           </div>
                         </div>
 
-                        {/* Home Management - For Super Admin Only */}
-                        {userRole === UserRole.SUPER_ADMIN && (
+                        {/* Home Management - Available to all users */}
+                        {currentUser && (
                           <div className="px-4 py-2 border-b border-forest-100/50">
                             <button
                               onClick={() => {
@@ -325,7 +325,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                               }}
                               className="w-full text-left px-2 py-1.5 rounded-lg text-xs hover:bg-forest-50/50 transition-colors text-blue-700 hover:text-blue-900 font-medium flex items-center gap-2"
                             >
-                              🏠 Home Management
+                              🏠 Home
                             </button>
                           </div>
                         )}

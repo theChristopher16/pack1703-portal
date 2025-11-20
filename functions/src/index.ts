@@ -94,6 +94,8 @@ async function createThreatIntelligence(
 // Helper function to get role permissions
 function getRolePermissions(role: string): string[] {
   switch (role) {
+    case 'home':
+      return ['read_content', 'family_management', 'family_events', 'family_rsvp'];
     case 'copse_admin':
       return ['system_admin', 'user_management', 'role_management', 'system_config', 'event_management', 'pack_management', 'location_management', 'announcement_management', 'audit_logs', 'cost_management', 'network_management'];
     case 'super_admin':
@@ -221,8 +223,10 @@ export const updateUserRole = functions.https.onCall(async (data: any, context: 
     }
 
     // Update user role in Firestore
+    // Always include HOME role - everyone gets home access
     const updateData: any = {
       role: newRole,
+      roles: ['home', newRole], // Everyone gets HOME role
       updatedAt: getTimestamp()
     };
 
@@ -1150,16 +1154,22 @@ export const adminUpdateUser = functions.https.onCall(async (data: any, context:
     }
 
     // Handle multi-role updates
+    // Always ensure HOME role is included
     if (updates.roles !== undefined) {
-      updateData.roles = updates.roles;
+      // Ensure HOME is always included
+      const rolesToSave = Array.isArray(updates.roles) ? updates.roles : [updates.roles];
+      if (!rolesToSave.includes('home')) {
+        rolesToSave.unshift('home');
+      }
+      updateData.roles = rolesToSave;
       // Also update primary role if provided
       if (updates.role !== undefined) {
         updateData.role = updates.role;
       }
     } else if (updates.role !== undefined) {
-      // If only single role is provided, create roles array with just that role
+      // If only single role is provided, create roles array with HOME + that role
       updateData.role = updates.role;
-      updateData.roles = [updates.role];
+      updateData.roles = ['home', updates.role];
     }
 
     // Update other role-related fields
@@ -1191,9 +1201,18 @@ export const adminUpdateUser = functions.https.onCall(async (data: any, context:
           role: updates.role || updateData.role
         };
         
-        // Add roles array if present
+        // Add roles array if present (always includes HOME)
         if (updates.roles || updateData.roles) {
-          customClaims.roles = updates.roles || updateData.roles;
+          const rolesForClaims = updates.roles || updateData.roles;
+          // Ensure HOME is always included in custom claims
+          const rolesArray = Array.isArray(rolesForClaims) ? rolesForClaims : [rolesForClaims];
+          if (!rolesArray.includes('home')) {
+            rolesArray.unshift('home');
+          }
+          customClaims.roles = rolesArray;
+        } else {
+          // If no roles provided, default to HOME + primary role
+          customClaims.roles = ['home', updates.role || updateData.role];
         }
         
         await admin.auth().setCustomUserClaims(userId, customClaims);
@@ -2000,6 +2019,7 @@ export const createUserManually = functions.https.onCall(async (data: any, conte
       email: email,
       displayName: displayName,
       role: role,
+      roles: ['home', role], // Everyone gets HOME role
       permissions: getRolePermissions(role),
       isActive: true,
       status: 'approved',

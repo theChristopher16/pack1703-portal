@@ -20,11 +20,13 @@ import {
   Edit,
   Trash2,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Key
 } from 'lucide-react';
 import { authService, AppUser, UserRole } from '../services/authService';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../firebase/config';
+import RoleManagement from '../components/Admin/RoleManagement';
 
 // Mock data for enterprise network
 interface Organization {
@@ -183,6 +185,7 @@ const mockNetworkUsers: NetworkUser[] = [];
 // Helper function to get permissions for a role
 const getRolePermissions = (role: UserRole): string[] => {
   const permissionMap: Record<UserRole, string[]> = {
+    [UserRole.HOME]: ['view_events', 'rsvp_events', 'view_announcements', 'home_access'],
     [UserRole.PARENT]: ['view_events', 'rsvp_events', 'view_announcements', 'submit_feedback'],
     [UserRole.DEN_LEADER]: ['view_events', 'rsvp_events', 'view_announcements', 'submit_feedback', 'manage_den', 'view_den_members'],
     [UserRole.ADMIN]: ['view_events', 'rsvp_events', 'view_announcements', 'submit_feedback', 'manage_den', 'view_den_members', 'manage_events', 'manage_announcements', 'manage_users', 'view_analytics'],
@@ -195,7 +198,7 @@ const getRolePermissions = (role: UserRole): string[] => {
 };
 
 export const CopseAdminPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'organizations' | 'users' | 'admins' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'organizations' | 'users' | 'admins' | 'analytics' | 'roles'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
   const [editingUser, setEditingUser] = useState<NetworkUser | null>(null);
@@ -265,6 +268,7 @@ export const CopseAdminPanel: React.FC = () => {
 
   const getUserRoleBadge = (role: UserRole) => {
     const config: Record<UserRole, { label: string; color: string }> = {
+      [UserRole.HOME]: { label: 'Home', color: 'bg-amber-100 text-amber-800' },
       [UserRole.PARENT]: { label: 'Parent', color: 'bg-blue-100 text-blue-800' },
       [UserRole.DEN_LEADER]: { label: 'Den Leader', color: 'bg-green-100 text-green-800' },
       [UserRole.ADMIN]: { label: 'Admin', color: 'bg-purple-100 text-purple-800' },
@@ -369,6 +373,7 @@ export const CopseAdminPanel: React.FC = () => {
                 { id: 'overview', label: 'Overview', icon: Activity },
                 { id: 'organizations', label: 'Organizations', icon: Building2 },
                 { id: 'users', label: 'Network Users', icon: Users },
+                { id: 'roles', label: 'Role Management', icon: Key },
                 { id: 'admins', label: 'Copse Admins', icon: Shield },
                 { id: 'analytics', label: 'Network Analytics', icon: TrendingUp }
               ].map((tab) => {
@@ -647,6 +652,11 @@ export const CopseAdminPanel: React.FC = () => {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* Role Management Tab */}
+            {activeTab === 'roles' && (
+              <RoleManagement currentUser={currentUser} />
             )}
 
             {/* Copse Admins Tab */}

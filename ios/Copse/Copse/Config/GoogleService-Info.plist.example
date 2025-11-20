@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- 
+    IMPORTANT: This is an example file. 
+    
+    To set up Firebase for iOS:
+    1. Go to Firebase Console: https://console.firebase.google.com
+    2. Select your project (pack1703-portal)
+    3. Click "Add app" and select iOS
+    4. Enter bundle ID: com.pack1703.copse
+    5. Download the GoogleService-Info.plist file
+    6. Copy it to: ios/Copse/Config/GoogleService-Info.plist
+    7. Add it to your Xcode project
+    
+    DO NOT commit the actual GoogleService-Info.plist to git!
+    Add this line to .gitignore:
+    ios/Copse/Config/GoogleService-Info.plist
+    -->
+    
+    <key>API_KEY</key>
+    <string>YOUR-IOS-API-KEY-HERE</string>
+    <key>GCM_SENDER_ID</key>
+    <string>YOUR-SENDER-ID-HERE</string>
+    <key>PLIST_VERSION</key>
+    <string>1</string>
+    <key>BUNDLE_ID</key>
+    <string>com.pack1703.copse</string>
+    <key>PROJECT_ID</key>
+    <string>pack1703-portal</string>
+    <key>STORAGE_BUCKET</key>
+    <string>pack1703-portal.appspot.com</string>
+    <key>IS_ADS_ENABLED</key>
+    <false/>
+    <key>IS_ANALYTICS_ENABLED</key>
+    <true/>
+    <key>IS_APPINVITE_ENABLED</key>
+    <false/>
+    <key>IS_GCM_ENABLED</key>
+    <true/>
+    <key>IS_SIGNIN_ENABLED</key>
+    <true/>
+    <key>GOOGLE_APP_ID</key>
+    <string>1:YOUR-APP-ID:ios:YOUR-IOS-ID</string>
+</dict>
+</plist>
+

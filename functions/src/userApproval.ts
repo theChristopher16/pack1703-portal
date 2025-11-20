@@ -6,10 +6,12 @@ import { emailService } from './emailService';
 
 // User roles enum - Updated to match AuthService
 export enum UserRole {
+  HOME = 'home',            // Base role - everyone gets this for home component access
   PARENT = 'parent',
   DEN_LEADER = 'den_leader',
   ADMIN = 'admin',
   SUPER_ADMIN = 'super_admin',
+  COPSE_ADMIN = 'copse_admin',
   AI_ASSISTANT = 'ai_assistant'
 }
 
@@ -26,6 +28,7 @@ export interface UserDocument {
   displayName: string;
   status: UserStatus;
   role: UserRole;
+  roles?: UserRole[]; // Multi-role support
   permissions: string[];
   preferences?: {
     emailNotifications: boolean;
@@ -51,6 +54,12 @@ export interface AdminAuditLog {
 
 // Role permissions mapping - matches AuthService
 const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
+  [UserRole.HOME]: [
+    'read_content',
+    'family_management',
+    'family_events',
+    'family_rsvp'
+  ],
   [UserRole.PARENT]: [
     'read_content',
     'create_content',
@@ -209,6 +218,7 @@ export const createPendingUser = onCall(async (request: any) => {
       displayName: displayName || '',
       status: UserStatus.PENDING,
       role: UserRole.PARENT,
+      roles: [UserRole.HOME, UserRole.PARENT], // Everyone gets HOME role
       permissions: getRolePermissions(UserRole.PARENT), // Set default permissions
       preferences: preferences || {
         emailNotifications: true,
@@ -318,6 +328,8 @@ export const approveUser = onCall(async (request: any) => {
 
     if (action === 'approve') {
       updateData.role = role;
+      // Always include HOME role - everyone gets home access
+      updateData.roles = [UserRole.HOME, role];
       // Set permissions based on role
       updateData.permissions = getRolePermissions(role);
     }

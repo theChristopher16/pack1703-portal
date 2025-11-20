@@ -244,6 +244,8 @@ export function AdminProvider({ children }: AdminProviderProps) {
       
       if (user) {
         // Convert AppUser to AdminUser with proper role mapping
+        // Multi-role support: get all user roles and determine primary role
+        const userRoles = authService.getUserRoles(user);
         const roleMap: { [key: string]: AdminRole } = {
           [UserRole.COPSE_ADMIN]: 'copse-admin',  // CRITICAL: Map copse_admin role
           [UserRole.SUPER_ADMIN]: 'super-admin',
@@ -253,9 +255,26 @@ export function AdminProvider({ children }: AdminProviderProps) {
           [UserRole.AI_ASSISTANT]: 'moderator' // Map AI assistant to moderator level
         };
 
+        // Determine primary role (highest priority)
+        // Priority: copse-admin > super-admin > admin > den_leader > parent
+        let mappedRole: AdminRole = 'viewer';
+        if (userRoles.includes(UserRole.COPSE_ADMIN)) {
+          mappedRole = 'copse-admin';
+        } else if (userRoles.includes(UserRole.SUPER_ADMIN)) {
+          mappedRole = 'super-admin';
+        } else if (userRoles.includes(UserRole.ADMIN)) {
+          mappedRole = 'content-admin';
+        } else if (userRoles.includes(UserRole.DEN_LEADER)) {
+          mappedRole = 'moderator';
+        } else if (userRoles.includes(UserRole.PARENT)) {
+          mappedRole = 'parent';
+        } else {
+          // Fallback to primary role mapping
+          mappedRole = roleMap[user.role] || 'viewer';
+        }
+
         // Handle legacy 'root' role mapping
-        let mappedRole = roleMap[user.role] || 'viewer';
-        if ((user.role as any) === 'root') {
+        if ((user.role as any) === 'root' || userRoles.some(r => (r as any) === 'root')) {
           mappedRole = 'super-admin';
         }
         
@@ -264,7 +283,13 @@ export function AdminProvider({ children }: AdminProviderProps) {
           email: user.email,
           displayName: user.displayName || null,
           photoURL: user.photoURL || null,
-          isAdmin: user.role === UserRole.COPSE_ADMIN || user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN || user.role === UserRole.DEN_LEADER || user.role === UserRole.PARENT || (user.role as any) === 'root',
+          isAdmin: userRoles.some(r => 
+            r === UserRole.COPSE_ADMIN || 
+            r === UserRole.SUPER_ADMIN || 
+            r === UserRole.ADMIN || 
+            r === UserRole.DEN_LEADER || 
+            (r as any) === 'root'
+          ),
           role: mappedRole,
           permissions: user.permissions as unknown as AdminPermission[],
           lastLogin: user.lastLoginAt || new Date(),
@@ -272,7 +297,8 @@ export function AdminProvider({ children }: AdminProviderProps) {
           status: user.status,
         };
         
-        console.log('AdminContext: Mapped user role:', user.role, '->', adminUser.role);
+        console.log('AdminContext: User roles:', userRoles);
+        console.log('AdminContext: Mapped primary role:', user.role, '->', adminUser.role);
         console.log('AdminContext: User isAdmin:', adminUser.isAdmin);
         console.log('AdminContext: User permissions:', adminUser.permissions);
         dispatch({ type: 'SET_CURRENT_USER', payload: adminUser });

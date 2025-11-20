@@ -36,6 +36,7 @@ import { db, functions } from '../firebase/config';
 
 // User roles and permissions - Multi-organizational structure
 export enum UserRole {
+  HOME = 'home',            // Base role - everyone gets this for home component access
   PARENT = 'parent',          // Family account (default after signup)
   DEN_LEADER = 'den_leader',  // Den leaders and active volunteers
   ADMIN = 'admin',            // Pack/Organization administrators
@@ -46,12 +47,13 @@ export enum UserRole {
 
 // Role hierarchy - each role inherits permissions from roles below it
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
-  [UserRole.PARENT]: 1,           // Lowest level
-  [UserRole.DEN_LEADER]: 2,       // Den leaders
-  [UserRole.AI_ASSISTANT]: 3,     // AI assistant
-  [UserRole.ADMIN]: 4,            // Organization administrators
-  [UserRole.SUPER_ADMIN]: 5,      // Organization super admins
-  [UserRole.COPSE_ADMIN]: 6       // Highest level - Network administrators
+  [UserRole.HOME]: 0,           // Base level - everyone has this
+  [UserRole.PARENT]: 1,         // Family account
+  [UserRole.DEN_LEADER]: 2,     // Den leaders
+  [UserRole.AI_ASSISTANT]: 3,   // AI assistant
+  [UserRole.ADMIN]: 4,          // Organization administrators
+  [UserRole.SUPER_ADMIN]: 5,    // Organization super admins
+  [UserRole.COPSE_ADMIN]: 6     // Highest level - Network administrators
 };
 
 export enum Permission {
@@ -117,6 +119,13 @@ export enum SocialProvider {
 
 // Role to permissions mapping
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+  [UserRole.HOME]: [
+    // Home component access - basic permissions for home management
+    Permission.READ_CONTENT,
+    Permission.FAMILY_MANAGEMENT,
+    Permission.FAMILY_EVENTS,
+    Permission.FAMILY_RSVP
+  ],
   [UserRole.PARENT]: [
     Permission.READ_CONTENT,
     Permission.CREATE_CONTENT,
@@ -321,6 +330,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 
 // Role color configuration (object format for UI components)
 export const ROLE_COLORS: Record<UserRole, { bg: string; text: string; border: string }> = {
+  [UserRole.HOME]: { bg: '#fef3c7', text: '#78350f', border: '#fde68a' },
   [UserRole.PARENT]: { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' },
   [UserRole.DEN_LEADER]: { bg: '#dcfce7', text: '#166534', border: '#86efac' },
   [UserRole.AI_ASSISTANT]: { bg: '#e0f2fe', text: '#0c4a6e', border: '#7dd3fc' },
@@ -331,6 +341,7 @@ export const ROLE_COLORS: Record<UserRole, { bg: string; text: string; border: s
 
 // Role display names
 export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
+  [UserRole.HOME]: 'Home',
   [UserRole.PARENT]: 'Parent',
   [UserRole.DEN_LEADER]: 'Den Leader',
   [UserRole.AI_ASSISTANT]: 'AI Assistant',
@@ -341,6 +352,7 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
 
 // Role descriptions
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+  [UserRole.HOME]: 'Home access - access to home management components',
   [UserRole.PARENT]: 'Family account - manage family events and RSVPs',
   [UserRole.DEN_LEADER]: 'Den leader - den-specific management and leadership',
   [UserRole.AI_ASSISTANT]: 'AI assistant - event management and content creation',
@@ -695,13 +707,19 @@ class AuthService {
     }
     
     const userData = userDoc.data();
+    // Ensure HOME role is always included
+    let userRoles = userData.roles || [userData.role];
+    if (!userRoles.includes(UserRole.HOME)) {
+      userRoles = [UserRole.HOME, ...userRoles];
+    }
+    
     return {
       uid,
       email: userData.email,
       displayName: userData.displayName,
       photoURL: userData.photoURL,
       role: userData.role,
-      roles: userData.roles || [userData.role], // Load roles array, fallback to single role
+      roles: userRoles, // Always includes HOME role
       permissions: userData.permissions || [],
       isActive: userData.isActive,
       status: userData.status,
@@ -756,6 +774,7 @@ class AuthService {
         email: firebaseUser.email!,
         displayName: firebaseUser.displayName || 'User',
         role: UserRole.SUPER_ADMIN,
+        roles: [UserRole.HOME, UserRole.SUPER_ADMIN], // Everyone gets HOME role
         permissions: ROLE_PERMISSIONS[UserRole.SUPER_ADMIN],
         isActive: true,
         status: 'approved',
@@ -1250,6 +1269,7 @@ class AuthService {
         email: firebaseUser.email!,
         displayName,
         role: UserRole.SUPER_ADMIN,
+        roles: [UserRole.HOME, UserRole.SUPER_ADMIN], // Everyone gets HOME role
         permissions: ROLE_PERMISSIONS[UserRole.SUPER_ADMIN],
         isActive: true,
         profile: {}
@@ -1586,17 +1606,26 @@ class AuthService {
 
   /**
    * Get all roles for a user (including primary role)
+   * Always includes HOME role - everyone has home access
    */
   getUserRoles(user?: AppUser): UserRole[] {
     const targetUser = user || this.currentUser;
-    if (!targetUser) return [];
+    if (!targetUser) return [UserRole.HOME]; // Return HOME for unauthenticated (though they shouldn't access)
     
-    // Return roles array if it exists, otherwise return array with primary role
+    // Get user's roles
+    let userRoles: UserRole[] = [];
     if (targetUser.roles && targetUser.roles.length > 0) {
-      return targetUser.roles;
+      userRoles = [...targetUser.roles];
+    } else {
+      userRoles = [targetUser.role];
     }
     
-    return [targetUser.role];
+    // Always include HOME role if not already present
+    if (!userRoles.includes(UserRole.HOME)) {
+      userRoles.push(UserRole.HOME);
+    }
+    
+    return userRoles;
   }
 
   /**
@@ -1790,6 +1819,7 @@ class AuthService {
         email: firebaseUser.email!,
         displayName,
         role,
+        roles: [UserRole.HOME, role], // Everyone gets HOME role
         permissions: ROLE_PERMISSIONS[role],
         isActive: true,
         profile: {}
@@ -1912,23 +1942,31 @@ class AuthService {
       
       // Filter out pending and denied users - only show approved users
       return snapshot.docs
-        .map(doc => ({
-          uid: doc.id,
-          email: doc.data().email,
-          displayName: doc.data().displayName,
-          role: doc.data().role,
-          roles: doc.data().roles || [doc.data().role], // Load roles array, fallback to single role
-          photoURL: doc.data().photoURL,
-          authProvider: doc.data().authProvider,
-          permissions: doc.data().permissions || [],
-          isActive: doc.data().isActive ?? true,
-          status: doc.data().status,
-          createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : doc.data().createdAt,
-          updatedAt: doc.data().updatedAt?.toDate ? doc.data().updatedAt.toDate() : doc.data().updatedAt,
-          lastLoginAt: doc.data().lastLoginAt?.toDate ? doc.data().lastLoginAt.toDate() : doc.data().lastLoginAt,
-          lastActive: doc.data().lastActive?.toDate ? doc.data().lastActive.toDate() : doc.data().lastActive,
-          profile: doc.data().profile || {}
-        }))
+        .map(doc => {
+          const userData = doc.data();
+          // Ensure HOME role is always included
+          let userRoles = userData.roles || [userData.role];
+          if (!userRoles.includes(UserRole.HOME)) {
+            userRoles = [UserRole.HOME, ...userRoles];
+          }
+          return {
+            uid: doc.id,
+            email: userData.email,
+            displayName: userData.displayName,
+            role: userData.role,
+            roles: userRoles, // Always includes HOME role
+            photoURL: userData.photoURL,
+            authProvider: userData.authProvider,
+            permissions: userData.permissions || [],
+            isActive: userData.isActive ?? true,
+            status: userData.status,
+            createdAt: userData.createdAt?.toDate ? userData.createdAt.toDate() : userData.createdAt,
+            updatedAt: userData.updatedAt?.toDate ? userData.updatedAt.toDate() : userData.updatedAt,
+            lastLoginAt: userData.lastLoginAt?.toDate ? userData.lastLoginAt.toDate() : userData.lastLoginAt,
+            lastActive: userData.lastActive?.toDate ? userData.lastActive.toDate() : userData.lastActive,
+            profile: userData.profile || {}
+          };
+        })
         .filter(user => {
           // Show all users - let the UI handle filtering
           // Only hide users who are explicitly denied

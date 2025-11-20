@@ -395,6 +395,7 @@ export const hasAccessToRoute = (role: UserRole, route: string): boolean => {
 // Helper function to get the highest role level for a user
 export const getRoleLevel = (role: UserRole): number => {
   const hierarchy: Record<UserRole, number> = {
+    [UserRole.HOME]: 0,
     [UserRole.PARENT]: 1,
     [UserRole.DEN_LEADER]: 2,
     [UserRole.AI_ASSISTANT]: 2.5,

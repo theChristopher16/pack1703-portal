@@ -89,33 +89,87 @@ export const firestoreService = {
         // Fetch fresh data from Firestore
         const eventsRef = collection(db, 'events');
         
-        // Build query with optional organizationId filter
-        let q;
-        if (organizationId && organizationId !== 'pack1703') {
-          // Filter by organizationId for multi-tenant organizations (not Pack 1703)
-          q = query(
-            eventsRef,
-            where('organizationId', '==', organizationId),
-            where('visibility', 'in', ['public', null]),
-            orderBy('startDate')
-          );
-        } else {
-          // Pack 1703 or no organization - show all public events
-          // This includes legacy events without organizationId field
-          q = query(
-            eventsRef, 
-            where('visibility', 'in', ['public', null]),
-            orderBy('startDate')
-          );
-        }
-        
-        const snapshot = await getDocs(q);
-        events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
-        
-        // Update cache only if no organizationId filter
-        if (!organizationId) {
-          eventsCache = { data: events, timestamp: Date.now() };
-          console.log('💾 Cached events data');
+        try {
+          // Build query with optional organizationId filter
+          let q;
+          if (organizationId && organizationId !== 'pack1703') {
+            // Filter by organizationId for multi-tenant organizations (not Pack 1703)
+            // Try query with visibility filter first
+            try {
+              q = query(
+                eventsRef,
+                where('organizationId', '==', organizationId),
+                where('visibility', '==', 'public'),
+                orderBy('startDate')
+              );
+              const snapshot = await getDocs(q);
+              events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+            } catch (error) {
+              console.warn('Query with visibility filter failed, trying without:', error);
+              // Fallback: get all events for this org and filter in memory
+              q = query(
+                eventsRef,
+                where('organizationId', '==', organizationId),
+                orderBy('startDate')
+              );
+              const snapshot = await getDocs(q);
+              events = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() } as any))
+                .filter((event: any) => !event.visibility || event.visibility === 'public' || event.visibility === null);
+            }
+          } else {
+            // Pack 1703 or no organization - show all public events
+            // This includes legacy events without organizationId field
+            try {
+              // Query for public events
+              q = query(
+                eventsRef, 
+                where('visibility', '==', 'public'),
+                orderBy('startDate')
+              );
+              const snapshot = await getDocs(q);
+              events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+              
+              // Also get all events and filter for those without visibility field (legacy events)
+              // Firestore doesn't support querying for null, so we get all and filter
+              const allQuery = query(eventsRef, orderBy('startDate'));
+              const allSnapshot = await getDocs(allQuery);
+              const allEvents = allSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+              
+              // Filter for events without visibility field or with null visibility
+              const legacyEvents = allEvents.filter((event: any) => 
+                !event.visibility && !events.find((e: any) => e.id === event.id)
+              );
+              
+              // Combine and sort
+              events = [...events, ...legacyEvents];
+              events.sort((a, b) => {
+                const aDate = a.startDate?.toDate?.() || new Date(a.startDate);
+                const bDate = b.startDate?.toDate?.() || new Date(b.startDate);
+                return aDate.getTime() - bDate.getTime();
+              });
+            } catch (error) {
+              console.warn('Query with visibility filter failed, trying without:', error);
+              // Fallback: get all events and filter in memory
+              q = query(eventsRef, orderBy('startDate'));
+              const snapshot = await getDocs(q);
+              events = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() } as any))
+                .filter((event: any) => !event.visibility || event.visibility === 'public' || event.visibility === null);
+            }
+          }
+          
+          console.log(`✅ Loaded ${events.length} events from Firestore`);
+          
+          // Update cache only if no organizationId filter
+          if (!organizationId) {
+            eventsCache = { data: events, timestamp: Date.now() };
+            console.log('💾 Cached events data');
+          }
+        } catch (error) {
+          console.error('Error fetching events:', error);
+          // Return empty array on error rather than throwing
+          events = [];
         }
       }
       

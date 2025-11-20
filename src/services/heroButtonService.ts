@@ -93,6 +93,7 @@ class HeroButtonService {
 
   // Role-based component access permissions
   private readonly ROLE_PERMISSIONS: Record<UserRole, string[]> = {
+    [UserRole.HOME]: ['home'],
     [UserRole.PARENT]: ['events', 'locations', 'announcements', 'volunteer', 'chat', 'resources', 'feedback'],
     [UserRole.DEN_LEADER]: ['events', 'locations', 'announcements', 'volunteer', 'chat', 'resources', 'feedback', 'dataAudit'],
     [UserRole.AI_ASSISTANT]: ['events', 'locations', 'announcements', 'volunteer', 'chat', 'resources', 'feedback', 'dataAudit'],
@@ -103,6 +104,7 @@ class HeroButtonService {
 
   // Role-based default priorities (when no usage data is available)
   private readonly ROLE_DEFAULT_PRIORITIES: Record<UserRole, string[]> = {
+    [UserRole.HOME]: ['home'],
     [UserRole.PARENT]: ['events', 'chat'],
     [UserRole.DEN_LEADER]: ['events', 'volunteer'],
     [UserRole.AI_ASSISTANT]: ['events', 'announcements'],
@@ -182,6 +184,7 @@ class HeroButtonService {
    */
   getRoleRecommendations(userRole: UserRole): HeroButtonConfig[] {
     const recommendations: Record<UserRole, string[]> = {
+      [UserRole.HOME]: ['home'],
       [UserRole.PARENT]: ['events', 'chat', 'volunteer'],
       [UserRole.DEN_LEADER]: ['events', 'volunteer', 'announcements'],
       [UserRole.AI_ASSISTANT]: ['events', 'announcements', 'chat'],

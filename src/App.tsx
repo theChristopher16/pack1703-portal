@@ -154,7 +154,7 @@ function App() {
                   <Routes>
                     {/* Super Admin Routes - Must come before other routes */}
                     <Route path="/organizations" element={<Layout><SuperUserOnly><OrganizationsPage /></SuperUserOnly></Layout>} />
-                    <Route path="/home" element={<Layout><SuperUserOnly><HomeManagement /></SuperUserOnly></Layout>} />
+                    <Route path="/home" element={<Layout><AuthenticatedOnly><HomeManagement /></AuthenticatedOnly></Layout>} />
                     <Route path="/test-copse-login" element={<SuperUserOnly><CopseTestLogin /></SuperUserOnly>} />
                     <Route path="/copse-admin" element={<Layout><CopseAdminOnly><CopseAdminPanel /></CopseAdminOnly></Layout>} />
                     <Route path="/appcheck-debug" element={<SuperUserOnly><AppCheckDebug /></SuperUserOnly>} />

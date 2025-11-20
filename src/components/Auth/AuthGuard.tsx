@@ -3,8 +3,9 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAdmin } from '../../contexts/AdminContext';
 import SocialLogin from './SocialLogin';
 import AccountRequestModal from './AccountRequestModal';
+import PortalSelection from './PortalSelection';
 import { UserPlus, ChevronDown, ArrowRight, RefreshCw } from 'lucide-react';
-import { authService } from '../../services/authService';
+import { authService, UserRole } from '../../services/authService';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 
@@ -69,22 +70,44 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     return () => carousel.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Check if user has multiple roles and needs portal selection
+  const appUser = authService.getCurrentUser();
+  const userRoles = appUser ? authService.getUserRoles(appUser) : [];
+  const hasMultiplePortals = userRoles.length > 1 || 
+    (userRoles.includes(UserRole.COPSE_ADMIN) && userRoles.some(r => r !== UserRole.COPSE_ADMIN)) ||
+    (userRoles.includes(UserRole.SUPER_ADMIN) && userRoles.some(r => r !== UserRole.SUPER_ADMIN));
+  
+  // Show portal selection if user has multiple roles and is on root path
+  const shouldShowPortalSelection = hasMultiplePortals && 
+    location.pathname === '/' && 
+    !sessionStorage.getItem('selected_portal');
+
   // Redirect logic for authenticated users
   useEffect(() => {
-    if (!currentUser) return; // Don't redirect if not authenticated
+    if (!currentUser || shouldShowPortalSelection) return; // Don't redirect if showing portal selection
     
     const isSuperAdmin = currentUser.role === 'super-admin' || currentUser.role === 'root';
     const isOnOrganizationsPage = location.pathname === '/organizations';
+    const isOnCopseAdminPage = location.pathname === '/copse-admin';
     const isOnPack1703Route = location.pathname.startsWith('/pack1703/');
     const isOnOrganizationRoute = location.pathname.match(/^\/[^/]+(\/.*)?$/); // Matches /orgSlug or /orgSlug/component
     
     // Set sessionStorage flag when on Pack 1703 routes
     if (isOnPack1703Route) {
       sessionStorage.setItem('pack1703_access', 'true');
+      sessionStorage.setItem('selected_portal', 'pack1703');
+    }
+    
+    // Set portal selection for other routes
+    if (isOnOrganizationsPage) {
+      sessionStorage.setItem('selected_portal', 'organizations');
+    }
+    if (isOnCopseAdminPage) {
+      sessionStorage.setItem('selected_portal', 'copse-admin');
     }
     
     // Don't redirect if already on a valid route (except /organizations check below)
-    if (isOnPack1703Route || (isOnOrganizationRoute && !isOnOrganizationsPage)) {
+    if (isOnPack1703Route || isOnCopseAdminPage || (isOnOrganizationRoute && !isOnOrganizationsPage)) {
       return;
     }
 
@@ -97,30 +120,51 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
     // Handle root path redirects
     if (location.pathname === '/') {
+      // Check for previously selected portal
+      const selectedPortal = sessionStorage.getItem('selected_portal');
+      
+      if (selectedPortal === 'copse-admin' && userRoles.includes(UserRole.COPSE_ADMIN)) {
+        navigate('/copse-admin', { replace: true });
+        return;
+      }
+      
+      if (selectedPortal === 'organizations' && userRoles.includes(UserRole.SUPER_ADMIN)) {
+        navigate('/organizations', { replace: true });
+        return;
+      }
+      
+      if (selectedPortal === 'pack1703') {
+        navigate('/pack1703/', { replace: true });
+        return;
+      }
+      
       // Check if user explicitly wants to access Pack app
       const packParam = new URLSearchParams(location.search).get('pack');
       const wantsPackApp = packParam === '1703' || sessionStorage.getItem('pack1703_access') === 'true';
       
       // Check if user is super admin or copse admin
-      const isCopseAdmin = currentUser.role === 'copse-admin';
+      const isCopseAdmin = currentUser.role === 'copse-admin' || userRoles.includes(UserRole.COPSE_ADMIN);
       const shouldGoToOrganizations = (isSuperAdmin || isCopseAdmin) && !wantsPackApp;
       
-      // TODO: Add multi-org detection here
-      // If user belongs to multiple organizations, they should also go to /organizations
-      // For now, we check role only
+      // Multi-role portal selection: if user has copse-admin role, prioritize that
+      if (userRoles.includes(UserRole.COPSE_ADMIN)) {
+        navigate('/copse-admin', { replace: true });
+        return;
+      }
       
       if (shouldGoToOrganizations) {
-        // Super admins and copse admins go to organizations page
+        // Super admins go to organizations page
         console.log('🔐 AuthGuard: Redirecting admin to /organizations');
         navigate('/organizations', { replace: true });
       } else {
         // Regular users (and admins who want Pack app) go to Pack app
         console.log('🔐 AuthGuard: Redirecting user to Pack app');
         sessionStorage.setItem('pack1703_access', 'true');
+        sessionStorage.setItem('selected_portal', 'pack1703');
         navigate('/pack1703/', { replace: true });
       }
     }
-  }, [currentUser, location.pathname, location.search, navigate]);
+  }, [currentUser, location.pathname, location.search, navigate, shouldShowPortalSelection, userRoles]);
 
   // Listen for status changes in Firestore when user is pending
   useEffect(() => {
@@ -226,6 +270,11 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         </div>
       </div>
     );
+  }
+
+  // Show portal selection if user has multiple roles
+  if (shouldShowPortalSelection && currentUser) {
+    return <PortalSelection />;
   }
 
   // If no user is authenticated, show solarpunk login page

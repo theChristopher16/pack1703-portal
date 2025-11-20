@@ -9,10 +9,12 @@ const emailService_1 = require("./emailService");
 // User roles enum - Updated to match AuthService
 var UserRole;
 (function (UserRole) {
+    UserRole["HOME"] = "home";
     UserRole["PARENT"] = "parent";
     UserRole["DEN_LEADER"] = "den_leader";
     UserRole["ADMIN"] = "admin";
     UserRole["SUPER_ADMIN"] = "super_admin";
+    UserRole["COPSE_ADMIN"] = "copse_admin";
     UserRole["AI_ASSISTANT"] = "ai_assistant";
 })(UserRole || (exports.UserRole = UserRole = {}));
 // User status enum
@@ -24,6 +26,12 @@ var UserStatus;
 })(UserStatus || (exports.UserStatus = UserStatus = {}));
 // Role permissions mapping - matches AuthService
 const ROLE_PERMISSIONS = {
+    [UserRole.HOME]: [
+        'read_content',
+        'family_management',
+        'family_events',
+        'family_rsvp'
+    ],
     [UserRole.PARENT]: [
         'read_content',
         'create_content',
@@ -129,6 +137,43 @@ const ROLE_PERMISSIONS = {
         'cost_analytics',
         'cost_alerts'
     ],
+    [UserRole.COPSE_ADMIN]: [
+        // Copse Admins have all permissions across the entire network
+        'read_content',
+        'create_content',
+        'update_content',
+        'delete_content',
+        'family_management',
+        'family_events',
+        'family_rsvp',
+        'family_volunteer',
+        'den_content',
+        'den_events',
+        'den_members',
+        'den_chat_management',
+        'den_announcements',
+        'pack_management',
+        'event_management',
+        'location_management',
+        'announcement_management',
+        'financial_management',
+        'fundraising_management',
+        'all_den_access',
+        'scout_content',
+        'scout_events',
+        'scout_chat',
+        'chat_read',
+        'chat_write',
+        'chat_management',
+        'user_management',
+        'role_management',
+        'system_config',
+        'system_admin',
+        'cost_management',
+        'cost_analytics',
+        'cost_alerts',
+        'network_management'
+    ],
     [UserRole.AI_ASSISTANT]: [
         'read_content',
         'create_content',
@@ -176,6 +221,7 @@ exports.createPendingUser = (0, https_1.onCall)(async (request) => {
             displayName: displayName || '',
             status: UserStatus.PENDING,
             role: UserRole.PARENT,
+            roles: [UserRole.HOME, UserRole.PARENT], // Everyone gets HOME role
             permissions: getRolePermissions(UserRole.PARENT), // Set default permissions
             preferences: preferences || {
                 emailNotifications: true,
@@ -268,6 +314,8 @@ exports.approveUser = (0, https_1.onCall)(async (request) => {
         };
         if (action === 'approve') {
             updateData.role = role;
+            // Always include HOME role - everyone gets home access
+            updateData.roles = [UserRole.HOME, role];
             // Set permissions based on role
             updateData.permissions = getRolePermissions(role);
         }

@@ -84,6 +84,8 @@ async function createThreatIntelligence(type, value, threatLevel, source, descri
 // Helper function to get role permissions
 function getRolePermissions(role) {
     switch (role) {
+        case 'home':
+            return ['read_content', 'family_management', 'family_events', 'family_rsvp'];
         case 'copse_admin':
             return ['system_admin', 'user_management', 'role_management', 'system_config', 'event_management', 'pack_management', 'location_management', 'announcement_management', 'audit_logs', 'cost_management', 'network_management'];
         case 'super_admin':
@@ -187,8 +189,10 @@ exports.updateUserRole = functions.https.onCall(async (data, context) => {
             }
         }
         // Update user role in Firestore
+        // Always include HOME role - everyone gets home access
         const updateData = {
             role: newRole,
+            roles: ['home', newRole], // Everyone gets HOME role
             updatedAt: getTimestamp()
         };
         // Set appropriate boolean flags based on role
@@ -962,17 +966,23 @@ exports.adminUpdateUser = functions.https.onCall(async (data, context) => {
             updateData.profile = updates.profile;
         }
         // Handle multi-role updates
+        // Always ensure HOME role is included
         if (updates.roles !== undefined) {
-            updateData.roles = updates.roles;
+            // Ensure HOME is always included
+            const rolesToSave = Array.isArray(updates.roles) ? updates.roles : [updates.roles];
+            if (!rolesToSave.includes('home')) {
+                rolesToSave.unshift('home');
+            }
+            updateData.roles = rolesToSave;
             // Also update primary role if provided
             if (updates.role !== undefined) {
                 updateData.role = updates.role;
             }
         }
         else if (updates.role !== undefined) {
-            // If only single role is provided, create roles array with just that role
+            // If only single role is provided, create roles array with HOME + that role
             updateData.role = updates.role;
-            updateData.roles = [updates.role];
+            updateData.roles = ['home', updates.role];
         }
         // Update other role-related fields
         if (updates.permissions !== undefined) {
@@ -997,9 +1007,19 @@ exports.adminUpdateUser = functions.https.onCall(async (data, context) => {
                     approved: true,
                     role: updates.role || updateData.role
                 };
-                // Add roles array if present
+                // Add roles array if present (always includes HOME)
                 if (updates.roles || updateData.roles) {
-                    customClaims.roles = updates.roles || updateData.roles;
+                    const rolesForClaims = updates.roles || updateData.roles;
+                    // Ensure HOME is always included in custom claims
+                    const rolesArray = Array.isArray(rolesForClaims) ? rolesForClaims : [rolesForClaims];
+                    if (!rolesArray.includes('home')) {
+                        rolesArray.unshift('home');
+                    }
+                    customClaims.roles = rolesArray;
+                }
+                else {
+                    // If no roles provided, default to HOME + primary role
+                    customClaims.roles = ['home', updates.role || updateData.role];
                 }
                 await admin.auth().setCustomUserClaims(userId, customClaims);
                 console.log(`Successfully updated Firebase Auth claims for user ${userId}`);
@@ -1016,15 +1036,12 @@ exports.adminUpdateUser = functions.https.onCall(async (data, context) => {
                 }
                 else {
                     console.error('Error updating Firebase Auth claims:', authError);
-                    throw authError;
+                    // Don't throw - Firestore update already succeeded, just log the error
+                    console.warn('Continuing despite custom claims update failure');
                 }
             }
-            // Always update the role in Firestore
-            await db.collection('users').doc(userId).update({
-                role: updates.role,
-                permissions: updates.permissions || [],
-                updatedAt: getTimestamp()
-            });
+            // Note: We already updated Firestore above with updateData which includes roles, role, and permissions
+            // No need to update again here as it would overwrite the roles array
         }
         // Log admin action
         await db.collection('adminActions').add({
@@ -1688,6 +1705,7 @@ exports.createUserManually = functions.https.onCall(async (data, context) => {
             email: email,
             displayName: displayName,
             role: role,
+            roles: ['home', role], // Everyone gets HOME role
             permissions: getRolePermissions(role),
             isActive: true,
             status: 'approved',

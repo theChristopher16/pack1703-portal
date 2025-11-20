@@ -1229,16 +1229,13 @@ export const adminUpdateUser = functions.https.onCall(async (data: any, context:
           console.log(`User ${userId} not found in Firebase Auth, skipping custom claims update`);
         } else {
           console.error('Error updating Firebase Auth claims:', authError);
-          throw authError;
+          // Don't throw - Firestore update already succeeded, just log the error
+          console.warn('Continuing despite custom claims update failure');
         }
       }
       
-      // Always update the role in Firestore
-      await db.collection('users').doc(userId).update({
-        role: updates.role,
-        permissions: updates.permissions || [],
-        updatedAt: getTimestamp()
-      });
+      // Note: We already updated Firestore above with updateData which includes roles, role, and permissions
+      // No need to update again here as it would overwrite the roles array
     }
 
     // Log admin action

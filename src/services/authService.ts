@@ -1945,7 +1945,14 @@ class AuthService {
         .map(doc => {
           const userData = doc.data();
           // Ensure HOME role is always included
-          let userRoles = userData.roles || [userData.role];
+          // Convert roles array to UserRole enum values (handles both string and enum formats)
+          let userRoles: UserRole[] = [];
+          if (userData.roles && Array.isArray(userData.roles)) {
+            userRoles = userData.roles.map((r: string) => r as UserRole);
+          } else if (userData.role) {
+            userRoles = [userData.role as UserRole];
+          }
+          // Always ensure HOME role is included
           if (!userRoles.includes(UserRole.HOME)) {
             userRoles = [UserRole.HOME, ...userRoles];
           }

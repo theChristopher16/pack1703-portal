@@ -116,6 +116,7 @@ export const OrganizationProvider: React.FC<OrganizationProviderProps> = ({
       '/organizations', 
       '/pack1703',
       '/copse-admin',      // Copse admin panel is platform-level, not org-specific
+      '/home',             // Home component is platform-level, not org-specific
       '/appcheck-debug',   // Debug tools are platform-level
       '/role-debug',       // Debug tools are platform-level
       '/test-copse-login'  // Test pages are platform-level

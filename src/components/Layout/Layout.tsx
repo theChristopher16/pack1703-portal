@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useLocation } from 'react-router-dom';
-import { useNavigate } from '../../hooks/useNavigate';
+import { useLocation, useNavigate as useReactRouterNavigate } from 'react-router-dom';
+import { useNavigate as useCustomNavigate } from '../../hooks/useNavigate';
 import { Menu, X, Settings, LogOut, User } from 'lucide-react';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { useAdmin } from '../../contexts/AdminContext';
@@ -23,7 +23,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
+  const navigate = useCustomNavigate();
+  const reactRouterNavigate = useReactRouterNavigate();
   
   // Initialize analytics
   useAnalytics();
@@ -86,16 +87,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     // Close mobile menu if open
     setIsMobileMenuOpen(false);
     
-    // Platform routes (like /copse-admin, /organizations) should NOT be prefixed
-    const finalPath = isPlatformRoute ? href : prefixPath(href);
-    
-    // Force navigation even if there are issues
-    try {
-      navigate(finalPath);
-    } catch (error) {
-      console.error('Navigation error, forcing redirect:', error);
-      // Fallback to window.location if React Router fails
-      window.location.href = finalPath;
+    // Platform routes (like /copse-admin, /organizations, /home) should NOT be prefixed
+    // Use raw React Router navigate for platform routes to avoid double-prefixing
+    if (isPlatformRoute) {
+      try {
+        reactRouterNavigate(href);
+      } catch (error) {
+        console.error('Navigation error, forcing redirect:', error);
+        window.location.href = href;
+      }
+    } else {
+      // For org-specific routes, use the custom navigate which handles prefixing
+      try {
+        navigate(href);
+      } catch (error) {
+        console.error('Navigation error, forcing redirect:', error);
+        const finalPath = prefixPath(href);
+        window.location.href = finalPath;
+      }
     }
   };
 
@@ -452,7 +461,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 {mainToolbarItems.map((item) => (
                   <button
                     key={item.name}
-                    onClick={() => handleNavigation(item.href)}
+                    onClick={() => handleNavigation(item.href, item.isPlatformRoute)}
                     className="block text-ocean-600 hover:text-ocean-700 font-medium text-left transition-colors duration-200"
                   >
                     {item.name}

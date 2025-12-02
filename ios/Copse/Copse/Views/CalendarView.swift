@@ -400,7 +400,7 @@ struct MonthCalendarView: View {
             // Calendar grid
             ScrollView {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 0) {
-                    ForEach(daysInMonth, id: \.self) { date in
+                    ForEach(Array(daysInMonth.enumerated()), id: \.offset) { index, date in
                         if let date = date {
                             CalendarDayCell(
                                 date: date,

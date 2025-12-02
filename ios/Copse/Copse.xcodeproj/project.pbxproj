@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B879E5A02EDF9B0900219379 /* StreamChat in Frameworks */ = {isa = PBXBuildFile; productRef = B879E59F2EDF9B0900219379 /* StreamChat */; };
+		B879E5A22EDF9B0900219379 /* StreamChatUI in Frameworks */ = {isa = PBXBuildFile; productRef = B879E5A12EDF9B0900219379 /* StreamChatUI */; };
 		B88627CB2ECD70B6006CFE63 /* FirebaseAI in Frameworks */ = {isa = PBXBuildFile; productRef = B88627CA2ECD70B6006CFE63 /* FirebaseAI */; };
 		B88627CD2ECD70B6006CFE63 /* FirebaseAILogic in Frameworks */ = {isa = PBXBuildFile; productRef = B88627CC2ECD70B6006CFE63 /* FirebaseAILogic */; };
 		B88627CF2ECD70B6006CFE63 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = B88627CE2ECD70B6006CFE63 /* FirebaseAnalytics */; };
@@ -56,12 +58,14 @@
 				B88627D72ECD70B6006CFE63 /* FirebaseAppDistribution-Beta in Frameworks */,
 				B88627E32ECD70B6006CFE63 /* FirebaseFirestore in Frameworks */,
 				B88627DB2ECD70B6006CFE63 /* FirebaseAuthCombine-Community in Frameworks */,
+				B879E5A02EDF9B0900219379 /* StreamChat in Frameworks */,
 				B88627ED2ECD70B6006CFE63 /* FirebaseInstallations in Frameworks */,
 				B88627CD2ECD70B6006CFE63 /* FirebaseAILogic in Frameworks */,
 				B8B15FEA2ECD7BED002AC0DE /* GoogleSignInSwift in Frameworks */,
 				B88627D32ECD70B6006CFE63 /* FirebaseAnalyticsIdentitySupport in Frameworks */,
 				B88627EB2ECD70B6006CFE63 /* FirebaseInAppMessaging-Beta in Frameworks */,
 				B88627CB2ECD70B6006CFE63 /* FirebaseAI in Frameworks */,
+				B879E5A22EDF9B0900219379 /* StreamChatUI in Frameworks */,
 				B88627DF2ECD70B6006CFE63 /* FirebaseCrashlytics in Frameworks */,
 				B88627E92ECD70B6006CFE63 /* FirebaseFunctionsCombine-Community in Frameworks */,
 				B88627F92ECD70B6006CFE63 /* FirebaseStorageCombine-Community in Frameworks */,
@@ -148,6 +152,8 @@
 				B88627F82ECD70B6006CFE63 /* FirebaseStorageCombine-Community */,
 				B8B15FE72ECD7BED002AC0DE /* GoogleSignIn */,
 				B8B15FE92ECD7BED002AC0DE /* GoogleSignInSwift */,
+				B879E59F2EDF9B0900219379 /* StreamChat */,
+				B879E5A12EDF9B0900219379 /* StreamChatUI */,
 			);
 			productName = Copse;
 			productReference = B8321F812ECD1EA70062594E /* Copse.app */;
@@ -180,6 +186,7 @@
 			packageReferences = (
 				B88627C92ECD70B6006CFE63 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				B8B15FE62ECD7BED002AC0DE /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				B879E59E2EDF9B0900219379 /* XCRemoteSwiftPackageReference "stream-chat-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B8321F822ECD1EA70062594E /* Products */;
@@ -349,24 +356,21 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_PREPROCESS = NO;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 15.7;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.copse.Copse;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
-				SDKROOT = auto;
+				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
-				XROS_DEPLOYMENT_TARGET = 26.1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -393,24 +397,21 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_PREPROCESS = NO;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 15.7;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.copse.Copse;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
-				SDKROOT = auto;
+				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
-				XROS_DEPLOYMENT_TARGET = 26.1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -438,6 +439,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		B879E59E2EDF9B0900219379 /* XCRemoteSwiftPackageReference "stream-chat-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/GetStream/stream-chat-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.94.0;
+			};
+		};
 		B88627C92ECD70B6006CFE63 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
@@ -457,6 +466,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		B879E59F2EDF9B0900219379 /* StreamChat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B879E59E2EDF9B0900219379 /* XCRemoteSwiftPackageReference "stream-chat-swift" */;
+			productName = StreamChat;
+		};
+		B879E5A12EDF9B0900219379 /* StreamChatUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B879E59E2EDF9B0900219379 /* XCRemoteSwiftPackageReference "stream-chat-swift" */;
+			productName = StreamChatUI;
+		};
 		B88627CA2ECD70B6006CFE63 /* FirebaseAI */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = B88627C92ECD70B6006CFE63 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

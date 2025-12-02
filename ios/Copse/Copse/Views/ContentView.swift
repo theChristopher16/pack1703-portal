@@ -13,13 +13,15 @@ struct ContentView: View {
     @State private var isLoading = true
     
     var body: some View {
-        NavigationView {
+        Group {
             if isLoading {
                 LoadingView()
             } else if firebaseService.isAuthenticated {
-                UserHomeView()
+                MainTabView()
             } else {
-                LoginView()
+                NavigationView {
+                    LoginView()
+                }
             }
         }
         .onAppear {

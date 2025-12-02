@@ -137,10 +137,10 @@ struct BrowseOrganizationsView: View {
         .onAppear {
             loadOrganizations()
         }
-        .onChange(of: searchText) { _ in
+        .onChange(of: searchText) {
             filterOrganizations()
         }
-        .onChange(of: selectedCategory) { _ in
+        .onChange(of: selectedCategory) {
             filterOrganizations()
         }
     }

@@ -135,6 +135,16 @@ struct QuickAction: Identifiable {
     let description: String
     let icon: String
     let color: Color
+    let badge: Int?
+    
+    init(id: String, name: String, description: String, icon: String, color: Color, badge: Int? = nil) {
+        self.id = id
+        self.name = name
+        self.description = description
+        self.icon = icon
+        self.color = color
+        self.badge = badge
+    }
 }
 
 // Glassmorphism Card Component
@@ -149,7 +159,7 @@ struct QuickActionCard: View {
         }) {
             VStack(spacing: 16) {
                 // Icon with gradient background
-                ZStack {
+                ZStack(alignment: .topTrailing) {
                     RoundedRectangle(cornerRadius: 16)
                         .fill(
                             LinearGradient(
@@ -167,6 +177,20 @@ struct QuickActionCard: View {
                     Image(systemName: action.icon)
                         .font(.system(size: 28, weight: .semibold))
                         .foregroundColor(.white)
+                    
+                    // Badge for unread count
+                    if let badge = action.badge, badge > 0 {
+                        ZStack {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 24, height: 24)
+                            
+                            Text("\(badge)")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        .offset(x: 8, y: -8)
+                    }
                 }
                 
                 // Title

@@ -387,12 +387,16 @@ struct JoinOrganizationCard: View {
 
 // Quick Actions Section
 struct QuickActionsSection: View {
-    let quickActions = [
-        QuickAction(id: "calendar", name: "Calendar", description: "View your calendar", icon: "calendar", color: .blue),
-        QuickAction(id: "family", name: "Family", description: "Manage family members", icon: "person.2.fill", color: .purple),
-        QuickAction(id: "documents", name: "Documents", description: "Access your files", icon: "doc.fill", color: .orange),
-        QuickAction(id: "settings", name: "Settings", description: "App preferences", icon: "gearshape.fill", color: .gray)
-    ]
+    @StateObject private var streamChatService = StreamChatService.shared
+    
+    var quickActions: [QuickAction] {
+        [
+            QuickAction(id: "chat", name: "Chat", description: "Message your community", icon: "message.fill", color: .green, badge: streamChatService.unreadCount),
+            QuickAction(id: "calendar", name: "Calendar", description: "View your calendar", icon: "calendar", color: .blue, badge: nil),
+            QuickAction(id: "family", name: "Family", description: "Manage family members", icon: "person.2.fill", color: .purple, badge: nil),
+            QuickAction(id: "documents", name: "Documents", description: "Access your files", icon: "doc.fill", color: .orange, badge: nil)
+        ]
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -417,6 +421,8 @@ struct QuickActionsSection: View {
     @ViewBuilder
     private func destinationForAction(_ actionId: String) -> some View {
         switch actionId {
+        case "chat":
+            ChatChannelListView()
         case "calendar":
             CalendarView()
         case "family":
@@ -425,9 +431,6 @@ struct QuickActionsSection: View {
         case "documents":
             Text("Documents Coming Soon")
                 .navigationTitle("Documents")
-        case "settings":
-            Text("Settings Coming Soon")
-                .navigationTitle("Settings")
         default:
             Text("Coming Soon")
         }

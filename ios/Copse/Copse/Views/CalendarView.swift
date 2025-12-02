@@ -195,18 +195,15 @@ struct CalendarView: View {
                 return []
             }
         } else {
-            // requestAccess is synchronous, not async
-            var accessGranted = false
-            let semaphore = DispatchSemaphore(value: 0)
-            eventStore.requestAccess(to: .event) { granted, error in
-                if let error = error {
-                    print("Calendar access error: \(error)")
+            // For iOS 16 and earlier, use continuation to convert callback to async
+            granted = await withCheckedContinuation { continuation in
+                eventStore.requestAccess(to: .event) { granted, error in
+                    if let error = error {
+                        print("Calendar access error: \(error)")
+                    }
+                    continuation.resume(returning: granted)
                 }
-                accessGranted = granted
-                semaphore.signal()
             }
-            semaphore.wait()
-            granted = accessGranted
         }
         guard granted else {
             print("Calendar access denied")

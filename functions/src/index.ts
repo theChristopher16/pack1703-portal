@@ -20,6 +20,9 @@ export { searchUsersForHousehold } from './searchUsers';
 // Import user approval functions
 export { createPendingUser, approveUser, getPendingUsers, getAuditLogs } from './userApproval';
 
+// Import Stream Chat functions
+export { generateStreamChatToken, createStreamChatChannel, addUserToOrganizationChannels } from './streamChat';
+
 // Initialize Firebase Admin
 admin.initializeApp();
 

@@ -5,7 +5,7 @@
  * Must be configured with STREAM_API_KEY and STREAM_API_SECRET
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { StreamChat } from 'stream-chat';
 
@@ -22,9 +22,9 @@ const apiSecret = functions.config().stream?.api_secret;
  *   let result = try await functions.httpsCallable("generateStreamChatToken").call()
  *   let token = result.data as! String
  */
-export const generateStreamChatToken = functions.https.onCall(async (data, context) => {
+export const generateStreamChatToken = functions.https.onCall(async (data, context: functions.https.CallableContext) => {
   // Verify user is authenticated
-  if (!context.auth) {
+  if (!context || !context.auth) {
     throw new functions.https.HttpsError(
       'unauthenticated',
       'User must be authenticated to generate Stream Chat token'
@@ -90,9 +90,9 @@ export const generateStreamChatToken = functions.https.onCall(async (data, conte
  * 
  * Only admins and den leaders can create channels
  */
-export const createStreamChatChannel = functions.https.onCall(async (data, context) => {
+export const createStreamChatChannel = functions.https.onCall(async (data, context: functions.https.CallableContext) => {
   // Verify authentication
-  if (!context.auth) {
+  if (!context || !context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated');
   }
 
@@ -107,14 +107,12 @@ export const createStreamChatChannel = functions.https.onCall(async (data, conte
     );
   }
 
-  const {
-    channelType = 'messaging',
-    channelId,
-    channelName,
-    organizationId,
-    members = [],
-    customData = {}
-  } = data;
+  const channelType = (data as any).channelType || 'messaging';
+  const channelId = (data as any).channelId;
+  const channelName = (data as any).channelName;
+  const organizationId = (data as any).organizationId;
+  const members = (data as any).members || [];
+  const customData = (data as any).customData || {};
 
   try {
     const serverClient = StreamChat.getInstance(apiKey!, apiSecret!);
@@ -153,7 +151,7 @@ export const createStreamChatChannel = functions.https.onCall(async (data, conte
  */
 export const addUserToOrganizationChannels = functions.firestore
   .document('crossOrganizationUsers/{docId}')
-  .onCreate(async (snapshot, context) => {
+  .onCreate(async (snapshot: functions.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
     const data = snapshot.data();
     const { userId, organizationId, isActive } = data;
 

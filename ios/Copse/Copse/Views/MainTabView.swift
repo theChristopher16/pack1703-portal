@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import FirebaseAuth
 
 struct MainTabView: View {
     @StateObject private var streamChatService = StreamChatService.shared
@@ -33,7 +34,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Chat", systemImage: "message.fill")
                 }
-                .badge(streamChatService.unreadCount > 0 ? streamChatService.unreadCount : nil)
+                .badge(streamChatService.unreadCount > 0 ? streamChatService.unreadCount : 0)
                 .tag(2)
             
             // Organizations Tab

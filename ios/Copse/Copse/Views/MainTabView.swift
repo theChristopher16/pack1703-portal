@@ -11,57 +11,73 @@ import FirebaseAuth
 
 struct MainTabView: View {
     @StateObject private var streamChatService = StreamChatService.shared
+    @StateObject private var homeService = HomeService.shared
     @State private var selectedTab = 0
+    @State private var showHomeSetup = false
     
     var body: some View {
-        TabView(selection: $selectedTab) {
-            // Home Tab
-            UserHomeView()
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
+        ZStack {
+            TabView(selection: $selectedTab) {
+                // Home Management Tab (NEW!)
+                HomeManagementView()
+                    .tabItem {
+                        Label("Home", systemImage: "house.fill")
+                    }
+                    .tag(0)
+                
+                // Calendar Tab
+                CalendarView()
+                    .tabItem {
+                        Label("Calendar", systemImage: "calendar")
+                    }
+                    .tag(1)
+                
+                // Chat Tab - ONLY shown after home setup
+                if homeService.hasCompletedSetup {
+                    HomeChatView()
+                        .tabItem {
+                            Label("Chat", systemImage: "message.fill")
+                        }
+                        .badge(streamChatService.unreadCount > 0 ? streamChatService.unreadCount : 0)
+                        .tag(2)
                 }
-                .tag(0)
-            
-            // Calendar Tab
-            CalendarView()
-                .tabItem {
-                    Label("Calendar", systemImage: "calendar")
+                
+                // Organizations Tab
+                BrowseOrganizationsView()
+                    .tabItem {
+                        Label("Copses", systemImage: "leaf.fill")
+                    }
+                    .tag(homeService.hasCompletedSetup ? 3 : 2)
+                
+                // Profile Tab
+                SettingsView()
+                    .tabItem {
+                        Label("Profile", systemImage: "person.fill")
+                    }
+                    .tag(homeService.hasCompletedSetup ? 4 : 3)
                 }
-                .tag(1)
-            
-            // Chat Tab
-            ChatChannelListView()
-                .tabItem {
-                    Label("Chat", systemImage: "message.fill")
+            .accentColor(.green)
+            .onAppear {
+                // Configure tab bar appearance
+                let appearance = UITabBarAppearance()
+                appearance.configureWithDefaultBackground()
+                
+                // Glassmorphism effect for tab bar
+                appearance.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.8)
+                
+                UITabBar.appearance().standardAppearance = appearance
+                UITabBar.appearance().scrollEdgeAppearance = appearance
+                
+                // Check home setup status
+                Task {
+                    _ = try? await homeService.checkSetupStatus()
                 }
-                .badge(streamChatService.unreadCount > 0 ? streamChatService.unreadCount : 0)
-                .tag(2)
+            }
             
-            // Organizations Tab
-            BrowseOrganizationsView()
-                .tabItem {
-                    Label("Copses", systemImage: "leaf.fill")
-                }
-                .tag(3)
-            
-            // Profile Tab
-            SettingsView()
-                .tabItem {
-                    Label("Profile", systemImage: "person.fill")
-                }
-                .tag(4)
-        }
-        .accentColor(.green)
-        .onAppear {
-            // Configure tab bar appearance
-            let appearance = UITabBarAppearance()
-            appearance.configureWithDefaultBackground()
-            
-            // Glassmorphism effect for tab bar
-            appearance.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.8)
-            
-            UITabBar.appearance().standardAppearance = appearance
-            UITabBar.appearance().scrollEdgeAppearance = appearance
+            // Show setup wizard when needed
+            if !homeService.hasCompletedSetup && selectedTab == 0 {
+                HomeSetupWizard()
+            }
         }
     }
 }

@@ -167,7 +167,7 @@ class HomeService: ObservableObject {
         }
         
         let householdId = UUID().uuidString
-        let now = Timestamp.now()
+        let now = Timestamp(date: Date())
         
         // Set up preferences based on user choices
         var preferences = HomePreferences.default
@@ -230,29 +230,24 @@ class HomeService: ObservableObject {
         // Create a Stream Chat channel for this home
         let channelId = "home_\(householdId)"
         
-        guard let streamService = StreamChatService.shared.chatClient else {
-            // If Stream Chat isn't configured, return a placeholder
-            return channelId
-        }
-        
-        // Create channel using Stream Chat
-        let extraData: [String: RawJSON] = [
-            "channel_type": .string("home"),
-            "household_id": .string(householdId),
-            "household_name": .string(householdName)
-        ]
-        
-        let cid = ChannelId(type: .messaging, id: channelId)
-        let controller = streamService.channelController(
-            createChannelWithId: cid,
-            name: "🏠 \(householdName) Home",
-            members: Set(memberIds),
-            extraData: extraData
-        )
-        
-        controller.synchronize { error in
-            if let error = error {
+        // Use StreamChatService to create the channel
+        if StreamChatService.shared.isConnected {
+            do {
+                let customData: [String: Any] = [
+                    "channel_type": "home",
+                    "household_id": householdId,
+                    "household_name": householdName
+                ]
+                
+                _ = try await StreamChatService.shared.createChannel(
+                    name: "🏠 \(householdName) Home",
+                    organizationId: householdId,
+                    members: memberIds,
+                    customData: customData
+                )
+            } catch {
                 print("🔴 Failed to create home chat: \(error)")
+                // Continue anyway - chat can be created later
             }
         }
         
@@ -278,7 +273,7 @@ class HomeService: ObservableObject {
         }
         
         let invitationId = UUID().uuidString
-        let now = Timestamp.now()
+        let now = Timestamp(date: Date())
         let expiresAt = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
         
         let invitationData: [String: Any] = [
@@ -310,7 +305,7 @@ class HomeService: ObservableObject {
         
         try await householdRef.updateData([
             "children": FieldValue.arrayUnion([childDict]),
-            "updatedAt": Timestamp.now()
+            "updatedAt": Timestamp(date: Date())
         ])
         
         await loadUserHouseholds()
@@ -324,7 +319,7 @@ class HomeService: ObservableObject {
         
         try await householdRef.updateData([
             "pets": FieldValue.arrayUnion([petDict]),
-            "updatedAt": Timestamp.now()
+            "updatedAt": Timestamp(date: Date())
         ])
         
         await loadUserHouseholds()
@@ -338,7 +333,7 @@ class HomeService: ObservableObject {
         
         try await householdRef.updateData([
             "vehicles": FieldValue.arrayUnion([vehicleDict]),
-            "updatedAt": Timestamp.now()
+            "updatedAt": Timestamp(date: Date())
         ])
         
         await loadUserHouseholds()

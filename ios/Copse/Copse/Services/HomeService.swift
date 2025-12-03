@@ -95,13 +95,28 @@ class HomeService: ObservableObject {
             if legacyDoc.exists, let legacyData = legacyDoc.data() {
                 // User has legacy household data - load it!
                 print("✅ Found legacy household profile")
+                print("📋 Household name: \(legacyData["householdName"] ?? "Unknown")")
+                print("📋 Rooms count: \((legacyData["rooms"] as? [[String: Any]])?.count ?? 0)")
+                print("📋 Setup completed: \(legacyData["setupCompleted"] ?? false)")
+                
                 let household = try parseLegacyHousehold(userId: userId, data: legacyData)
+                
+                print("✅ Parsed household: \(household.name)")
+                print("✅ Rooms: \(household.rooms.map { $0.name }.joined(separator: ", "))")
                 
                 await MainActor.run {
                     self.userHouseholds = [household]
                     self.currentHousehold = household
                     self.hasCompletedSetup = true
                 }
+                
+                // Also load notes, tasks, meal plans
+                let notes = await loadHomeNotes()
+                let tasks = await loadHomeTasks()
+                let mealPlans = await loadMealPlans()
+                
+                print("✅ Loaded \(notes.count) notes, \(tasks.count) tasks, \(mealPlans.count) meal plans")
+                
                 return
             }
             

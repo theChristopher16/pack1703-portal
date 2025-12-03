@@ -40,7 +40,7 @@ struct HomeManagementView: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
                                 ForEach(HomeCategory.allCases, id: \.self) { category in
-                                    CategoryChip(
+                                    HomeCategoryChip(
                                         category: category,
                                         isSelected: selectedCategory == category
                                     ) {
@@ -114,9 +114,9 @@ enum HomeCategory: String, CaseIterable {
     }
 }
 
-// MARK: - Category Chip
+// MARK: - Home Category Chip
 
-struct CategoryChip: View {
+struct HomeCategoryChip: View {
     let category: HomeCategory
     let isSelected: Bool
     let action: () -> Void

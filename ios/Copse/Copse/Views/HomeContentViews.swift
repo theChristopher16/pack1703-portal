@@ -102,23 +102,23 @@ struct QuickActionsGrid: View {
                 GridItem(.flexible())
             ], spacing: 12) {
                 if household.preferences.mealPlanner {
-                    QuickActionCard(icon: "calendar", title: "Meal Planner", color: .orange)
+                    HomeQuickActionCard(icon: "calendar", title: "Meal Planner", color: .orange)
                 }
                 if household.preferences.tasks {
-                    QuickActionCard(icon: "checkmark.square", title: "Tasks", color: .green)
+                    HomeQuickActionCard(icon: "checkmark.square", title: "Tasks", color: .green)
                 }
                 if household.preferences.groceries {
-                    QuickActionCard(icon: "cart.fill", title: "Groceries", color: .blue)
+                    HomeQuickActionCard(icon: "cart.fill", title: "Groceries", color: .blue)
                 }
                 if household.preferences.recipes {
-                    QuickActionCard(icon: "book.fill", title: "Recipes", color: .purple)
+                    HomeQuickActionCard(icon: "book.fill", title: "Recipes", color: .purple)
                 }
             }
         }
     }
 }
 
-struct QuickActionCard: View {
+struct HomeQuickActionCard: View {
     let icon: String
     let title: String
     let color: Color

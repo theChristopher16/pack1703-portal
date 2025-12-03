@@ -26,9 +26,15 @@ class HomeService: ObservableObject {
     
     // Firestore collections
     private let HOUSEHOLDS_COLLECTION = "sharedHouseholds"
+    private let HOUSEHOLD_PROFILES_COLLECTION = "householdProfiles" // Legacy collection
     private let USER_HOUSEHOLDS_COLLECTION = "userHouseholds"
     private let INVITATIONS_COLLECTION = "householdInvitations"
     private let CHILD_PROFILES_COLLECTION = "childProfiles"
+    
+    // Home data collections
+    private let NOTES_COLLECTION = "notes"
+    private let TASKS_COLLECTION = "tasks"
+    private let MEAL_PLANS_COLLECTION = "mealPlans"
     
     private init() {
         setupAuthListener()
@@ -82,7 +88,24 @@ class HomeService: ObservableObject {
         guard let userId = firebaseService.currentUser?.uid else { return }
         
         do {
-            // Get user's household memberships
+            // FIRST: Check legacy householdProfiles collection
+            let legacyProfileRef = db.collection(HOUSEHOLD_PROFILES_COLLECTION).document(userId)
+            let legacyDoc = try await legacyProfileRef.getDocument()
+            
+            if legacyDoc.exists, let legacyData = legacyDoc.data() {
+                // User has legacy household data - load it!
+                print("✅ Found legacy household profile")
+                let household = try parseLegacyHousehold(userId: userId, data: legacyData)
+                
+                await MainActor.run {
+                    self.userHouseholds = [household]
+                    self.currentHousehold = household
+                    self.hasCompletedSetup = true
+                }
+                return
+            }
+            
+            // THEN: Check new sharedHouseholds system
             let userHouseholdsRef = db.collection(USER_HOUSEHOLDS_COLLECTION).document(userId)
             let doc = try await userHouseholdsRef.getDocument()
             
@@ -122,6 +145,54 @@ class HomeService: ObservableObject {
         }
     }
     
+    // MARK: - Load Additional Home Data
+    
+    func loadHomeNotes() async -> [[String: Any]] {
+        guard let userId = firebaseService.currentUser?.uid else { return [] }
+        
+        do {
+            let notesQuery = db.collection(NOTES_COLLECTION)
+                .whereField("userId", isEqualTo: userId)
+                .order(by: "updatedAt", descending: true)
+            
+            let snapshot = try await notesQuery.getDocuments()
+            return snapshot.documents.map { $0.data() }
+        } catch {
+            print("🔴 Failed to load notes: \(error)")
+            return []
+        }
+    }
+    
+    func loadHomeTasks() async -> [[String: Any]] {
+        guard let userId = firebaseService.currentUser?.uid else { return [] }
+        
+        do {
+            let tasksQuery = db.collection(TASKS_COLLECTION)
+                .whereField("userId", isEqualTo: userId)
+            
+            let snapshot = try await tasksQuery.getDocuments()
+            return snapshot.documents.map { $0.data() }
+        } catch {
+            print("🔴 Failed to load tasks: \(error)")
+            return []
+        }
+    }
+    
+    func loadMealPlans() async -> [[String: Any]] {
+        guard let userId = firebaseService.currentUser?.uid else { return [] }
+        
+        do {
+            let mealPlansQuery = db.collection(MEAL_PLANS_COLLECTION)
+                .whereField("userId", isEqualTo: userId)
+            
+            let snapshot = try await mealPlansQuery.getDocuments()
+            return snapshot.documents.map { $0.data() }
+        } catch {
+            print("🔴 Failed to load meal plans: \(error)")
+            return []
+        }
+    }
+    
     // MARK: - Get Household
     
     func getHousehold(householdId: String) async throws -> SharedHousehold? {
@@ -149,6 +220,26 @@ class HomeService: ObservableObject {
             createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
             updatedAt: (data["updatedAt"] as? Timestamp)?.dateValue() ?? Date(),
             createdBy: data["createdBy"] as? String ?? ""
+        )
+    }
+    
+    private func parseLegacyHousehold(userId: String, data: [String: Any]) throws -> SharedHousehold {
+        // Parse legacy householdProfiles format
+        return SharedHousehold(
+            id: userId,
+            name: data["householdName"] as? String ?? "My Home",
+            address: data["address"] as? String,
+            ownerIds: [userId],
+            memberIds: [userId],
+            children: [], // Legacy didn't have children in this format
+            pets: [], // Legacy didn't have pets in this format
+            vehicles: [], // Legacy didn't have vehicles in this format
+            rooms: parseRooms(data["rooms"] as? [[String: Any]]),
+            chatChannelId: nil, // Legacy didn't have chat
+            preferences: parsePreferences(data["preferences"] as? [String: Any]),
+            createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+            updatedAt: (data["updatedAt"] as? Timestamp)?.dateValue() ?? Date(),
+            createdBy: userId
         )
     }
     

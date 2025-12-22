@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firestore Permission Test</title>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, getDoc, collection, query, limit, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBIBpkVqhPAJNYjymD-eK1n3ZuLwn9rf8g",
+            authDomain: "pack1703-portal.firebaseapp.com",
+            projectId: "pack1703-portal",
+            storageBucket: "pack1703-portal.firebasestorage.app",
+            messagingSenderId: "869412763535",
+            appId: "1:869412763535:web:94b3b1ccc756ddfe92bdfa"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        async function testPermissions() {
+            console.log('🔍 Testing Firestore Permissions...');
+            
+            const currentUser = auth.currentUser;
+            if (!currentUser) {
+                console.log('❌ No authenticated user');
+                return;
+            }
+
+            console.log('✅ User authenticated:', currentUser.email);
+            console.log('User ID:', currentUser.uid);
+
+            try {
+                // Test 1: Get user's custom claims
+                const idTokenResult = await currentUser.getIdTokenResult();
+                console.log('✅ Custom claims:', idTokenResult.claims);
+                console.log('Role:', idTokenResult.claims.role);
+
+                // Test 2: Try to read user document
+                console.log('\n📋 Test: Reading user document...');
+                const userDocRef = doc(db, 'users', currentUser.uid);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (userDoc.exists()) {
+                    console.log('✅ User document exists:', userDoc.data());
+                } else {
+                    console.log('❌ User document does not exist');
+                }
+
+                // Test 3: Try to read users collection (admin access)
+                console.log('\n📋 Test: Reading users collection...');
+                const usersRef = collection(db, 'users');
+                const q = query(usersRef, limit(1));
+                const snapshot = await getDocs(q);
+                console.log('✅ Users collection access successful:', snapshot.size, 'documents');
+
+            } catch (error) {
+                console.error('❌ Permission error:', error.code, error.message);
+                console.error('Full error:', error);
+            }
+        }
+
+        // Monitor auth state changes
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log('🔐 User signed in:', user.email);
+                testPermissions();
+            } else {
+                console.log('🔐 User signed out');
+            }
+        });
+
+        // Add login button
+        window.loginWithGoogle = async () => {
+            try {
+                const provider = new GoogleAuthProvider();
+                await signInWithPopup(auth, provider);
+                console.log('✅ Google login successful');
+            } catch (error) {
+                console.error('❌ Google login failed:', error.code, error.message);
+            }
+        };
+    </script>
+</head>
+<body>
+    <h1>Firestore Permission Test</h1>
+    <button onclick="loginWithGoogle()">Login with Google</button>
+    <div id="output"></div>
+    <script>
+        // Redirect console output to page
+        const originalLog = console.log;
+        const originalError = console.error;
+        const output = document.getElementById('output');
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            output.innerHTML += '<div style="color: green;">' + args.join(' ') + '</div>';
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            output.innerHTML += '<div style="color: red;">' + args.join(' ') + '</div>';
+        };
+    </script>
+</body>
+</html>

@@ -55,6 +55,10 @@ class FirebaseService: ObservableObject {
         try await auth.signIn(withEmail: email, password: password)
     }
     
+    func signUp(email: String, password: String) async throws {
+        try await auth.createUser(withEmail: email, password: password)
+    }
+    
     func signOut() throws {
         try auth.signOut()
     }

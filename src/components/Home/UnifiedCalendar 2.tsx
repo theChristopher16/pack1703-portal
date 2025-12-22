@@ -1,0 +1,452 @@
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, CalendarRange, MapPin, Users, Smartphone, Settings } from 'lucide-react';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../../firebase/config';
+import authService from '../../services/authService';
+import appleCalendarService from '../../services/appleCalendarService';
+import crossOrgSyncService from '../../services/crossOrgSyncService';
+import { useToast } from '../../contexts/ToastContext';
+import CalendarConnection from './CalendarConnection';
+import OrgSyncSettings from './OrgSyncSettings';
+import { RSVPStatus } from '../../types/crossOrgSync';
+
+interface AggregatedEvent {
+  id: string;
+  title: string;
+  description?: string;
+  startDate: Date;
+  endDate: Date;
+  location?: string;
+  source: string; // Organization name, 'Home', or 'Apple Calendar'
+  sourceType: 'organization' | 'home' | 'phone';
+  organizationId?: string;
+  organizationName?: string;
+  // RSVP information
+  requiresRSVP?: boolean;
+  rsvpStatus?: RSVPStatus;
+  rsvpDeadline?: Date;
+  canRSVP?: boolean;
+  priority?: 'low' | 'medium' | 'high';
+}
+
+const UnifiedCalendar: React.FC = () => {
+  const [events, setEvents] = useState<AggregatedEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedSource, setSelectedSource] = useState<string>('all');
+  const [showConnections, setShowConnections] = useState(false);
+  const [showSyncSettings, setShowSyncSettings] = useState(false);
+  const [selectedRSVPFilter, setSelectedRSVPFilter] = useState<string>('all');
+  const { showError } = useToast();
+
+  useEffect(() => {
+    loadAllEvents();
+  }, [currentMonth]);
+
+  /**
+   * Load events from ALL user's organizations + home events
+   * This implements the one-way data flow:
+   * - Org events flow TO home
+   * - Home events stay IN home only
+   */
+  const loadAllEvents = async () => {
+    try {
+      setLoading(true);
+      const user = authService.getCurrentUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const allEvents: AggregatedEvent[] = [];
+      const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+
+      console.log('🔍 UnifiedCalendar: Loading events for month:', currentMonth.toLocaleDateString());
+
+      // 1. Load events from ALL organizations using crossOrgSyncService
+      // This includes RSVP fallback and proper filtering
+      const orgEvents = await crossOrgSyncService.getAggregatedCalendarEvents(monthStart, monthEnd);
+      console.log(`✅ Got ${orgEvents.length} org events from crossOrgSyncService`);
+      
+      orgEvents.forEach((event) => {
+        allEvents.push({
+          id: event.id,
+          title: event.title,
+          description: event.description,
+          startDate: event.startDate,
+          endDate: event.endDate,
+          location: event.location,
+          source: event.sourceName,
+          sourceType: 'organization',
+          organizationId: event.sourceId,
+          organizationName: event.sourceName,
+          requiresRSVP: event.requiresRSVP,
+          rsvpStatus: event.rsvpStatus,
+          rsvpDeadline: event.rsvpDeadline,
+          canRSVP: event.canRSVP,
+          priority: event.priority,
+        });
+      });
+
+      // OLD CODE - replaced with crossOrgSyncService call above
+      /*
+      // First, get user's organizations from crossOrganizationUsers collection
+      const crossOrgQuery = query(
+        collection(db, 'crossOrganizationUsers'),
+        where('userId', '==', user.uid)
+      );
+      const crossOrgSnapshot = await getDocs(crossOrgQuery);
+      const userOrgs = crossOrgSnapshot.docs.map((doc) => doc.data());
+
+      // Load events from each organization
+      for (const org of userOrgs) {
+        try {
+          const eventsQuery = query(
+            collection(db, 'events'),
+            where('organizationId', '==', org.organizationId),
+            where('startDate', '>=', monthStart),
+            where('startDate', '<=', monthEnd)
+          );
+          
+          const snapshot = await getDocs(eventsQuery);
+          snapshot.docs.forEach((doc) => {
+            const data = doc.data();
+            allEvents.push({
+              id: doc.id,
+              title: data.title,
+              description: data.description,
+              startDate: data.startDate?.toDate(),
+              endDate: data.endDate?.toDate(),
+              location: data.location?.name || data.location,
+              source: org.organizationName,
+              sourceType: 'organization',
+              organizationId: org.organizationId,
+              organizationName: org.organizationName,
+            });
+          });
+        } catch (error) {
+          console.warn(`Failed to load events from ${org.organizationName}:`, error);
+        }
+      }
+      */
+
+      // 2. Load HOME events (meal plans, family calendar events, etc.)
+      // These will NOT appear in organization calendars - one-way flow
+      try {
+        // Load meal plans as events
+        const mealPlansQuery = query(
+          collection(db, 'mealPlans'),
+          where('userId', '==', user.uid),
+          where('date', '>=', monthStart),
+          where('date', '<=', monthEnd)
+        );
+        const mealPlansSnapshot = await getDocs(mealPlansQuery);
+        mealPlansSnapshot.docs.forEach((doc) => {
+          const data = doc.data();
+          const date = data.date?.toDate();
+          allEvents.push({
+            id: doc.id,
+            title: `${data.mealType}: ${data.recipeName || data.customMeal}`,
+            description: data.notes,
+            startDate: date,
+            endDate: date,
+            source: 'Home - Meal Plan',
+            sourceType: 'home',
+          });
+        });
+
+        // Load family calendar events
+        const familyEventsQuery = query(
+          collection(db, 'familyEvents'),
+          where('userId', '==', user.uid),
+          where('startTime', '>=', monthStart),
+          where('startTime', '<=', monthEnd)
+        );
+        const familyEventsSnapshot = await getDocs(familyEventsQuery);
+        familyEventsSnapshot.docs.forEach((doc) => {
+          const data = doc.data();
+          allEvents.push({
+            id: doc.id,
+            title: data.title,
+            description: data.description,
+            startDate: data.startTime?.toDate(),
+            endDate: data.endTime?.toDate(),
+            location: data.location,
+            source: 'Home - Family',
+            sourceType: 'home',
+          });
+        });
+      } catch (error) {
+        console.warn('Failed to load home events:', error);
+      }
+
+      // 3. Load SYNCED PHONE CALENDAR events (from Apple Calendar, Google Calendar, etc.)
+      try {
+        const syncedEvents = await appleCalendarService.getSyncedEvents(monthStart, monthEnd);
+        syncedEvents.forEach((event) => {
+          allEvents.push({
+            id: event.id,
+            title: event.title,
+            description: event.description,
+            startDate: event.startTime,
+            endDate: event.endTime,
+            location: event.location,
+            source: event.provider === 'apple' ? 'Apple Calendar' : 'Phone Calendar',
+            sourceType: 'phone',
+          });
+        });
+      } catch (error) {
+        console.warn('Failed to load synced calendar events:', error);
+      }
+
+      // Sort by date
+      allEvents.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+      setEvents(allEvents);
+    } catch (error: any) {
+      showError('Failed to load events', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sources = Array.from(new Set(events.map((e) => e.source)));
+  let filteredEvents = selectedSource === 'all'
+    ? events
+    : events.filter((e) => e.source === selectedSource);
+  
+  // Apply RSVP filter
+  if (selectedRSVPFilter !== 'all') {
+    filteredEvents = filteredEvents.filter((e) => {
+      if (selectedRSVPFilter === 'going') return e.rsvpStatus === 'going';
+      if (selectedRSVPFilter === 'pending') return e.rsvpStatus === 'not_responded' || e.rsvpStatus === 'pending';
+      if (selectedRSVPFilter === 'needs_rsvp') return e.canRSVP === true;
+      return true;
+    });
+  }
+
+  const goToPreviousMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+  };
+
+  const goToNextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+  };
+
+  const goToToday = () => {
+    setCurrentMonth(new Date());
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {showConnections ? (
+        <div>
+          <button
+            onClick={() => setShowConnections(false)}
+            className="mb-4 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            Back to Calendar
+          </button>
+          <CalendarConnection />
+        </div>
+      ) : showSyncSettings ? (
+        <div>
+          <button
+            onClick={() => setShowSyncSettings(false)}
+            className="mb-4 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            Back to Calendar
+          </button>
+          <OrgSyncSettings />
+        </div>
+      ) : (
+        <>
+          {/* Header */}
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-4">
+                <button onClick={goToPreviousMonth} className="p-2 hover:bg-gray-100 rounded">
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </h2>
+                </div>
+                <button onClick={goToNextMonth} className="p-2 hover:bg-gray-100 rounded">
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setShowConnections(true)}
+                  className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  title="Calendar Connections"
+                >
+                  <Smartphone className="w-5 h-5" />
+                </button>
+                
+                <button
+                  onClick={() => setShowSyncSettings(true)}
+                  className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  title="Sync Settings"
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
+                
+                <select
+                  value={selectedRSVPFilter}
+                  onChange={(e) => setSelectedRSVPFilter(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">All Events</option>
+                  <option value="going">✓ Going</option>
+                  <option value="pending">⏳ Not Responded</option>
+                  <option value="needs_rsvp">❗ Needs RSVP</option>
+                </select>
+                
+                <select
+                  value={selectedSource}
+                  onChange={(e) => setSelectedSource(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">All Sources</option>
+                  {sources.map((source) => (
+                    <option key={source} value={source}>
+                      {source}
+                    </option>
+                  ))}
+                </select>
+                
+                <button
+                  onClick={goToToday}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg"
+                >
+                  Today
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Events List */}
+          {filteredEvents.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+              <CalendarRange className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">No events this month</h3>
+              <p className="text-gray-500">Events from all your organizations will appear here</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div className="divide-y divide-gray-200">
+                {filteredEvents.map((event) => (
+                  <motion.div
+                    key={event.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="p-6 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-lg text-gray-800">{event.title}</h3>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${
+                            event.sourceType === 'organization'
+                              ? 'bg-blue-100 text-blue-800'
+                              : event.sourceType === 'phone'
+                              ? 'bg-gray-800 text-white'
+                              : 'bg-green-100 text-green-800'
+                          }`}
+                        >
+                          {event.sourceType === 'phone' && <Smartphone className="w-3 h-3" />}
+                          {event.source}
+                        </span>
+                        
+                        {/* RSVP Status Badge */}
+                        {event.requiresRSVP && (
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              event.rsvpStatus === 'going'
+                                ? 'bg-green-100 text-green-800 border border-green-300'
+                                : event.rsvpStatus === 'not_going'
+                                ? 'bg-red-100 text-red-800 border border-red-300'
+                                : event.rsvpStatus === 'maybe'
+                                ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                : event.canRSVP
+                                ? 'bg-purple-100 text-purple-800 border border-purple-300 animate-pulse'
+                                : 'bg-gray-100 text-gray-600 border border-gray-300'
+                            }`}
+                            title={event.canRSVP ? 'RSVP Needed' : event.rsvpStatus}
+                          >
+                            {event.rsvpStatus === 'going' && '✓ Going'}
+                            {event.rsvpStatus === 'not_going' && '✗ Not Going'}
+                            {event.rsvpStatus === 'maybe' && '? Maybe'}
+                            {event.canRSVP && '❗ RSVP Now'}
+                            {event.rsvpStatus === 'not_responded' && !event.canRSVP && '⏳ No Response'}
+                          </span>
+                        )}
+                        
+                        {/* Priority Indicator */}
+                        {event.priority === 'high' && (
+                          <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" title="High Priority" />
+                        )}
+                      </div>
+                        </div>
+
+                        {event.description && (
+                          <p className="text-gray-600 text-sm mb-2">{event.description}</p>
+                        )}
+
+                        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-1">
+                            <CalendarRange className="w-4 h-4" />
+                            <span>
+                              {event.startDate.toLocaleDateString()}
+                              {event.endDate &&
+                                event.endDate.toDateString() !== event.startDate.toDateString() &&
+                                ` - ${event.endDate.toLocaleDateString()}`}
+                            </span>
+                          </div>
+
+                      {event.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          <span>{event.location}</span>
+                        </div>
+                      )}
+                      
+                      {/* RSVP Deadline */}
+                      {event.rsvpDeadline && event.canRSVP && (
+                        <div className="flex items-center gap-1 text-red-600">
+                          <CalendarRange className="w-4 h-4" />
+                          <span className="font-medium">
+                            RSVP by {event.rsvpDeadline.toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+export default UnifiedCalendar;
+

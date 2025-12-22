@@ -396,7 +396,7 @@ const EventsPage: React.FC = () => {
               endTime: firebaseEvent.endTime || '00:00',
               startDate: firebaseEvent.startDate?.toDate?.() ? formatLocalDateTime(firebaseEvent.startDate.toDate()) : firebaseEvent.startDate,
               endDate: firebaseEvent.endDate?.toDate?.() ? formatLocalDateTime(firebaseEvent.endDate.toDate()) : firebaseEvent.endDate,
-              location: firebaseEvent.location || {
+              location: (firebaseEvent.location && firebaseEvent.location.name) ? firebaseEvent.location : {
                 name: firebaseEvent.locationName || 'TBD',
                 address: firebaseEvent.address || 'Address TBD',
                 coordinates: firebaseEvent.coordinates || undefined
@@ -476,7 +476,7 @@ const EventsPage: React.FC = () => {
             endTime: firebaseEvent.endTime || '00:00',
             startDate: firebaseEvent.startDate?.toDate?.() ? formatLocalDateTime(firebaseEvent.startDate.toDate()) : firebaseEvent.startDate,
             endDate: firebaseEvent.endDate?.toDate?.() ? formatLocalDateTime(firebaseEvent.endDate.toDate()) : firebaseEvent.endDate,
-            location: firebaseEvent.location || {
+            location: (firebaseEvent.location && firebaseEvent.location.name) ? firebaseEvent.location : {
               name: firebaseEvent.locationName || 'TBD',
               address: firebaseEvent.address || 'Address TBD',
               coordinates: firebaseEvent.coordinates || undefined
@@ -1092,11 +1092,13 @@ const EventsPage: React.FC = () => {
               date: localDate || '',
               startTime: firebaseEvent.startTime || '00:00',
               endTime: firebaseEvent.endTime || '00:00',
-              location: {
-                name: firebaseEvent.locationName || firebaseEvent.location || 'TBD',
-                address: firebaseEvent.address || 'Address TBD',
-                coordinates: firebaseEvent.coordinates || undefined
-              },
+              location: (firebaseEvent.location && typeof firebaseEvent.location === 'object' && firebaseEvent.location.name) 
+                ? firebaseEvent.location 
+                : {
+                    name: firebaseEvent.locationName || (typeof firebaseEvent.location === 'string' ? firebaseEvent.location : 'TBD'),
+                    address: firebaseEvent.address || 'Address TBD',
+                    coordinates: firebaseEvent.coordinates || undefined
+                  },
               category: firebaseEvent.category || 'pack-wide',
               denTags: firebaseEvent.denTags || [],
               maxCapacity: firebaseEvent.maxCapacity || null,
@@ -1194,11 +1196,13 @@ const EventsPage: React.FC = () => {
               date: localDate || '',
               startTime: firebaseEvent.startTime || '00:00',
               endTime: firebaseEvent.endTime || '00:00',
-              location: {
-                name: firebaseEvent.locationName || firebaseEvent.location || 'TBD',
-                address: firebaseEvent.address || 'Address TBD',
-                coordinates: firebaseEvent.coordinates || undefined
-              },
+              location: (firebaseEvent.location && typeof firebaseEvent.location === 'object' && firebaseEvent.location.name) 
+                ? firebaseEvent.location 
+                : {
+                    name: firebaseEvent.locationName || (typeof firebaseEvent.location === 'string' ? firebaseEvent.location : 'TBD'),
+                    address: firebaseEvent.address || 'Address TBD',
+                    coordinates: firebaseEvent.coordinates || undefined
+                  },
               category: firebaseEvent.category || 'pack-wide',
               denTags: firebaseEvent.denTags || [],
               maxCapacity: firebaseEvent.maxCapacity || null,

@@ -1,0 +1,9 @@
+[
+  {
+    "origin": ["https://sfpack1703.com", "https://pack1703-portal.web.app", "http://localhost:3000"],
+    "method": ["GET", "HEAD"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Content-Disposition"]
+  }
+]
+

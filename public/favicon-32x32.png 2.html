@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Generate Tree Emoji Favicon</title>
+</head>
+<body>
+  <canvas id="canvas32" width="32" height="32"></canvas>
+  <canvas id="canvas16" width="16" height="16"></canvas>
+  <canvas id="canvas180" width="180" height="180"></canvas>
+  <canvas id="canvas192" width="192" height="192"></canvas>
+  <canvas id="canvas512" width="512" height="512"></canvas>
+  <canvas id="canvasOG" width="1200" height="630"></canvas>
+  
+  <script>
+    // Function to draw tree emoji on canvas
+    function drawTreeEmoji(canvas, size) {
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#F7FAFC';
+      ctx.fillRect(0, 0, size, size);
+      
+      // Draw tree emoji
+      ctx.font = `${size * 0.75}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🌲', size / 2, size / 2);
+    }
+    
+    // Function to draw OG image
+    function drawOGImage(canvas) {
+      const ctx = canvas.getContext('2d');
+      const width = 1200;
+      const height = 630;
+      
+      // Forest green gradient background
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, '#2F855A');
+      gradient.addColorStop(1, '#276749');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      
+      // Draw large tree emoji
+      ctx.font = '200px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🌲', width / 2, height / 2 - 50);
+      
+      // Draw text
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 72px Arial';
+      ctx.fillText('Pack 1703 Portal', width / 2, height / 2 + 150);
+    }
+    
+    // Generate all sizes
+    drawTreeEmoji(document.getElementById('canvas32'), 32);
+    drawTreeEmoji(document.getElementById('canvas16'), 16);
+    drawTreeEmoji(document.getElementById('canvas180'), 180);
+    drawTreeEmoji(document.getElementById('canvas192'), 192);
+    drawTreeEmoji(document.getElementById('canvas512'), 512);
+    drawOGImage(document.getElementById('canvasOG'));
+    
+    // Download links
+    setTimeout(() => {
+      ['32', '16', '180', '192', '512'].forEach(size => {
+        const canvas = document.getElementById(`canvas${size}`);
+        const link = document.createElement('a');
+        if (size === '180') {
+          link.download = 'apple-touch-icon.png';
+        } else if (size === '192') {
+          link.download = 'logo192.png';
+        } else if (size === '512') {
+          link.download = 'logo512.png';
+        } else {
+          link.download = `favicon-${size}x${size}.png`;
+        }
+        link.href = canvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.textContent = `Download ${link.download}`;
+        link.style.display = 'block';
+        link.style.margin = '10px';
+      });
+      
+      // OG Image
+      const canvasOG = document.getElementById('canvasOG');
+      const linkOG = document.createElement('a');
+      linkOG.download = 'og-image.png';
+      linkOG.href = canvasOG.toDataURL('image/png');
+      document.body.appendChild(linkOG);
+      linkOG.textContent = 'Download og-image.png';
+      linkOG.style.display = 'block';
+      linkOG.style.margin = '10px';
+      linkOG.style.fontWeight = 'bold';
+      linkOG.style.color = '#2F855A';
+    }, 100);
+  </script>
+</body>
+</html>
+

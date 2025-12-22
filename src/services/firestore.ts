@@ -214,14 +214,19 @@ export const firestoreService = {
         return events;
       }
 
+      console.log(`📍 Enriching events with ${locationIds.length} unique location IDs:`, locationIds);
+
       // Fetch all locations in batch
       const locationPromises = locationIds.map(async (locationId) => {
         try {
           const locationRef = doc(db, 'locations', locationId);
           const locationDoc = await getDoc(locationRef);
           if (locationDoc.exists()) {
-            return { id: locationDoc.id, ...locationDoc.data() };
+            const locationData = { id: locationDoc.id, ...locationDoc.data() } as any;
+            console.log(`✅ Found location ${locationId}: ${locationData.name || 'unnamed'}`);
+            return locationData;
           }
+          console.warn(`❌ Location document ${locationId} does not exist in Firestore`);
           return null;
         } catch (error) {
           console.warn(`Failed to fetch location ${locationId}:`, error);
@@ -230,7 +235,7 @@ export const firestoreService = {
       });
 
       const locations = (await Promise.all(locationPromises)).filter(Boolean);
-      console.log(`📍 Fetched ${locations.length} locations for events`);
+      console.log(`📍 Fetched ${locations.length} locations for events (requested ${locationIds.length})`);
 
       // Create a map for quick lookup
       const locationMap = new Map(locations.map(loc => [loc!.id, loc!]));
@@ -254,6 +259,9 @@ export const firestoreService = {
               coordinates: location.geo ? { lat: location.geo.lat, lng: location.geo.lng } : undefined
             };
           }
+        } else if (event.locationId) {
+          // Location ID exists but location not found in database
+          console.warn(`⚠️ Location not found for event ${event.id}: locationId=${event.locationId}`);
         }
         return event;
       });

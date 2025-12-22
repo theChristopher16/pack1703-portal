@@ -8,12 +8,11 @@
 import SwiftUI
 
 struct LoginView: View {
-    @StateObject private var firebaseService = FirebaseService.shared
+    @Binding var isAuthenticated: Bool
     @State private var email = ""
     @State private var password = ""
     @State private var isLoading = false
     @State private var errorMessage = ""
-    @State private var isSignUpMode = false
     
     var body: some View {
         VStack(spacing: 30) {
@@ -54,12 +53,12 @@ struct LoginView: View {
                         .padding(.horizontal)
                 }
                 
-                Button(action: isSignUpMode ? handleSignUp : handleLogin) {
+                Button(action: handleLogin) {
                     if isLoading {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     } else {
-                        Text(isSignUpMode ? "Sign Up" : "Sign In")
+                        Text("Sign In")
                             .fontWeight(.semibold)
                     }
                 }
@@ -70,16 +69,6 @@ struct LoginView: View {
                 .cornerRadius(10)
                 .padding(.horizontal)
                 .disabled(isLoading || email.isEmpty || password.isEmpty)
-                
-                Button(action: {
-                    isSignUpMode.toggle()
-                    errorMessage = ""
-                }) {
-                    Text(isSignUpMode ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                }
-                .padding(.top, 10)
                 
                 // Social Sign-In Options
                 VStack(spacing: 15) {
@@ -120,66 +109,18 @@ struct LoginView: View {
         isLoading = true
         errorMessage = ""
         
-        Task {
-            do {
-                try await firebaseService.signIn(email: email, password: password)
-                // Auth state will be updated automatically via FirebaseService listener
-                await MainActor.run {
-                    isLoading = false
-                }
-            } catch {
-                await MainActor.run {
-                    isLoading = false
-                    errorMessage = error.localizedDescription
-                }
-            }
-        }
-    }
-    
-    private func handleSignUp() {
-        isLoading = true
-        errorMessage = ""
-        
-        Task {
-            do {
-                try await firebaseService.signUp(email: email, password: password)
-                // Auth state will be updated automatically via FirebaseService listener
-                await MainActor.run {
-                    isLoading = false
-                }
-            } catch {
-                await MainActor.run {
-                    isLoading = false
-                    errorMessage = error.localizedDescription
-                }
-            }
+        // TODO: Implement Firebase Auth
+        // For now, simulate login
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            isLoading = false
+            // Temporary - will implement real auth
+            isAuthenticated = true
         }
     }
     
     private func handleGoogleSignIn() {
-        isLoading = true
-        errorMessage = ""
-        
-        print("🔵 Google Sign-In button tapped")
-        
-        Task {
-            do {
-                print("🔵 Starting Google Sign-In flow...")
-                try await firebaseService.signInWithGoogle()
-                print("🔵 Google Sign-In successful!")
-                // Auth state will be updated automatically via FirebaseService listener
-                await MainActor.run {
-                    isLoading = false
-                }
-            } catch {
-                print("🔴 Google Sign-In error: \(error.localizedDescription)")
-                print("🔴 Full error: \(error)")
-                await MainActor.run {
-                    isLoading = false
-                    errorMessage = error.localizedDescription
-                }
-            }
-        }
+        // TODO: Implement Google Sign-In
+        print("Google Sign-In tapped")
     }
     
     private func handleAppleSignIn() {
@@ -189,6 +130,6 @@ struct LoginView: View {
 }
 
 #Preview {
-    LoginView()
+    LoginView(isAuthenticated: .constant(false))
 }
 

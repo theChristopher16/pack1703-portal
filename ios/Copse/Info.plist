@@ -53,6 +53,8 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Copse needs access to your camera to take photos for events and profiles.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Copse needs access to your microphone for video recording and voice features.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Copse needs access to your photo library to upload photos for events and profiles.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
@@ -82,5 +84,8 @@
 	</array>
 	<key>STREAM_API_KEY</key>
 	<string>pcwcmzbzy823</string>
+	<!-- Export Compliance: App only uses standard encryption provided by iOS (HTTPS/TLS) -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

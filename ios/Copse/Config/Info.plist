@@ -54,6 +54,8 @@
     <!-- Camera and Photos permissions for profile pictures and event photos -->
     <key>NSCameraUsageDescription</key>
     <string>Pack 1703 Portal needs access to your camera to take photos for events and profiles.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Pack 1703 Portal needs access to your microphone for video recording and voice features.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Pack 1703 Portal needs access to your photo library to upload photos for events and profiles.</string>
     <key>NSPhotoLibraryAddUsageDescription</key>

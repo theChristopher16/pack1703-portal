@@ -27,12 +27,61 @@ struct HomeOverviewView: View {
 struct StatsSection: View {
     let household: SharedHousehold
     
+    // Calculate room statistics
+    private var roomStats: (bedrooms: Int, bathrooms: Int, total: Int) {
+        let bedrooms = household.rooms.filter { $0.type == .bedroom }.count
+        let bathrooms = household.rooms.filter { $0.type == .bathroom }.count
+        return (bedrooms, bathrooms, household.rooms.count)
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Quick Stats")
+            Text("Home Overview")
                 .font(.system(size: 22, weight: .bold))
                 .foregroundColor(.primary)
             
+            // Home name and address
+            if !household.name.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "house.fill")
+                            .foregroundColor(.green)
+                        Text(household.name)
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.primary)
+                    }
+                    
+                    if let address = household.address, !address.isEmpty {
+                        HStack {
+                            Image(systemName: "mappin.circle.fill")
+                                .foregroundColor(.secondary)
+                            Text(address)
+                                .font(.system(size: 14))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(.ultraThinMaterial)
+                        .shadow(color: Color.green.opacity(0.1), radius: 8, x: 0, y: 4)
+                )
+            }
+            
+            // Room statistics
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 12) {
+                StatCard(icon: "bed.double.fill", title: "Bedrooms", value: "\(roomStats.bedrooms)", color: .purple)
+                StatCard(icon: "shower.fill", title: "Bathrooms", value: "\(roomStats.bathrooms)", color: .blue)
+                StatCard(icon: "door.left.hand.open", title: "Total Rooms", value: "\(roomStats.total)", color: .green)
+            }
+            
+            // Additional stats
             LazyVGrid(columns: [
                 GridItem(.flexible()),
                 GridItem(.flexible())
@@ -40,7 +89,7 @@ struct StatsSection: View {
                 StatCard(icon: "person.2.fill", title: "Members", value: "\(household.memberIds.count)", color: .blue)
                 StatCard(icon: "figure.and.child.holdinghands", title: "Children", value: "\(household.children.count)", color: .pink)
                 StatCard(icon: "pawprint.fill", title: "Pets", value: "\(household.pets.count)", color: .orange)
-                StatCard(icon: "car.fill", title: "Vehicles", value: "\(household.vehicles.count)", color: .blue)
+                StatCard(icon: "car.fill", title: "Vehicles", value: "\(household.vehicles.count)", color: .cyan)
             }
         }
     }
@@ -530,8 +579,16 @@ struct RoomsManagementView: View {
     let household: SharedHousehold
     @State private var showAddRoom = false
     
+    // Group rooms by type
+    private var roomsByType: [RoomType: [Room]] {
+        Dictionary(grouping: household.rooms, by: { $0.type })
+    }
+    
+    // Room type order for display
+    private let roomTypeOrder: [RoomType] = [.bedroom, .bathroom, .livingRoom, .kitchen, .diningRoom, .garage, .office, .basement, .attic, .other]
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 24) {
             HStack {
                 Text("Rooms & Spaces")
                     .font(.system(size: 22, weight: .bold))
@@ -546,12 +603,14 @@ struct RoomsManagementView: View {
                 }
             }
             
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: 12) {
-                ForEach(household.rooms) { room in
-                    RoomCard(room: room)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Display rooms grouped by type
+                    ForEach(roomTypeOrder.filter { roomsByType[$0] != nil }, id: \.self) { roomType in
+                        if let rooms = roomsByType[roomType], !rooms.isEmpty {
+                            RoomTypeSection(roomType: roomType, rooms: rooms)
+                        }
+                    }
                 }
             }
         }
@@ -561,38 +620,149 @@ struct RoomsManagementView: View {
     }
 }
 
-struct RoomCard: View {
-    let room: Room
+struct RoomTypeSection: View {
+    let roomType: RoomType
+    let rooms: [Room]
     
     var body: some View {
-        VStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color.purple.opacity(0.8), Color.blue.opacity(0.6)]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 50, height: 50)
+        VStack(alignment: .leading, spacing: 12) {
+            // Section header
+            HStack {
+                Image(systemName: roomType.icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(colorForRoomType(roomType))
                 
-                Image(systemName: room.icon)
-                    .font(.system(size: 24))
-                    .foregroundColor(.white)
+                Text(roomType.rawValue)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Text("(\(rooms.count))")
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundColor(.secondary)
+                
+                Spacer()
             }
+            .padding(.horizontal, 4)
             
-            Text(room.name)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.primary)
-                .lineLimit(1)
+            // Room cards in grid
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12)
+            ], spacing: 12) {
+                ForEach(rooms) { room in
+                    RoomCard(room: room, roomType: roomType)
+                }
+            }
         }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
-                .shadow(color: Color.purple.opacity(0.1), radius: 6, x: 0, y: 3)
+    }
+    
+    private func colorForRoomType(_ type: RoomType) -> Color {
+        switch type {
+        case .bedroom: return .purple
+        case .bathroom: return .blue
+        case .livingRoom: return .orange
+        case .kitchen: return .red
+        case .diningRoom: return .yellow
+        case .garage: return .gray
+        case .office: return .indigo
+        case .basement: return .brown
+        case .attic: return .pink
+        case .other: return .secondary
+        }
+    }
+}
+
+struct RoomCard: View {
+    let room: Room
+    let roomType: RoomType
+    @State private var isPressed = false
+    
+    private var roomColor: Color {
+        switch roomType {
+        case .bedroom: return .purple
+        case .bathroom: return .blue
+        case .livingRoom: return .orange
+        case .kitchen: return .red
+        case .diningRoom: return .yellow
+        case .garage: return .gray
+        case .office: return .indigo
+        case .basement: return .brown
+        case .attic: return .pink
+        case .other: return .secondary
+        }
+    }
+    
+    var body: some View {
+        Button(action: {
+            // TODO: Navigate to room detail view
+            print("Tapped \(room.name)")
+        }) {
+            VStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [roomColor.opacity(0.8), roomColor.opacity(0.6)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 50, height: 50)
+                        .shadow(color: roomColor.opacity(0.3), radius: 4, x: 0, y: 2)
+                    
+                    Image(systemName: room.icon)
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+                
+                Text(room.name)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                // Show last cleaned if available
+                if let lastCleaned = room.lastCleaned {
+                    HStack(spacing: 4) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                        Text(lastCleaned, style: .relative)
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        roomColor.opacity(0.3),
+                                        roomColor.opacity(0.1)
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
+                    )
+                    .shadow(color: roomColor.opacity(0.1), radius: 8, x: 0, y: 4)
+            )
+            .scaleEffect(isPressed ? 0.95 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
         )
     }
 }

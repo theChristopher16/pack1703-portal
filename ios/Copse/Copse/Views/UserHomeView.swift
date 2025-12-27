@@ -11,6 +11,7 @@ import FirebaseAuth
 
 struct UserHomeView: View {
     @StateObject private var firebaseService = FirebaseService.shared
+    @StateObject private var homeService = HomeService.shared
     @State private var selectedTab: HomeTab = .overview
     
     var body: some View {
@@ -89,6 +90,12 @@ struct UserHomeView: View {
                 // Content
                 ScrollView {
                     VStack(spacing: 24) {
+                        // Home Section (if setup is complete)
+                        if homeService.hasCompletedSetup, let household = homeService.currentHousehold {
+                            HomeOverviewCard(household: household)
+                                .padding(.horizontal)
+                        }
+                        
                         // Organizations Section
                         OrganizationsSection()
                             .padding(.horizontal)
@@ -107,6 +114,180 @@ struct UserHomeView: View {
             }
         }
         .navigationBarHidden(true)
+        .onAppear {
+            Task {
+                await homeService.loadUserHouseholds()
+            }
+        }
+    }
+}
+
+// MARK: - Home Overview Card
+
+struct HomeOverviewCard: View {
+    let household: SharedHousehold
+    @State private var isPressed = false
+    
+    // Calculate room statistics
+    private var roomStats: (bedrooms: Int, bathrooms: Int, total: Int) {
+        let bedrooms = household.rooms.filter { $0.type == .bedroom }.count
+        let bathrooms = household.rooms.filter { $0.type == .bathroom }.count
+        return (bedrooms, bathrooms, household.rooms.count)
+    }
+    
+    var body: some View {
+        NavigationLink(destination: HomeManagementView()) {
+            VStack(alignment: .leading, spacing: 16) {
+                // Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "house.fill")
+                                .foregroundColor(.green)
+                            Text(household.name)
+                                .font(.system(size: 22, weight: .bold))
+                                .foregroundColor(.primary)
+                        }
+                        
+                        if let address = household.address, !address.isEmpty {
+                            Text(address)
+                                .font(.system(size: 14))
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.secondary)
+                }
+                
+                Divider()
+                    .background(Color.secondary.opacity(0.2))
+                
+                // Quick Stats
+                HStack(spacing: 16) {
+                    HomeStatItem(icon: "bed.double.fill", value: "\(roomStats.bedrooms)", label: "Bedrooms", color: .purple)
+                    HomeStatItem(icon: "shower.fill", value: "\(roomStats.bathrooms)", label: "Bathrooms", color: .blue)
+                    HomeStatItem(icon: "door.left.hand.open", value: "\(roomStats.total)", label: "Rooms", color: .green)
+                }
+                
+                // Room preview (show first 6 rooms)
+                if !household.rooms.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Your Rooms")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        LazyVGrid(columns: [
+                            GridItem(.flexible(), spacing: 8),
+                            GridItem(.flexible(), spacing: 8),
+                            GridItem(.flexible(), spacing: 8)
+                        ], spacing: 8) {
+                            ForEach(household.rooms.prefix(6)) { room in
+                                MiniRoomCard(room: room)
+                            }
+                        }
+                        
+                        if household.rooms.count > 6 {
+                            Text("+ \(household.rooms.count - 6) more rooms")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+                                .padding(.top, 4)
+                        }
+                    }
+                }
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color.green.opacity(0.3),
+                                        Color.teal.opacity(0.2)
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
+                    )
+                    .shadow(color: Color.green.opacity(0.15), radius: 12, x: 0, y: 6)
+            )
+            .scaleEffect(isPressed ? 0.98 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
+    }
+}
+
+struct HomeStatItem: View {
+    let icon: String
+    let value: String
+    let label: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 6) {
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [color.opacity(0.8), color.opacity(0.6)]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 36, height: 36)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+            
+            Text(value)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.primary)
+            
+            Text(label)
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+struct MiniRoomCard: View {
+    let room: Room
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: room.icon)
+                .font(.system(size: 16))
+                .foregroundColor(.secondary)
+            
+            Text(room.name)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.primary)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.secondary.opacity(0.1))
+        )
     }
 }
 
